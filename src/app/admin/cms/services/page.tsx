@@ -17,7 +17,6 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import {
   Table,
   TableHeader,
@@ -510,12 +509,12 @@ export default function AdminServicesPage() {
               <label className="text-xs font-bold text-foreground">
                 ویژگی‌های کلیدی (هر مورد در یک خط)
               </label>
-              <Textarea
+              <textarea
                 value={featuresStr}
                 onChange={(e) => setFeaturesStr(e.target.value)}
                 rows={3}
                 placeholder="چیپ NTAG216 اصلی&#10;چاپ دو رو با روکش UV&#10;پنل مدیریت اختصاصی"
-                className="rounded-xl text-xs font-mono"
+                className="flex min-h-[80px] w-full rounded-xl border border-input bg-background/50 px-3.5 py-2.5 text-xs font-mono ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all font-sans"
               />
             </div>
 
