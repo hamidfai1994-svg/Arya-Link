@@ -19,7 +19,7 @@ export const LANGUAGES: Record<SupportedLanguage, LanguageMeta> = {
   ps: {
     code: 'ps',
     name: 'Pashto',
-    nativeName: 'پښتو',
+    nativeName: 'پشتو',
     flag: '🇦🇫',
     dir: 'rtl',
   },

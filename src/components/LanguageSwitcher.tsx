@@ -29,7 +29,7 @@ export function LanguageSwitcher({ className }: { className?: string }) {
           <Globe className="w-3.5 h-3.5 text-muted-foreground ml-0.5" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-40 p-1 rounded-2xl border border-border shadow-xl">
+      <DropdownMenuContent align="end" className="w-36 p-1 rounded-2xl border border-border shadow-xl">
         {(Object.keys(LANGUAGES) as SupportedLanguage[]).map((code) => {
           const item = LANGUAGES[code];
           const isSelected = language === code;
@@ -43,7 +43,6 @@ export function LanguageSwitcher({ className }: { className?: string }) {
               <div className="flex items-center gap-2">
                 <span className="text-base">{item.flag}</span>
                 <span>{item.nativeName}</span>
-                <span className="text-[10px] text-muted-foreground font-normal">({item.name})</span>
               </div>
               {isSelected && <Check className="w-3.5 h-3.5 text-cyan-500" />}
             </DropdownMenuItem>

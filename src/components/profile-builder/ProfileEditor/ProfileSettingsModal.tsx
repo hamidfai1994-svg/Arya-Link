@@ -168,8 +168,8 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
                 </label>
                 <div className="grid grid-cols-3 gap-2.5">
                   {[
-                    { id: 'dari', label: 'دری (Dari)' },
-                    { id: 'pashto', label: 'پښتو (Pashto)' },
+                    { id: 'dari', label: 'دری' },
+                    { id: 'pashto', label: 'پښتو' },
                     { id: 'en', label: 'English' },
                   ].map((l) => (
                     <button
@@ -177,8 +177,8 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
                       type="button"
                       onClick={() => setProfileLanguage(l.id as ProfileLanguage)}
                       className={`py-2 px-3 rounded-xl text-xs font-semibold border transition-all ${(profile.profileLanguage || 'dari') === l.id
-                          ? 'bg-cyan-500 text-slate-950 font-bold border-cyan-400 shadow-md shadow-cyan-500/20'
-                          : 'bg-card border-border text-foreground hover:bg-muted'
+                        ? 'bg-cyan-500 text-slate-950 font-bold border-cyan-400 shadow-md shadow-cyan-500/20'
+                        : 'bg-card border-border text-foreground hover:bg-muted'
                         }`}
                     >
                       {l.label}
@@ -400,8 +400,8 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
                     type="button"
                     onClick={() => setProfileType('personal')}
                     className={`p-3 rounded-xl border text-right transition-all flex items-center gap-2.5 ${(profile.profileType || 'personal') === 'personal'
-                        ? 'bg-cyan-500/10 border-cyan-500 ring-2 ring-cyan-500/20'
-                        : 'bg-card border-border hover:bg-muted/50'
+                      ? 'bg-cyan-500/10 border-cyan-500 ring-2 ring-cyan-500/20'
+                      : 'bg-card border-border hover:bg-muted/50'
                       }`}
                   >
                     <User className="w-4 h-4 text-cyan-500 shrink-0" />
@@ -415,8 +415,8 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
                     type="button"
                     onClick={() => setProfileType('business')}
                     className={`p-3 rounded-xl border text-right transition-all flex items-center gap-2.5 ${profile.profileType === 'business'
-                        ? 'bg-cyan-500/10 border-cyan-500 ring-2 ring-cyan-500/20'
-                        : 'bg-card border-border hover:bg-muted/50'
+                      ? 'bg-cyan-500/10 border-cyan-500 ring-2 ring-cyan-500/20'
+                      : 'bg-card border-border hover:bg-muted/50'
                       }`}
                   >
                     <Building2 className="w-4 h-4 text-cyan-500 shrink-0" />
