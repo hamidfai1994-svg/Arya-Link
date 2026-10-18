@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { ISiteSettings, DEFAULT_SITE_SETTINGS } from '@/lib/settings';
+import { ISiteSettings, DEFAULT_SITE_SETTINGS } from '@/types/settings';
 
 interface BrandingContextValue {
   settings: ISiteSettings;

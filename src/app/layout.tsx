@@ -8,6 +8,7 @@ import { SupportedLanguage } from '@/lib/i18n/types';
 import { PublicShell } from '@/components/public/PublicShell';
 import { BrandingProvider } from '@/lib/branding/BrandingContext';
 import { getSiteSettings } from '@/lib/settings';
+import { DEFAULT_SITE_SETTINGS } from '@/types/settings';
 import { Toaster } from '@/components/ui/sonner';
 import './globals.css';
 
@@ -33,11 +34,11 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export async function generateMetadata(): Promise<Metadata> {
-  const brandSettings = await getSiteSettings();
-  const faviconUrl = brandSettings?.favicon || '/favicon.ico';
-  const siteTitle = brandSettings?.siteName || 'Arya Link';
+  const brandSettings = (await getSiteSettings()) || DEFAULT_SITE_SETTINGS;
+  const faviconUrl = brandSettings.favicon || '/favicon.ico';
+  const siteTitle = brandSettings.siteName || 'Arya Link';
   const description =
-    brandSettings?.siteDescription ||
+    brandSettings.siteDescription ||
     'پیشرفته‌ترین پلتفرم کارت ویزیت هوشمند NFC و مدیریت لینک در افغانستان';
 
   return {
@@ -61,7 +62,7 @@ export default async function RootLayout({
   const initialLanguage: SupportedLanguage =
     langCookie === 'ps' || langCookie === 'en' ? langCookie : 'da';
   const initialDir = initialLanguage === 'en' ? 'ltr' : 'rtl';
-  const brandSettings = await getSiteSettings();
+  const brandSettings = (await getSiteSettings()) || DEFAULT_SITE_SETTINGS;
 
   return (
     <html
