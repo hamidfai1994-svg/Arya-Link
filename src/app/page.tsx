@@ -169,7 +169,7 @@ export default function LandingPage() {
                     <div className="relative w-20 h-20 mx-auto">
                       <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-cyan-400 shadow-lg shadow-cyan-500/30">
                         <img
-                          src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80"
+                          src="https://i.postimg.cc/7ZfQN6z7/37606f96-0283-4b34-9fb2-e84e6a83f72c-(1).png"
                           alt="احمد رضایی"
                           className="w-full h-full object-cover"
                         />
@@ -600,9 +600,8 @@ export default function LandingPage() {
                 >
                   <span>{faq.q}</span>
                   <ChevronDown
-                    className={`w-4 h-4 text-cyan-500 transition-transform shrink-0 ${
-                      activeFaq === idx ? 'rotate-180' : ''
-                    }`}
+                    className={`w-4 h-4 text-cyan-500 transition-transform shrink-0 ${activeFaq === idx ? 'rotate-180' : ''
+                      }`}
                   />
                 </button>
                 {activeFaq === idx && (
