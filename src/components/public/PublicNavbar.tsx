@@ -18,6 +18,7 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { cn } from '@/lib/utils';
+import { SiteLogo } from '@/components/SiteLogo';
 
 export function PublicNavbar() {
   const { t, dir, language } = useLanguage();
@@ -43,29 +44,22 @@ export function PublicNavbar() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-white/70 dark:bg-zinc-950/70 backdrop-blur-md shadow-sm transition-all duration-300" dir={dir}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-3 group">
-          <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white font-black text-lg font-outfit shadow-lg shadow-cyan-500/30 group-hover:scale-105 transition-transform">
-            AL
-          </div>
-          <div>
-            <div className="flex items-center gap-1.5">
-              <span className="font-extrabold text-foreground tracking-tight text-lg font-outfit">
-                Arya Link
-              </span>
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-500 border border-cyan-500/30 font-sans">
-                PRO
-              </span>
-            </div>
-            <p className="text-[11px] text-muted-foreground hidden sm:block">
-              {language === 'en'
-                ? 'Smart NFC & Bio Link Platform'
-                : language === 'ps'
-                ? 'د سمارټ NFC او بایو لینک پلیټفارم'
-                : 'کارت ویزیت هوشمند و لینک‌بایو'}
-            </p>
-          </div>
-        </Link>
+        {/* Dynamic Site Logo */}
+        <SiteLogo
+          href="/"
+          width={44}
+          height={44}
+          showText={true}
+          showBadge={true}
+          badgeText="PRO"
+          subtitle={
+            language === 'en'
+              ? 'Smart NFC & Bio Link Platform'
+              : language === 'ps'
+              ? 'د سمارټ NFC او بایو لینک پلیټفارم'
+              : 'کارت ویزیت هوشمند و لینک‌بایو'
+          }
+        />
 
         {/* Desktop Navigation Links (Center) */}
         <nav className="hidden lg:flex items-center gap-7 text-xs font-semibold text-muted-foreground">

@@ -6,6 +6,8 @@ import { AuthProvider } from '@/components/providers/AuthProvider';
 import { LanguageProvider } from '@/lib/i18n/LanguageContext';
 import { SupportedLanguage } from '@/lib/i18n/types';
 import { PublicShell } from '@/components/public/PublicShell';
+import { BrandingProvider } from '@/lib/branding/BrandingContext';
+import { getSiteSettings } from '@/lib/settings';
 import { Toaster } from '@/components/ui/sonner';
 import './globals.css';
 
@@ -30,12 +32,26 @@ const jetbrainsMono = JetBrains_Mono({
   display: 'swap',
 });
 
-export const metadata: Metadata = {
-  title: 'Arya Link | پلتفرم کارت ویزیت دیجیتال NFC و لینک‌در‌بیو',
-  description: 'پیشرفته‌ترین پلتفرم کارت ویزیت هوشمند NFC و مدیریت لینک در افغانستان',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const brandSettings = await getSiteSettings();
+  const faviconUrl = brandSettings?.favicon || '/favicon.ico';
+  const siteTitle = brandSettings?.siteName || 'Arya Link';
+  const description =
+    brandSettings?.siteDescription ||
+    'پیشرفته‌ترین پلتفرم کارت ویزیت هوشمند NFC و مدیریت لینک در افغانستان';
 
-export default function RootLayout({
+  return {
+    title: `${siteTitle} | پلتفرم کارت ویزیت دیجیتال NFC و لینک‌در‌بیو`,
+    description,
+    icons: {
+      icon: [{ url: faviconUrl }],
+      shortcut: faviconUrl,
+      apple: faviconUrl,
+    },
+  };
+}
+
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -45,6 +61,7 @@ export default function RootLayout({
   const initialLanguage: SupportedLanguage =
     langCookie === 'ps' || langCookie === 'en' ? langCookie : 'da';
   const initialDir = initialLanguage === 'en' ? 'ltr' : 'rtl';
+  const brandSettings = await getSiteSettings();
 
   return (
     <html
@@ -53,18 +70,23 @@ export default function RootLayout({
       className={`${vazirmatn.variable} ${outfit.variable} ${jetbrainsMono.variable}`}
       suppressHydrationWarning
     >
+      <head>
+        <link rel="icon" href={brandSettings?.favicon || '/favicon.ico'} />
+      </head>
       <body className="min-h-screen bg-background text-foreground font-sans antialiased selection:bg-cyan-500 selection:text-white">
         <AuthProvider>
           <LanguageProvider initialLanguage={initialLanguage}>
-            <ThemeProvider
-              attribute="class"
-              defaultTheme="dark"
-              enableSystem
-              disableTransitionOnChange
-            >
-              <PublicShell>{children}</PublicShell>
-              <Toaster position="top-center" richColors />
-            </ThemeProvider>
+            <BrandingProvider initialSettings={brandSettings}>
+              <ThemeProvider
+                attribute="class"
+                defaultTheme="dark"
+                enableSystem
+                disableTransitionOnChange
+              >
+                <PublicShell>{children}</PublicShell>
+                <Toaster position="top-center" richColors />
+              </ThemeProvider>
+            </BrandingProvider>
           </LanguageProvider>
         </AuthProvider>
       </body>

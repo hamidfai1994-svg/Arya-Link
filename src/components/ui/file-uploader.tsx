@@ -19,7 +19,7 @@ export interface FileUploaderProps {
   value: string;
   onChange: (url: string) => void;
   fileType?: 'image' | 'document';
-  folder?: 'avatars' | 'covers' | 'documents' | 'general' | 'products';
+  folder?: 'avatars' | 'covers' | 'documents' | 'general' | 'products' | 'branding';
   label?: string;
   description?: string;
   maxSizeMB?: number; // 2 for images, 5 for documents

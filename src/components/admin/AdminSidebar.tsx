@@ -20,10 +20,12 @@ import {
   ShieldAlert,
   ChevronDown,
   Sparkles,
+  Palette,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { SiteLogo } from '@/components/SiteLogo';
 
 interface NavGroup {
   groupTitle: string;
@@ -113,6 +115,17 @@ const adminNavGroups: NavGroup[] = [
       },
     ],
   },
+  {
+    groupTitle: 'تنظیمات و هویت سامانه (Settings)',
+    items: [
+      {
+        title: 'تنظیمات برند و هویت بصری',
+        href: '/admin/settings/branding',
+        icon: Palette,
+        badge: 'مرحله ۲۴',
+      },
+    ],
+  },
 ];
 
 export function AdminSidebar({ onCloseMobile }: { onCloseMobile?: () => void }) {
@@ -139,22 +152,17 @@ export function AdminSidebar({ onCloseMobile }: { onCloseMobile?: () => void }) 
     <aside className="w-72 h-full flex flex-col bg-slate-950 text-slate-100 border-l border-slate-800 select-none">
       {/* Admin Branding Header */}
       <div className="p-5 border-b border-slate-800/80 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-rose-500 to-amber-500 flex items-center justify-center shadow-lg shadow-rose-500/20 text-white font-black">
-            <ShieldAlert className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="flex items-center gap-1.5">
-              <span className="font-extrabold text-white tracking-tight text-sm font-outfit">
-                Arya Link
-              </span>
-              <Badge className="bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[10px] py-0 px-1.5">
-                ENTERPRISE
-              </Badge>
-            </div>
-            <p className="text-[11px] text-slate-400">پنل مستقل مدیریت کل</p>
-          </div>
-        </div>
+        <Link href="/admin/dashboard" className="flex items-center gap-3 group" onClick={onCloseMobile}>
+          <SiteLogo
+            width={38}
+            height={38}
+            showText={true}
+            showBadge={true}
+            badgeText="ENTERPRISE"
+            subtitle="پنل مستقل مدیریت کل"
+            textClassName="text-white text-sm"
+          />
+        </Link>
 
         <ThemeToggle />
       </div>

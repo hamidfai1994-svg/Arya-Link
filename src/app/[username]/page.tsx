@@ -6,6 +6,7 @@ import { connectToDatabase } from '@/lib/db/mongodb';
 import { Profile } from '@/models/Profile.model';
 import { PublicProfileClient } from '@/components/profile/PublicProfileClient';
 import { CreditCard, ArrowRight, ShieldAlert, Sparkles, Home, UserCheck } from 'lucide-react';
+import { SiteLogo } from '@/components/SiteLogo';
 
 export const dynamic = 'force-dynamic';
 
@@ -179,11 +180,14 @@ function NotFoundCard({ alias }: { alias: string }) {
       <div className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-lg h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none -z-10" />
 
       {/* Header Logo */}
-      <div className="pt-8 text-center">
-        <Link href="/" className="inline-flex items-center gap-2 text-cyan-400 font-bold text-lg font-outfit">
-          <Sparkles className="w-5 h-5 text-cyan-400" />
-          <span className="tracking-wide">Arya Link</span>
-        </Link>
+      <div className="pt-8 text-center flex justify-center">
+        <SiteLogo
+          href="/"
+          width={36}
+          height={36}
+          showText={true}
+          textClassName="text-white text-base"
+        />
       </div>
 
       {/* Main 404 Glass Card */}

@@ -21,6 +21,7 @@ import {
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { SiteLogo } from '@/components/SiteLogo';
 
 interface NavItem {
   title: string;
@@ -87,20 +88,14 @@ export function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: () => void
           className="flex items-center gap-3 group"
           onClick={onCloseMobile}
         >
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20 text-white font-black font-outfit text-base group-hover:scale-105 transition-transform">
-            AL
-          </div>
-          <div>
-            <div className="flex items-center gap-1.5">
-              <span className="font-extrabold text-foreground tracking-tight text-base font-outfit">
-                Arya Link
-              </span>
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-500 border border-cyan-500/20">
-                PRO
-              </span>
-            </div>
-            <p className="text-[11px] text-muted-foreground">پنل مدیریت یکپارچه</p>
-          </div>
+          <SiteLogo
+            width={40}
+            height={40}
+            showText={true}
+            showBadge={true}
+            badgeText="PRO"
+            subtitle="پنل مدیریت یکپارچه"
+          />
         </Link>
         <ThemeToggle />
       </div>

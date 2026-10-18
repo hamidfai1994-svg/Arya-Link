@@ -247,7 +247,7 @@ export function HeroPhoneMockup() {
                     </span>
                   </div>
                   <p className="text-[11px] text-cyan-300 font-medium">
-                    مشاور ارشد کسب‌وکار و فناوری هوش مصنوعی
+                    مشاور ارشد کسب‌وکار و فناوری
                   </p>
                 </div>
 

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Menu, X, ArrowRight, LayoutDashboard, ChevronRight } from 'lucide-react';
 import { DashboardSidebar } from './DashboardSidebar';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { SiteLogo } from '@/components/SiteLogo';
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -76,14 +77,13 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             <Menu className="w-5 h-5" />
           </button>
 
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white font-extrabold text-sm font-outfit shadow-md shadow-cyan-500/20">
-              AL
-            </div>
-            <span className="font-extrabold text-foreground text-sm font-outfit">
-              Arya Link
-            </span>
-          </div>
+          <SiteLogo
+            href="/dashboard"
+            width={32}
+            height={32}
+            showText={true}
+            textClassName="text-sm"
+          />
 
           <ThemeToggle />
         </header>

@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { Sparkles, Phone, Mail, MapPin } from 'lucide-react';
+import { SiteLogo } from '@/components/SiteLogo';
 
 export function PublicFooter() {
   const { t, dir, language } = useLanguage();
@@ -14,14 +15,7 @@ export function PublicFooter() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10 pb-12 border-b border-border/60">
           {/* Brand Info */}
           <div className="md:col-span-2 space-y-4">
-            <Link href="/" className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white font-black text-lg font-outfit shadow-md shadow-cyan-500/20">
-                AL
-              </div>
-              <span className="font-extrabold text-foreground tracking-tight text-lg font-outfit">
-                Arya Link
-              </span>
-            </Link>
+            <SiteLogo href="/" width={40} height={40} showText={true} />
             <p className="text-xs text-muted-foreground leading-relaxed max-w-md">
               {t('footer.desc', 'پیشرفته‌ترین سامانه هویت دیجیتال، کارت ویزیت لمسی NFC و درگاه اختصاصی لینک‌بایو در افغانستان.')}
             </p>

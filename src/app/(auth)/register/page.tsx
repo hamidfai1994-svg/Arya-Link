@@ -10,6 +10,7 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { toast } from 'sonner';
 import { MathCaptcha } from '@/components/auth/MathCaptcha';
 import { PhoneInput } from '@/components/ui/phone-input';
+import { SiteLogo } from '@/components/SiteLogo';
 import {
   User,
   Mail,
@@ -156,8 +157,8 @@ function RegisterForm() {
         <div className="bg-card/90 backdrop-blur-xl border border-border rounded-3xl p-6 sm:p-8 shadow-2xl relative">
           {/* Card Header Branding */}
           <div className="text-center space-y-2 mb-6">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center mx-auto shadow-lg shadow-cyan-500/30 text-white font-extrabold text-xl font-outfit mb-3">
-              AL
+            <div className="flex justify-center mb-3">
+              <SiteLogo width={56} height={56} showText={false} />
             </div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground">
               ساخت حساب <span className="text-cyan-500 dark:text-cyan-400">Arya Link</span>
