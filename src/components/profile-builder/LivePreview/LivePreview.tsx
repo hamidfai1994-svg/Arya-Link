@@ -203,15 +203,14 @@ export const LivePreview: React.FC = () => {
         meta.textAlign === 'center'
           ? 'text-center'
           : meta.textAlign === 'left'
-          ? 'text-left'
-          : 'text-right';
+            ? 'text-left'
+            : 'text-right';
 
       return (
         <div
           key={link.id}
-          className={`w-full p-3.5 border shadow-sm ${alignClass} ${getBorderRadiusClass(customStyle?.borderRadius)} ${
-            isLight ? 'bg-white/95 border-slate-200 text-slate-800' : `${themeConfig.cardBlur} text-white`
-          }`}
+          className={`w-full p-3.5 border shadow-sm ${alignClass} ${getBorderRadiusClass(customStyle?.borderRadius)} ${isLight ? 'bg-white/95 border-slate-200 text-slate-800' : `${themeConfig.cardBlur} text-white`
+            }`}
           style={customCardStyle}
         >
           {link.title && <h3 className="text-xs font-bold mb-1 opacity-90">{link.title}</h3>}
@@ -246,8 +245,8 @@ export const LivePreview: React.FC = () => {
       const lineBorderColor = customStyle?.customBorderColor
         ? ''
         : isLight
-        ? 'border-slate-300'
-        : 'border-white/20';
+          ? 'border-slate-300'
+          : 'border-white/20';
 
       const lineStyle: React.CSSProperties = {};
       if (customStyle?.customBorderColor) {
@@ -285,8 +284,8 @@ export const LivePreview: React.FC = () => {
             onChange={(e) => setSearchFilter(e.target.value)}
             placeholder="جستجو در بین خدمات و لینک‌ها..."
             className={`w-full rounded-2xl pr-8 pl-3 py-2 text-xs border focus:outline-none ${isLight
-                ? 'bg-white border-slate-200 text-slate-900 placeholder:text-slate-400'
-                : 'bg-white/10 border-white/20 text-white placeholder:text-slate-300'
+              ? 'bg-white border-slate-200 text-slate-900 placeholder:text-slate-400'
+              : 'bg-white/10 border-white/20 text-white placeholder:text-slate-300'
               }`}
           />
         </div>
@@ -762,8 +761,8 @@ export const LivePreview: React.FC = () => {
         target={adv.openInNewTab === false || link.url.startsWith('tel:') || link.url.startsWith('mailto:') || link.url.startsWith('#') ? '_self' : '_blank'}
         rel="noopener noreferrer"
         className={`w-full p-2.5 border flex items-center justify-between gap-3 text-right shadow-sm cursor-pointer transition-all duration-200 ${cardRadius} ${getButtonAnimationClass(adv.buttonAnimation)} ${isLight
-            ? 'bg-white/95 border-slate-200 hover:border-slate-300 hover:bg-white shadow-sm'
-            : themeConfig.cardBlur
+          ? 'bg-white/95 border-slate-200 hover:border-slate-300 hover:bg-white shadow-sm'
+          : themeConfig.cardBlur
           }`}
         style={customCardStyle}
       >
@@ -821,8 +820,8 @@ export const LivePreview: React.FC = () => {
         <button
           onClick={() => setDevice('iphone')}
           className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${selectedDeviceId === 'iphone'
-              ? 'bg-cyan-500 text-slate-950 font-bold shadow-md shadow-cyan-500/30'
-              : 'text-muted-foreground hover:text-foreground'
+            ? 'bg-cyan-500 text-slate-950 font-bold shadow-md shadow-cyan-500/30'
+            : 'text-muted-foreground hover:text-foreground'
             }`}
         >
           iPhone
@@ -830,8 +829,8 @@ export const LivePreview: React.FC = () => {
         <button
           onClick={() => setDevice('android')}
           className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${selectedDeviceId === 'android'
-              ? 'bg-cyan-500 text-slate-950 font-bold shadow-md shadow-cyan-500/30'
-              : 'text-muted-foreground hover:text-foreground'
+            ? 'bg-cyan-500 text-slate-950 font-bold shadow-md shadow-cyan-500/30'
+            : 'text-muted-foreground hover:text-foreground'
             }`}
         >
           Android
@@ -841,7 +840,7 @@ export const LivePreview: React.FC = () => {
           className="px-2.5 py-1 rounded-full text-[11px] font-outfit text-cyan-600 dark:text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 flex items-center gap-1"
           dir="ltr"
         >
-          <span>aryalink.af/{profile.alias}</span>
+          <span>aryal.ink/{profile.alias}</span>
         </span>
       </div>
 
@@ -1075,8 +1074,8 @@ export const LivePreview: React.FC = () => {
                     <a
                       href={getSmartLink('phone', profile.phone)}
                       className={`w-9 h-9 rounded-full border flex items-center justify-center text-xs shadow-sm transition-all active:scale-95 ${isLight
-                          ? 'bg-white hover:bg-slate-100 border-slate-200 text-slate-800'
-                          : 'bg-white/10 hover:bg-white/20 border-white/20 backdrop-blur-md text-white'
+                        ? 'bg-white hover:bg-slate-100 border-slate-200 text-slate-800'
+                        : 'bg-white/10 hover:bg-white/20 border-white/20 backdrop-blur-md text-white'
                         }`}
                       title="تماس مستقیم"
                     >
@@ -1098,8 +1097,8 @@ export const LivePreview: React.FC = () => {
                     <a
                       href={getSmartLink('email', profile.email)}
                       className={`w-9 h-9 rounded-full border flex items-center justify-center text-xs shadow-sm transition-all active:scale-95 ${isLight
-                          ? 'bg-white hover:bg-slate-100 border-slate-200 text-slate-800'
-                          : 'bg-white/10 hover:bg-white/20 border-white/20 backdrop-blur-md text-white'
+                        ? 'bg-white hover:bg-slate-100 border-slate-200 text-slate-800'
+                        : 'bg-white/10 hover:bg-white/20 border-white/20 backdrop-blur-md text-white'
                         }`}
                       title="ایمیل"
                     >

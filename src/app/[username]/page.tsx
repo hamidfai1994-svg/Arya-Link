@@ -53,7 +53,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         images,
         type: 'profile',
         siteName: 'Arya Link',
-        url: `https://aryalink.af/${cleanAlias}`,
+        url: `https://aryal.ink/${cleanAlias}`,
         locale: profile.profileLanguage === 'en' ? 'en_US' : 'fa_AF',
       },
       twitter: {

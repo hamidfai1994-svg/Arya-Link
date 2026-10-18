@@ -88,12 +88,12 @@ export const ProfileEditor: React.FC = () => {
     let selectedLangName = 'دری';
 
     if (currentLang === 'dari') {
-      selectedLangName = 'دری (Dari)';
+      selectedLangName = 'دری';
       if (hasLatin && !hasPersoArabic) {
         isMismatch = true;
       }
     } else if (currentLang === 'pashto') {
-      selectedLangName = 'پښتو (Pashto)';
+      selectedLangName = 'پښتو';
       if (hasLatin && !hasPersoArabic) {
         isMismatch = true;
       }
@@ -156,7 +156,7 @@ export const ProfileEditor: React.FC = () => {
   }, [fetchProfilesList]);
 
   const handleCopyLink = () => {
-    const fullUrl = `https://aryalink.af/${profile.alias}`;
+    const fullUrl = `https://aryal.ink/${profile.alias}`;
     navigator.clipboard.writeText(fullUrl);
     setCopiedAlias(true);
     toast.success('لینک پروفایل در کلیپ‌بورد کپی شد!', {
@@ -175,7 +175,7 @@ export const ProfileEditor: React.FC = () => {
     if (result.success) {
       toast.success(result.message || 'تغییرات با موفقیت در پایگاه داده منتشر شد!', {
         id: toastId,
-        description: `کارت هوشمند aryalink.af/${profile.alias} ذخیره و فعال است.`,
+        description: `کارت هوشمند aryal.ink/${profile.alias} ذخیره و فعال است.`,
         duration: 4000,
       });
     } else {
@@ -231,10 +231,10 @@ export const ProfileEditor: React.FC = () => {
             onClick={handlePublish}
             disabled={isSaving}
             className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all duration-200 ${isSaving
-                ? 'bg-muted text-muted-foreground cursor-wait'
-                : isDirty
-                  ? 'bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-lg shadow-cyan-500/25 active:scale-95 ring-2 ring-cyan-500/30'
-                  : 'bg-cyan-600/15 hover:bg-cyan-600/25 text-cyan-600 dark:text-cyan-400 border border-cyan-500/30'
+              ? 'bg-muted text-muted-foreground cursor-wait'
+              : isDirty
+                ? 'bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-lg shadow-cyan-500/25 active:scale-95 ring-2 ring-cyan-500/30'
+                : 'bg-cyan-600/15 hover:bg-cyan-600/25 text-cyan-600 dark:text-cyan-400 border border-cyan-500/30'
               }`}
             title="انتشار تغییرات در پایگاه داده MongoDB"
           >
@@ -258,44 +258,40 @@ export const ProfileEditor: React.FC = () => {
       <div className="flex border-b border-border bg-muted/40 p-1.5 gap-1.5">
         <button
           onClick={() => setActiveTab('content')}
-          className={`flex-1 py-2 text-xs font-medium rounded-xl transition-all flex items-center justify-center gap-1.5 ${
-            activeTab === 'content'
-              ? 'bg-card text-foreground shadow-sm font-bold border border-border'
-              : 'text-muted-foreground hover:text-foreground hover:bg-muted/80'
-          }`}
+          className={`flex-1 py-2 text-xs font-medium rounded-xl transition-all flex items-center justify-center gap-1.5 ${activeTab === 'content'
+            ? 'bg-card text-foreground shadow-sm font-bold border border-border'
+            : 'text-muted-foreground hover:text-foreground hover:bg-muted/80'
+            }`}
         >
           <Layers className="w-3.5 h-3.5" />
           <span>{t.contentTab}</span>
         </button>
         <button
           onClick={() => setActiveTab('appearance')}
-          className={`flex-1 py-2 text-xs font-medium rounded-xl transition-all flex items-center justify-center gap-1.5 ${
-            activeTab === 'appearance'
-              ? 'bg-card text-foreground shadow-sm font-bold border border-border'
-              : 'text-muted-foreground hover:text-foreground hover:bg-muted/80'
-          }`}
+          className={`flex-1 py-2 text-xs font-medium rounded-xl transition-all flex items-center justify-center gap-1.5 ${activeTab === 'appearance'
+            ? 'bg-card text-foreground shadow-sm font-bold border border-border'
+            : 'text-muted-foreground hover:text-foreground hover:bg-muted/80'
+            }`}
         >
           <Palette className="w-3.5 h-3.5" />
           <span>{t.appearanceTab}</span>
         </button>
         <button
           onClick={() => setActiveTab('settings')}
-          className={`flex-1 py-2 text-xs font-medium rounded-xl transition-all flex items-center justify-center gap-1.5 ${
-            activeTab === 'settings'
-              ? 'bg-card text-foreground shadow-sm font-bold border border-border'
-              : 'text-muted-foreground hover:text-foreground hover:bg-muted/80'
-          }`}
+          className={`flex-1 py-2 text-xs font-medium rounded-xl transition-all flex items-center justify-center gap-1.5 ${activeTab === 'settings'
+            ? 'bg-card text-foreground shadow-sm font-bold border border-border'
+            : 'text-muted-foreground hover:text-foreground hover:bg-muted/80'
+            }`}
         >
           <Sliders className="w-3.5 h-3.5" />
           <span>{t.settingsTab}</span>
         </button>
         <button
           onClick={() => setActiveTab('crm')}
-          className={`flex-1 py-2 text-xs font-medium rounded-xl transition-all flex items-center justify-center gap-1.5 ${
-            activeTab === 'crm'
-              ? 'bg-card text-foreground shadow-sm font-bold border border-border text-cyan-600 dark:text-cyan-400'
-              : 'text-muted-foreground hover:text-foreground hover:bg-muted/80'
-          }`}
+          className={`flex-1 py-2 text-xs font-medium rounded-xl transition-all flex items-center justify-center gap-1.5 ${activeTab === 'crm'
+            ? 'bg-card text-foreground shadow-sm font-bold border border-border text-cyan-600 dark:text-cyan-400'
+            : 'text-muted-foreground hover:text-foreground hover:bg-muted/80'
+            }`}
         >
           <Mail className="w-3.5 h-3.5" />
           <span className="truncate">{t.crmTab}</span>
@@ -364,11 +360,10 @@ export const ProfileEditor: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setHeaderLayout('curve')}
-                    className={`p-3 rounded-2xl border text-right transition-all flex flex-col justify-between relative overflow-hidden ${
-                      (profile.headerLayout || 'curve') === 'curve'
-                        ? 'bg-cyan-500/10 border-cyan-500 ring-2 ring-cyan-500/30'
-                        : 'bg-card border-border hover:border-cyan-500/40'
-                    }`}
+                    className={`p-3 rounded-2xl border text-right transition-all flex flex-col justify-between relative overflow-hidden ${(profile.headerLayout || 'curve') === 'curve'
+                      ? 'bg-cyan-500/10 border-cyan-500 ring-2 ring-cyan-500/30'
+                      : 'bg-card border-border hover:border-cyan-500/40'
+                      }`}
                   >
                     <div className="w-full h-12 rounded-xl bg-slate-900/40 mb-2 relative overflow-hidden flex items-end justify-center">
                       <div
@@ -392,11 +387,10 @@ export const ProfileEditor: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setHeaderLayout('gradient_mask')}
-                    className={`p-3 rounded-2xl border text-right transition-all flex flex-col justify-between relative overflow-hidden ${
-                      profile.headerLayout === 'gradient_mask'
-                        ? 'bg-cyan-500/10 border-cyan-500 ring-2 ring-cyan-500/30'
-                        : 'bg-card border-border hover:border-cyan-500/40'
-                    }`}
+                    className={`p-3 rounded-2xl border text-right transition-all flex flex-col justify-between relative overflow-hidden ${profile.headerLayout === 'gradient_mask'
+                      ? 'bg-cyan-500/10 border-cyan-500 ring-2 ring-cyan-500/30'
+                      : 'bg-card border-border hover:border-cyan-500/40'
+                      }`}
                   >
                     <div className="w-full h-12 rounded-xl bg-gradient-to-l from-indigo-600 via-cyan-600 to-transparent mb-2 relative p-1.5 flex items-center justify-end">
                       <div className="w-7 h-7 rounded-lg bg-cyan-400 border border-white/50 shadow-sm" />
@@ -416,11 +410,10 @@ export const ProfileEditor: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setHeaderLayout('minimal')}
-                    className={`p-3 rounded-2xl border text-right transition-all flex flex-col justify-between relative overflow-hidden ${
-                      profile.headerLayout === 'minimal'
-                        ? 'bg-cyan-500/10 border-cyan-500 ring-2 ring-cyan-500/30'
-                        : 'bg-card border-border hover:border-cyan-500/40'
-                    }`}
+                    className={`p-3 rounded-2xl border text-right transition-all flex flex-col justify-between relative overflow-hidden ${profile.headerLayout === 'minimal'
+                      ? 'bg-cyan-500/10 border-cyan-500 ring-2 ring-cyan-500/30'
+                      : 'bg-card border-border hover:border-cyan-500/40'
+                      }`}
                   >
                     <div className="w-full h-12 rounded-xl bg-muted/40 mb-2 flex items-center justify-center">
                       <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-cyan-500 to-blue-600 shadow-md ring-2 ring-cyan-400/40" />
@@ -541,20 +534,18 @@ export const ProfileEditor: React.FC = () => {
                         key={theme.id}
                         type="button"
                         onClick={() => setThemePreset(theme.id as ProfileThemeConfig['preset'])}
-                        className={`p-3 rounded-2xl border text-right transition-all bg-gradient-to-br ${theme.bg} ${
-                          profile.themeConfig.preset === theme.id
-                            ? `border-cyan-400 ring-2 ${theme.ring} shadow-lg shadow-cyan-500/10`
-                            : 'border-border/80 hover:border-border opacity-70 hover:opacity-100'
-                        }`}
+                        className={`p-3 rounded-2xl border text-right transition-all bg-gradient-to-br ${theme.bg} ${profile.themeConfig.preset === theme.id
+                          ? `border-cyan-400 ring-2 ${theme.ring} shadow-lg shadow-cyan-500/10`
+                          : 'border-border/80 hover:border-border opacity-70 hover:opacity-100'
+                          }`}
                       >
                         <div className="flex items-center justify-between mb-1">
                           <span className={`text-xs font-bold block ${theme.isLight ? 'text-slate-900' : 'text-white'}`}>
                             {theme.title}
                           </span>
                           <span
-                            className={`text-[9px] font-bold px-1.5 py-0.2 rounded ${
-                              theme.tag === 'PRO' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 'bg-muted text-muted-foreground'
-                            }`}
+                            className={`text-[9px] font-bold px-1.5 py-0.2 rounded ${theme.tag === 'PRO' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 'bg-muted text-muted-foreground'
+                              }`}
                           >
                             {theme.tag}
                           </span>
@@ -596,11 +587,10 @@ export const ProfileEditor: React.FC = () => {
                           key={bg.id}
                           type="button"
                           onClick={() => updateTheme({ backgroundType: bg.id as any })}
-                          className={`py-2 px-2.5 rounded-xl text-xs font-semibold border transition-all ${
-                            (profile.themeConfig.backgroundType || 'gradient') === bg.id
-                              ? 'bg-cyan-500 text-slate-950 font-bold border-cyan-400 shadow-md shadow-cyan-500/20'
-                              : 'bg-muted/40 border-border text-foreground hover:bg-muted'
-                          }`}
+                          className={`py-2 px-2.5 rounded-xl text-xs font-semibold border transition-all ${(profile.themeConfig.backgroundType || 'gradient') === bg.id
+                            ? 'bg-cyan-500 text-slate-950 font-bold border-cyan-400 shadow-md shadow-cyan-500/20'
+                            : 'bg-muted/40 border-border text-foreground hover:bg-muted'
+                            }`}
                         >
                           {bg.label}
                         </button>
@@ -647,11 +637,10 @@ export const ProfileEditor: React.FC = () => {
                           key={b.id}
                           type="button"
                           onClick={() => updateTheme({ buttonBorderStyle: b.id as any })}
-                          className={`py-2 px-2.5 rounded-xl text-xs font-semibold border transition-all ${
-                            (profile.themeConfig.buttonBorderStyle || 'solid') === b.id
-                              ? 'bg-cyan-500 text-slate-950 font-bold border-cyan-400 shadow-md shadow-cyan-500/20'
-                              : 'bg-muted/40 border-border text-foreground hover:bg-muted'
-                          }`}
+                          className={`py-2 px-2.5 rounded-xl text-xs font-semibold border transition-all ${(profile.themeConfig.buttonBorderStyle || 'solid') === b.id
+                            ? 'bg-cyan-500 text-slate-950 font-bold border-cyan-400 shadow-md shadow-cyan-500/20'
+                            : 'bg-muted/40 border-border text-foreground hover:bg-muted'
+                            }`}
                         >
                           {b.label}
                         </button>
@@ -675,11 +664,10 @@ export const ProfileEditor: React.FC = () => {
                           key={s.id}
                           type="button"
                           onClick={() => updateTheme({ buttonShadowStyle: s.id as any })}
-                          className={`py-2 px-1.5 rounded-xl text-xs font-semibold border transition-all text-center ${
-                            (profile.themeConfig.buttonShadowStyle || 'sm') === s.id
-                              ? 'bg-cyan-500 text-slate-950 font-bold border-cyan-400 shadow-md shadow-cyan-500/20'
-                              : 'bg-muted/40 border-border text-foreground hover:bg-muted'
-                          }`}
+                          className={`py-2 px-1.5 rounded-xl text-xs font-semibold border transition-all text-center ${(profile.themeConfig.buttonShadowStyle || 'sm') === s.id
+                            ? 'bg-cyan-500 text-slate-950 font-bold border-cyan-400 shadow-md shadow-cyan-500/20'
+                            : 'bg-muted/40 border-border text-foreground hover:bg-muted'
+                            }`}
                         >
                           {s.label}
                         </button>
@@ -723,17 +711,15 @@ export const ProfileEditor: React.FC = () => {
                             key={r.id}
                             type="button"
                             onClick={() => updateTheme({ borderRadius: r.id })}
-                            className={`p-3 rounded-2xl border flex flex-col items-center gap-2 text-center transition-all ${
-                              isSelected
-                                ? 'bg-cyan-500/15 border-cyan-500 text-cyan-500 ring-2 ring-cyan-500/30 shadow-md shadow-cyan-500/10 font-bold'
-                                : 'bg-muted/30 border-border text-muted-foreground hover:text-foreground hover:bg-muted/60'
-                            }`}
+                            className={`p-3 rounded-2xl border flex flex-col items-center gap-2 text-center transition-all ${isSelected
+                              ? 'bg-cyan-500/15 border-cyan-500 text-cyan-500 ring-2 ring-cyan-500/30 shadow-md shadow-cyan-500/10 font-bold'
+                              : 'bg-muted/30 border-border text-muted-foreground hover:text-foreground hover:bg-muted/60'
+                              }`}
                           >
                             <div className="w-12 h-6 flex items-center justify-center">
                               <div
-                                className={`w-10 h-5 border-2 ${
-                                  isSelected ? 'border-cyan-500 bg-cyan-500/20' : 'border-current bg-foreground/5'
-                                } ${r.shapeClass} transition-all`}
+                                className={`w-10 h-5 border-2 ${isSelected ? 'border-cyan-500 bg-cyan-500/20' : 'border-current bg-foreground/5'
+                                  } ${r.shapeClass} transition-all`}
                               />
                             </div>
                             <div>
@@ -838,7 +824,7 @@ export const ProfileEditor: React.FC = () => {
                   </p>
                 </div>
                 <span className="text-[10px] bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20 px-2 py-0.5 rounded-full font-bold">
-                  دامنه aryalink.af
+                  دامنه aryal.ink
                 </span>
               </div>
 
@@ -849,7 +835,7 @@ export const ProfileEditor: React.FC = () => {
                   </label>
                   <div className="flex items-center rounded-xl border border-border bg-background overflow-hidden focus-within:border-cyan-500" dir="ltr">
                     <span className="px-3 py-2 text-xs font-outfit text-muted-foreground border-r border-border select-none bg-muted/50" dir="ltr">
-                      aryalink.af/
+                      aryal.ink/
                     </span>
                     <input
                       type="text"
@@ -888,7 +874,7 @@ export const ProfileEditor: React.FC = () => {
                   </button>
 
                   <a
-                    href={`https://aryalink.af/${profile.alias}`}
+                    href={`https://aryal.ink/${profile.alias}`}
                     target="_blank"
                     rel="noreferrer"
                     className="p-2 rounded-xl bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground border border-border transition-colors"
@@ -980,7 +966,7 @@ export const ProfileEditor: React.FC = () => {
                   </div>
                   <div className="space-y-0.5 text-right font-sans pt-1">
                     <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-outfit" dir="ltr">
-                      https://aryalink.af › {profile.alias}
+                      https://aryal.ink › {profile.alias}
                     </div>
                     <div className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer truncate">
                       {profile.seoTitle || `${profile.displayName} | کارت ویزیت هوشمند آریا لینک`}

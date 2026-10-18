@@ -41,7 +41,7 @@ export function PublicNavbar() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/80 bg-background/80 backdrop-blur-xl transition-all" dir={dir}>
+    <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-white/70 dark:bg-zinc-950/70 backdrop-blur-md shadow-sm transition-all duration-300" dir={dir}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-3 group">

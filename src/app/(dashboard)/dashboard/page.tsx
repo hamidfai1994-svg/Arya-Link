@@ -82,11 +82,11 @@ export default function UserDashboardPage() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Hostname for preview
-  const [domainHost, setDomainHost] = useState('aryalink.af');
+  const [domainHost, setDomainHost] = useState('aryal.ink');
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      setDomainHost(window.location.host || 'aryalink.af');
+      setDomainHost(window.location.host || 'aryal.ink');
     }
     loadProfiles();
   }, []);
@@ -531,8 +531,8 @@ export default function UserDashboardPage() {
                   type="button"
                   onClick={() => setNewRoleType('personal')}
                   className={`p-3 rounded-xl border text-right transition-all flex items-center gap-2.5 ${newRoleType === 'personal'
-                      ? 'border-cyan-500 bg-cyan-500/10 text-cyan-500 font-bold'
-                      : 'border-border bg-card hover:bg-muted text-muted-foreground'
+                    ? 'border-cyan-500 bg-cyan-500/10 text-cyan-500 font-bold'
+                    : 'border-border bg-card hover:bg-muted text-muted-foreground'
                     }`}
                 >
                   <UserIcon className="w-4 h-4 shrink-0" />
@@ -546,8 +546,8 @@ export default function UserDashboardPage() {
                   type="button"
                   onClick={() => setNewRoleType('business')}
                   className={`p-3 rounded-xl border text-right transition-all flex items-center gap-2.5 ${newRoleType === 'business'
-                      ? 'border-cyan-500 bg-cyan-500/10 text-cyan-500 font-bold'
-                      : 'border-border bg-card hover:bg-muted text-muted-foreground'
+                    ? 'border-cyan-500 bg-cyan-500/10 text-cyan-500 font-bold'
+                    : 'border-border bg-card hover:bg-muted text-muted-foreground'
                     }`}
                 >
                   <Building2 className="w-4 h-4 shrink-0" />

@@ -175,7 +175,7 @@ CREATE TABLE public.profiles (
     organization_id UUID REFERENCES public.organizations(id) ON DELETE SET NULL,
     
     -- Routing & Aliases
-    alias CITEXT UNIQUE NOT NULL, -- e.g. aryalink.af/ahmad
+    alias CITEXT UNIQUE NOT NULL, -- e.g. aryal.ink/ahmad
     custom_domain TEXT UNIQUE, -- e.g. card.dr-ahmad.af
     
     -- Profile Essentials

@@ -281,7 +281,7 @@ function getDefaultModuleConfig(moduleType: LinkModuleType): { title: string; ur
           productPrice: 1500,
           productCurrency: 'AFN',
           productImage: 'https://images.unsplash.com/photo-1589758438368-0ad531db3366?w=600&auto=format&fit=crop&q=80',
-          productBuyUrl: 'https://aryalink.af/shop/metal-card',
+          productBuyUrl: 'https://aryal.ink/shop/metal-card',
         },
       };
     case 'donation_hesabpay':

@@ -166,9 +166,8 @@ export const ProfileSwitcher: React.FC = () => {
         </div>
 
         <ChevronDown
-          className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 shrink-0 ${
-            isOpen ? 'rotate-180' : ''
-          }`}
+          className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180' : ''
+            }`}
         />
       </button>
 
@@ -193,11 +192,10 @@ export const ProfileSwitcher: React.FC = () => {
               return (
                 <div
                   key={p.id}
-                  className={`w-full p-2.5 rounded-xl text-right flex items-center justify-between gap-2.5 transition-all group ${
-                    isSelected
+                  className={`w-full p-2.5 rounded-xl text-right flex items-center justify-between gap-2.5 transition-all group ${isSelected
                       ? 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/30 font-bold'
                       : 'hover:bg-slate-100 dark:hover:bg-slate-800/70 text-slate-700 dark:text-slate-300'
-                  }`}
+                    }`}
                 >
                   <button
                     type="button"
@@ -338,7 +336,7 @@ export const ProfileSwitcher: React.FC = () => {
               </label>
               <div className="flex items-center rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 overflow-hidden focus-within:border-cyan-500">
                 <span className="px-3 py-2 text-xs font-outfit text-slate-400 border-l border-slate-200 dark:border-slate-700 select-none bg-slate-100 dark:bg-slate-800" dir="ltr">
-                  aryalink.af/
+                  aryal.ink/
                 </span>
                 <input
                   type="text"
@@ -372,11 +370,10 @@ export const ProfileSwitcher: React.FC = () => {
                       key={item.id}
                       type="button"
                       onClick={() => setNewRoleType(item.id as any)}
-                      className={`p-2.5 rounded-xl border text-center flex flex-col items-center gap-1.5 transition-all ${
-                        isSelected
+                      className={`p-2.5 rounded-xl border text-center flex flex-col items-center gap-1.5 transition-all ${isSelected
                           ? 'bg-cyan-500/15 border-cyan-500 text-cyan-600 dark:text-cyan-400 font-bold shadow-sm'
                           : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                      }`}
+                        }`}
                     >
                       <Icon className="w-4 h-4" />
                       <span className="text-[11px]">{item.label}</span>

@@ -51,7 +51,7 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
   const [isSubmittingKYC, setIsSubmittingKYC] = useState(false);
 
   const handleCopyLink = () => {
-    const url = `https://aryalink.af/${profile.alias}`;
+    const url = `https://aryal.ink/${profile.alias}`;
     navigator.clipboard.writeText(url);
     setCopiedLink(true);
     toast.success('لینک پروفایل در کلیپ‌بورد کپی شد!');
@@ -149,7 +149,7 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
 
                 <div className="flex items-center rounded-xl border border-border bg-card overflow-hidden focus-within:border-cyan-500" dir="ltr">
                   <span className="px-3 py-2 text-xs font-outfit text-muted-foreground border-r border-border bg-muted/50 select-none">
-                    aryalink.af/
+                    aryal.ink/
                   </span>
                   <input
                     type="text"
@@ -176,11 +176,10 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
                       key={l.id}
                       type="button"
                       onClick={() => setProfileLanguage(l.id as ProfileLanguage)}
-                      className={`py-2 px-3 rounded-xl text-xs font-semibold border transition-all ${
-                        (profile.profileLanguage || 'dari') === l.id
+                      className={`py-2 px-3 rounded-xl text-xs font-semibold border transition-all ${(profile.profileLanguage || 'dari') === l.id
                           ? 'bg-cyan-500 text-slate-950 font-bold border-cyan-400 shadow-md shadow-cyan-500/20'
                           : 'bg-card border-border text-foreground hover:bg-muted'
-                      }`}
+                        }`}
                     >
                       {l.label}
                     </button>
@@ -281,7 +280,7 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
                   </span>
                   <div className="p-3 bg-card border border-border rounded-xl text-left font-sans space-y-1" dir="ltr">
                     <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                      https://aryalink.af/{profile.alias}
+                      https://aryal.ink/{profile.alias}
                     </div>
                     <div className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer truncate">
                       {profile.seoTitle || `${profile.displayName || 'کارت هوشمند'} | Arya Link`}
@@ -400,11 +399,10 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
                   <button
                     type="button"
                     onClick={() => setProfileType('personal')}
-                    className={`p-3 rounded-xl border text-right transition-all flex items-center gap-2.5 ${
-                      (profile.profileType || 'personal') === 'personal'
+                    className={`p-3 rounded-xl border text-right transition-all flex items-center gap-2.5 ${(profile.profileType || 'personal') === 'personal'
                         ? 'bg-cyan-500/10 border-cyan-500 ring-2 ring-cyan-500/20'
                         : 'bg-card border-border hover:bg-muted/50'
-                    }`}
+                      }`}
                   >
                     <User className="w-4 h-4 text-cyan-500 shrink-0" />
                     <div>
@@ -416,11 +414,10 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
                   <button
                     type="button"
                     onClick={() => setProfileType('business')}
-                    className={`p-3 rounded-xl border text-right transition-all flex items-center gap-2.5 ${
-                      profile.profileType === 'business'
+                    className={`p-3 rounded-xl border text-right transition-all flex items-center gap-2.5 ${profile.profileType === 'business'
                         ? 'bg-cyan-500/10 border-cyan-500 ring-2 ring-cyan-500/20'
                         : 'bg-card border-border hover:bg-muted/50'
-                    }`}
+                      }`}
                   >
                     <Building2 className="w-4 h-4 text-cyan-500 shrink-0" />
                     <div>

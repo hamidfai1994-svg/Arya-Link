@@ -186,7 +186,7 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
         ? `TEL;TYPE=WORK,VOICE:${profile.whatsapp}`
         : '',
       profile.email ? `EMAIL;TYPE=INTERNET,WORK:${profile.email}` : '',
-      `URL;TYPE=WORK:https://aryalink.af/${profile.alias}`,
+      `URL;TYPE=WORK:https://aryal.ink/${profile.alias}`,
       'END:VCARD',
     ]
       .filter(Boolean)
@@ -207,7 +207,7 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
 
   // 3. Share Card Link
   const handleShare = async () => {
-    const fullUrl = `https://aryalink.af/${profile.alias}`;
+    const fullUrl = `https://aryal.ink/${profile.alias}`;
     if (navigator.share) {
       try {
         await navigator.share({
@@ -347,15 +347,14 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
         meta.textAlign === 'center'
           ? 'text-center'
           : meta.textAlign === 'left'
-          ? 'text-left'
-          : 'text-right';
+            ? 'text-left'
+            : 'text-right';
 
       return (
         <div
           key={link.id}
-          className={`w-full p-4 border shadow-sm ${alignClass} ${getBorderRadiusClass(customStyle?.borderRadius)} ${
-            isLight ? 'bg-white/95 border-slate-200 text-slate-800' : `${themeConfig.cardBlur} text-white`
-          }`}
+          className={`w-full p-4 border shadow-sm ${alignClass} ${getBorderRadiusClass(customStyle?.borderRadius)} ${isLight ? 'bg-white/95 border-slate-200 text-slate-800' : `${themeConfig.cardBlur} text-white`
+            }`}
           style={customCardStyle}
         >
           {link.title && <h3 className="text-xs font-bold mb-1 opacity-90">{link.title}</h3>}
@@ -390,8 +389,8 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
       const lineBorderColor = customStyle?.customBorderColor
         ? ''
         : isLight
-        ? 'border-slate-300'
-        : 'border-white/20';
+          ? 'border-slate-300'
+          : 'border-white/20';
 
       const lineStyle: React.CSSProperties = {};
       if (customStyle?.customBorderColor) {
@@ -421,8 +420,8 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
             onChange={(e) => setSearchFilter(e.target.value)}
             placeholder="جستجو در بین خدمات و لینک‌ها..."
             className={`w-full rounded-2xl pr-9 pl-3 py-2.5 text-xs border focus:outline-none ${isLight
-                ? 'bg-white border-slate-200 text-slate-900 placeholder:text-slate-400'
-                : 'bg-white/10 border-white/20 text-white placeholder:text-slate-300'
+              ? 'bg-white border-slate-200 text-slate-900 placeholder:text-slate-400'
+              : 'bg-white/10 border-white/20 text-white placeholder:text-slate-300'
               }`}
           />
         </div>
@@ -553,8 +552,8 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
                   onChange={(e) => setFormName(e.target.value)}
                   placeholder="مثال: علی احمدی"
                   className={`w-full rounded-xl px-3 py-2 text-xs border focus:outline-none focus:border-cyan-500 ${isLight
-                      ? 'bg-slate-50 border-slate-200 text-slate-800 placeholder-slate-400'
-                      : 'bg-white/5 border-white/10 text-white placeholder-slate-500'
+                    ? 'bg-slate-50 border-slate-200 text-slate-800 placeholder-slate-400'
+                    : 'bg-white/5 border-white/10 text-white placeholder-slate-500'
                     }`}
                 />
               </div>
@@ -571,8 +570,8 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
                   placeholder="0700 000 000"
                   dir="ltr"
                   className={`w-full rounded-xl px-3 py-2 text-xs font-outfit text-left border focus:outline-none focus:border-cyan-500 ${isLight
-                      ? 'bg-slate-50 border-slate-200 text-slate-800 placeholder-slate-400'
-                      : 'bg-white/5 border-white/10 text-white placeholder-slate-500'
+                    ? 'bg-slate-50 border-slate-200 text-slate-800 placeholder-slate-400'
+                    : 'bg-white/5 border-white/10 text-white placeholder-slate-500'
                     }`}
                 />
               </div>
@@ -588,8 +587,8 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
                   placeholder="name@example.com"
                   dir="ltr"
                   className={`w-full rounded-xl px-3 py-2 text-xs font-outfit text-left border focus:outline-none focus:border-cyan-500 ${isLight
-                      ? 'bg-slate-50 border-slate-200 text-slate-800 placeholder-slate-400'
-                      : 'bg-white/5 border-white/10 text-white placeholder-slate-500'
+                    ? 'bg-slate-50 border-slate-200 text-slate-800 placeholder-slate-400'
+                    : 'bg-white/5 border-white/10 text-white placeholder-slate-500'
                     }`}
                 />
               </div>
@@ -605,8 +604,8 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
                   onChange={(e) => setFormMessage(e.target.value)}
                   placeholder="پیام یا شرح درخواست همکاری خود را اینجا بنویسید..."
                   className={`w-full rounded-xl px-3 py-2 text-xs resize-none border focus:outline-none focus:border-cyan-500 font-sans ${isLight
-                      ? 'bg-slate-50 border-slate-200 text-slate-800 placeholder-slate-400'
-                      : 'bg-white/5 border-white/10 text-white placeholder-slate-500'
+                    ? 'bg-slate-50 border-slate-200 text-slate-800 placeholder-slate-400'
+                    : 'bg-white/5 border-white/10 text-white placeholder-slate-500'
                     }`}
                 />
               </div>
@@ -761,9 +760,8 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
       return (
         <div
           key={link.id}
-          className={`w-full p-3.5 border shadow-md flex items-center justify-between gap-3 text-right ${cardRadius} ${
-            isLight ? 'bg-white border-slate-200' : themeConfig.cardBlur
-          }`}
+          className={`w-full p-3.5 border shadow-md flex items-center justify-between gap-3 text-right ${cardRadius} ${isLight ? 'bg-white border-slate-200' : themeConfig.cardBlur
+            }`}
           style={customCardStyle}
         >
           <div className="flex items-center gap-3 overflow-hidden">
@@ -895,9 +893,8 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
                   setPasswordError(false);
                 }}
                 placeholder="رمز عبور را وارد نمایید..."
-                className={`w-full bg-background border rounded-xl px-3.5 py-2.5 text-xs text-foreground focus:outline-none text-center ${
-                  passwordError ? 'border-rose-500 ring-2 ring-rose-500/20' : 'border-border focus:border-cyan-500'
-                }`}
+                className={`w-full bg-background border rounded-xl px-3.5 py-2.5 text-xs text-foreground focus:outline-none text-center ${passwordError ? 'border-rose-500 ring-2 ring-rose-500/20' : 'border-border focus:border-cyan-500'
+                  }`}
               />
               {passwordError && (
                 <span className="text-[11px] text-rose-500 mt-1.5 block font-medium">
@@ -1100,8 +1097,8 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
                 <a
                   href={getSmartLink('phone', profile.phone)}
                   className={`w-10 h-10 rounded-full border flex items-center justify-center text-xs shadow-md transition-all active:scale-95 ${isLight
-                      ? 'bg-white hover:bg-slate-100 border-slate-200 text-slate-800'
-                      : 'bg-white/10 hover:bg-white/20 border-white/20 backdrop-blur-md text-white'
+                    ? 'bg-white hover:bg-slate-100 border-slate-200 text-slate-800'
+                    : 'bg-white/10 hover:bg-white/20 border-white/20 backdrop-blur-md text-white'
                     }`}
                   title="تماس مستقیم"
                 >
@@ -1123,8 +1120,8 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
                 <a
                   href={getSmartLink('email', profile.email)}
                   className={`w-10 h-10 rounded-full border flex items-center justify-center text-xs shadow-md transition-all active:scale-95 ${isLight
-                      ? 'bg-white hover:bg-slate-100 border-slate-200 text-slate-800'
-                      : 'bg-white/10 hover:bg-white/20 border-white/20 backdrop-blur-md text-white'
+                    ? 'bg-white hover:bg-slate-100 border-slate-200 text-slate-800'
+                    : 'bg-white/10 hover:bg-white/20 border-white/20 backdrop-blur-md text-white'
                     }`}
                   title="ارسال ایمیل"
                 >
@@ -1189,7 +1186,7 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
         {!profile.hideBranding && (
           <div className="pt-6 pb-8 text-center select-none shrink-0">
             <a
-              href="https://aryalink.af"
+              href="https://aryal.ink"
               target="_blank"
               rel="noopener noreferrer"
               className={`text-[11px] tracking-wider font-semibold inline-flex items-center gap-1 opacity-70 hover:opacity-100 transition-opacity ${isLight ? 'text-slate-600' : 'text-white/50'
