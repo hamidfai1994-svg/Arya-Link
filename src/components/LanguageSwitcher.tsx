@@ -1,0 +1,55 @@
+'use client';
+
+import React from 'react';
+import { useLanguage } from '@/lib/i18n/LanguageContext';
+import { LANGUAGES, SupportedLanguage } from '@/lib/i18n/types';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
+import { Globe, Check } from 'lucide-react';
+
+export function LanguageSwitcher({ className }: { className?: string }) {
+  const { language, setLanguage, currentMeta } = useLanguage();
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          className={`h-9 px-2.5 rounded-xl border border-border/60 hover:bg-muted text-xs font-semibold flex items-center gap-1.5 transition-colors ${className || ''}`}
+          aria-label="تغییر زبان / Change Language"
+        >
+          <span className="text-sm">{currentMeta.flag}</span>
+          <span className="text-xs font-bold hidden sm:inline">{currentMeta.nativeName}</span>
+          <Globe className="w-3.5 h-3.5 text-muted-foreground ml-0.5" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-40 p-1 rounded-2xl border border-border shadow-xl">
+        {(Object.keys(LANGUAGES) as SupportedLanguage[]).map((code) => {
+          const item = LANGUAGES[code];
+          const isSelected = language === code;
+
+          return (
+            <DropdownMenuItem
+              key={code}
+              onClick={() => setLanguage(code)}
+              className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold cursor-pointer transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-base">{item.flag}</span>
+                <span>{item.nativeName}</span>
+                <span className="text-[10px] text-muted-foreground font-normal">({item.name})</span>
+              </div>
+              {isSelected && <Check className="w-3.5 h-3.5 text-cyan-500" />}
+            </DropdownMenuItem>
+          );
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
