@@ -18,6 +18,7 @@ export interface IProfileDocument extends Document {
   phone?: string;
   whatsapp?: string;
   email?: string;
+  userEmail?: string;
   location?: string;
   directModeEnabled: boolean;
   directModeUrl?: string;
@@ -134,7 +135,8 @@ const ProfileSchema = new Schema<IProfileDocument>(
     },
     phone: { type: String, default: '' },
     whatsapp: { type: String, default: '' },
-    email: { type: String, default: '' },
+    email: { type: String, default: '', index: true },
+    userEmail: { type: String, default: '', index: true },
     location: { type: String, default: '' },
     directModeEnabled: { type: Boolean, default: false },
     directModeUrl: { type: String, default: '' },

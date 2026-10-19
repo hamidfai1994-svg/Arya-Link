@@ -3,22 +3,22 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { connectToDatabase } from '@/lib/db/mongodb';
 import { Profile } from '@/models/Profile.model';
+import { buildUserIsolationQuery, isValidUserSession } from '@/lib/db/data-isolation';
 import mongoose from 'mongoose';
 
 export const dynamic = 'force-dynamic';
 
-// PUT: Save and update the entire modules (links) array of a profile
+// PUT: Save and update the entire modules (links) array of a profile (strictly isolated)
 export async function PUT(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    if (!isValidUserSession(session?.user)) {
       return NextResponse.json(
         { success: false, message: 'لطفاً ابتدا وارد حساب کاربری خود شوید.' },
         { status: 401 }
       );
     }
 
-    const currentUserId = session.user.id;
     await connectToDatabase();
 
     const body = await req.json();
@@ -37,11 +37,12 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    // 2. Identify target profile belonging to current user
+    // 2. Identify target profile strictly belonging to current user
     const targetId = profileId || id;
     const isObjectId = targetId && mongoose.isValidObjectId(targetId);
 
-    const query: any = { userId: currentUserId };
+    const userCondition = buildUserIsolationQuery(session!.user);
+    const query: any = { ...userCondition };
     if (isObjectId) {
       query._id = new mongoose.Types.ObjectId(targetId);
     } else if (alias) {
@@ -94,25 +95,25 @@ export async function PUT(req: NextRequest) {
   }
 }
 
-// GET: Retrieve only the modules array for a profile
+// GET: Retrieve only the modules array for a profile (strictly isolated)
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    if (!isValidUserSession(session?.user)) {
       return NextResponse.json(
         { success: false, message: 'لطفاً ابتدا وارد حساب کاربری خود شوید.' },
         { status: 401 }
       );
     }
 
-    const currentUserId = session.user.id;
     await connectToDatabase();
 
     const searchParams = req.nextUrl.searchParams;
     const alias = searchParams.get('alias');
     const id = searchParams.get('id');
 
-    const query: any = { userId: currentUserId };
+    const userCondition = buildUserIsolationQuery(session!.user);
+    const query: any = { ...userCondition };
     if (id && mongoose.isValidObjectId(id)) {
       query._id = new mongoose.Types.ObjectId(id);
     } else if (alias) {

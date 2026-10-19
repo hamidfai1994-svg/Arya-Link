@@ -3,13 +3,14 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { connectToDatabase } from '@/lib/db/mongodb';
 import { Profile } from '@/models/Profile.model';
+import { buildUserIsolationQuery, isValidUserSession } from '@/lib/db/data-isolation';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    if (!isValidUserSession(session?.user)) {
       return NextResponse.json(
         { success: false, message: 'لطفاً ابتدا وارد شوید.' },
         { status: 401 }
@@ -17,9 +18,9 @@ export async function GET() {
     }
 
     await connectToDatabase();
-    const userId = session.user.id;
+    const userQuery = buildUserIsolationQuery(session!.user);
 
-    const profiles = await Profile.find({ userId }).lean();
+    const profiles = await Profile.find(userQuery).lean();
 
     const totalViews = profiles.reduce((sum, p) => sum + (p.viewsCount || 0), 0);
     const totalClicks = profiles.reduce((sum, p) => {

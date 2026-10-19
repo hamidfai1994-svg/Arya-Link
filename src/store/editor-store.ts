@@ -409,7 +409,18 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       const json = await res.json();
       if (json.success && Array.isArray(json.data)) {
         const list: UserProfileSummary[] = json.data;
-        set({ profilesList: list });
+
+        // Clean cache so no stale profiles from other sessions remain
+        const validIds = new Set(list.map((p) => p.id));
+        const currentCache = get().profilesCache;
+        const cleanedCache: Record<string, ProfileData> = {};
+        for (const [id, prof] of Object.entries(currentCache)) {
+          if (validIds.has(id)) {
+            cleanedCache[id] = prof;
+          }
+        }
+
+        set({ profilesList: list, profilesCache: cleanedCache });
 
         const currentActiveId = get().activeProfileId;
         const exists = list.some((p) => p.id === currentActiveId);
@@ -418,6 +429,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
           const first = list[0];
           set({ activeProfileId: first.id });
           await get().fetchProfileData(first.alias);
+        } else if (list.length === 0) {
+          set({ activeProfileId: '', profile: emptyProfile });
         }
         return list;
       }
@@ -430,6 +443,13 @@ export const useEditorStore = create<EditorState>((set, get) => ({
 
   switchProfile: async (profileId: string) => {
     if (profileId === get().activeProfileId) return;
+
+    // Verify target profile belongs strictly to current user's profile list
+    const targetItem = get().profilesList.find((p) => p.id === profileId);
+    if (!targetItem) {
+      console.warn('Unauthorized or non-existent profile switch:', profileId);
+      return;
+    }
 
     // 1. Cache current profile changes
     const current = get().profile;
@@ -457,15 +477,14 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         isDirty: false,
       });
     } else {
-      const targetSummary = get().profilesList.find((p) => p.id === profileId);
       set({
         activeProfileId: profileId,
         profilesList: updatedList,
         profilesCache: updatedCache,
         isDirty: false,
       });
-      if (targetSummary?.alias) {
-        await get().fetchProfileData(targetSummary.alias);
+      if (targetItem.alias) {
+        await get().fetchProfileData(targetItem.alias);
       }
     }
   },

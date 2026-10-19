@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { connectToDatabase } from '@/lib/db/mongodb';
 import { Profile } from '@/models/Profile.model';
+import { buildUserIsolationQuery, isValidUserSession } from '@/lib/db/data-isolation';
 import mongoose from 'mongoose';
 
 export const dynamic = 'force-dynamic';
@@ -26,50 +27,44 @@ async function generateUniqueAlias(rawName: string): Promise<string> {
   return alias;
 }
 
-// GET: Retrieve all profiles belonging to the authenticated user
+// GET: Retrieve all profiles strictly belonging to the authenticated user (User Data Isolation)
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    if (!isValidUserSession(session?.user)) {
       return NextResponse.json(
         { success: false, message: 'لطفاً ابتدا وارد حساب کاربری خود شوید.' },
         { status: 401 }
       );
     }
 
-    const currentUserId = session.user.id;
     await connectToDatabase();
 
-    const userQuery = {
-      $or: [
-        { userId: currentUserId },
-        ...(mongoose.isValidObjectId(currentUserId)
-          ? [{ userId: new mongoose.Types.ObjectId(currentUserId) }]
-          : []),
-      ],
-    };
+    // Strict user isolation filter: only profiles belonging to this session's userId or email
+    const userQuery = buildUserIsolationQuery(session!.user);
 
     let profiles = await Profile.find(userQuery)
       .sort({ createdAt: 1 })
       .lean();
 
-    // Auto-provisioning: If user has 0 profiles in DB, create their single personal profile
+    // Auto-provisioning: If authenticated user has 0 profiles in DB, create their personal profile
     if (profiles.length === 0) {
-      const uniqueAlias = await generateUniqueAlias(session.user.name || 'user');
+      const uniqueAlias = await generateUniqueAlias(session!.user.name || 'user');
       const newPersonalProfile = await Profile.create({
-        userId: currentUserId,
+        userId: session!.user.id,
+        email: session!.user.email || '',
+        userEmail: session!.user.email || '',
         alias: uniqueAlias,
-        displayName: session.user.name || 'کاربر آریا لینک',
+        displayName: session!.user.name || 'کاربر آریا لینک',
         headline: 'پروفایل شخصی',
         bio: 'به کارت دیجیتال هوشمند من در آریا لینک خوش آمدید.',
-        avatarUrl: session.user.image || '',
-        email: session.user.email || '',
+        avatarUrl: session!.user.image || '',
         phone: '',
         whatsapp: '',
         location: 'افغانستان',
         directModeEnabled: false,
         hideBranding: false,
-        seoTitle: `${session.user.name || 'کاربر'} | کارت دیجیتال آریا لینک`,
+        seoTitle: `${session!.user.name || 'کاربر'} | کارت دیجیتال آریا لینک`,
         seoDescription: 'صفحه اختصاصی ارتباطات و لینک‌های هوشمند',
         themeConfig: {
           preset: 'dark_neon',
@@ -125,14 +120,15 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    if (!isValidUserSession(session?.user)) {
       return NextResponse.json(
         { success: false, message: 'لطفاً ابتدا وارد حساب کاربری خود شوید.' },
         { status: 401 }
       );
     }
 
-    const currentUserId = session.user.id;
+    const currentUserId = session!.user.id;
+    const currentUserEmail = session!.user.email || '';
     await connectToDatabase();
 
     const body = await req.json();
@@ -154,7 +150,7 @@ export async function POST(req: NextRequest) {
       cleanAlias = await generateUniqueAlias(displayName);
     }
 
-    // Check if alias is taken by another profile
+    // Check if alias is taken by another profile across database
     const existing = await Profile.findOne({ alias: cleanAlias });
     if (existing) {
       return NextResponse.json(
@@ -168,12 +164,13 @@ export async function POST(req: NextRequest) {
 
     const newProfile = await Profile.create({
       userId: currentUserId,
+      email: currentUserEmail,
+      userEmail: currentUserEmail,
       alias: cleanAlias,
       displayName: displayName.trim(),
       headline: headline || (roleType === 'business' ? 'پروفایل کاری و تجاری' : 'پروفایل شخصی'),
       bio: 'به کارت دیجیتال هوشمند جدید من در آریا لینک خوش آمدید.',
       avatarUrl: '',
-      email: session.user.email || '',
       phone: '',
       whatsapp: '',
       location: 'افغانستان',
@@ -225,18 +222,17 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// DELETE: Remove an extra profile belonging to the authenticated user
+// DELETE: Remove an extra profile belonging strictly to the authenticated user
 export async function DELETE(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    if (!isValidUserSession(session?.user)) {
       return NextResponse.json(
         { success: false, message: 'لطفاً ابتدا وارد حساب کاربری خود شوید.' },
         { status: 401 }
       );
     }
 
-    const currentUserId = session.user.id;
     await connectToDatabase();
 
     const searchParams = req.nextUrl.searchParams;
@@ -249,14 +245,7 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    const userQuery = {
-      $or: [
-        { userId: currentUserId },
-        ...(mongoose.isValidObjectId(currentUserId)
-          ? [{ userId: new mongoose.Types.ObjectId(currentUserId) }]
-          : []),
-      ],
-    };
+    const userQuery = buildUserIsolationQuery(session!.user);
 
     // Check count of user profiles
     const totalProfiles = await Profile.countDocuments(userQuery);
@@ -297,4 +286,3 @@ export async function DELETE(req: NextRequest) {
     );
   }
 }
-

@@ -75,7 +75,7 @@ export function SiteLogo({
     effectiveLogo && !imageError ? (
       <div
         className={cn(
-          'relative flex items-center justify-center shrink-0 overflow-hidden rounded-2xl bg-slate-900/10 dark:bg-white/5 border border-border/50',
+          'relative flex items-center justify-center shrink-0 bg-transparent',
           imageClassName
         )}
         style={{ width: `${width}px`, height: `${height}px` }}
@@ -88,7 +88,7 @@ export function SiteLogo({
           priority={priority}
           unoptimized
           onError={() => setImageError(true)}
-          className="w-full h-full object-contain p-0.5"
+          className="w-full h-full object-contain bg-transparent"
         />
       </div>
     ) : (
