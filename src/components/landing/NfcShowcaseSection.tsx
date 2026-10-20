@@ -107,21 +107,33 @@ export function NfcShowcaseSection() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
           
           {/* ========================================================
-              LEFT COLUMN: 2D STATIONARY SMARTPHONE & NFC CARD (PHASE 29.3)
-              Revised NFC Interaction Scenario (5-Stage Cinematic Loop)
+              LEFT COLUMN: DYNAMIC SCALE, Z-INDEX FIX & PERFECT PROFILE (PHASE 29.4)
           ======================================================== */}
-          <div className="lg:col-span-6 flex flex-col items-center justify-center relative min-h-[480px]">
-            <div className="relative w-full max-w-[480px] h-[540px] flex items-center justify-center overflow-visible">
+          <div className="lg:col-span-6 flex flex-col items-center justify-center relative min-h-[500px]">
+            <div className="relative w-full max-w-[500px] h-[550px] flex items-center justify-center overflow-visible">
               
               {/* Floor Ambient Glow & Realistic Ground Shadow */}
               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[340px] h-9 bg-black/70 rounded-full blur-2xl pointer-events-none -z-10" />
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[380px] h-[500px] bg-gradient-to-tr from-cyan-500/20 via-blue-600/15 to-purple-600/15 rounded-full blur-[110px] pointer-events-none -z-10" />
 
               {/* ========================================================
-                  1. STATIONARY 2D PHONE (SINGLE FRONT FACE, NO 3D FLIP)
-                  Remains locked facing the user (z-10)
+                  1. MOBILE PHONE CONTAINER (FIXED Z-INDEX: 5 & DYNAMIC SCALE)
+                  Timeline: [1, 0.85, 1.05, 1.05, 1]
+                  times: [0, 0.2, 0.5, 0.8, 1]
               ======================================================== */}
-              <div className="relative w-[250px] h-[490px] select-none z-10 flex flex-col items-center justify-center">
+              <motion.div
+                animate={{
+                  scale: [1, 0.85, 1.05, 1.05, 1],
+                }}
+                transition={{
+                  duration: 6,
+                  repeat: Infinity,
+                  times: [0, 0.2, 0.5, 0.8, 1],
+                  ease: 'easeInOut',
+                }}
+                style={{ zIndex: 5 }}
+                className="relative w-[250px] h-[490px] select-none flex flex-col items-center justify-center"
+              >
                 {/* Outer Titanium Bezel & Frame Shadow */}
                 <div className="relative w-full h-full p-[7px] bg-[#1a1c22] rounded-[44px] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.9),0_0_0_1px_rgba(255,255,255,0.12),0_0_35px_rgba(6,182,212,0.15)] flex flex-col">
                   
@@ -138,16 +150,17 @@ export function NfcShowcaseSection() {
                     <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.04] to-transparent pointer-events-none z-30" />
 
                     {/* ========================================================
-                        SCREEN LAYER A: STANDBY / IDLE RADAR SCREEN (STAGES 1 & 5)
+                        SCREEN LAYER A: STANDBY / IDLE SCREEN
+                        Active when phone is at normal size (opacity: [1, 1, 0, 0, 1])
                     ======================================================== */}
                     <motion.div
                       animate={{
-                        opacity: [1, 1, 1, 0, 0, 0, 0, 1],
+                        opacity: [1, 1, 0, 0, 1],
                       }}
                       transition={{
-                        duration: 8,
+                        duration: 6,
                         repeat: Infinity,
-                        times: [0, 0.16, 0.30, 0.38, 0.80, 0.86, 0.94, 1.0],
+                        times: [0, 0.2, 0.5, 0.8, 1],
                         ease: 'easeInOut',
                       }}
                       className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-10"
@@ -189,24 +202,24 @@ export function NfcShowcaseSection() {
                     </motion.div>
 
                     {/* ========================================================
-                        SCREEN LAYER B: SLIDE-DOWN NFC WEB-CLIP NOTIFICATION (STAGE 3)
+                        SCREEN LAYER B: SLIDE-DOWN NFC NOTIFICATION
+                        Triggers when profile becomes active
                     ======================================================== */}
                     <motion.div
                       animate={{
-                        y: [-70, -70, -70, 0, 0, -25, -70, -70],
-                        opacity: [0, 0, 0, 1, 1, 0, 0, 0],
-                        scale: [0.85, 0.85, 0.85, 1, 1.05, 0.9, 0.85, 0.85],
+                        y: [-50, -50, 0, 0, -50],
+                        opacity: [0, 0, 1, 1, 0],
                       }}
                       transition={{
-                        duration: 8,
+                        duration: 6,
                         repeat: Infinity,
-                        times: [0, 0.28, 0.32, 0.36, 0.40, 0.44, 0.48, 1.0],
+                        times: [0, 0.2, 0.5, 0.8, 1],
                         ease: 'easeInOut',
                       }}
-                      className="absolute top-9 left-2.5 right-2.5 z-40"
+                      className="absolute top-8 left-2.5 right-2.5 z-40 pointer-events-none"
                     >
-                      <div className="bg-slate-900/95 backdrop-blur-md border border-cyan-400/50 rounded-2xl p-2.5 shadow-[0_10px_30px_rgba(0,0,0,0.8),0_0_20px_rgba(6,182,212,0.3)] flex items-center gap-2.5 text-right">
-                        <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white shrink-0 shadow-md">
+                      <div className="bg-slate-900/95 backdrop-blur-md border border-cyan-400/50 rounded-2xl p-2 shadow-[0_10px_25px_rgba(0,0,0,0.8),0_0_15px_rgba(6,182,212,0.3)] flex items-center gap-2 text-right">
+                        <div className="w-7 h-7 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white shrink-0 shadow-md">
                           <CheckCircle2 className="w-4 h-4 text-emerald-300" />
                         </div>
                         <div className="flex-1 min-w-0">
@@ -215,44 +228,45 @@ export function NfcShowcaseSection() {
                               آریا لینک (NFC Tap)
                             </span>
                             <span className="text-[8px] text-cyan-300 bg-cyan-950/80 px-1.5 py-0.5 rounded-full border border-cyan-500/30">
-                              باز کردن
+                              اتصال برقرار شد
                             </span>
                           </div>
-                          <p className="text-[9px] text-slate-300 truncate">
-                            دریافت پروفایل فرهاد آریا
+                          <p className="text-[8px] text-slate-300 truncate">
+                            دریافت پروفایل هوشمند فرهاد آریا
                           </p>
                         </div>
                       </div>
                     </motion.div>
 
                     {/* ========================================================
-                        SCREEN LAYER C: FARHAD ARYA LIVE RICH PROFILE (STAGES 3 & 4)
-                        Curved Cover Photo, Avatar on Curve, KYC Verification, Actions
+                        SCREEN LAYER C: FARHAD ARYA PERFECT PROFILE (PHASE 29.4)
+                        Curved Cover Photo (bg-blue-500 h-32 w-[120%] -ml-[10%] rounded-b-[50%])
+                        Avatar sitting exactly on curve boundary
+                        Opacity: [0, 0, 1, 1, 0] with times: [0, 0.2, 0.5, 0.8, 1]
                     ======================================================== */}
                     <motion.div
                       animate={{
-                        opacity: [0, 0, 0, 0, 1, 1, 0, 0],
-                        y: [14, 14, 14, 8, 0, 0, 8, 14],
+                        opacity: [0, 0, 1, 1, 0],
                       }}
                       transition={{
-                        duration: 8,
+                        duration: 6,
                         repeat: Infinity,
-                        times: [0, 0.32, 0.38, 0.42, 0.46, 0.80, 0.88, 1.0],
+                        times: [0, 0.2, 0.5, 0.8, 1],
                         ease: 'easeInOut',
                       }}
                       className="absolute inset-0 flex flex-col z-20 overflow-y-auto no-scrollbar"
                     >
-                      {/* Curved Organic Header Banner Cover Photo */}
-                      <div className="relative h-28 bg-gradient-to-br from-cyan-600 via-sky-500 to-blue-700 rounded-b-[40%] overflow-hidden shrink-0 shadow-inner">
+                      {/* Curved Organic Header Banner Cover Photo (Spec Requirement) */}
+                      <div className="relative w-[120%] -ml-[10%] h-32 bg-gradient-to-br from-cyan-600 via-sky-500 to-blue-600 rounded-b-[50%] overflow-hidden shrink-0 shadow-inner">
                         <div className="absolute inset-0 opacity-25 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:10px_10px]" />
-                        <div className="absolute top-2 right-3 text-[9px] font-mono font-bold text-white/80 bg-black/30 backdrop-blur-xs px-2 py-0.5 rounded-full">
+                        <div className="absolute top-2 right-6 text-[9px] font-mono font-bold text-white/80 bg-black/30 backdrop-blur-xs px-2 py-0.5 rounded-full">
                           aryalink.me/farhad
                         </div>
                       </div>
 
-                      {/* Avatar Centered Directly on the Curve Arc */}
-                      <div className="-mt-8 flex flex-col items-center shrink-0 relative z-10 px-3">
-                        <div className="relative w-15 h-15 rounded-full p-[2px] bg-gradient-to-tr from-cyan-400 via-sky-300 to-blue-500 shadow-lg">
+                      {/* Avatar Centered Directly on the Curve Boundary (Half on cover, half on background) */}
+                      <div className="absolute top-[94px] left-1/2 -translate-x-1/2 flex flex-col items-center z-20 pointer-events-none">
+                        <div className="relative w-16 h-16 rounded-full p-[2px] bg-gradient-to-tr from-cyan-400 via-sky-300 to-blue-500 shadow-xl">
                           <div className="w-full h-full rounded-full bg-slate-900 flex items-center justify-center font-bold text-base text-cyan-300 overflow-hidden">
                             FA
                           </div>
@@ -261,24 +275,24 @@ export function NfcShowcaseSection() {
                             <CheckCircle2 className="w-3.5 h-3.5 fill-blue-500 text-white" />
                           </div>
                         </div>
+                      </div>
 
-                        {/* User Identity Details */}
-                        <div className="text-center mt-1.5 space-y-0.5">
-                          <div className="flex items-center justify-center gap-1">
-                            <span className="text-xs font-black text-white">
-                              فرهاد آریا
-                            </span>
-                            <span className="text-[8px] px-1 py-0.2 rounded bg-amber-400/20 text-amber-300 font-bold border border-amber-400/30">
-                              PRO
-                            </span>
-                          </div>
-                          <p className="text-[10px] text-cyan-300 font-medium">
-                            بنیان‌گذار و طراح محصول
-                          </p>
-                          <p className="text-[9px] text-slate-400 max-w-[200px] leading-tight line-clamp-1">
-                            خلق تجربه‌های دیجیتال مدرن و اتصال هوشمند
-                          </p>
+                      {/* User Identity Details & Bio (Spaced appropriately below avatar) */}
+                      <div className="text-center mt-9 px-3 space-y-0.5">
+                        <div className="flex items-center justify-center gap-1">
+                          <span className="text-xs font-black text-white">
+                            فرهاد آریا
+                          </span>
+                          <span className="text-[8px] px-1 py-0.2 rounded bg-amber-400/20 text-amber-300 font-bold border border-amber-400/30">
+                            PRO
+                          </span>
                         </div>
+                        <p className="text-[10px] text-cyan-300 font-medium">
+                          بنیان‌گذار و طراح محصول
+                        </p>
+                        <p className="text-[9px] text-slate-400 max-w-[200px] mx-auto leading-tight line-clamp-1">
+                          خلق تجربه‌های دیجیتال مدرن و اتصال هوشمند
+                        </p>
                       </div>
 
                       {/* Action & Contact Section Inside Phone */}
@@ -346,55 +360,57 @@ export function NfcShowcaseSection() {
                     </div>
                   </div>
                 </div>
-              </div>
+              </motion.div>
 
               {/* ========================================================
-                  2. NFC PHYSICAL CARD (REVISED 5-STAGE SEQUENCE)
-                  Stage 1: Front center & large (scale: 1.4, zIndex: 30)
-                  Stage 2: Glides right (x: 125, y: -30) & drops behind phone (zIndex: 0, 50% peeking)
-                  Stage 3: Resting behind while notification & profile load
-                  Stage 4: Emerges to front (zIndex: 30), rotates to portrait (rotate: 90), stands beside phone (x: 145, y: 90 - bottom flush)
-                  Stage 5: Glides back to center, scales up (scale: 1.4) to repeat loop
+                  2. NFC PHYSICAL CARD (DYNAMIC SCALE & STRICT Z-INDEX KEYFRAMES)
+                  Timeline (Phase 29.4):
+                  - scale: [1.2, 0.8, 0.8, 0.8, 1.2]
+                  - x: ["0%", "110%", "110%", "110%", "0%"]
+                  - y: ["0%", "20%", "20%", "20%", "0%"]
+                  - rotate: [0, 15, 15, 15, 0]
+                  - zIndex: [10, 0, 0, 10, 10]
+                  - times: [0, 0.2, 0.5, 0.8, 1]
               ======================================================== */}
               <motion.div
                 animate={{
-                  x: [0, 0, 125, 125, 145, 145, 0, 0],
-                  y: [0, 0, -30, -30, 90, 90, 0, 0],
-                  scale: [1.4, 1.4, 0.95, 0.95, 1.0, 1.0, 1.4, 1.4],
-                  rotate: [0, 0, 0, 0, 90, 90, 0, 0],
-                  zIndex: [30, 30, 0, 0, 30, 30, 30, 30],
+                  scale: [1.2, 0.8, 0.8, 0.8, 1.2],
+                  x: ['0%', '110%', '110%', '110%', '0%'],
+                  y: ['0%', '20%', '20%', '20%', '0%'],
+                  rotate: [0, 15, 15, 15, 0],
+                  zIndex: [10, 0, 0, 10, 10],
                 }}
                 transition={{
-                  duration: 8,
+                  duration: 6,
                   repeat: Infinity,
-                  times: [0, 0.16, 0.32, 0.44, 0.54, 0.80, 0.92, 1.0],
+                  times: [0, 0.2, 0.5, 0.8, 1],
                   ease: 'easeInOut',
                 }}
                 className="absolute select-none pointer-events-none"
               >
-                {/* 2X Physical Card Chassis (310px x 196px - Doubled Standard ID-1) */}
-                <div className="w-[310px] h-[196px] rounded-2xl p-5 bg-gradient-to-tr from-slate-950 via-zinc-900 to-neutral-800 border-2 border-amber-400/70 shadow-[0_30px_70px_rgba(0,0,0,0.95),0_0_35px_rgba(245,158,11,0.3)] text-white flex flex-col justify-between relative overflow-hidden group">
+                {/* Physical Card Chassis */}
+                <div className="w-[280px] h-[176px] rounded-2xl p-5 bg-gradient-to-tr from-slate-950 via-zinc-900 to-neutral-800 border-2 border-amber-400/70 shadow-[0_30px_70px_rgba(0,0,0,0.95),0_0_35px_rgba(245,158,11,0.3)] text-white flex flex-col justify-between relative overflow-hidden group">
                   
                   {/* Subtle Brushed Metal Light Beam */}
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
                   
-                  {/* Top Bar with Metallic Gold Chip & NFC Waves (Doubled 2X) */}
+                  {/* Top Bar with Metallic Gold Chip & NFC Waves */}
                   <div className="flex items-center justify-between">
-                    {/* Metallic Golden Microchip with Circuit Lines (Doubled: w-12 h-9) */}
-                    <div className="w-12 h-9 rounded-md bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 border border-amber-200 shadow-md flex items-center justify-center relative overflow-hidden">
+                    {/* Metallic Golden Microchip with Circuit Lines */}
+                    <div className="w-11 h-8 rounded-md bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 border border-amber-200 shadow-md flex items-center justify-center relative overflow-hidden">
                       <div className="w-full h-[1.5px] bg-amber-600/50" />
-                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 border border-amber-600/40 rounded-xs" />
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 border border-amber-600/40 rounded-xs" />
                     </div>
-                    {/* NFC Waves Icon (Doubled: w-7 h-7) */}
+                    {/* NFC Waves Icon */}
                     <div className="flex items-center gap-1.5 text-amber-300">
-                      <Wifi className="w-7 h-7 rotate-90" />
+                      <Wifi className="w-6 h-6 rotate-90" />
                       <span className="text-xs font-outfit font-black tracking-widest uppercase">NFC</span>
                     </div>
                   </div>
 
-                  {/* Card Center: Arya Link Monogram (Doubled: text-xl) */}
+                  {/* Card Center: Arya Link Monogram */}
                   <div className="flex items-center gap-2">
-                    <span className="text-xl sm:text-2xl font-outfit font-black tracking-tight text-white">
+                    <span className="text-xl font-outfit font-black tracking-tight text-white">
                       ARYA <span className="text-amber-400">LINK</span>
                     </span>
                     <span className="text-[10px] px-2 py-0.5 rounded-md bg-amber-400/20 text-amber-300 font-bold border border-amber-400/30">
@@ -402,7 +418,7 @@ export function NfcShowcaseSection() {
                     </span>
                   </div>
 
-                  {/* Bottom: Cardholder Name (Doubled: text-xs) */}
+                  {/* Bottom: Cardholder Name */}
                   <div className="flex items-center justify-between text-xs text-slate-200 font-mono tracking-wider font-semibold">
                     <span>FARHAD ARYA</span>
                     <span className="text-amber-400 font-outfit font-black tracking-widest">SMART TAP</span>
