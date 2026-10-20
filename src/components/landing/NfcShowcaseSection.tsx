@@ -5,7 +5,6 @@ import { motion } from 'framer-motion';
 import {
   Zap,
   Wifi,
-  Smartphone,
   CheckCircle2,
   Phone,
   CreditCard,
@@ -22,6 +21,53 @@ import Link from 'next/link';
 
 const EASE_SNAPPY = [0, 0.7, 0.2, 1] as const;
 const SPRING_FAST = { type: 'spring', stiffness: 250, damping: 25, mass: 0.5 } as const;
+
+// 9-Point Choreography Timeline for Step 30
+const CHOREOGRAPHY_TIMES = [0, 0.18, 0.20, 0.34, 0.52, 0.58, 0.68, 0.85, 1.0] as const;
+const TOTAL_CYCLE_DURATION = 9; // seconds
+
+/**
+ * Reusable Luxury NFC Physical Card Chassis
+ * Guarantees 100% pixel-perfect identical visual identity between FrontCard & BackCard
+ */
+function NfcCardChassis() {
+  return (
+    <div className="w-[280px] h-[176px] rounded-2xl p-5 bg-gradient-to-tr from-slate-950 via-zinc-900 to-neutral-800 border-2 border-amber-400/70 shadow-[0_30px_70px_rgba(0,0,0,0.95),0_0_35px_rgba(245,158,11,0.3)] text-white flex flex-col justify-between relative overflow-hidden group">
+      {/* Subtle Brushed Metal Light Beam */}
+      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+      
+      {/* Top Bar with Metallic Gold Chip & NFC Waves */}
+      <div className="flex items-center justify-between">
+        {/* Metallic Golden Microchip with Circuit Lines */}
+        <div className="w-11 h-8 rounded-md bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 border border-amber-200 shadow-md flex items-center justify-center relative overflow-hidden">
+          <div className="w-full h-[1.5px] bg-amber-600/50" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 border border-amber-600/40 rounded-xs" />
+        </div>
+        {/* NFC Waves Icon */}
+        <div className="flex items-center gap-1.5 text-amber-300">
+          <Wifi className="w-6 h-6 rotate-90" />
+          <span className="text-xs font-outfit font-black tracking-widest uppercase">NFC</span>
+        </div>
+      </div>
+
+      {/* Card Center: Arya Link Monogram */}
+      <div className="flex items-center gap-2">
+        <span className="text-xl font-outfit font-black tracking-tight text-white">
+          ARYA <span className="text-amber-400">LINK</span>
+        </span>
+        <span className="text-[10px] px-2 py-0.5 rounded-md bg-amber-400/20 text-amber-300 font-bold border border-amber-400/30">
+          PRO
+        </span>
+      </div>
+
+      {/* Bottom: Cardholder Name */}
+      <div className="flex items-center justify-between text-xs text-slate-200 font-mono tracking-wider font-semibold">
+        <span>FARHAD ARYA</span>
+        <span className="text-amber-400 font-outfit font-black tracking-widest">SMART TAP</span>
+      </div>
+    </div>
+  );
+}
 
 export function NfcShowcaseSection() {
   // Header Staggered Container & Items (Stage 28.3)
@@ -107,31 +153,60 @@ export function NfcShowcaseSection() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
           
           {/* ========================================================
-              LEFT COLUMN: DYNAMIC SCALE, Z-INDEX FIX & PERFECT PROFILE (PHASE 29.4)
+              LEFT COLUMN: THE MASTER ILLUSION & PERFECT CHOREOGRAPHY (PHASE 30)
+              Two-Card Illusion (FrontCard z:10 & BackCard z:0)
+              Phone Forced Pause & Exact Bottom-Edge Vertical Locking
           ======================================================== */}
-          <div className="lg:col-span-6 flex flex-col items-center justify-center relative min-h-[500px]">
-            <div className="relative w-full max-w-[500px] h-[550px] flex items-center justify-center overflow-visible">
+          <div className="lg:col-span-6 flex flex-col items-center justify-center relative min-h-[520px]">
+            <div className="relative w-full max-w-[520px] h-[560px] flex items-center justify-center overflow-visible">
               
               {/* Floor Ambient Glow & Realistic Ground Shadow */}
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[340px] h-9 bg-black/70 rounded-full blur-2xl pointer-events-none -z-10" />
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[380px] h-[500px] bg-gradient-to-tr from-cyan-500/20 via-blue-600/15 to-purple-600/15 rounded-full blur-[110px] pointer-events-none -z-10" />
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[360px] h-9 bg-black/70 rounded-full blur-2xl pointer-events-none -z-10" />
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[520px] bg-gradient-to-tr from-cyan-500/20 via-blue-600/15 to-purple-600/15 rounded-full blur-[110px] pointer-events-none -z-10" />
 
               {/* ========================================================
-                  1. MOBILE PHONE CONTAINER (FIXED Z-INDEX: 5 & DYNAMIC SCALE)
-                  Timeline: [1, 0.85, 1.05, 1.05, 1]
-                  times: [0, 0.2, 0.5, 0.8, 1]
+                  1. BACK CARD (ALWAYS Z-INDEX: 0 - BEHIND PHONE)
+                  Active during the rear slide, NFC notification & profile loading
               ======================================================== */}
               <motion.div
+                style={{ zIndex: 0 }}
                 animate={{
-                  scale: [1, 0.85, 1.05, 1.05, 1],
+                  opacity: [0, 0, 1, 1, 1, 0, 0, 0, 0],
+                  x: [0, 180, 180, 20, 20, 180, 170, 170, 0],
+                  y: [0, 20, 20, -10, -10, 50, 105, 105, 0],
+                  rotate: [0, 24, 24, 0, 0, 45, 90, 90, 0],
+                  scale: [1.25, 0.8, 0.8, 0.8, 0.8, 0.9, 1.0, 1.0, 1.25],
                 }}
                 transition={{
-                  duration: 6,
+                  duration: TOTAL_CYCLE_DURATION,
                   repeat: Infinity,
-                  times: [0, 0.2, 0.5, 0.8, 1],
+                  times: CHOREOGRAPHY_TIMES,
                   ease: 'easeInOut',
                 }}
+                className="absolute select-none pointer-events-none"
+              >
+                <NfcCardChassis />
+              </motion.div>
+
+              {/* ========================================================
+                  2. MOBILE PHONE (ALWAYS Z-INDEX: 5 - BETWEEN CARDS)
+                  Timeline:
+                  - Zooms out to 0.85 & shifts to left (x: "-6%")
+                  - THE FORCED PAUSE: Stays locked at scale: 0.85, x: "-6%" during profile load
+                  - Zooms in to 1.0 & centers as card emerges
+              ======================================================== */}
+              <motion.div
                 style={{ zIndex: 5 }}
+                animate={{
+                  scale: [1.0, 0.85, 0.85, 0.85, 0.85, 0.92, 1.0, 1.0, 1.0],
+                  x: ['0%', '-6%', '-6%', '-6%', '-6%', '-2%', '0%', '0%', '0%'],
+                }}
+                transition={{
+                  duration: TOTAL_CYCLE_DURATION,
+                  repeat: Infinity,
+                  times: CHOREOGRAPHY_TIMES,
+                  ease: 'easeInOut',
+                }}
                 className="relative w-[250px] h-[490px] select-none flex flex-col items-center justify-center"
               >
                 {/* Outer Titanium Bezel & Frame Shadow */}
@@ -151,16 +226,16 @@ export function NfcShowcaseSection() {
 
                     {/* ========================================================
                         SCREEN LAYER A: STANDBY / IDLE SCREEN
-                        Active when phone is at normal size (opacity: [1, 1, 0, 0, 1])
+                        Active before NFC tap and during reset
                     ======================================================== */}
                     <motion.div
                       animate={{
-                        opacity: [1, 1, 0, 0, 1],
+                        opacity: [1, 1, 1, 0, 0, 0, 0, 0, 1],
                       }}
                       transition={{
-                        duration: 6,
+                        duration: TOTAL_CYCLE_DURATION,
                         repeat: Infinity,
-                        times: [0, 0.2, 0.5, 0.8, 1],
+                        times: [0, 0.18, 0.24, 0.30, 0.52, 0.58, 0.68, 0.85, 1.0],
                         ease: 'easeInOut',
                       }}
                       className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-10"
@@ -202,18 +277,18 @@ export function NfcShowcaseSection() {
                     </motion.div>
 
                     {/* ========================================================
-                        SCREEN LAYER B: SLIDE-DOWN NFC NOTIFICATION
-                        Triggers when profile becomes active
+                        SCREEN LAYER B: SLIDE-DOWN NFC WEB-CLIP NOTIFICATION
+                        Triggers during the Phone Pause
                     ======================================================== */}
                     <motion.div
                       animate={{
-                        y: [-50, -50, 0, 0, -50],
-                        opacity: [0, 0, 1, 1, 0],
+                        y: [-50, -50, -50, 0, 0, -50, -50, -50, -50],
+                        opacity: [0, 0, 0, 1, 1, 0, 0, 0, 0],
                       }}
                       transition={{
-                        duration: 6,
+                        duration: TOTAL_CYCLE_DURATION,
                         repeat: Infinity,
-                        times: [0, 0.2, 0.5, 0.8, 1],
+                        times: [0, 0.18, 0.24, 0.32, 0.44, 0.50, 0.68, 0.85, 1.0],
                         ease: 'easeInOut',
                       }}
                       className="absolute top-8 left-2.5 right-2.5 z-40 pointer-events-none"
@@ -239,19 +314,18 @@ export function NfcShowcaseSection() {
                     </motion.div>
 
                     {/* ========================================================
-                        SCREEN LAYER C: FARHAD ARYA PERFECT PROFILE (PHASE 29.4)
-                        Curved Cover Photo (bg-blue-500 h-32 w-[120%] -ml-[10%] rounded-b-[50%])
-                        Avatar sitting exactly on curve boundary
-                        Opacity: [0, 0, 1, 1, 0] with times: [0, 0.2, 0.5, 0.8, 1]
+                        SCREEN LAYER C: FARHAD ARYA LIVE RICH PROFILE
+                        Curved Organic Cover & Avatar seated on curve apex
+                        Loads cleanly during Phone Pause & stays active for showcase
                     ======================================================== */}
                     <motion.div
                       animate={{
-                        opacity: [0, 0, 1, 1, 0],
+                        opacity: [0, 0, 0, 0, 1, 1, 1, 1, 0],
                       }}
                       transition={{
-                        duration: 6,
+                        duration: TOTAL_CYCLE_DURATION,
                         repeat: Infinity,
-                        times: [0, 0.2, 0.5, 0.8, 1],
+                        times: [0, 0.18, 0.28, 0.36, 0.46, 0.58, 0.68, 0.85, 1.0],
                         ease: 'easeInOut',
                       }}
                       className="absolute inset-0 flex flex-col z-20 overflow-y-auto no-scrollbar"
@@ -363,68 +437,31 @@ export function NfcShowcaseSection() {
               </motion.div>
 
               {/* ========================================================
-                  2. NFC PHYSICAL CARD (DYNAMIC SCALE & STRICT Z-INDEX KEYFRAMES)
-                  Timeline (Phase 29.4):
-                  - scale: [1.2, 0.8, 0.8, 0.8, 1.2]
-                  - x: ["0%", "110%", "110%", "110%", "0%"]
-                  - y: ["0%", "20%", "20%", "20%", "0%"]
-                  - rotate: [0, 15, 15, 15, 0]
-                  - zIndex: [10, 0, 0, 10, 10]
-                  - times: [0, 0.2, 0.5, 0.8, 1]
+                  3. FRONT CARD (ALWAYS Z-INDEX: 10 - IN FRONT OF PHONE)
+                  Active at start, then takes over seamlessly in mid-air rotation
+                  Locks into vertical portrait (rotate: 90) beside the phone
+                  Crucial alignment: y: 105 aligns card bottom flush with phone bottom (245px)
               ======================================================== */}
               <motion.div
+                style={{ zIndex: 10 }}
                 animate={{
-                  scale: [1.2, 0.8, 0.8, 0.8, 1.2],
-                  x: ['0%', '110%', '110%', '110%', '0%'],
-                  y: ['0%', '20%', '20%', '20%', '0%'],
-                  rotate: [0, 15, 15, 15, 0],
-                  zIndex: [10, 0, 0, 10, 10],
+                  opacity: [1, 1, 0, 0, 0, 1, 1, 1, 1],
+                  x: [0, 180, 180, 20, 20, 180, 170, 170, 0],
+                  y: [0, 20, 20, -10, -10, 50, 105, 105, 0],
+                  rotate: [0, 24, 24, 0, 0, 45, 90, 90, 0],
+                  scale: [1.25, 0.8, 0.8, 0.8, 0.8, 0.9, 1.0, 1.0, 1.25],
                 }}
                 transition={{
-                  duration: 6,
+                  duration: TOTAL_CYCLE_DURATION,
                   repeat: Infinity,
-                  times: [0, 0.2, 0.5, 0.8, 1],
+                  times: CHOREOGRAPHY_TIMES,
                   ease: 'easeInOut',
                 }}
                 className="absolute select-none pointer-events-none"
               >
-                {/* Physical Card Chassis */}
-                <div className="w-[280px] h-[176px] rounded-2xl p-5 bg-gradient-to-tr from-slate-950 via-zinc-900 to-neutral-800 border-2 border-amber-400/70 shadow-[0_30px_70px_rgba(0,0,0,0.95),0_0_35px_rgba(245,158,11,0.3)] text-white flex flex-col justify-between relative overflow-hidden group">
-                  
-                  {/* Subtle Brushed Metal Light Beam */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-                  
-                  {/* Top Bar with Metallic Gold Chip & NFC Waves */}
-                  <div className="flex items-center justify-between">
-                    {/* Metallic Golden Microchip with Circuit Lines */}
-                    <div className="w-11 h-8 rounded-md bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 border border-amber-200 shadow-md flex items-center justify-center relative overflow-hidden">
-                      <div className="w-full h-[1.5px] bg-amber-600/50" />
-                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 border border-amber-600/40 rounded-xs" />
-                    </div>
-                    {/* NFC Waves Icon */}
-                    <div className="flex items-center gap-1.5 text-amber-300">
-                      <Wifi className="w-6 h-6 rotate-90" />
-                      <span className="text-xs font-outfit font-black tracking-widest uppercase">NFC</span>
-                    </div>
-                  </div>
-
-                  {/* Card Center: Arya Link Monogram */}
-                  <div className="flex items-center gap-2">
-                    <span className="text-xl font-outfit font-black tracking-tight text-white">
-                      ARYA <span className="text-amber-400">LINK</span>
-                    </span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-md bg-amber-400/20 text-amber-300 font-bold border border-amber-400/30">
-                      PRO
-                    </span>
-                  </div>
-
-                  {/* Bottom: Cardholder Name */}
-                  <div className="flex items-center justify-between text-xs text-slate-200 font-mono tracking-wider font-semibold">
-                    <span>FARHAD ARYA</span>
-                    <span className="text-amber-400 font-outfit font-black tracking-widest">SMART TAP</span>
-                  </div>
-                </div>
+                <NfcCardChassis />
               </motion.div>
+
             </div>
           </div>
 
@@ -451,7 +488,7 @@ export function NfcShowcaseSection() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-right">
               {[
                 {
-                  icon: Smartphone,
+                  icon: Zap,
                   color: 'text-cyan-500 bg-cyan-500/15 border-cyan-500/30',
                   title: 'سازگار با آیفون و اندروید',
                   desc: 'پشتیبانی از ۱۰۰٪ آیفون‌ها و گوشی‌های اندرویدی مجهز به NFC بدون نیاز به تنظیم یا اپ خاص.',
