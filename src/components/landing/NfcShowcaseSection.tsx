@@ -22,12 +22,44 @@ import Link from 'next/link';
 const EASE_SNAPPY = [0, 0.7, 0.2, 1] as const;
 const SPRING_FAST = { type: 'spring', stiffness: 250, damping: 25, mass: 0.5 } as const;
 
-// 9-Point Choreography Timeline for Step 30
-const CHOREOGRAPHY_TIMES = [0, 0.18, 0.20, 0.34, 0.52, 0.58, 0.68, 0.85, 1.0] as const;
-const TOTAL_CYCLE_DURATION = 9; // seconds
+// 10-Point Choreography Timeline (15 Seconds Total)
+// Switch 1: at x=240 peak right (0.140 -> 0.160) BEFORE card starts returning towards phone
+// The card approaching the phone to slide behind is 100% BackCard (zIndex: 0)
+// Switch 2: at x=240 peak right (0.420 -> 0.440) BEFORE card starts moving inward
+// The card moving to portrait position in front of phone is 100% FrontCard (zIndex: 10)
+// Freeze: 0.490 -> 0.930 (~7 seconds locked hold)
+const CHOREOGRAPHY_TIMES = [
+  0.0,    // 0: Start (large front, phone 0% scale 1.0)
+  0.140,  // 1: Card reaches peak right & tilts (x: 240, rotate: 20) - FrontCard is 100% ON
+  0.160,  // 2: Switches to BackCard while paused at peak right BEFORE returning!
+  0.250,  // 3: BackCard approaches & settles behind phone (x: -30, rotate: 0)
+  0.330,  // 4: Profile loaded behind phone
+  0.420,  // 5: BackCard emerges out to peak right (x: 240, rotate: 35)
+  0.440,  // 6: Switches to FrontCard while paused at peak right BEFORE returning!
+  0.490,  // 7: FrontCard rotates to 90deg, phone zooms to 1.05; bottom edges lock!
+  0.930,  // 8: THE 7-SECOND FREEZE (0.490 -> 0.930 = 6.6s ~ 7s locked hold)
+  1.0,    // 9: Smooth reset back to start
+] as const;
+
+// Explicit array of easings for each keyframe transition segment (9 segments for 10 times).
+// Passing an array ensures WAAPI timeline runs with linear overall progression (no global 15s warp),
+// guaranteeing that times[] are triggered at their exact, mathematically designated seconds!
+const CHOREOGRAPHY_EASINGS = [
+  'easeInOut', // 0 -> 1: move right & tilt
+  'linear',    // 1 -> 2: instant switch at peak right
+  'easeInOut', // 2 -> 3: move behind phone
+  'easeInOut', // 3 -> 4: pause behind phone
+  'easeInOut', // 4 -> 5: emerge to peak right
+  'linear',    // 5 -> 6: instant switch at peak right
+  'easeInOut', // 6 -> 7: rotate to 90 & lock with bottom edge
+  'linear',    // 7 -> 8: 7-second locked freeze
+  'easeInOut', // 8 -> 9: smooth reset to start
+] as const;
+
+const TOTAL_CYCLE_DURATION = 15; // 15 seconds
 
 /**
- * Reusable Luxury NFC Physical Card Chassis
+ * Reusable Luxury NFC Physical Card Chassis (No Chip - Sleek Modern Brand Logo)
  * Guarantees 100% pixel-perfect identical visual identity between FrontCard & BackCard
  */
 function NfcCardChassis() {
@@ -35,14 +67,19 @@ function NfcCardChassis() {
     <div className="w-[280px] h-[176px] rounded-2xl p-5 bg-gradient-to-tr from-slate-950 via-zinc-900 to-neutral-800 border-2 border-amber-400/70 shadow-[0_30px_70px_rgba(0,0,0,0.95),0_0_35px_rgba(245,158,11,0.3)] text-white flex flex-col justify-between relative overflow-hidden group">
       {/* Subtle Brushed Metal Light Beam */}
       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-      
-      {/* Top Bar with Metallic Gold Chip & NFC Waves */}
+
+      {/* Top Bar with Minimalist Brand Monogram & NFC Waves (NO CHIP) */}
       <div className="flex items-center justify-between">
-        {/* Metallic Golden Microchip with Circuit Lines */}
-        <div className="w-11 h-8 rounded-md bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 border border-amber-200 shadow-md flex items-center justify-center relative overflow-hidden">
-          <div className="w-full h-[1.5px] bg-amber-600/50" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 border border-amber-600/40 rounded-xs" />
+        {/* Minimalist Arya Link Brand Emblem */}
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-amber-400/25 via-amber-300/10 to-transparent border border-amber-400/40 flex items-center justify-center text-amber-300 shadow-sm">
+            <Zap className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+          </div>
+          <span className="text-[11px] font-outfit font-black tracking-widest text-amber-300/90 uppercase">
+            ARYA LINK
+          </span>
         </div>
+
         {/* NFC Waves Icon */}
         <div className="flex items-center gap-1.5 text-amber-300">
           <Wifi className="w-6 h-6 rotate-90" />
@@ -50,14 +87,19 @@ function NfcCardChassis() {
         </div>
       </div>
 
-      {/* Card Center: Arya Link Monogram */}
-      <div className="flex items-center gap-2">
-        <span className="text-xl font-outfit font-black tracking-tight text-white">
-          ARYA <span className="text-amber-400">LINK</span>
-        </span>
-        <span className="text-[10px] px-2 py-0.5 rounded-md bg-amber-400/20 text-amber-300 font-bold border border-amber-400/30">
-          PRO
-        </span>
+      {/* Card Center: Modern Clean Arya Link Monogram & Tag */}
+      <div className="space-y-0.5">
+        <div className="flex items-center gap-2">
+          <span className="text-2xl font-outfit font-black tracking-tight text-white">
+            ARYA <span className="text-amber-400">LINK</span>
+          </span>
+          <span className="text-[9px] px-2 py-0.5 rounded-md bg-amber-400/20 text-amber-300 font-bold border border-amber-400/30">
+            PRO
+          </span>
+        </div>
+        <p className="text-[9px] text-slate-400 tracking-widest font-mono uppercase">
+          Digital Identity Card
+        </p>
       </div>
 
       {/* Bottom: Cardholder Name */}
@@ -107,13 +149,21 @@ export function NfcShowcaseSection() {
     }),
   };
 
+  // Trajectories: Card reaches peak right (x=240, rotate=20) and switches BEFORE returning
+  // Then BackCard approaches the phone and settles behind at x=-30
+  // Card emerges to peak right (x=240, rotate=35) and switches BEFORE moving inward
+  const cardXTrajectory = [0, 240, 240, -30, -30, 240, 240, 170, 170, 0];
+  const cardYTrajectory = [0, 20, 20, -10, -10, 35, 35, 110, 110, 0];
+  const cardRotateTrajectory = [0, 20, 20, 0, 0, 35, 35, 90, 90, 0];
+  const cardScaleTrajectory = [1.25, 0.85, 0.85, 0.85, 0.85, 0.90, 0.90, 1.05, 1.05, 1.25];
+
   return (
     <section className="py-20 sm:py-28 relative border-t border-border/80 bg-gradient-to-b from-transparent via-cyan-500/[0.02] to-transparent overflow-hidden select-none">
       {/* Background Radial Glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-tr from-cyan-500/15 via-blue-600/10 to-purple-600/10 rounded-full blur-[140px] pointer-events-none -z-10" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
-        
+
         {/* ========================================================
             SECTION HEADER (STAGGERED CHILDREN 0.15s CASCADE)
         ======================================================== */}
@@ -151,37 +201,35 @@ export function NfcShowcaseSection() {
 
         {/* Showcase Grid: Left side realistic mockup, Right side benefits */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
-          
+
           {/* ========================================================
-              LEFT COLUMN: THE MASTER ILLUSION & PERFECT CHOREOGRAPHY (PHASE 30)
-              Two-Card Illusion (FrontCard z:10 & BackCard z:0)
-              Phone Forced Pause & Exact Bottom-Edge Vertical Locking
+              LEFT COLUMN: ORIGINAL PHASE 31 MOTION + INSTANT SWITCH IN CLEAR AIR
           ======================================================== */}
-          <div className="lg:col-span-6 flex flex-col items-center justify-center relative min-h-[520px]">
-            <div className="relative w-full max-w-[520px] h-[560px] flex items-center justify-center overflow-visible">
-              
+          <div className="lg:col-span-6 flex flex-col items-center justify-center relative min-h-[540px]">
+            <div className="relative w-full max-w-[540px] h-[580px] flex items-center justify-center overflow-visible">
+
               {/* Floor Ambient Glow & Realistic Ground Shadow */}
               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[360px] h-9 bg-black/70 rounded-full blur-2xl pointer-events-none -z-10" />
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[520px] bg-gradient-to-tr from-cyan-500/20 via-blue-600/15 to-purple-600/15 rounded-full blur-[110px] pointer-events-none -z-10" />
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[420px] h-[540px] bg-gradient-to-tr from-cyan-500/20 via-blue-600/15 to-purple-600/15 rounded-full blur-[110px] pointer-events-none -z-10" />
 
               {/* ========================================================
                   1. BACK CARD (ALWAYS Z-INDEX: 0 - BEHIND PHONE)
-                  Active during the rear slide, NFC notification & profile loading
+                  Takes over at x=240 (0.160) and approaches the phone as BackCard!
               ======================================================== */}
               <motion.div
                 style={{ zIndex: 0 }}
                 animate={{
-                  opacity: [0, 0, 1, 1, 1, 0, 0, 0, 0],
-                  x: [0, 180, 180, 20, 20, 180, 170, 170, 0],
-                  y: [0, 20, 20, -10, -10, 50, 105, 105, 0],
-                  rotate: [0, 24, 24, 0, 0, 45, 90, 90, 0],
-                  scale: [1.25, 0.8, 0.8, 0.8, 0.8, 0.9, 1.0, 1.0, 1.25],
+                  opacity: [0, 0, 1, 1, 1, 1, 0, 0, 0, 0],
+                  x: cardXTrajectory,
+                  y: cardYTrajectory,
+                  rotate: cardRotateTrajectory,
+                  scale: cardScaleTrajectory,
                 }}
                 transition={{
                   duration: TOTAL_CYCLE_DURATION,
                   repeat: Infinity,
                   times: CHOREOGRAPHY_TIMES,
-                  ease: 'easeInOut',
+                  ease: CHOREOGRAPHY_EASINGS,
                 }}
                 className="absolute select-none pointer-events-none"
               >
@@ -190,53 +238,56 @@ export function NfcShowcaseSection() {
 
               {/* ========================================================
                   2. MOBILE PHONE (ALWAYS Z-INDEX: 5 - BETWEEN CARDS)
-                  Timeline:
-                  - Zooms out to 0.85 & shifts to left (x: "-6%")
-                  - THE FORCED PAUSE: Stays locked at scale: 0.85, x: "-6%" during profile load
-                  - Zooms in to 1.0 & centers as card emerges
+                  Timeline (Exact 10-step array with 7-second hold):
+                  - x: ["0%", "-15%", "-15%", "-15%", "-15%", "-15%", "-15%", "0%", "0%", "0%"]
+                  - scale: [1, 0.85, 0.85, 0.85, 0.85, 0.85, 0.85, 1.05, 1.05, 1]
               ======================================================== */}
               <motion.div
                 style={{ zIndex: 5 }}
                 animate={{
-                  scale: [1.0, 0.85, 0.85, 0.85, 0.85, 0.92, 1.0, 1.0, 1.0],
-                  x: ['0%', '-6%', '-6%', '-6%', '-6%', '-2%', '0%', '0%', '0%'],
+                  x: ['0%', '-15%', '-15%', '-15%', '-15%', '-15%', '-15%', '0%', '0%', '0%'],
+                  scale: [1, 0.85, 0.85, 0.85, 0.85, 0.85, 0.85, 1.05, 1.05, 1],
                 }}
                 transition={{
                   duration: TOTAL_CYCLE_DURATION,
                   repeat: Infinity,
                   times: CHOREOGRAPHY_TIMES,
-                  ease: 'easeInOut',
+                  ease: CHOREOGRAPHY_EASINGS,
                 }}
                 className="relative w-[250px] h-[490px] select-none flex flex-col items-center justify-center"
               >
                 {/* Outer Titanium Bezel & Frame Shadow */}
                 <div className="relative w-full h-full p-[7px] bg-[#1a1c22] rounded-[44px] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.9),0_0_0_1px_rgba(255,255,255,0.12),0_0_35px_rgba(6,182,212,0.15)] flex flex-col">
-                  
-                  {/* Inner OLED Screen Container */}
+
+                  {/* Inner OLED Screen Container (STRICT overflow-hidden, ZERO SCROLLBAR) */}
                   <div className="relative w-full h-full bg-[#0a0c10] rounded-[38px] overflow-hidden border border-white/5 flex flex-col justify-between">
-                    
-                    {/* Top Hardware Dynamic Island */}
-                    <div className="absolute top-2.5 left-1/2 -translate-x-1/2 w-20 h-5 bg-black rounded-full z-40 flex items-center justify-between px-2 shadow-sm">
-                      <div className="w-2.5 h-2.5 rounded-full bg-slate-900 border border-slate-800" />
-                      <div className="w-2 h-2 rounded-full bg-emerald-500/80 animate-pulse" />
+
+                    {/* Top Hardware Dynamic Island (Exact Hero Replica - NO GREEN DOT) */}
+                    <div className="absolute top-2.5 left-1/2 -translate-x-1/2 w-20 h-5 bg-black rounded-full z-40 flex items-center justify-between px-2.5 shadow-inner border border-white/10">
+                      {/* Front Camera Lens with Blue Anti-reflective Glare */}
+                      <div className="w-2.5 h-2.5 rounded-full bg-slate-900 border border-cyan-500/50 flex items-center justify-center relative overflow-hidden">
+                        <div className="w-1 h-1 rounded-full bg-cyan-400" />
+                        <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-blue-400/40 rounded-full blur-[1px]" />
+                      </div>
+                      {/* FaceID Sensor (Clean - No green dot) */}
+                      <div className="w-1.5 h-1.5 rounded-full bg-slate-800" />
                     </div>
 
                     {/* Subtle Screen Glare Sheen Reflection */}
                     <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.04] to-transparent pointer-events-none z-30" />
 
                     {/* ========================================================
-                        SCREEN LAYER A: STANDBY / IDLE SCREEN
-                        Active before NFC tap and during reset
+                        SCREEN LAYER A: STANDBY / IDLE RADAR SCREEN
                     ======================================================== */}
                     <motion.div
                       animate={{
-                        opacity: [1, 1, 1, 0, 0, 0, 0, 0, 1],
+                        opacity: [1, 1, 1, 0, 0, 0, 0, 0, 0, 1],
                       }}
                       transition={{
                         duration: TOTAL_CYCLE_DURATION,
                         repeat: Infinity,
-                        times: [0, 0.18, 0.24, 0.30, 0.52, 0.58, 0.68, 0.85, 1.0],
-                        ease: 'easeInOut',
+                        times: CHOREOGRAPHY_TIMES,
+                        ease: CHOREOGRAPHY_EASINGS,
                       }}
                       className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-10"
                     >
@@ -277,19 +328,19 @@ export function NfcShowcaseSection() {
                     </motion.div>
 
                     {/* ========================================================
-                        SCREEN LAYER B: SLIDE-DOWN NFC WEB-CLIP NOTIFICATION
-                        Triggers during the Phone Pause
+                        SCREEN LAYER B: SLIDE-DOWN NFC NOTIFICATION
+                        Triggers when BackCard reaches behind the phone (at 0.25)
                     ======================================================== */}
                     <motion.div
                       animate={{
-                        y: [-50, -50, -50, 0, 0, -50, -50, -50, -50],
-                        opacity: [0, 0, 0, 1, 1, 0, 0, 0, 0],
+                        y: [-50, -50, -50, 0, 0, -50, -50, -50, -50, -50],
+                        opacity: [0, 0, 0, 1, 1, 0, 0, 0, 0, 0],
                       }}
                       transition={{
                         duration: TOTAL_CYCLE_DURATION,
                         repeat: Infinity,
-                        times: [0, 0.18, 0.24, 0.32, 0.44, 0.50, 0.68, 0.85, 1.0],
-                        ease: 'easeInOut',
+                        times: CHOREOGRAPHY_TIMES,
+                        ease: CHOREOGRAPHY_EASINGS,
                       }}
                       className="absolute top-8 left-2.5 right-2.5 z-40 pointer-events-none"
                     >
@@ -314,117 +365,129 @@ export function NfcShowcaseSection() {
                     </motion.div>
 
                     {/* ========================================================
-                        SCREEN LAYER C: FARHAD ARYA LIVE RICH PROFILE
-                        Curved Organic Cover & Avatar seated on curve apex
-                        Loads cleanly during Phone Pause & stays active for showcase
+                        SCREEN LAYER C: PIXEL-PERFECT HERO PROFILE REPLICA
+                        Exact 1:1 match with Hero Section Phone Mockup
+                        pt-11 brings avatar comfortably below Dynamic Island
+                        Tight spacing, zero scrollbar, overflow-hidden
                     ======================================================== */}
                     <motion.div
                       animate={{
-                        opacity: [0, 0, 0, 0, 1, 1, 1, 1, 0],
+                        opacity: [0, 0, 0, 0, 1, 1, 1, 1, 1, 0],
                       }}
                       transition={{
                         duration: TOTAL_CYCLE_DURATION,
                         repeat: Infinity,
-                        times: [0, 0.18, 0.28, 0.36, 0.46, 0.58, 0.68, 0.85, 1.0],
-                        ease: 'easeInOut',
+                        times: CHOREOGRAPHY_TIMES,
+                        ease: CHOREOGRAPHY_EASINGS,
                       }}
-                      className="absolute inset-0 flex flex-col z-20 overflow-y-auto no-scrollbar"
+                      className="absolute inset-0 flex flex-col z-20 px-3.5 pt-11 pb-2.5 text-white overflow-hidden justify-between"
                     >
-                      {/* Curved Organic Header Banner Cover Photo (Spec Requirement) */}
-                      <div className="relative w-[120%] -ml-[10%] h-32 bg-gradient-to-br from-cyan-600 via-sky-500 to-blue-600 rounded-b-[50%] overflow-hidden shrink-0 shadow-inner">
-                        <div className="absolute inset-0 opacity-25 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:10px_10px]" />
-                        <div className="absolute top-2 right-6 text-[9px] font-mono font-bold text-white/80 bg-black/30 backdrop-blur-xs px-2 py-0.5 rounded-full">
-                          aryalink.me/farhad
-                        </div>
-                      </div>
-
-                      {/* Avatar Centered Directly on the Curve Boundary (Half on cover, half on background) */}
-                      <div className="absolute top-[94px] left-1/2 -translate-x-1/2 flex flex-col items-center z-20 pointer-events-none">
-                        <div className="relative w-16 h-16 rounded-full p-[2px] bg-gradient-to-tr from-cyan-400 via-sky-300 to-blue-500 shadow-xl">
-                          <div className="w-full h-full rounded-full bg-slate-900 flex items-center justify-center font-bold text-base text-cyan-300 overflow-hidden">
-                            FA
+                      {/* Top Profile Header (Comfortably Below Camera Notch) */}
+                      <div className="text-center relative">
+                        {/* Avatar with Glow Ring (Hero 1:1) */}
+                        <div className="relative w-16 h-16 mx-auto mb-1.5">
+                          <div className="w-16 h-16 rounded-full p-0.5 bg-gradient-to-tr from-cyan-400 via-blue-500 to-purple-500 shadow-lg shadow-cyan-500/35">
+                            <img
+                              src="https://i.postimg.cc/JzMj1drh/25555.jpg"
+                              alt="فرهاد آریا"
+                              className="w-full h-full rounded-full object-cover"
+                            />
                           </div>
-                          {/* Verified KYC Blue Checkmark */}
-                          <div className="absolute -bottom-0.5 -right-0.5 w-4.5 h-4.5 bg-blue-500 rounded-full flex items-center justify-center text-white border-2 border-slate-900 shadow-sm">
-                            <CheckCircle2 className="w-3.5 h-3.5 fill-blue-500 text-white" />
+                          {/* Verified Check on Avatar (Hero 1:1) */}
+                          <div className="absolute bottom-0 left-0 w-5 h-5 rounded-full bg-gradient-to-tr from-cyan-500 to-blue-600 text-white flex items-center justify-center border-2 border-slate-950 shadow-md">
+                            <CheckCircle2 className="w-3.5 h-3.5 fill-white text-cyan-600" />
                           </div>
                         </div>
-                      </div>
 
-                      {/* User Identity Details & Bio (Spaced appropriately below avatar) */}
-                      <div className="text-center mt-9 px-3 space-y-0.5">
-                        <div className="flex items-center justify-center gap-1">
-                          <span className="text-xs font-black text-white">
-                            فرهاد آریا
-                          </span>
-                          <span className="text-[8px] px-1 py-0.2 rounded bg-amber-400/20 text-amber-300 font-bold border border-amber-400/30">
-                            PRO
-                          </span>
+                        {/* Name & Headline (Hero 1:1) */}
+                        <div className="space-y-0.5">
+                          <div className="flex items-center justify-center gap-1.5">
+                            <h4 className="font-extrabold text-xs text-white tracking-tight">
+                              فرهاد آریا
+                            </h4>
+                            <span className="px-1.5 py-0.2 rounded-full bg-cyan-500/20 text-cyan-400 text-[8px] font-bold">
+                              PRO
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-cyan-300 font-medium">
+                            مشاور ارشد کسب‌وکار و بنیان‌گذار استارتاپ
+                          </p>
                         </div>
-                        <p className="text-[10px] text-cyan-300 font-medium">
-                          بنیان‌گذار و طراح محصول
+
+                        {/* Bio text (Hero 1:1) */}
+                        <p className="text-[9px] text-slate-300/90 leading-relaxed mt-1 px-1 line-clamp-1">
+                          یک لینک برای اتصال تمام پروژه‌ها، مشاوره آنلاین و خدمات تخصصی من
                         </p>
-                        <p className="text-[9px] text-slate-400 max-w-[200px] mx-auto leading-tight line-clamp-1">
-                          خلق تجربه‌های دیجیتال مدرن و اتصال هوشمند
-                        </p>
                       </div>
 
-                      {/* Action & Contact Section Inside Phone */}
-                      <div className="p-2.5 space-y-2 mt-1">
-                        {/* Primary Save Contact (vCard) CTA */}
-                        <button className="w-full py-1.5 px-3 rounded-xl bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 text-white text-[10px] font-bold shadow-md shadow-cyan-500/20 flex items-center justify-center gap-1.5">
-                          <Phone className="w-3 h-3" />
-                          <span>ذخیره در مخاطبین (vCard)</span>
-                        </button>
+                      {/* vCard Save Contact Button (Hero 1:1) */}
+                      <button
+                        type="button"
+                        className="w-full py-1.5 px-3 rounded-xl bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 text-white font-bold text-[10px] shadow-md shadow-cyan-500/25 flex items-center justify-center gap-1.5"
+                      >
+                        <Phone className="w-3 h-3" />
+                        <span>ذخیره مستقیم مخاطب (vCard)</span>
+                      </button>
 
-                        {/* Interactive Booking Module (HesabPay) */}
-                        <div className="p-2 rounded-xl bg-white/[0.04] border border-white/10 flex items-center justify-between text-right">
-                          <div className="flex items-center gap-1.5">
-                            <div className="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
-                              <CreditCard className="w-3 h-3" />
-                            </div>
-                            <div>
-                              <p className="text-[9px] font-bold text-white">
-                                رزرو وقت مشاوره
-                              </p>
-                              <p className="text-[8px] text-slate-400">
-                                پرداخت سریع با حساب‌پی
-                              </p>
-                            </div>
+                      {/* Module 1: Direct WhatsApp Chat (Hero 1:1) */}
+                      <div className="p-2 rounded-xl bg-emerald-950/40 border border-emerald-500/30 flex items-center justify-between shadow-sm">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                            <MessageCircle className="w-3 h-3" />
                           </div>
-                          <span className="text-[9px] font-bold text-emerald-400">
-                            ۵۰۰,۰۰۰ ت
-                          </span>
-                        </div>
-
-                        {/* Social & Contact Mini Links */}
-                        <div className="grid grid-cols-2 gap-1.5">
-                          <div className="p-1.5 rounded-lg bg-white/[0.03] border border-white/5 flex items-center gap-1.5 text-right">
-                            <div className="w-5 h-5 rounded-md bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
-                              <MessageCircle className="w-3 h-3" />
-                            </div>
-                            <span className="text-[8px] font-semibold text-slate-200 truncate">واتساپ</span>
-                          </div>
-                          <div className="p-1.5 rounded-lg bg-white/[0.03] border border-white/5 flex items-center gap-1.5 text-right">
-                            <div className="w-5 h-5 rounded-md bg-pink-500/20 text-pink-400 flex items-center justify-center">
-                              <Instagram className="w-3 h-3" />
-                            </div>
-                            <span className="text-[8px] font-semibold text-slate-200 truncate">اینستاگرام</span>
+                          <div className="text-right">
+                            <span className="font-bold text-[10px] text-white block">
+                              گفتگوی مستقیم واتساپ
+                            </span>
+                            <span className="text-[8px] text-emerald-400 block">
+                              پاسخگویی سریع کمتر از ۱۵ دقیقه
+                            </span>
                           </div>
                         </div>
+                        <ArrowUpRight className="w-3 h-3 text-slate-400 rotate-45" />
+                      </div>
 
-                        {/* Social Row Icons */}
-                        <div className="flex items-center justify-center gap-2 pt-0.5 text-slate-400">
-                          <div className="w-5 h-5 rounded-full bg-white/5 flex items-center justify-center hover:text-white">
-                            <Send className="w-2.5 h-2.5" />
+                      {/* Module 2: Online Consultation Booking (HesabPay - Hero 1:1) */}
+                      <div className="p-2 rounded-xl bg-blue-950/40 border border-cyan-500/30 flex items-center justify-between shadow-sm">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center">
+                            <ShoppingBag className="w-3 h-3" />
                           </div>
-                          <div className="w-5 h-5 rounded-full bg-white/5 flex items-center justify-center hover:text-white">
-                            <ShoppingBag className="w-2.5 h-2.5" />
-                          </div>
-                          <div className="w-5 h-5 rounded-full bg-white/5 flex items-center justify-center hover:text-white">
-                            <ArrowUpRight className="w-2.5 h-2.5" />
+                          <div className="text-right">
+                            <span className="font-bold text-[10px] text-white block">
+                              رزرو نوبت مشاوره اختصاصی
+                            </span>
+                            <span className="text-[8px] text-cyan-300 block font-outfit">
+                              500 AFN • پرداخت با حساب‌پی
+                            </span>
                           </div>
                         </div>
+                        <span className="px-2 py-0.5 rounded-md bg-cyan-500 text-white font-bold text-[8px]">
+                          رزرو
+                        </span>
+                      </div>
+
+                      {/* Module 3: Social Links Bar (Hero 1:1) */}
+                      <div className="grid grid-cols-3 gap-1.5">
+                        <div className="p-1.5 rounded-lg bg-white/5 border border-white/10 flex flex-col items-center justify-center gap-0.5">
+                          <Instagram className="w-3.5 h-3.5 text-pink-400" />
+                          <span className="text-[8px] text-slate-300">اینستاگرام</span>
+                        </div>
+                        <div className="p-1.5 rounded-lg bg-white/5 border border-white/10 flex flex-col items-center justify-center gap-0.5">
+                          <Send className="w-3.5 h-3.5 text-sky-400" />
+                          <span className="text-[8px] text-slate-300">تلگرام</span>
+                        </div>
+                        <div className="p-1.5 rounded-lg bg-white/5 border border-white/10 flex flex-col items-center justify-center gap-0.5">
+                          <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                          <span className="text-[8px] text-slate-300">کاتالوگ</span>
+                        </div>
+                      </div>
+
+                      {/* Footer inside Screen (Hero 1:1) */}
+                      <div className="pt-0.5 text-center">
+                        <span className="text-[8px] text-slate-500 font-outfit">
+                          Powered by <span className="font-bold text-cyan-400">Arya Link</span>
+                        </span>
                       </div>
                     </motion.div>
 
@@ -438,24 +501,25 @@ export function NfcShowcaseSection() {
 
               {/* ========================================================
                   3. FRONT CARD (ALWAYS Z-INDEX: 10 - IN FRONT OF PHONE)
-                  Active at start, then takes over seamlessly in mid-air rotation
-                  Locks into vertical portrait (rotate: 90) beside the phone
-                  Crucial alignment: y: 105 aligns card bottom flush with phone bottom (245px)
+                  Solid opacity: 1 until reaching x=240, instant cut OFF at 0.160
+                  Instant cut ON at 0.440 as soon as BackCard reaches x=240
+                  Bottom-edge alignment: y: 110 at scale: 1.05 locks flush with phone bottom (257px)
+                  7-Second Freeze: 0.490 -> 0.930 (~7s continuous hold)
               ======================================================== */}
               <motion.div
                 style={{ zIndex: 10 }}
                 animate={{
-                  opacity: [1, 1, 0, 0, 0, 1, 1, 1, 1],
-                  x: [0, 180, 180, 20, 20, 180, 170, 170, 0],
-                  y: [0, 20, 20, -10, -10, 50, 105, 105, 0],
-                  rotate: [0, 24, 24, 0, 0, 45, 90, 90, 0],
-                  scale: [1.25, 0.8, 0.8, 0.8, 0.8, 0.9, 1.0, 1.0, 1.25],
+                  opacity: [1, 1, 0, 0, 0, 0, 1, 1, 1, 1],
+                  x: cardXTrajectory,
+                  y: cardYTrajectory,
+                  rotate: cardRotateTrajectory,
+                  scale: cardScaleTrajectory,
                 }}
                 transition={{
                   duration: TOTAL_CYCLE_DURATION,
                   repeat: Infinity,
                   times: CHOREOGRAPHY_TIMES,
-                  ease: 'easeInOut',
+                  ease: CHOREOGRAPHY_EASINGS,
                 }}
                 className="absolute select-none pointer-events-none"
               >
