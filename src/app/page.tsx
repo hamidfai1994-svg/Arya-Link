@@ -2,500 +2,380 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
+  ChevronDown,
   Sparkles,
   ArrowLeft,
   CheckCircle2,
-  Layers,
-  ShoppingBag,
-  ShieldCheck,
-  Users,
-  Smartphone,
-  BarChart3,
   Zap,
-  ChevronDown,
-  X,
-  Check,
-  Flame,
+  HelpCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card } from '@/components/ui/card';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
-import { ScrollAnimate } from '@/components/ui/ScrollAnimate';
-import { HeroPhoneMockup } from '@/components/landing/HeroPhoneMockup';
+
+// Modern Landing Page Components (Phase 28.1 Advanced Choreography & Realism)
+import { HeroSection } from '@/components/landing/HeroSection';
+import { StatsAndMarqueeSection } from '@/components/landing/StatsAndMarqueeSection';
+import { BentoGridFeatures } from '@/components/landing/BentoGridFeatures';
+import { NfcShowcaseSection } from '@/components/landing/NfcShowcaseSection';
+import { PricingSection } from '@/components/landing/PricingSection';
+
+const EASE_SNAPPY = [0, 0.7, 0.2, 1] as const;
+const SPRING_FAST = { type: 'spring', stiffness: 250, damping: 25, mass: 0.5 } as const;
+
+// Header Staggered Container & Items (Stage 28.3)
+const headerContainerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.15,
+      delayChildren: 0.05,
+    },
+  },
+};
+
+const headerItemVariants = {
+  hidden: { opacity: 0, y: 22 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.6,
+      ease: EASE_SNAPPY,
+    },
+  },
+};
 
 export default function LandingPage() {
-  const { t, dir } = useLanguage();
+  const { dir } = useLanguage();
+  const isRtl = dir === 'rtl';
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
 
   const toggleFaq = (idx: number) => {
     setActiveFaq(activeFaq === idx ? null : idx);
   };
 
-  const features = [
-    {
-      icon: Layers,
-      colorClass: 'bg-cyan-500/10 text-cyan-500 group-hover:bg-cyan-500/20',
-      title: 'ده‌ها ماژول هوشمند و متنوع',
-      desc: 'ارتباط در شبکه‌های اجتماعی، گفتگوی مستقیم واتساپ، اسلایدر تصاویر، کاتالوگ‌های PDF دانلودی، نقشه آدرس، شمارشگر معکوس و ویدیوهای آپارات.',
-    },
-    {
-      icon: ShoppingBag,
-      colorClass: 'bg-emerald-500/10 text-emerald-500 group-hover:bg-emerald-500/20',
-      title: 'فروشگاه آنلاین و پرداخت مستقیم',
-      desc: 'محصولات فیزیکی یا خدمات مشاوره‌ای خود را مستقیماً در صفحه لینک‌بایو بفروشید و مبالغ را از طریق حساب‌پی یا حواله بانکی تسویه کنید.',
-    },
-    {
-      icon: ShieldCheck,
-      colorClass: 'bg-blue-500/10 text-blue-500 group-hover:bg-blue-500/20',
-      title: 'احراز هویت امن و تیک آبی (KYC)',
-      desc: 'با ارسال تذکره و سلفی تایید هویت، نشان رسمی تیک آبی دریافت کنید تا مشتریان با خیالی آسوده از شما خرید و خدمات دریافت نمایند.',
-    },
-    {
-      icon: Users,
-      colorClass: 'bg-purple-500/10 text-purple-500 group-hover:bg-purple-500/20',
-      title: 'مینی CRM و مدیریت سرنخ‌ها',
-      desc: 'اطلاعات تماس، شماره موبایل و پیام‌های مشتریان علاقه‌مند را در پنل اختصاصی جمع‌آوری و برای کمپین‌های بعدی مدیریت کنید.',
-    },
-    {
-      icon: Zap,
-      colorClass: 'bg-amber-500/10 text-amber-500 group-hover:bg-amber-500/20',
-      title: 'کارت فیزیکی لمسی NFC',
-      desc: 'کارت شیک فلزی یا PVC اختصاصی شما تنها با نزدیک شدن به گوشی مخاطب صفحه را باز می‌کند؛ خداحافظی کامل با هزینه‌های چاپ کارت ویزیت کاغذی!',
-    },
-    {
-      icon: BarChart3,
-      colorClass: 'bg-rose-500/10 text-rose-500 group-hover:bg-rose-500/20',
-      title: 'آمار و تحلیل تحلیلی زنده',
-      desc: 'نمودارهای خطی بازدید روزانه، نرخ کلیک روی هر لینک، تفکیک دستگاه‌ها و آمار فروش محصولات به صورت دقیق در داشبورد شما ثبت می‌شوند.',
-    },
-  ];
-
   const steps = [
     {
       num: '01',
-      color: 'bg-cyan-500/15 text-cyan-500',
+      badge: 'گام اول',
+      color: 'from-cyan-500 to-blue-600',
       title: 'ثبت‌نام و انتخاب نام اختصاصی',
-      desc: 'حساب کاربری خود را رایگان ایجاد کنید و آدرس یکتا مثل aryal.ink/ali را برای خود رزرو نمایید.',
+      desc: 'حساب کاربری خود را در کمتر از ۱ دقیقه رایگان ایجاد کنید و آدرس یکتا مانند aryal.ink/ali را برای برند شخصی یا تجاری خود رزرو نمایید.',
     },
     {
       num: '02',
-      color: 'bg-blue-500/15 text-blue-500',
+      badge: 'گام دوم',
+      color: 'from-blue-600 to-indigo-600',
       title: 'شخصی‌سازی با ویرایشگر زنده',
-      desc: 'عکس پروفایل، تم‌های لوکس دارک نئون، ماژول‌های شبکه‌های اجتماعی، کاتالوگ و محصولات فروشگاهی را با چند کلیک اضافه کنید.',
+      desc: 'عکس پروفایل، تم‌های لوکس نئون، شبکه‌های اجتماعی، کاتالوگ‌های دانلودی و محصولات فروشگاهی را در پیش‌نمایش زنده موبایل بچینید.',
     },
     {
       num: '03',
-      color: 'bg-purple-500/15 text-purple-500',
-      title: 'اشتراک‌گذاری و فروش',
-      desc: 'لینک را در بیو اینستاگرام قرار دهید یا با کارت هوشمند NFC در جلسات کاری و نمایشگاه‌ها تنها با یک لمس اطلاعات را انتقال دهید.',
+      badge: 'گام سوم',
+      color: 'from-purple-600 to-pink-600',
+      title: 'اشتراک‌گذاری هوشمند و فروش',
+      desc: 'لینک را در بیو اینستاگرام قرار دهید یا با کارت فیزیکی هوشمند NFC در جلسات، کنفرانس‌ها و نمایشگاه‌ها تنها با یک تماس اطلاعات را انتقال دهید.',
     },
   ];
 
   const faqs = [
     {
       q: 'آیا مخاطبان برای مشاهده صفحه کارت من نیاز به نصب هیچ برنامه‌ای دارند؟',
-      a: 'خیر! یکی از بزرگ‌ترین مزیت‌های آریا لینک این است که مخاطب شما با هر گوشی موبایل (اندروید، آیفون یا کامپیوتر) و بدون نیاز به نصب هرگونه نرم‌افزار، تنها با لمس کارت یا اسکن کد، صفحه شما را در مرورگر مشاهده می‌کند.',
+      a: 'خیر! یکی از بزرگ‌ترین مزیت‌های آریا لینک این است که مخاطب شما با هر گوشی موبایل (اندروید، آیفون یا کامپیوتر) و بدون نیاز به نصب هرگونه نرم‌افزار، تنها با لمس کارت یا اسکن کد، صفحه شما را مستقیماً در مرورگر مشاهده می‌کند.',
     },
     {
       q: 'کارت فیزیکی لمسی NFC چگونه کار می‌کند؟',
-      a: 'کارت‌های NFC دارای چیپست هوشمند بدون باتری هستند. کافی است کارت را به پشت گوشی طرف مقابل نزدیک کنید؛ در کسری از ثانیه صفحه پروفایل دیجیتال شما بر روی گوشی او باز می‌شود.',
+      a: 'کارت‌های NFC دارای چیپست هوشمند ایمن و بدون باتری هستند. کافی است کارت را به پشت گوشی طرف مقابل نزدیک کنید؛ در کسری از ثانیه لینک کارت دیجیتال شما روی صفحه گوشی او باز می‌شود.',
     },
     {
       q: 'تسویه حساب درآمدهای فروشگاه چگونه انجام می‌شود؟',
-      a: 'پس از تایید هویت (KYC)، شما می‌توانید موجودی حاصل از فروش خدمات و محصولات خود را از طریق بخش تسویه حساب مستقیماً به حساب‌های بانکی معتبر یا ولت حساب‌پی (HesabPay) واریز کنید.',
+      a: 'پس از تایید هویت (KYC)، موجودی حاصل از فروش خدمات و محصولات شما از طریق پنل تسویه حساب، مستقیماً به ولت حساب‌پی (HesabPay) یا حساب‌های بانکی معتبر افغانستان واریز خواهد شد.',
     },
     {
-      q: 'آیا می‌توانم لینک کارت خود را در بیو اینستاگرام قرار دهم؟',
-      a: 'بله کاملاً! آدرس اختصاصی شما مانند aryal.ink/ali را می‌توانید در بیو اینستاگرام، تیک‌تاک، تلگرام، واتساپ یا امضای ایمیل‌های اداری خود قرار دهید.',
+      q: 'نشان رسمی تیک آبی (KYC) چیست و چگونه دریافت می‌شود؟',
+      a: 'تیک آبی نشان‌دهنده اصالت هویت شماست. با ارسال تصویر تذکره الکترونیکی یا پاسپورت در پنل، کارشناسان ما مدارک را بررسی کرده و پس از تطبیق، نشان رسمی تیک آبی بر روی پروفایل و کارت شما فعال می‌شود.',
+    },
+    {
+      q: 'آیا می‌توانم لینک کارت خود را در بیو اینستاگرام و شبکه‌ها قرار دهم؟',
+      a: 'بله کاملاً! آدرس اختصاصی شما مانند aryal.ink/ali را می‌توانید در بیو اینستاگرام، تیک‌تاک، تلگرام، واتساپ یا امضای ایمیل‌های اداری خود قرار دهید تا تمامی کانال‌های شما در یک لینک در دسترس باشند.',
     },
   ];
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans select-none overflow-x-hidden" dir={dir}>
-      {/* Dynamic Background Glows */}
-      <div className="fixed top-0 right-1/4 w-[500px] h-[500px] bg-cyan-500/10 rounded-full blur-[140px] pointer-events-none -z-10 animate-pulse duration-1000" />
-      <div className="fixed top-1/3 left-10 w-[450px] h-[450px] bg-blue-600/10 rounded-full blur-[160px] pointer-events-none -z-10" />
-      <div className="fixed bottom-10 right-10 w-[400px] h-[400px] bg-purple-600/10 rounded-full blur-[140px] pointer-events-none -z-10" />
+      
+      {/* =========================================
+          ۱. هیرو سکشن (Link-in-Bio & 3D Interactive Phone)
+      ========================================= */}
+      <HeroSection />
 
       {/* =========================================
-          ۱. هیرو سکشن (Hero Section)
+          ۲ و ۳. سکشن ادغام‌شده آمار و نوار متحرک (Merged Stats & Seamless Marquee)
       ========================================= */}
-      <section className="relative pt-12 sm:pt-20 pb-16 sm:pb-28 overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
-            {/* Right Column: Hero Texts & CTA */}
-            <div className="lg:col-span-7 space-y-6 text-center lg:text-right">
-              {/* Badge */}
-              <ScrollAnimate delay={0.1} direction="up">
-                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/25 text-cyan-600 dark:text-cyan-400 text-xs font-semibold shadow-inner">
-                  <Sparkles className="w-4 h-4 text-cyan-500" />
-                  <span>اولین پلتفرم کارت ویزیت هوشمند NFC و فروشگاه بیو در افغانستان</span>
-                </div>
-              </ScrollAnimate>
-
-              {/* Catchy Headline */}
-              <ScrollAnimate delay={0.2} direction="up">
-                <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.25] text-foreground">
-                  نسل جدید{' '}
-                  <span className="bg-gradient-to-l from-cyan-500 via-blue-500 to-indigo-600 bg-clip-text text-transparent">
-                    کارت ویزیت هوشمند
-                  </span>{' '}
-                  و لینک‌بایو
-                </h1>
-              </ScrollAnimate>
-
-              {/* Subtitle */}
-              <ScrollAnimate delay={0.3} direction="up">
-                <p className="text-sm sm:text-base lg:text-lg text-muted-foreground leading-relaxed max-w-2xl mx-auto lg:mx-0">
-                  تمام راه‌های ارتباطی، شبکه‌های اجتماعی، کاتالوگ‌ها و محصولات خود را در یک لینک یکپارچه و زیبا با مشتریان به اشتراک بگذارید. فقط با یک لمس روی موبایل مخاطب!
-                </p>
-              </ScrollAnimate>
-
-              {/* CTA Buttons */}
-              <ScrollAnimate delay={0.4} direction="up">
-                <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2">
-                  <Link href="/register" className="w-full sm:w-auto">
-                    <Button
-                      size="lg"
-                      className="w-full sm:w-auto h-13 px-8 rounded-2xl bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-sm sm:text-base shadow-2xl shadow-cyan-500/30 active:scale-95 transition-all flex items-center justify-center gap-2.5 group"
-                    >
-                      <span>رایگان شروع کنید</span>
-                      <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-                    </Button>
-                  </Link>
-
-                  <a href="#features" className="w-full sm:w-auto">
-                    <Button
-                      variant="outline"
-                      size="lg"
-                      className="w-full sm:w-auto h-13 px-6 rounded-2xl border-border bg-card/60 backdrop-blur-md text-foreground hover:bg-muted font-bold text-sm shadow-sm flex items-center justify-center gap-2"
-                    >
-                      <Smartphone className="w-4 h-4 text-cyan-500" />
-                      <span>مشاهده امکانات و ماژول‌ها</span>
-                    </Button>
-                  </a>
-                </div>
-              </ScrollAnimate>
-
-              {/* Trust Indicators Row */}
-              <ScrollAnimate delay={0.5} direction="up">
-                <div className="pt-6 border-t border-border/60 flex flex-wrap items-center justify-center lg:justify-start gap-6 text-xs text-muted-foreground">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                    <span>بدون نیاز به نصب اپلیکیشن</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                    <span>پشتیبانی از فناوری لمسی NFC</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                    <span>فروشگاه و درگاه بانکی محلی</span>
-                  </div>
-                </div>
-              </ScrollAnimate>
-            </div>
-
-            {/* Left Column: Realistic Interactive Mobile Mockup */}
-            <div className="lg:col-span-5 flex justify-center relative">
-              <HeroPhoneMockup />
-            </div>
-          </div>
-        </div>
-      </section>
+      <StatsAndMarqueeSection />
 
       {/* =========================================
-          ۲. بخش امکانات (Features Section)
+          ۴. بخش امکانات (Bento Grid Features)
       ========================================= */}
-      <section id="features" className="py-20 sm:py-28 border-t border-border/80 bg-muted/20 relative">
+      <BentoGridFeatures />
+
+      {/* =========================================
+          ۵. سکشن جذاب NFC Showcase (فقط با یک تماس)
+      ========================================= */}
+      <NfcShowcaseSection />
+
+      {/* =========================================
+          ۶. نحوه کارکرد (۳ گام تا کارت هوشمند)
+      ========================================= */}
+      <section id="how-it-works" className="py-20 sm:py-28 border-t border-border/80 relative overflow-hidden">
+        {/* Soft Ambient Glow */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-cyan-500/5 rounded-full blur-[140px] pointer-events-none -z-10" />
+
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
-          {/* Section Header */}
-          <ScrollAnimate delay={0.1} direction="up" className="text-center max-w-2xl mx-auto space-y-3">
-            <Badge variant="cyan" className="font-sans text-xs">
-              امکانات نسل آینده
-            </Badge>
-            <h2 className="text-2xl sm:text-4xl font-black text-foreground tracking-tight">
-              ابزارهای پیشرفته برای رشد و توسعه برند شما
-            </h2>
-            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-              پلتفرم آریا لینک با تلفیق کارت هوشمند، هویت دیجیتال و ابزارهای تجاری، شما را در معرفی خدمات و ارتباط با مخاطبان متمایز می‌کند.
-            </p>
-          </ScrollAnimate>
+          {/* Header (Staggered Children 0.15s Cascade) */}
+          <motion.div
+            variants={headerContainerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: false, amount: 0.2 }}
+            className="text-center max-w-2xl mx-auto space-y-3"
+          >
+            <motion.div variants={headerItemVariants} className="inline-block">
+              <Badge variant="cyan" className="font-sans text-xs">
+                ساده، مدرن و سریع
+              </Badge>
+            </motion.div>
+            <motion.h2
+              variants={headerItemVariants}
+              className="text-3xl sm:text-4xl font-black text-foreground tracking-tight"
+            >
+              در ۳ گام ساده کارت هوشمند خود را بسازید
+            </motion.h2>
+            <motion.p
+              variants={headerItemVariants}
+              className="text-xs sm:text-sm text-muted-foreground leading-relaxed"
+            >
+              کمتر از ۲ دقیقه زمان می‌برد تا کسب‌وکار یا صفحه شخصی خود را به دنیای فناوری NFC متصل کنید.
+            </motion.p>
+          </motion.div>
 
-          {/* Features Grid with Staggered ScrollAnimation */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {features.map((feature, idx) => {
-              const Icon = feature.icon;
-              return (
-                <ScrollAnimate key={idx} delay={idx * 0.1} direction="up" className="h-full">
-                  <Card className="rounded-3xl border-border bg-card/80 p-7 shadow-sm hover:border-cyan-500/50 hover:shadow-xl hover:shadow-cyan-500/5 hover:-translate-y-1 transition-all duration-300 group h-full flex flex-col justify-between">
-                    <div>
-                      <div className={`w-13 h-13 rounded-2xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform ${feature.colorClass}`}>
-                        <Icon className="w-7 h-7" />
-                      </div>
-                      <h3 className="text-lg font-bold text-foreground mb-2">{feature.title}</h3>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        {feature.desc}
-                      </p>
-                    </div>
-                  </Card>
-                </ScrollAnimate>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* =========================================
-          ۳. نحوه کارکرد (How it works)
-      ========================================= */}
-      <section id="how-it-works" className="py-20 sm:py-28 border-t border-border/80 relative">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
-          <ScrollAnimate delay={0.1} direction="up" className="text-center max-w-2xl mx-auto space-y-3">
-            <Badge variant="cyan" className="font-sans text-xs">
-              ساده و سریع
-            </Badge>
-            <h2 className="text-2xl sm:text-4xl font-black text-foreground tracking-tight">
-              در ۳ گام کارت هوشمند خود را بسازید
-            </h2>
-            <p className="text-xs sm:text-sm text-muted-foreground">
-              کمتر از ۲ دقیقه زمان می‌برد تا کسب‌وکار یا صفحه شخصی خود را به دنیای دیجیتال متصل کنید.
-            </p>
-          </ScrollAnimate>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: false, amount: 0.2 }}
+            transition={{ staggerChildren: 0.14 }}
+            className="grid grid-cols-1 md:grid-cols-3 gap-8 relative"
+          >
             {steps.map((st, idx) => (
-              <ScrollAnimate key={idx} delay={idx * 0.15} direction="up" className="h-full">
-                <div className="p-8 rounded-3xl bg-card border border-border text-center space-y-4 relative hover:border-cyan-500/40 hover:shadow-lg transition-all duration-300 h-full">
-                  <div className={`w-14 h-14 rounded-2xl font-black font-outfit text-2xl flex items-center justify-center mx-auto ${st.color}`}>
-                    {st.num}
+              <motion.div
+                key={idx}
+                variants={{
+                  hidden: { opacity: 0, y: 40 },
+                  visible: {
+                    opacity: 1,
+                    y: 0,
+                    transition: { duration: 0.6, ease: EASE_SNAPPY },
+                  },
+                }}
+                className="group p-8 rounded-3xl bg-card/60 dark:bg-white/[0.03] border border-border/80 backdrop-blur-xl space-y-5 relative hover:border-cyan-500/40 hover:shadow-xl hover:shadow-cyan-500/5 transition-[border-color,box-shadow] duration-300 flex flex-col justify-between h-full"
+              >
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div
+                      className={`w-14 h-14 rounded-2xl font-black font-outfit text-2xl flex items-center justify-center bg-gradient-to-tr ${st.color} text-white shadow-lg group-hover:scale-105 transition-transform`}
+                    >
+                      {st.num}
+                    </div>
+                    <span className="text-[11px] font-bold text-muted-foreground px-2.5 py-1 rounded-full bg-muted/60 border border-border">
+                      {st.badge}
+                    </span>
                   </div>
-                  <h3 className="text-base font-bold text-foreground">{st.title}</h3>
+
+                  <h3 className="text-base sm:text-lg font-bold text-foreground">
+                    {st.title}
+                  </h3>
+
                   <p className="text-xs text-muted-foreground leading-relaxed">
                     {st.desc}
                   </p>
                 </div>
-              </ScrollAnimate>
+
+                <div className="pt-4 border-t border-border/40 flex items-center gap-2 text-[11px] text-cyan-500 font-semibold">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>انجام بدون نیاز به دانش فنی</span>
+                </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 
       {/* =========================================
-          ۴. بخش تعرفه‌ها (Pricing Section)
+          ۷. بخش تعرفه‌ها (Shimmer Pro Pricing)
       ========================================= */}
-      <section id="pricing" className="py-20 sm:py-28 border-t border-border/80 bg-muted/20 relative">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
-          {/* Pricing Header */}
-          <ScrollAnimate delay={0.1} direction="up" className="text-center max-w-2xl mx-auto space-y-3">
-            <Badge variant="cyan" className="font-sans text-xs">
-              شفاف و اقتصادی
-            </Badge>
-            <h2 className="text-2xl sm:text-4xl font-black text-foreground tracking-tight">
-              پلن‌های قیمت‌گذاری متناسب با نیاز شما
-            </h2>
-            <p className="text-xs sm:text-sm text-muted-foreground">
-              از نسخه رایگان شروع کنید و هر زمان که نیاز داشتید به پلن تجاری ارتقا دهید.
-            </p>
-          </ScrollAnimate>
-
-          {/* Pricing Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
-            {/* 1. Free Card */}
-            <ScrollAnimate delay={0.15} direction="up" className="h-full">
-              <Card className="rounded-3xl border-border bg-card p-8 flex flex-col justify-between shadow-sm relative hover:border-border/80 hover:-translate-y-1 transition-all duration-300 h-full">
-                <div className="space-y-6">
-                  <div className="space-y-2">
-                    <h3 className="text-xl font-bold text-foreground">پلن رایگان (پایه)</h3>
-                    <p className="text-xs text-muted-foreground">
-                      مناسب برای استفاده‌های شخصی و شروع فعالیت در شبکه‌های اجتماعی
-                    </p>
-                  </div>
-
-                  <div className="space-y-1">
-                    <div className="text-3xl font-black font-outfit text-foreground">
-                      رایگان
-                    </div>
-                    <span className="text-xs text-muted-foreground font-sans">برای همیشه بدون انقضا</span>
-                  </div>
-
-                  <div className="pt-4 border-t border-border space-y-3 text-xs">
-                    <div className="flex items-center gap-2.5 text-foreground">
-                      <Check className="w-4 h-4 text-emerald-500 shrink-0" />
-                      <span>۱ عدد کارت هوشمند دیجیتال</span>
-                    </div>
-                    <div className="flex items-center gap-2.5 text-foreground">
-                      <Check className="w-4 h-4 text-emerald-500 shrink-0" />
-                      <span>ماژول‌های پایه شبکه‌های اجتماعی و تماس</span>
-                    </div>
-                    <div className="flex items-center gap-2.5 text-foreground">
-                      <Check className="w-4 h-4 text-emerald-500 shrink-0" />
-                      <span>پیش‌نمایش آنلاین در تلفن همراه</span>
-                    </div>
-                    <div className="flex items-center gap-2.5 text-muted-foreground">
-                      <Check className="w-4 h-4 text-muted-foreground/60 shrink-0" />
-                      <span>دارای نشان و برندینگ آریا لینک</span>
-                    </div>
-                    <div className="flex items-center gap-2.5 text-muted-foreground">
-                      <X className="w-4 h-4 text-rose-500/70 shrink-0" />
-                      <span className="line-through">فروشگاه آنلاین و دریافت وجه</span>
-                    </div>
-                    <div className="flex items-center gap-2.5 text-muted-foreground">
-                      <X className="w-4 h-4 text-rose-500/70 shrink-0" />
-                      <span className="line-through">اتصال دامنه اختصاصی</span>
-                    </div>
-                    <div className="flex items-center gap-2.5 text-muted-foreground">
-                      <X className="w-4 h-4 text-rose-500/70 shrink-0" />
-                      <span className="line-through">تیک آبی احراز هویت</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="pt-8">
-                  <Link href="/register">
-                    <Button
-                      variant="outline"
-                      className="w-full h-12 rounded-2xl border-border bg-background hover:bg-muted font-bold text-xs"
-                    >
-                      شروع رایگان
-                    </Button>
-                  </Link>
-                </div>
-              </Card>
-            </ScrollAnimate>
-
-            {/* 2. PRO Card (Highlighted) */}
-            <ScrollAnimate delay={0.25} direction="up" className="h-full">
-              <Card className="rounded-3xl border-2 border-cyan-500 bg-gradient-to-b from-card via-card to-cyan-500/5 p-8 flex flex-col justify-between shadow-2xl shadow-cyan-500/15 relative overflow-hidden hover:-translate-y-1 transition-all duration-300 h-full">
-                {/* Highlight Badge */}
-                <div className="absolute top-4 left-4">
-                  <Badge className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold text-[11px] py-1 px-3 border-0 flex items-center gap-1 shadow-md">
-                    <Flame className="w-3.5 h-3.5 fill-white text-white" />
-                    <span>پیشنهاد ویژه و پرفروش</span>
-                  </Badge>
-                </div>
-
-                <div className="space-y-6">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-xl font-bold text-foreground">پلن حرفه‌ای (PRO)</h3>
-                      <ShieldCheck className="w-5 h-5 text-cyan-500" />
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      برای بیزینس‌ها، فروشگاه‌ها، فریلنسرها و شرکت‌های معتبر
-                    </p>
-                  </div>
-
-                  <div className="space-y-1">
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-4xl font-black font-outfit text-cyan-500">
-                        ۵۹۰
-                      </span>
-                      <span className="text-xs text-foreground font-bold">افغانی / ماهانه</span>
-                    </div>
-                    <span className="text-[11px] text-emerald-500 font-semibold block">
-                      یا سالانه با تخفیف ۳۵٪ ویژه
-                    </span>
-                  </div>
-
-                  <div className="pt-4 border-t border-border space-y-3.5 text-xs">
-                    <div className="flex items-center gap-2.5 text-foreground font-semibold">
-                      <CheckCircle2 className="w-4 h-4 text-cyan-500 shrink-0" />
-                      <span>تک‌لینک‌های نامحدود شخصی و تجاری</span>
-                    </div>
-                    <div className="flex items-center gap-2.5 text-foreground font-semibold">
-                      <CheckCircle2 className="w-4 h-4 text-cyan-500 shrink-0" />
-                      <span className="text-cyan-600 dark:text-cyan-400 font-bold">
-                        بدون هیچ‌گونه واترمارک و برندینگ سایت
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2.5 text-foreground font-semibold">
-                      <CheckCircle2 className="w-4 h-4 text-cyan-500 shrink-0" />
-                      <span>فروشگاه آنلاین و اتصال به درگاه حساب‌پی</span>
-                    </div>
-                    <div className="flex items-center gap-2.5 text-foreground font-semibold">
-                      <CheckCircle2 className="w-4 h-4 text-cyan-500 shrink-0" />
-                      <span>امکان اتصال دامنه اختصاصی (yourname.com)</span>
-                    </div>
-                    <div className="flex items-center gap-2.5 text-foreground font-semibold">
-                      <CheckCircle2 className="w-4 h-4 text-cyan-500 shrink-0" />
-                      <span className="text-cyan-500 font-bold">
-                        دریافت تیک آبی اصالت و احراز هویت سریع
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2.5 text-foreground font-semibold">
-                      <CheckCircle2 className="w-4 h-4 text-cyan-500 shrink-0" />
-                      <span>دسترسی به تمام ماژول‌های پیشرفته (رزرو، کاتالوگ و...)</span>
-                    </div>
-                    <div className="flex items-center gap-2.5 text-foreground font-semibold">
-                      <CheckCircle2 className="w-4 h-4 text-cyan-500 shrink-0" />
-                      <span>پنل تسویه حساب مالی و واریز بانکی</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="pt-8">
-                  <Link href="/register">
-                    <Button
-                      className="w-full h-12 rounded-2xl bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs shadow-xl shadow-cyan-500/25 active:scale-95 transition-all"
-                    >
-                      خرید و فعال‌سازی اشتراک PRO
-                    </Button>
-                  </Link>
-                </div>
-              </Card>
-            </ScrollAnimate>
-          </div>
-        </div>
-      </section>
+      <PricingSection />
 
       {/* =========================================
-          ۵. سوالات متداول (FAQ Section)
+          ۸. سوالات متداول (FAQ Section With Snappy Ease-Out & Spring)
       ========================================= */}
       <section id="faq" className="py-20 sm:py-28 border-t border-border/80 relative">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
-          <ScrollAnimate delay={0.1} direction="up" className="text-center max-w-xl mx-auto space-y-3">
-            <Badge variant="cyan" className="font-sans text-xs">
-              پاسخ به ابهامات
-            </Badge>
-            <h2 className="text-2xl sm:text-4xl font-black text-foreground tracking-tight">
+          {/* FAQ Header (Staggered Children 0.15s Cascade) */}
+          <motion.div
+            variants={headerContainerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: false, amount: 0.2 }}
+            className="text-center max-w-xl mx-auto space-y-3"
+          >
+            <motion.div variants={headerItemVariants} className="inline-block">
+              <Badge variant="cyan" className="font-sans text-xs">
+                پاسخ به ابهامات
+              </Badge>
+            </motion.div>
+            <motion.h2
+              variants={headerItemVariants}
+              className="text-3xl sm:text-4xl font-black text-foreground tracking-tight"
+            >
               سوالات متداول
-            </h2>
-            <p className="text-xs sm:text-sm text-muted-foreground">
-              پاسخ پرسش‌های پرتکرار کاربران پیرامون کارت‌های هوشمند و سرویس آریا لینک
-            </p>
-          </ScrollAnimate>
+            </motion.h2>
+            <motion.p
+              variants={headerItemVariants}
+              className="text-xs sm:text-sm text-muted-foreground"
+            >
+              پاسخ پرسش‌های پرتکرار پیرامون کارت‌های هوشمند، فروشگاه و سرویس آریا لینک
+            </motion.p>
+          </motion.div>
 
-          <div className="space-y-3">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: false, amount: 0.2 }}
+            transition={{ staggerChildren: 0.1 }}
+            className="space-y-3.5"
+          >
             {faqs.map((faq, idx) => (
-              <ScrollAnimate key={idx} delay={idx * 0.08} direction="up">
-                <div
-                  className="rounded-2xl border border-border bg-card/70 overflow-hidden transition-all hover:border-cyan-500/30"
+              <motion.div
+                key={idx}
+                variants={{
+                  hidden: { opacity: 0, y: 25 },
+                  visible: {
+                    opacity: 1,
+                    y: 0,
+                    transition: { duration: 0.6, ease: EASE_SNAPPY },
+                  },
+                }}
+                className="rounded-2xl border border-border/80 bg-card/60 dark:bg-white/[0.03] backdrop-blur-xl overflow-hidden transition-colors duration-200 hover:border-cyan-500/40"
+              >
+                <button
+                  type="button"
+                  onClick={() => toggleFaq(idx)}
+                  className="w-full p-5 text-right flex items-center justify-between gap-4 font-bold text-sm sm:text-base text-foreground hover:bg-muted/30 transition-colors"
                 >
-                  <button
-                    type="button"
-                    onClick={() => toggleFaq(idx)}
-                    className="w-full p-5 text-right flex items-center justify-between gap-4 font-bold text-xs sm:text-sm text-foreground hover:bg-muted/40 transition-colors"
-                  >
+                  <div className="flex items-center gap-3">
+                    <HelpCircle className="w-5 h-5 text-cyan-500 shrink-0" />
                     <span>{faq.q}</span>
-                    <ChevronDown
-                      className={`w-4 h-4 text-cyan-500 transition-transform duration-200 shrink-0 ${activeFaq === idx ? 'rotate-180' : ''
-                        }`}
-                    />
-                  </button>
+                  </div>
+                  <ChevronDown
+                    className={`w-4 h-4 text-cyan-400 transition-transform duration-300 shrink-0 ${
+                      activeFaq === idx ? 'rotate-180' : ''
+                    }`}
+                  />
+                </button>
+
+                <AnimatePresence>
                   {activeFaq === idx && (
-                    <div className="px-5 pb-5 pt-1 text-xs text-muted-foreground leading-relaxed border-t border-border/40 animate-in fade-in duration-200">
-                      {faq.a}
-                    </div>
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="px-5 pb-5 pt-3 text-sm sm:text-base text-muted-foreground leading-relaxed border-t border-border/40 font-normal">
+                        {faq.a}
+                      </div>
+                    </motion.div>
                   )}
-                </div>
-              </ScrollAnimate>
+                </AnimatePresence>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
+
+      {/* =========================================
+          ۹. بنر نهایی دعوت به اقدام (Final Conversion CTA)
+      ========================================= */}
+      <section className="py-16 sm:py-24 border-t border-border/80 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 via-blue-600/10 to-purple-600/10 pointer-events-none" />
+        
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <motion.div
+            initial={{ opacity: 0, y: 35, scale: 0.95 }}
+            whileInView={{ opacity: 1, y: 0, scale: 1 }}
+            viewport={{ once: false, amount: 0.2 }}
+            transition={{ duration: 0.6, ease: EASE_SNAPPY }}
+            className="p-8 sm:p-12 rounded-[32px] bg-card/85 dark:bg-slate-950/85 border border-cyan-500/30 backdrop-blur-2xl shadow-2xl shadow-cyan-500/15 text-center space-y-6"
+          >
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-cyan-500/15 text-cyan-400 text-xs font-bold">
+              <Zap className="w-3.5 h-3.5 fill-cyan-400" />
+              <span>پیوستن به نسل جدید کارت‌های هوشمند</span>
+            </div>
+
+            <h2 className="text-3xl sm:text-5xl font-black text-foreground tracking-tight leading-[1.25]">
+              آماده‌اید ارتباطات کاری خود را متحول کنید؟
+            </h2>
+
+            <p className="text-xs sm:text-sm text-muted-foreground max-w-xl mx-auto leading-relaxed">
+              همین حالا به صورت رایگان ثبت‌نام کنید، مینی‌وب‌سایت اختصاصی خود را بسازید یا کارت فیزیکی لوکس NFC را با ارسال رایگان سفارش دهید.
+            </p>
+
+            <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Link href="/register" className="w-full sm:w-auto">
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.96 }}
+                  transition={SPRING_FAST}
+                  className="w-full sm:w-auto"
+                >
+                  <Button
+                    size="lg"
+                    className="w-full sm:w-auto h-14 px-8 rounded-2xl bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 hover:from-cyan-400 hover:to-blue-500 text-white font-black text-sm sm:text-base shadow-xl shadow-cyan-500/30 active:scale-95 transition-all flex items-center justify-center gap-2.5 relative overflow-hidden group"
+                  >
+                    <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 pointer-events-none" />
+                    <Sparkles className="w-4 h-4 fill-white" />
+                    <span>شروع رایگان و ساخت کارت</span>
+                    <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1.5 transition-transform" />
+                  </Button>
+                </motion.div>
+              </Link>
+
+              <Link href="/services" className="w-full sm:w-auto">
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.96 }}
+                  transition={SPRING_FAST}
+                  className="w-full sm:w-auto"
+                >
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="w-full sm:w-auto h-14 px-7 rounded-2xl border-border bg-card/60 backdrop-blur-md text-foreground font-bold text-xs sm:text-sm hover:bg-muted"
+                  >
+                    <span>سفارش سازمانی و شرکتی</span>
+                  </Button>
+                </motion.div>
+              </Link>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
     </div>
   );
 }

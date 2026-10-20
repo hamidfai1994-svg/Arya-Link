@@ -78,7 +78,7 @@ export function ScrollAnimate({
       transition={{
         duration,
         delay,
-        ease: [0.22, 1, 0.36, 1], // Custom smooth ease-out curve
+        ease: [0, 0.7, 0.2, 1], // Ultra-snappy instant launch ease-out curve
       }}
       className={className}
       {...props}

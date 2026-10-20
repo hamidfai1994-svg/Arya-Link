@@ -24,12 +24,11 @@ export function LanguageSwitcher({ className }: { className?: string }) {
           className={`h-9 px-2.5 rounded-xl border border-border/60 hover:bg-muted text-xs font-semibold flex items-center gap-1.5 transition-colors ${className || ''}`}
           aria-label="تغییر زبان / Change Language"
         >
-          <span className="text-sm">{currentMeta.flag}</span>
-          <span className="text-xs font-bold hidden sm:inline">{currentMeta.nativeName}</span>
-          <Globe className="w-3.5 h-3.5 text-muted-foreground ml-0.5" />
+          <Globe className="w-4 h-4 text-cyan-500" />
+          <span className="text-xs font-bold">{currentMeta.nativeName}</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-36 p-1 rounded-2xl border border-border shadow-xl">
+      <DropdownMenuContent align="end" className="w-32 p-1 rounded-2xl border border-border shadow-xl">
         {(Object.keys(LANGUAGES) as SupportedLanguage[]).map((code) => {
           const item = LANGUAGES[code];
           const isSelected = language === code;
@@ -40,10 +39,7 @@ export function LanguageSwitcher({ className }: { className?: string }) {
               onClick={() => setLanguage(code)}
               className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold cursor-pointer transition-colors"
             >
-              <div className="flex items-center gap-2">
-                <span className="text-base">{item.flag}</span>
-                <span>{item.nativeName}</span>
-              </div>
+              <span>{item.nativeName}</span>
               {isSelected && <Check className="w-3.5 h-3.5 text-cyan-500" />}
             </DropdownMenuItem>
           );

@@ -66,7 +66,7 @@ export async function GET(req: NextRequest) {
           customerName: 'احمد فیاض',
           customerEmail: 'fayaz_tech@gmail.com',
           customerPhone: '0777555444',
-          productTitle: 'کارت ویزیت فلزی NFC سفارشی',
+          productTitle: 'کارت ویزیت NFC سفارشی',
           quantity: 1,
           unitPrice: 2800,
           totalPrice: 2800,

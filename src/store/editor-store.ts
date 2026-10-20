@@ -274,10 +274,10 @@ function getDefaultModuleConfig(moduleType: LinkModuleType): { title: string; ur
     // Commercial & Sales
     case 'product_card':
       return {
-        title: 'کارت هوشمند فلزی مشکی مات',
+        title: 'کارت هوشمند PVC',
         url: '#product',
         metadata: {
-          productTitle: 'کارت هوشمند NFC فلزی با حک لیزری',
+          productTitle: 'کارت هوشمند NFC کیفیت چاپ بالا',
           productPrice: 1500,
           productCurrency: 'AFN',
           productImage: 'https://images.unsplash.com/photo-1589758438368-0ad531db3366?w=600&auto=format&fit=crop&q=80',
