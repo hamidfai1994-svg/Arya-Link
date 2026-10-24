@@ -4,8 +4,35 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEditorStore } from '@/store/editor-store';
 import { LinkModuleType, ProfileLinkItem } from '@/types/profile.types';
-import { WhatsAppIcon } from '@/components/icons';
-import { getSmartLink } from '@/lib/smart-link';
+import {
+  WhatsAppIcon,
+  TelegramIcon,
+  InstagramIcon,
+  LinkedInIcon,
+  XTwitterIcon,
+  PinterestIcon,
+  FacebookIcon,
+  DribbbleIcon,
+  BehanceIcon,
+  YouTubeIcon,
+  ClubhouseIcon,
+  PatreonIcon,
+  TwitchIcon,
+  GitHubIcon,
+  AparatIcon,
+  TikTokIcon,
+  AppleMusicIcon,
+  YouTubeMusicIcon,
+  CastboxIcon,
+  RadioJavanIcon,
+  SpotifyIcon,
+  SoundCloudIcon,
+  SkypeIcon,
+  WeChatIcon,
+  MessengerIcon,
+  SignalIcon,
+} from '@/components/icons';
+import { getSmartLink, formatDisplayValue } from '@/lib/smart-link';
 import { LiveCountdown } from '@/components/ui/live-countdown';
 import {
   MessageSquare,
@@ -42,18 +69,95 @@ import {
   DollarSign,
   Layers,
   Sliders,
+  QrCode,
+  Share2,
 } from 'lucide-react';
+import { QRCodeSVG, QRCodeCanvas } from 'qrcode.react';
+import { toast } from 'sonner';
 
 export const LivePreview: React.FC = () => {
   const { profile, selectedDeviceId, setDevice } = useEditorStore();
   const { themeConfig } = profile;
 
+  const [previewTab, setPreviewTab] = useState<'iphone' | 'android' | 'qr'>('iphone');
   const isLight = themeConfig.preset === 'minimal_light';
   const isLtr = profile.profileLanguage === 'en';
   const isPashto = profile.profileLanguage === 'pashto';
   const isVerifiedApproved = Boolean(profile.isVerified && profile.verificationStatus === 'verified');
   const [searchFilter, setSearchFilter] = useState('');
   const [openFaqId, setOpenFaqId] = useState<string | null>(null);
+
+  const handleDownloadPNG = () => {
+    const canvas = document.getElementById('profile-qr-canvas') as HTMLCanvasElement;
+    if (!canvas) {
+      toast.error('خطا در دسترسی به بارکد');
+      return;
+    }
+    const url = canvas.toDataURL('image/png');
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `aryalink-${profile.alias || 'qrcode'}.png`;
+    a.click();
+    toast.success('تصویر PNG بارکد با موفقیت دانلود شد');
+  };
+
+  const handleDownloadSVG = () => {
+    const svg = document.getElementById('profile-qr-svg');
+    if (!svg) {
+      toast.error('خطا در دسترسی به بارکد وکتور');
+      return;
+    }
+    const serializer = new XMLSerializer();
+    const source = serializer.serializeToString(svg);
+    const blob = new Blob([source], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `aryalink-${profile.alias || 'qrcode'}.svg`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('فایل SVG وکتور بارکد با موفقیت دانلود شد');
+  };
+
+  const handleDownloadJPG = () => {
+    const canvas = document.getElementById('profile-qr-canvas') as HTMLCanvasElement;
+    if (!canvas) {
+      toast.error('خطا در دسترسی به بارکد');
+      return;
+    }
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = canvas.width;
+    tempCanvas.height = canvas.height;
+    const ctx = tempCanvas.getContext('2d');
+    if (!ctx) return;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+    ctx.drawImage(canvas, 0, 0);
+    const url = tempCanvas.toDataURL('image/jpeg', 0.95);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `aryalink-${profile.alias || 'qrcode'}.jpg`;
+    a.click();
+    toast.success('تصویر JPG بارکد با موفقیت دانلود شد');
+  };
+
+  const handleShare = async () => {
+    const profileUrl = `https://aryal.ink/${profile.alias}`;
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: profile.displayName || 'کارت ویزیت هوشمند آریا لینک',
+          text: `کارت دیجیتال ${profile.displayName || ''} در آریا لینک:`,
+          url: profileUrl,
+        });
+      } catch (err) {
+        // User cancelled share
+      }
+    } else if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      await navigator.clipboard.writeText(profileUrl);
+      toast.success('لینک صفحه در کلیپ‌بورد کپی شد!');
+    }
+  };
 
   const resolveDisplayName =
     profile.displayName ||
@@ -71,6 +175,29 @@ export const LivePreview: React.FC = () => {
     'telegram_channel',
     'instagram_profile',
     'linkedin_profile',
+    'twitter_x',
+    'pinterest',
+    'facebook',
+    'dribbble',
+    'behance',
+    'youtube_channel',
+    'clubhouse',
+    'patreon',
+    'twitch',
+    'github',
+    'aparat_channel',
+    'tiktok',
+    'apple_music',
+    'youtube_music',
+    'castbox',
+    'radio_javan',
+    'spotify_podcaster',
+    'spotify',
+    'soundcloud',
+    'skype',
+    'wechat',
+    'messenger',
+    'signal',
   ];
 
   const getButtonAnimationClass = (anim?: string) => {
@@ -123,6 +250,7 @@ export const LivePreview: React.FC = () => {
       (link.metadata?.channelUsername as string) ||
       (link.metadata?.instagramUsername as string) ||
       (link.metadata?.linkedinUsername as string) ||
+      (link.metadata?.targetId as string) ||
       '';
     const smartUrl = getSmartLink(link.moduleType, rawVal);
     const cardRadius = getBorderRadiusClass(link.advancedSettings?.customStyling?.borderRadius);
@@ -137,7 +265,7 @@ export const LivePreview: React.FC = () => {
             target="_blank"
             rel="noreferrer"
             title={link.title}
-            className={`w-11 h-11 ${cardRadius} ${animClass} bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-500 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm`}
+            className={`w-11 h-11 ${cardRadius} ${animClass} bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm`}
           >
             <WhatsAppIcon className="w-5 h-5 fill-current" />
           </a>
@@ -150,9 +278,9 @@ export const LivePreview: React.FC = () => {
             target="_blank"
             rel="noreferrer"
             title={link.title}
-            className={`w-11 h-11 ${cardRadius} ${animClass} bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/30 text-sky-500 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm`}
+            className={`w-11 h-11 ${cardRadius} ${animClass} bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/30 text-sky-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm`}
           >
-            <Send className="w-5 h-5" />
+            <TelegramIcon className="w-5 h-5 fill-current" />
           </a>
         );
       case 'instagram_profile':
@@ -163,9 +291,9 @@ export const LivePreview: React.FC = () => {
             target="_blank"
             rel="noreferrer"
             title={link.title}
-            className={`w-11 h-11 ${cardRadius} ${animClass} bg-pink-500/15 hover:bg-pink-500/25 border border-pink-500/30 text-pink-500 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm`}
+            className={`w-11 h-11 ${cardRadius} ${animClass} bg-pink-500/15 hover:bg-pink-500/25 border border-pink-500/30 text-pink-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm`}
           >
-            <Instagram className="w-5 h-5" />
+            <InstagramIcon className="w-5 h-5 fill-current" />
           </a>
         );
       case 'linkedin_profile':
@@ -176,9 +304,308 @@ export const LivePreview: React.FC = () => {
             target="_blank"
             rel="noreferrer"
             title={link.title}
-            className={`w-11 h-11 ${cardRadius} ${animClass} bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/30 text-blue-500 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm`}
+            className={`w-11 h-11 ${cardRadius} ${animClass} bg-blue-600/15 hover:bg-blue-600/25 border border-blue-600/30 text-blue-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm`}
           >
-            <Linkedin className="w-5 h-5" />
+            <LinkedInIcon className="w-5 h-5 fill-current" />
+          </a>
+        );
+      case 'twitter_x':
+        return (
+          <a
+            key={link.id}
+            href={smartUrl}
+            target="_blank"
+            rel="noreferrer"
+            title={link.title}
+            className={`w-11 h-11 ${cardRadius} ${animClass} bg-zinc-800/40 hover:bg-zinc-800/60 border border-zinc-700/50 text-zinc-100 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm`}
+          >
+            <XTwitterIcon className="w-5 h-5 fill-current" />
+          </a>
+        );
+      case 'pinterest':
+        return (
+          <a
+            key={link.id}
+            href={smartUrl}
+            target="_blank"
+            rel="noreferrer"
+            title={link.title}
+            className={`w-11 h-11 ${cardRadius} ${animClass} bg-red-600/15 hover:bg-red-600/25 border border-red-600/30 text-red-500 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm`}
+          >
+            <PinterestIcon className="w-5 h-5 fill-current" />
+          </a>
+        );
+      case 'facebook':
+        return (
+          <a
+            key={link.id}
+            href={smartUrl}
+            target="_blank"
+            rel="noreferrer"
+            title={link.title}
+            className={`w-11 h-11 ${cardRadius} ${animClass} bg-blue-600/15 hover:bg-blue-600/25 border border-blue-600/30 text-blue-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm`}
+          >
+            <FacebookIcon className="w-5 h-5 fill-current" />
+          </a>
+        );
+      case 'dribbble':
+        return (
+          <a
+            key={link.id}
+            href={smartUrl}
+            target="_blank"
+            rel="noreferrer"
+            title={link.title}
+            className={`w-11 h-11 ${cardRadius} ${animClass} bg-pink-500/15 hover:bg-pink-500/25 border border-pink-500/30 text-pink-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm`}
+          >
+            <DribbbleIcon className="w-5 h-5 fill-current" />
+          </a>
+        );
+      case 'behance':
+        return (
+          <a
+            key={link.id}
+            href={smartUrl}
+            target="_blank"
+            rel="noreferrer"
+            title={link.title}
+            className={`w-11 h-11 ${cardRadius} ${animClass} bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/30 text-blue-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm`}
+          >
+            <BehanceIcon className="w-5 h-5 fill-current" />
+          </a>
+        );
+      case 'youtube_channel':
+        return (
+          <a
+            key={link.id}
+            href={smartUrl}
+            target="_blank"
+            rel="noreferrer"
+            title={link.title}
+            className={`w-11 h-11 ${cardRadius} ${animClass} bg-red-600/15 hover:bg-red-600/25 border border-red-600/30 text-red-500 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm`}
+          >
+            <YouTubeIcon className="w-5 h-5 fill-current" />
+          </a>
+        );
+      case 'clubhouse':
+        return (
+          <a
+            key={link.id}
+            href={smartUrl}
+            target="_blank"
+            rel="noreferrer"
+            title={link.title}
+            className={`w-11 h-11 ${cardRadius} ${animClass} bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm`}
+          >
+            <ClubhouseIcon className="w-5 h-5 fill-current" />
+          </a>
+        );
+      case 'patreon':
+        return (
+          <a
+            key={link.id}
+            href={smartUrl}
+            target="_blank"
+            rel="noreferrer"
+            title={link.title}
+            className={`w-11 h-11 ${cardRadius} ${animClass} bg-orange-500/15 hover:bg-orange-500/25 border border-orange-500/30 text-orange-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm`}
+          >
+            <PatreonIcon className="w-5 h-5 fill-current" />
+          </a>
+        );
+      case 'twitch':
+        return (
+          <a
+            key={link.id}
+            href={smartUrl}
+            target="_blank"
+            rel="noreferrer"
+            title={link.title}
+            className={`w-11 h-11 ${cardRadius} ${animClass} bg-purple-600/15 hover:bg-purple-600/25 border border-purple-600/30 text-purple-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm`}
+          >
+            <TwitchIcon className="w-5 h-5 fill-current" />
+          </a>
+        );
+      case 'github':
+        return (
+          <a
+            key={link.id}
+            href={smartUrl}
+            target="_blank"
+            rel="noreferrer"
+            title={link.title}
+            className={`w-11 h-11 ${cardRadius} ${animClass} bg-zinc-700/20 hover:bg-zinc-700/30 border border-zinc-700/40 text-slate-100 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm`}
+          >
+            <GitHubIcon className="w-5 h-5 fill-current" />
+          </a>
+        );
+      case 'aparat_channel':
+        return (
+          <a
+            key={link.id}
+            href={smartUrl}
+            target="_blank"
+            rel="noreferrer"
+            title={link.title}
+            className={`w-11 h-11 ${cardRadius} ${animClass} bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm`}
+          >
+            <AparatIcon className="w-5 h-5 fill-current" />
+          </a>
+        );
+      case 'tiktok':
+        return (
+          <a
+            key={link.id}
+            href={smartUrl}
+            target="_blank"
+            rel="noreferrer"
+            title={link.title}
+            className={`w-11 h-11 ${cardRadius} ${animClass} bg-pink-500/15 hover:bg-pink-500/25 border border-pink-500/30 text-pink-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm`}
+          >
+            <TikTokIcon className="w-5 h-5 fill-current" />
+          </a>
+        );
+      case 'apple_music':
+        return (
+          <a
+            key={link.id}
+            href={smartUrl}
+            target="_blank"
+            rel="noreferrer"
+            title={link.title}
+            className={`w-11 h-11 ${cardRadius} ${animClass} bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-500 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm`}
+          >
+            <AppleMusicIcon className="w-5 h-5 fill-current" />
+          </a>
+        );
+      case 'youtube_music':
+        return (
+          <a
+            key={link.id}
+            href={smartUrl}
+            target="_blank"
+            rel="noreferrer"
+            title={link.title}
+            className={`w-11 h-11 ${cardRadius} ${animClass} bg-red-600/15 hover:bg-red-600/25 border border-red-600/30 text-red-500 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm`}
+          >
+            <YouTubeMusicIcon className="w-5 h-5 fill-current" />
+          </a>
+        );
+      case 'castbox':
+        return (
+          <a
+            key={link.id}
+            href={smartUrl}
+            target="_blank"
+            rel="noreferrer"
+            title={link.title}
+            className={`w-11 h-11 ${cardRadius} ${animClass} bg-orange-500/15 hover:bg-orange-500/25 border border-orange-500/30 text-orange-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm`}
+          >
+            <CastboxIcon className="w-5 h-5 fill-current" />
+          </a>
+        );
+      case 'radio_javan':
+        return (
+          <a
+            key={link.id}
+            href={smartUrl}
+            target="_blank"
+            rel="noreferrer"
+            title={link.title}
+            className={`w-11 h-11 ${cardRadius} ${animClass} bg-amber-400/15 hover:bg-amber-400/25 border border-amber-400/30 text-amber-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm`}
+          >
+            <RadioJavanIcon className="w-5 h-5 fill-current" />
+          </a>
+        );
+      case 'spotify_podcaster':
+        return (
+          <a
+            key={link.id}
+            href={smartUrl}
+            target="_blank"
+            rel="noreferrer"
+            title={link.title}
+            className={`w-11 h-11 ${cardRadius} ${animClass} bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 text-purple-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm`}
+          >
+            <SpotifyIcon className="w-5 h-5 fill-current" />
+          </a>
+        );
+      case 'spotify':
+        return (
+          <a
+            key={link.id}
+            href={smartUrl}
+            target="_blank"
+            rel="noreferrer"
+            title={link.title}
+            className={`w-11 h-11 ${cardRadius} ${animClass} bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm`}
+          >
+            <SpotifyIcon className="w-5 h-5 fill-current" />
+          </a>
+        );
+      case 'soundcloud':
+        return (
+          <a
+            key={link.id}
+            href={smartUrl}
+            target="_blank"
+            rel="noreferrer"
+            title={link.title}
+            className={`w-11 h-11 ${cardRadius} ${animClass} bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm`}
+          >
+            <SoundCloudIcon className="w-5 h-5 fill-current" />
+          </a>
+        );
+      case 'skype':
+        return (
+          <a
+            key={link.id}
+            href={smartUrl}
+            target="_blank"
+            rel="noreferrer"
+            title={link.title}
+            className={`w-11 h-11 ${cardRadius} ${animClass} bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/30 text-sky-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm`}
+          >
+            <SkypeIcon className="w-5 h-5 fill-current" />
+          </a>
+        );
+      case 'wechat':
+        return (
+          <a
+            key={link.id}
+            href={smartUrl}
+            target="_blank"
+            rel="noreferrer"
+            title={link.title}
+            className={`w-11 h-11 ${cardRadius} ${animClass} bg-emerald-600/15 hover:bg-emerald-600/25 border border-emerald-600/30 text-emerald-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm`}
+          >
+            <WeChatIcon className="w-5 h-5 fill-current" />
+          </a>
+        );
+      case 'messenger':
+        return (
+          <a
+            key={link.id}
+            href={smartUrl}
+            target="_blank"
+            rel="noreferrer"
+            title={link.title}
+            className={`w-11 h-11 ${cardRadius} ${animClass} bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/30 text-blue-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm`}
+          >
+            <MessengerIcon className="w-5 h-5 fill-current" />
+          </a>
+        );
+      case 'signal':
+        return (
+          <a
+            key={link.id}
+            href={smartUrl}
+            target="_blank"
+            rel="noreferrer"
+            title={link.title}
+            className={`w-11 h-11 ${cardRadius} ${animClass} bg-blue-600/15 hover:bg-blue-600/25 border border-blue-600/30 text-blue-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm`}
+          >
+            <SignalIcon className="w-5 h-5 fill-current" />
           </a>
         );
       default:
@@ -794,7 +1221,7 @@ export const LivePreview: React.FC = () => {
                 }`}
               dir="ltr"
             >
-              {link.url.replace(/^https?:\/\//, '')}
+              {formatDisplayValue(link.url)}
             </span>
           </div>
         </div>
@@ -814,26 +1241,45 @@ export const LivePreview: React.FC = () => {
       <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
 
-      {/* Top Device Toolbar */}
-      <div className="z-10 mb-4 bg-card/90 backdrop-blur-md border border-border rounded-full p-1.5 flex items-center gap-2 shadow-xl">
-        <span className="text-[11px] font-semibold text-muted-foreground px-2">پیش‌نمایش زنده:</span>
+      {/* Top Device & QR Toolbar */}
+      <div className="z-10 mb-4 bg-card/90 backdrop-blur-md border border-border rounded-full p-1.5 flex items-center gap-1.5 shadow-xl flex-wrap justify-center">
+        <span className="text-[11px] font-semibold text-muted-foreground px-2">پیش‌نمایش:</span>
         <button
-          onClick={() => setDevice('iphone')}
-          className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${selectedDeviceId === 'iphone'
-            ? 'bg-cyan-500 text-slate-950 font-bold shadow-md shadow-cyan-500/30'
-            : 'text-muted-foreground hover:text-foreground'
-            }`}
+          onClick={() => {
+            setPreviewTab('iphone');
+            setDevice('iphone');
+          }}
+          className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
+            previewTab === 'iphone'
+              ? 'bg-cyan-500 text-slate-950 font-bold shadow-md shadow-cyan-500/30'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
         >
           iPhone
         </button>
         <button
-          onClick={() => setDevice('android')}
-          className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${selectedDeviceId === 'android'
-            ? 'bg-cyan-500 text-slate-950 font-bold shadow-md shadow-cyan-500/30'
-            : 'text-muted-foreground hover:text-foreground'
-            }`}
+          onClick={() => {
+            setPreviewTab('android');
+            setDevice('android');
+          }}
+          className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
+            previewTab === 'android'
+              ? 'bg-cyan-500 text-slate-950 font-bold shadow-md shadow-cyan-500/30'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
         >
           Android
+        </button>
+        <button
+          onClick={() => setPreviewTab('qr')}
+          className={`px-3 py-1 rounded-full text-xs font-medium transition-all flex items-center gap-1.5 ${
+            previewTab === 'qr'
+              ? 'bg-cyan-500 text-slate-950 font-bold shadow-md shadow-cyan-500/30'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <QrCode className="w-3.5 h-3.5" />
+          <span>ساخت QR کد</span>
         </button>
         <div className="h-3.5 w-[1px] bg-border mx-0.5" />
         <span
@@ -844,11 +1290,113 @@ export const LivePreview: React.FC = () => {
         </span>
       </div>
 
-      {/* Virtual Smartphone Frame */}
-      <div
-        className={`relative w-[340px] h-[690px] bg-black p-[11px] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.1),0_0_40px_rgba(6,182,212,0.15)] ring-1 ring-slate-800 transition-all duration-300 ${selectedDeviceId === 'iphone' ? 'rounded-[54px]' : 'rounded-[34px]'
+      {previewTab === 'qr' ? (
+        /* Dedicated QR Code Generator Component */
+        <div className="relative w-[340px] bg-card/95 backdrop-blur-xl border border-border rounded-[34px] p-6 shadow-2xl space-y-4 flex flex-col items-center animate-in zoom-in-95 duration-200 text-center select-text" dir="rtl">
+          {/* Header */}
+          <div className="space-y-1">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 text-xs font-bold border border-cyan-500/20 mb-1">
+              <QrCode className="w-3.5 h-3.5" />
+              <span>کد QR هوشمند اختصاصی</span>
+            </div>
+            <h3 className="text-sm font-bold text-foreground">
+              تولید و دانلود بارکد صفحه
+            </h3>
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              با اسکن این بارکد، کارت هوشمند شما فوراً در مرورگر گوشی مخاطب باز می‌شود.
+            </p>
+          </div>
+
+          {/* QR Display Container */}
+          <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-md flex flex-col items-center justify-center relative">
+            <QRCodeCanvas
+              id="profile-qr-canvas"
+              value={`https://aryal.ink/${profile.alias}`}
+              size={190}
+              level="H"
+              includeMargin={true}
+            />
+            {/* Hidden SVG element for pure vector download */}
+            <div className="hidden">
+              <QRCodeSVG
+                id="profile-qr-svg"
+                value={`https://aryal.ink/${profile.alias}`}
+                size={500}
+                level="H"
+                includeMargin={true}
+              />
+            </div>
+            <div className="mt-2 px-3 py-0.5 rounded-full bg-slate-100 text-slate-800 text-[11px] font-outfit font-semibold border border-slate-200" dir="ltr">
+              aryal.ink/{profile.alias}
+            </div>
+          </div>
+
+          {/* Exactly 3 Equal-Width Buttons in ONE Row (grid grid-cols-3 gap-2) */}
+          <div className="w-full space-y-1.5">
+            <span className="text-[11px] font-bold text-foreground block text-right">
+              دانلود بارکد برای چاپ و وب:
+            </span>
+            <div className="grid grid-cols-3 gap-2 w-full">
+              <button
+                type="button"
+                onClick={handleDownloadPNG}
+                className="py-2 px-2.5 rounded-xl bg-muted hover:bg-cyan-500/10 hover:text-cyan-600 dark:hover:text-cyan-400 hover:border-cyan-500/30 text-foreground font-bold text-xs border border-border flex items-center justify-center gap-1 transition-all active:scale-95 shadow-xs"
+                title="دانلود نسخه PNG مناسب اشتراک‌گذاری"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>PNG</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleDownloadSVG}
+                className="py-2 px-2.5 rounded-xl bg-muted hover:bg-cyan-500/10 hover:text-cyan-600 dark:hover:text-cyan-400 hover:border-cyan-500/30 text-foreground font-bold text-xs border border-border flex items-center justify-center gap-1 transition-all active:scale-95 shadow-xs"
+                title="دانلود نسخه وکتور SVG بدون افت کیفیت"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>SVG</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleDownloadJPG}
+                className="py-2 px-2.5 rounded-xl bg-muted hover:bg-cyan-500/10 hover:text-cyan-600 dark:hover:text-cyan-400 hover:border-cyan-500/30 text-foreground font-bold text-xs border border-border flex items-center justify-center gap-1 transition-all active:scale-95 shadow-xs"
+                title="دانلود نسخه JPG با پس‌زمینه سفید"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>JPG</span>
+              </button>
+            </div>
+          </div>
+
+          {/* 100% Full-Width Share Button */}
+          <button
+            type="button"
+            onClick={handleShare}
+            className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md shadow-cyan-500/25 transition-all active:scale-98"
+          >
+            <Share2 className="w-4 h-4" />
+            <span>اشتراک‌گذاری کد و لینک</span>
+          </button>
+
+          {/* 100% Full-Width Live Profile View Button */}
+          <a
+            href={`/${profile.alias}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full py-2.5 px-4 rounded-xl bg-card hover:bg-muted text-foreground border border-border font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-98 shadow-xs"
+          >
+            <ExternalLink className="w-4 h-4 text-cyan-500" />
+            <span>مشاهده زنده صفحه پروفایل</span>
+          </a>
+        </div>
+      ) : (
+        /* Virtual Smartphone Frame */
+        <div
+          className={`relative w-[340px] h-[690px] bg-black p-[11px] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.1),0_0_40px_rgba(6,182,212,0.15)] ring-1 ring-slate-800 transition-all duration-300 ${
+            selectedDeviceId === 'iphone' ? 'rounded-[54px]' : 'rounded-[34px]'
           }`}
-      >
+        >
         {/* Camera Cutout: Dynamic Island for iPhone, Punch-hole for Android */}
         <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 flex items-center justify-center pointer-events-none">
           {selectedDeviceId === 'iphone' ? (
@@ -1067,46 +1615,8 @@ export const LivePreview: React.FC = () => {
               )}
 
               {/* Profile Action Buttons & Modules Container */}
+              {/* Profile Action Buttons & Modules Container */}
               <div className="px-4 flex-1 flex flex-col">
-                {/* Quick Contact Micro Actions */}
-                <div className="flex items-center justify-center gap-2.5 mb-3">
-                  {profile.phone && (
-                    <a
-                      href={getSmartLink('phone', profile.phone)}
-                      className={`w-9 h-9 rounded-full border flex items-center justify-center text-xs shadow-sm transition-all active:scale-95 ${isLight
-                        ? 'bg-white hover:bg-slate-100 border-slate-200 text-slate-800'
-                        : 'bg-white/10 hover:bg-white/20 border-white/20 backdrop-blur-md text-white'
-                        }`}
-                      title="تماس مستقیم"
-                    >
-                      <Phone className="w-4 h-4" />
-                    </a>
-                  )}
-                  {profile.whatsapp && (
-                    <a
-                      href={getSmartLink('whatsapp', profile.whatsapp)}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="w-9 h-9 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/40 backdrop-blur-md flex items-center justify-center text-emerald-600 dark:text-emerald-300 text-xs shadow-sm transition-all active:scale-95"
-                      title="واتساپ"
-                    >
-                      <WhatsAppIcon className="w-4 h-4 fill-emerald-600 dark:fill-emerald-300" />
-                    </a>
-                  )}
-                  {profile.email && (
-                    <a
-                      href={getSmartLink('email', profile.email)}
-                      className={`w-9 h-9 rounded-full border flex items-center justify-center text-xs shadow-sm transition-all active:scale-95 ${isLight
-                        ? 'bg-white hover:bg-slate-100 border-slate-200 text-slate-800'
-                        : 'bg-white/10 hover:bg-white/20 border-white/20 backdrop-blur-md text-white'
-                        }`}
-                      title="ایمیل"
-                    >
-                      <Mail className="w-4 h-4" />
-                    </a>
-                  )}
-                </div>
-
                 {/* Primary Action Button: Save Contact vCard */}
                 <motion.button
                   whileHover={{ scale: 1.02 }}
@@ -1130,10 +1640,39 @@ export const LivePreview: React.FC = () => {
                 </motion.button>
 
                 {/* SOCIAL NETWORKS ICON GRID (Dedicated Row / Matrix) */}
-                {socialLinks.length > 0 && (
+                {(socialLinks.length > 0 || profile.email || profile.whatsapp || profile.phone) && (
                   <div className="mb-4 pt-1">
-                    <div className="flex items-center justify-center flex-wrap gap-3 p-2 rounded-2xl bg-black/10 dark:bg-white/5 border border-white/10 backdrop-blur-md">
+                    <div className="flex items-center justify-center flex-wrap gap-2.5 p-2 rounded-2xl bg-black/10 dark:bg-white/5 border border-white/10 backdrop-blur-md">
+                      {profile.whatsapp && !socialLinks.some((l) => l.moduleType === 'whatsapp_direct') && (
+                        <a
+                          href={getSmartLink('whatsapp', profile.whatsapp)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="w-11 h-11 rounded-2xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm"
+                          title="واتساپ"
+                        >
+                          <WhatsAppIcon className="w-5 h-5 fill-current" />
+                        </a>
+                      )}
                       {socialLinks.map((link) => renderSocialIcon(link))}
+                      {profile.email && (
+                        <a
+                          href={getSmartLink('email', profile.email)}
+                          className="w-11 h-11 rounded-2xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm"
+                          title="ایمیل"
+                        >
+                          <Mail className="w-5 h-5" />
+                        </a>
+                      )}
+                      {profile.phone && !profile.links.some((l) => l.moduleType === 'phone_call') && (
+                        <a
+                          href={getSmartLink('phone', profile.phone)}
+                          className="w-11 h-11 rounded-2xl bg-teal-500/15 hover:bg-teal-500/25 border border-teal-500/30 text-teal-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm"
+                          title="تماس"
+                        >
+                          <Phone className="w-5 h-5" />
+                        </a>
+                      )}
                     </div>
                   </div>
                 )}
@@ -1176,6 +1715,7 @@ export const LivePreview: React.FC = () => {
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 };

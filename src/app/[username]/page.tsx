@@ -94,11 +94,16 @@ export default async function PublicProfilePage({ params }: PageProps) {
     return <NotFoundCard alias={cleanAlias} />;
   }
 
-  await connectToDatabase();
-  const profile = await Profile.findOne({
-    alias: cleanAlias,
-    isActive: { $ne: false },
-  }).lean();
+  let profile: any = null;
+  try {
+    await connectToDatabase();
+    profile = await Profile.findOne({
+      alias: cleanAlias,
+      isActive: { $ne: false },
+    }).lean();
+  } catch (err) {
+    console.error('Database connection error in PublicProfilePage:', err);
+  }
 
   if (!profile) {
     return <NotFoundCard alias={cleanAlias} />;

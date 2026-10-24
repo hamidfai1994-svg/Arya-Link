@@ -10,6 +10,7 @@ import { CrmLeadsTable } from './CrmLeadsTable';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { FileUploader } from '@/components/ui/file-uploader';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
+import { Switch } from '@/components/ui/switch';
 import { ProfileSettingsModal } from './ProfileSettingsModal';
 import { toast } from 'sonner';
 import { useSession, signOut } from 'next-auth/react';
@@ -61,11 +62,13 @@ export const ProfileEditor: React.FC = () => {
     saveProfileData,
     fetchProfileData,
     fetchProfilesList,
+    resetState,
     // KYC & Verification
     setProfileType,
     updateVerificationData,
     submitVerification,
     toggleVerifiedBadge,
+    unconfirmedModuleId,
   } = useEditorStore();
 
   const [activeTab, setActiveTab] = useState<'content' | 'appearance' | 'settings' | 'crm'>('content');
@@ -73,6 +76,33 @@ export const ProfileEditor: React.FC = () => {
   const [isProfileSettingsOpen, setIsProfileSettingsOpen] = useState(false);
   const [copiedAlias, setCopiedAlias] = useState(false);
   const [isSubmittingKYC, setIsSubmittingKYC] = useState(false);
+  const [isProfileInfoExpanded, setIsProfileInfoExpanded] = useState(false);
+
+  const handleOpenAddModule = () => {
+    if (unconfirmedModuleId) {
+      toast.error('این بخش هنوز تایید نشده است. لطفاً ابتدا تغییرات را تایید یا لغو کنید.');
+      return;
+    }
+    setIsModuleModalOpen(true);
+  };
+
+  // Snapshot for Profile Basic Info form so "انصراف" can revert
+  const basicInfoSnapshotRef = useRef<any>(null);
+
+  // Live Auto-Save Effect (Debounces 1.8s whenever isDirty is true)
+  useEffect(() => {
+    if (!isDirty || isSaving) return;
+
+    const timer = setTimeout(async () => {
+      try {
+        await saveProfileData();
+      } catch (err) {
+        console.warn('Auto-save error:', err);
+      }
+    }, 1800);
+
+    return () => clearTimeout(timer);
+  }, [isDirty, isSaving, profile, saveProfileData]);
 
   // Smart Language Detection Warning (warns once per session)
   const hasWarnedRef = useRef(false);
@@ -166,27 +196,6 @@ export const ProfileEditor: React.FC = () => {
     setTimeout(() => setCopiedAlias(false), 2000);
   };
 
-  const handlePublish = async () => {
-    if (isSaving) return;
-
-    const toastId = toast.loading('در حال انتشار و ذخیره در پایگاه داده...');
-    const result = await saveProfileData();
-
-    if (result.success) {
-      toast.success(result.message || 'تغییرات با موفقیت در پایگاه داده منتشر شد!', {
-        id: toastId,
-        description: `کارت هوشمند aryal.ink/${profile.alias} ذخیره و فعال است.`,
-        duration: 4000,
-      });
-    } else {
-      toast.error('خطا در انتشار تغییرات', {
-        id: toastId,
-        description: result.message || 'مشکلی در ارتباط با دیتابیس MongoDB رخ داده است.',
-        duration: 5000,
-      });
-    }
-  };
-
   return (
     <div className="flex flex-col h-full bg-card text-foreground border-l border-border w-full max-w-2xl mx-auto shadow-2xl overflow-hidden font-sans transition-colors duration-200" dir="rtl">
       {/* Editor Header */}
@@ -201,8 +210,8 @@ export const ProfileEditor: React.FC = () => {
           <button
             type="button"
             onClick={() => setIsProfileSettingsOpen(true)}
-            className="w-9 h-9 rounded-xl border border-border bg-card hover:bg-muted text-muted-foreground hover:text-cyan-500 transition-colors flex items-center justify-center shrink-0 shadow-sm"
-            title="تنظیمات پروفایل، زبان و احراز هویت تیک آبی"
+            className="w-9 h-9 rounded-xl border border-border bg-card hover:bg-muted text-muted-foreground hover:text-cyan-500 transition-colors flex items-center justify-center shrink-0 shadow-sm cursor-pointer"
+            title="تنظیمات پیشرفته پروفایل و وب‌سایت"
             aria-label="تنظیمات پروفایل"
           >
             <Settings className="w-4 h-4" />
@@ -218,39 +227,12 @@ export const ProfileEditor: React.FC = () => {
             <button
               type="button"
               onClick={() => signOut({ callbackUrl: '/login' })}
-              className="w-9 h-9 rounded-xl border border-border bg-card hover:bg-muted text-muted-foreground hover:text-rose-500 transition-colors flex items-center justify-center shrink-0"
+              className="w-9 h-9 rounded-xl border border-border bg-card hover:bg-muted text-muted-foreground hover:text-rose-500 transition-colors flex items-center justify-center shrink-0 cursor-pointer"
               title={`خروج از حساب (${session.user.name || session.user.email})`}
             >
               <LogOut className="w-4 h-4" />
             </button>
           )}
-
-          {/* Save / Publish Button */}
-          <button
-            type="button"
-            onClick={handlePublish}
-            disabled={isSaving}
-            className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all duration-200 ${isSaving
-              ? 'bg-muted text-muted-foreground cursor-wait'
-              : isDirty
-                ? 'bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-lg shadow-cyan-500/25 active:scale-95 ring-2 ring-cyan-500/30'
-                : 'bg-cyan-600/15 hover:bg-cyan-600/25 text-cyan-600 dark:text-cyan-400 border border-cyan-500/30'
-              }`}
-            title="انتشار تغییرات در پایگاه داده MongoDB"
-          >
-            {isSaving ? (
-              <>
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-cyan-500" />
-                <span>در حال انتشار...</span>
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-3.5 h-3.5 text-cyan-500 dark:text-cyan-400" />
-                <span>انتشار</span>
-                {isDirty && <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shrink-0" />}
-              </>
-            )}
-          </button>
         </div>
       </header>
 
@@ -304,161 +286,239 @@ export const ProfileEditor: React.FC = () => {
         {/* TAB 1: CONTENT & MODULES */}
         {activeTab === 'content' && (
           <>
-            {/* Basic Info Section */}
+            {/* Basic Info & Profile Identity Section (Collapsible with Save & Cancel) */}
             <section className="bg-muted/30 border border-border rounded-2xl p-4 shadow-sm space-y-4">
-              <h2 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-cyan-400"></span>
-                <span>{t.basicInfo}</span>
-              </h2>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-medium text-muted-foreground mb-1.5">{t.displayName}</label>
-                  <input
-                    type="text"
-                    value={profile.displayName}
-                    onChange={(e) => updateBasicInfo({ displayName: e.target.value })}
-                    onBlur={(e) => checkLanguageMismatch(e.target.value)}
-                    placeholder={t.displayNamePlaceholder}
-                    className="w-full bg-background border border-border rounded-xl px-3 py-2 text-sm text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-colors"
-                  />
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-2xl overflow-hidden border border-border bg-card flex items-center justify-center shrink-0 shadow-sm">
+                    {profile.avatarUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={profile.avatarUrl} alt={profile.displayName} className="w-full h-full object-cover" />
+                    ) : (
+                      <User className="w-5 h-5 text-muted-foreground" />
+                    )}
+                  </div>
+                  <div>
+                    <h2 className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                      <span>{profile.displayName || 'نام و هویت تنظیم نشده'}</span>
+                      {profile.alias && (
+                        <span className="text-[11px] text-cyan-600 dark:text-cyan-400 font-outfit" dir="ltr">
+                          (@{profile.alias})
+                        </span>
+                      )}
+                    </h2>
+                    <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">
+                      {profile.headline || 'عنوان یا تخصص شغلی وارد نشده است'}
+                    </p>
+                  </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-medium text-muted-foreground mb-1.5">{t.headline}</label>
-                  <input
-                    type="text"
-                    value={profile.headline}
-                    onChange={(e) => updateBasicInfo({ headline: e.target.value })}
-                    onBlur={(e) => checkLanguageMismatch(e.target.value)}
-                    placeholder={t.headlinePlaceholder}
-                    className="w-full bg-background border border-border rounded-xl px-3 py-2 text-sm text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-colors"
-                  />
-                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!isProfileInfoExpanded) {
+                      basicInfoSnapshotRef.current = JSON.parse(JSON.stringify(profile));
+                    }
+                    setIsProfileInfoExpanded(!isProfileInfoExpanded);
+                  }}
+                  className={`px-3 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm ${
+                    isProfileInfoExpanded
+                      ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-600 dark:text-cyan-400'
+                      : 'bg-card hover:bg-muted border-border text-foreground'
+                  }`}
+                >
+                  <Sliders className="w-3.5 h-3.5 text-cyan-500" />
+                  <span>{isProfileInfoExpanded ? 'بستن فرم' : 'ویرایش اطلاعات پروفایل'}</span>
+                </button>
               </div>
 
-              <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1.5">{t.bio}</label>
-                <textarea
-                  rows={2}
-                  value={profile.bio}
-                  onChange={(e) => updateBasicInfo({ bio: e.target.value })}
-                  onBlur={(e) => checkLanguageMismatch(e.target.value)}
-                  placeholder={t.bioPlaceholder}
-                  className="w-full bg-background border border-border rounded-xl px-3 py-2 text-sm text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-colors resize-none font-sans"
-                />
-              </div>
-
-              {/* Header Layout Selector */}
-              <div className="pt-2 border-t border-border/80">
-                <label className="block text-xs font-bold text-foreground mb-2 flex items-center gap-1.5">
-                  <LayoutTemplate className="w-3.5 h-3.5 text-cyan-500" />
-                  <span>{t.headerLayout}</span>
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  {/* Mode 1: Curve */}
-                  <button
-                    type="button"
-                    onClick={() => setHeaderLayout('curve')}
-                    className={`p-3 rounded-2xl border text-right transition-all flex flex-col justify-between relative overflow-hidden ${(profile.headerLayout || 'curve') === 'curve'
-                      ? 'bg-cyan-500/10 border-cyan-500 ring-2 ring-cyan-500/30'
-                      : 'bg-card border-border hover:border-cyan-500/40'
-                      }`}
-                  >
-                    <div className="w-full h-12 rounded-xl bg-slate-900/40 mb-2 relative overflow-hidden flex items-end justify-center">
-                      <div
-                        className="w-full h-9 bg-gradient-to-r from-blue-600 to-cyan-500 absolute top-0 left-0"
-                        style={{ clipPath: 'ellipse(85% 100% at 50% 0%)' }}
+              {isProfileInfoExpanded && (
+                <div className="pt-3 border-t border-border/80 space-y-4 animate-in fade-in duration-200">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-medium text-muted-foreground mb-1.5">{t.displayName}</label>
+                      <input
+                        type="text"
+                        value={profile.displayName}
+                        onChange={(e) => updateBasicInfo({ displayName: e.target.value })}
+                        onBlur={(e) => checkLanguageMismatch(e.target.value)}
+                        placeholder={t.displayNamePlaceholder}
+                        className="w-full bg-background border border-border rounded-xl px-3 py-2 text-sm text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-colors"
                       />
-                      <div className="w-6 h-6 rounded-full bg-cyan-400 border-2 border-background relative z-10 -bottom-1 shadow-sm" />
                     </div>
-                    <div>
-                      <p className="text-xs font-bold text-foreground">۱. منحنی</p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5 leading-relaxed">
-                        کاور بالا با لبه قوسی و آواتار دایره‌ای در مرکز روی خط تقاطع
-                      </p>
-                    </div>
-                    {(profile.headerLayout || 'curve') === 'curve' && (
-                      <span className="absolute top-2 left-2 w-2 h-2 rounded-full bg-cyan-500 animate-pulse" />
-                    )}
-                  </button>
 
-                  {/* Mode 2: Gradient Mask */}
-                  <button
-                    type="button"
-                    onClick={() => setHeaderLayout('gradient_mask')}
-                    className={`p-3 rounded-2xl border text-right transition-all flex flex-col justify-between relative overflow-hidden ${profile.headerLayout === 'gradient_mask'
-                      ? 'bg-cyan-500/10 border-cyan-500 ring-2 ring-cyan-500/30'
-                      : 'bg-card border-border hover:border-cyan-500/40'
-                      }`}
-                  >
-                    <div className="w-full h-12 rounded-xl bg-gradient-to-l from-indigo-600 via-cyan-600 to-transparent mb-2 relative p-1.5 flex items-center justify-end">
-                      <div className="w-7 h-7 rounded-lg bg-cyan-400 border border-white/50 shadow-sm" />
-                    </div>
                     <div>
-                      <p className="text-xs font-bold text-foreground">۲. ماسک گرادیانت</p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5 leading-relaxed">
-                        کاور مستطیلی محو شونده با آواتار گوشه‌گرد و نام در کنار آن
-                      </p>
+                      <label className="block text-xs font-medium text-muted-foreground mb-1.5">{t.headline}</label>
+                      <input
+                        type="text"
+                        value={profile.headline}
+                        onChange={(e) => updateBasicInfo({ headline: e.target.value })}
+                        onBlur={(e) => checkLanguageMismatch(e.target.value)}
+                        placeholder={t.headlinePlaceholder}
+                        className="w-full bg-background border border-border rounded-xl px-3 py-2 text-sm text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-colors"
+                      />
                     </div>
-                    {profile.headerLayout === 'gradient_mask' && (
-                      <span className="absolute top-2 left-2 w-2 h-2 rounded-full bg-cyan-500 animate-pulse" />
-                    )}
-                  </button>
+                  </div>
 
-                  {/* Mode 3: Minimal */}
-                  <button
-                    type="button"
-                    onClick={() => setHeaderLayout('minimal')}
-                    className={`p-3 rounded-2xl border text-right transition-all flex flex-col justify-between relative overflow-hidden ${profile.headerLayout === 'minimal'
-                      ? 'bg-cyan-500/10 border-cyan-500 ring-2 ring-cyan-500/30'
-                      : 'bg-card border-border hover:border-cyan-500/40'
-                      }`}
-                  >
-                    <div className="w-full h-12 rounded-xl bg-muted/40 mb-2 flex items-center justify-center">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-cyan-500 to-blue-600 shadow-md ring-2 ring-cyan-400/40" />
+                  <div>
+                    <label className="block text-xs font-medium text-muted-foreground mb-1.5">{t.bio}</label>
+                    <textarea
+                      rows={2}
+                      value={profile.bio}
+                      onChange={(e) => updateBasicInfo({ bio: e.target.value })}
+                      onBlur={(e) => checkLanguageMismatch(e.target.value)}
+                      placeholder={t.bioPlaceholder}
+                      className="w-full bg-background border border-border rounded-xl px-3 py-2 text-sm text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-colors resize-none font-sans"
+                    />
+                  </div>
+
+                  {/* Header Layout Selector */}
+                  <div className="pt-2 border-t border-border/80">
+                    <label className="block text-xs font-bold text-foreground mb-2 flex items-center gap-1.5">
+                      <LayoutTemplate className="w-3.5 h-3.5 text-cyan-500" />
+                      <span>{t.headerLayout}</span>
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      {/* Mode 1: Curve */}
+                      <button
+                        type="button"
+                        onClick={() => setHeaderLayout('curve')}
+                        className={`p-3 rounded-2xl border text-right transition-all flex flex-col justify-between relative overflow-hidden ${(profile.headerLayout || 'curve') === 'curve'
+                          ? 'bg-cyan-500/10 border-cyan-500 ring-2 ring-cyan-500/30'
+                          : 'bg-card border-border hover:border-cyan-500/40'
+                          }`}
+                      >
+                        <div className="w-full h-12 rounded-xl bg-slate-900/40 mb-2 relative overflow-hidden flex items-end justify-center">
+                          <div
+                            className="w-full h-9 bg-gradient-to-r from-blue-600 to-cyan-500 absolute top-0 left-0"
+                            style={{ clipPath: 'ellipse(85% 100% at 50% 0%)' }}
+                          />
+                          <div className="w-6 h-6 rounded-full bg-cyan-400 border-2 border-background relative z-10 -bottom-1 shadow-sm" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-foreground">۱. منحنی</p>
+                          <p className="text-[10px] text-muted-foreground mt-0.5 leading-relaxed">
+                            کاور بالا با لبه قوسی و آواتار دایره‌ای در مرکز روی خط تقاطع
+                          </p>
+                        </div>
+                        {(profile.headerLayout || 'curve') === 'curve' && (
+                          <span className="absolute top-2 left-2 w-2 h-2 rounded-full bg-cyan-500 animate-pulse" />
+                        )}
+                      </button>
+
+                      {/* Mode 2: Gradient Mask */}
+                      <button
+                        type="button"
+                        onClick={() => setHeaderLayout('gradient_mask')}
+                        className={`p-3 rounded-2xl border text-right transition-all flex flex-col justify-between relative overflow-hidden ${profile.headerLayout === 'gradient_mask'
+                          ? 'bg-cyan-500/10 border-cyan-500 ring-2 ring-cyan-500/30'
+                          : 'bg-card border-border hover:border-cyan-500/40'
+                          }`}
+                      >
+                        <div className="w-full h-12 rounded-xl bg-gradient-to-l from-indigo-600 via-cyan-600 to-transparent mb-2 relative p-1.5 flex items-center justify-end">
+                          <div className="w-7 h-7 rounded-lg bg-cyan-400 border border-white/50 shadow-sm" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-foreground">۲. ماسک گرادیانت</p>
+                          <p className="text-[10px] text-muted-foreground mt-0.5 leading-relaxed">
+                            کاور مستطیلی محو شونده با آواتار گوشه‌گرد و نام در کنار آن
+                          </p>
+                        </div>
+                        {profile.headerLayout === 'gradient_mask' && (
+                          <span className="absolute top-2 left-2 w-2 h-2 rounded-full bg-cyan-500 animate-pulse" />
+                        )}
+                      </button>
+
+                      {/* Mode 3: Minimal */}
+                      <button
+                        type="button"
+                        onClick={() => setHeaderLayout('minimal')}
+                        className={`p-3 rounded-2xl border text-right transition-all flex flex-col justify-between relative overflow-hidden ${profile.headerLayout === 'minimal'
+                          ? 'bg-cyan-500/10 border-cyan-500 ring-2 ring-cyan-500/30'
+                          : 'bg-card border-border hover:border-cyan-500/40'
+                          }`}
+                      >
+                        <div className="w-full h-12 rounded-xl bg-muted/40 mb-2 flex items-center justify-center">
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-cyan-500 to-blue-600 shadow-md ring-2 ring-cyan-400/40" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-foreground">۳. مینیمال</p>
+                          <p className="text-[10px] text-muted-foreground mt-0.5 leading-relaxed">
+                            بدون تصویر کاور، فقط عکس پروفایل بزرگ در مرکز
+                          </p>
+                        </div>
+                        {profile.headerLayout === 'minimal' && (
+                          <span className="absolute top-2 left-2 w-2 h-2 rounded-full bg-cyan-500 animate-pulse" />
+                        )}
+                      </button>
                     </div>
-                    <div>
-                      <p className="text-xs font-bold text-foreground">۳. مینیمال</p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5 leading-relaxed">
-                        بدون تصویر کاور، فقط عکس پروفایل بزرگ در مرکز
-                      </p>
-                    </div>
-                    {profile.headerLayout === 'minimal' && (
-                      <span className="absolute top-2 left-2 w-2 h-2 rounded-full bg-cyan-500 animate-pulse" />
+                  </div>
+
+                  {/* Uploaders for Avatar & Cover */}
+                  <div className={`pt-2 ${profile.headerLayout === 'minimal' ? 'w-full' : 'grid grid-cols-1 md:grid-cols-2 gap-4'}`}>
+                    <FileUploader
+                      value={profile.avatarUrl}
+                      onChange={(url) => updateBasicInfo({ avatarUrl: url })}
+                      fileType="image"
+                      folder="avatars"
+                      label="تصویر پروفایل / آواتار"
+                      description="فرمت‌های JPG، PNG، WEBP (فشرده‌سازی خودکار تا ۲ مگابایت)"
+                      maxSizeMB={2}
+                      aspectRatio="square"
+                      className="w-full"
+                    />
+
+                    {profile.headerLayout !== 'minimal' && (
+                      <FileUploader
+                        value={profile.coverUrl || ''}
+                        onChange={(url) => updateBasicInfo({ coverUrl: url })}
+                        fileType="image"
+                        folder="covers"
+                        label="تصویر کاور هدر"
+                        description="تصویر بنر بالای پروفایل (حداکثر ۲ مگابایت با بهینه‌سازی خودکار)"
+                        maxSizeMB={2}
+                        aspectRatio="banner"
+                        className="w-full"
+                      />
                     )}
-                  </button>
+                  </div>
+
+                  {/* Action Buttons for Profile Info: ذخیره و تایید (سبز) و انصراف (خاکستری/قرمز) */}
+                  <div className="pt-3 border-t border-border flex items-center justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (basicInfoSnapshotRef.current) {
+                          resetState(basicInfoSnapshotRef.current);
+                        }
+                        setIsProfileInfoExpanded(false);
+                        toast.info('تغییرات پروفایل نادیده گرفته شد.');
+                      }}
+                      className="px-4 py-2 rounded-xl bg-muted hover:bg-rose-500/10 text-muted-foreground hover:text-rose-500 border border-border text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                      <span>انصراف</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const res = await saveProfileData();
+                        if (res.success) {
+                          toast.success('تنظیمات پروفایل با موفقیت ذخیره شد.');
+                          setIsProfileInfoExpanded(false);
+                        } else {
+                          toast.error(res.message || 'خطا در ذخیره‌سازی.');
+                        }
+                      }}
+                      className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white text-xs font-bold shadow-md shadow-emerald-500/20 transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+                    >
+                      <CheckCheck className="w-3.5 h-3.5" />
+                      <span>ذخیره و تایید</span>
+                    </button>
+                  </div>
                 </div>
-              </div>
-
-              {/* Uploaders for Avatar & Cover */}
-              <div className={`pt-2 ${profile.headerLayout === 'minimal' ? 'w-full' : 'grid grid-cols-1 md:grid-cols-2 gap-4'}`}>
-                <FileUploader
-                  value={profile.avatarUrl}
-                  onChange={(url) => updateBasicInfo({ avatarUrl: url })}
-                  fileType="image"
-                  folder="avatars"
-                  label="تصویر پروفایل / آواتار"
-                  description="فرمت‌های JPG، PNG، WEBP (فشرده‌سازی خودکار تا ۲ مگابایت)"
-                  maxSizeMB={2}
-                  aspectRatio="square"
-                  className="w-full"
-                />
-
-                {profile.headerLayout !== 'minimal' && (
-                  <FileUploader
-                    value={profile.coverUrl || ''}
-                    onChange={(url) => updateBasicInfo({ coverUrl: url })}
-                    fileType="image"
-                    folder="covers"
-                    label="تصویر کاور هدر"
-                    description="تصویر بنر بالای پروفایل (حداکثر ۲ مگابایت با بهینه‌سازی خودکار)"
-                    maxSizeMB={2}
-                    aspectRatio="banner"
-                    className="w-full"
-                  />
-                )}
-              </div>
+              )}
             </section>
 
             {/* Modules List & Add Button */}
@@ -476,7 +536,7 @@ export const ProfileEditor: React.FC = () => {
 
                 <button
                   type="button"
-                  onClick={() => setIsModuleModalOpen(true)}
+                  onClick={handleOpenAddModule}
                   className="px-3.5 py-1.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold rounded-xl text-xs flex items-center gap-1.5 transition-all shadow-md shadow-cyan-500/20 active:scale-95"
                 >
                   <Plus className="w-4 h-4" />
@@ -492,7 +552,7 @@ export const ProfileEditor: React.FC = () => {
                   <p>هنوز ماژولی به کارت خود اضافه نکرده‌اید.</p>
                   <button
                     type="button"
-                    onClick={() => setIsModuleModalOpen(true)}
+                    onClick={handleOpenAddModule}
                     className="inline-flex items-center gap-1 text-cyan-500 font-bold hover:underline"
                   >
                     <Plus className="w-3.5 h-3.5" />
@@ -912,15 +972,10 @@ export const ProfileEditor: React.FC = () => {
                     با فعال‌سازی این گزینه، فوتر «طراحی شده با Arya Link» از پایین کارت حذف خواهد شد.
                   </span>
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer shrink-0">
-                  <input
-                    type="checkbox"
-                    checked={profile.hideBranding || false}
-                    onChange={(e) => updateProSettings({ hideBranding: e.target.checked })}
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-500"></div>
-                </label>
+                <Switch
+                  checked={Boolean(profile.hideBranding)}
+                  onCheckedChange={(checked) => updateProSettings({ hideBranding: checked })}
+                />
               </div>
             </section>
 
@@ -998,20 +1053,13 @@ export const ProfileEditor: React.FC = () => {
                     {profile.directModeEnabled ? 'فعال (هدایت سریع)' : 'غیرفعال (نمایش کارت دیجیتال)'}
                   </span>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => toggleDirectMode()}
-                  className={`w-12 h-6 flex items-center rounded-full p-1 transition-colors duration-300 ${profile.directModeEnabled ? 'bg-cyan-500' : 'bg-muted'
-                    }`}
-                >
-                  <div
-                    className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ${profile.directModeEnabled ? '-translate-x-6' : 'translate-x-0'
-                      }`}
-                  />
-                </button>
+                <Switch
+                  checked={Boolean(profile.directModeEnabled)}
+                  onCheckedChange={() => toggleDirectMode()}
+                />
               </div>
 
-              {profile.directModeEnabled && (
+                {profile.directModeEnabled && (
                 <div className="space-y-2 animate-in fade-in duration-200">
                   <label className="block text-xs font-medium text-cyan-500">نشانی مقصد هدایت مستقیم</label>
                   <input
@@ -1025,6 +1073,43 @@ export const ProfileEditor: React.FC = () => {
                 </div>
               )}
             </section>
+
+            {/* Bottom Confirm & Cancel Bar for Website Settings */}
+            <div className="p-4 bg-card border border-border rounded-2xl flex items-center justify-between gap-3 shadow-sm">
+              <span className="text-xs text-muted-foreground hidden sm:inline">
+                تنظیمات وب‌سایت، سئو و هدایت مستقیم
+              </span>
+              <div className="flex items-center gap-2 mr-auto w-full sm:w-auto justify-end">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab('content');
+                    toast.info('به تب محتوا بازگشتید.');
+                  }}
+                  className="px-4 py-2 rounded-xl bg-muted hover:bg-rose-500/10 text-muted-foreground hover:text-rose-500 border border-border text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+                >
+                  <X className="w-3.5 h-3.5" />
+                  <span>انصراف</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const res = await saveProfileData();
+                    if (res.success) {
+                      toast.success('تنظیمات وب‌سایت با موفقیت ذخیره شد.');
+                      setActiveTab('content');
+                    } else {
+                      toast.error(res.message || 'خطا در ذخیره‌سازی.');
+                    }
+                  }}
+                  className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white text-xs font-bold shadow-md shadow-emerald-500/20 transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+                >
+                  <CheckCheck className="w-3.5 h-3.5" />
+                  <span>ذخیره و تایید</span>
+                </button>
+              </div>
+            </div>
           </div>
         )}
 

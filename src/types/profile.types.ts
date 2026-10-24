@@ -1,9 +1,36 @@
 export type LinkModuleType = 
-  // Social Networks
+  // Social Networks & Platforms (14+ items)
   | 'whatsapp_direct'
   | 'telegram_channel'
   | 'instagram_profile'
   | 'linkedin_profile'
+  | 'twitter_x'
+  | 'pinterest'
+  | 'facebook'
+  | 'dribbble'
+  | 'behance'
+  | 'youtube_channel'
+  | 'clubhouse'
+  | 'patreon'
+  | 'twitch'
+  | 'github'
+  | 'aparat_channel'
+  | 'tiktok'
+
+  // Audio & Podcasts (7 items)
+  | 'apple_music'
+  | 'youtube_music'
+  | 'castbox'
+  | 'radio_javan'
+  | 'spotify_podcaster'
+  | 'spotify'
+  | 'soundcloud'
+
+  // Direct Messengers (6 items)
+  | 'skype'
+  | 'wechat'
+  | 'messenger'
+  | 'signal'
   
   // Text & Layout
   | 'simple_text'
@@ -76,10 +103,15 @@ export interface ModuleAdvancedSettings {
 }
 
 export interface ModuleMetadata {
-  // Social & Handles
+  // Social, Messengers & Handles
   phoneNumber?: string;
   prefilledMessage?: string;
   username?: string;
+  targetId?: string;
+  channelUsername?: string;
+  instagramUsername?: string;
+  linkedinUsername?: string;
+  smartDeepLink?: string;
   
   // Text & Layout
   simpleTextContent?: string;

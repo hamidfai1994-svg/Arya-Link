@@ -67,6 +67,12 @@ export interface EditorState {
   setDevice: (device: 'iphone' | 'android' | 'tablet') => void;
   setIsSaving: (isSaving: boolean) => void;
   resetState: (initialData?: ProfileData) => void;
+
+  // Module Accordion & Dirty Tracking
+  expandedModuleId: string | null;
+  setExpandedModuleId: (id: string | null) => void;
+  unconfirmedModuleId: string | null;
+  setUnconfirmedModuleId: (id: string | null) => void;
 }
 
 const defaultTheme: ProfileThemeConfig = {
@@ -115,10 +121,10 @@ const emptyProfile: ProfileData = {
 
 function getDefaultModuleConfig(moduleType: LinkModuleType): { title: string; url: string; metadata: ModuleMetadata } {
   switch (moduleType) {
-    // Social
+    // Social & Platforms
     case 'whatsapp_direct':
       return {
-        title: 'واتساپ',
+        title: 'واتساپ (WhatsApp)',
         url: 'https://wa.me/93',
         metadata: {
           phoneNumber: '+93',
@@ -127,7 +133,7 @@ function getDefaultModuleConfig(moduleType: LinkModuleType): { title: string; ur
       };
     case 'instagram_profile':
       return {
-        title: 'اینستاگرام',
+        title: 'اینستاگرام (Instagram)',
         url: 'https://instagram.com/',
         metadata: {
           username: '',
@@ -135,7 +141,7 @@ function getDefaultModuleConfig(moduleType: LinkModuleType): { title: string; ur
       };
     case 'linkedin_profile':
       return {
-        title: 'لینکدین',
+        title: 'لینکدین (LinkedIn)',
         url: 'https://linkedin.com/in/',
         metadata: {
           username: '',
@@ -143,10 +149,200 @@ function getDefaultModuleConfig(moduleType: LinkModuleType): { title: string; ur
       };
     case 'telegram_channel':
       return {
-        title: 'چت/کانال تلگرام',
+        title: 'تلگرام (Telegram)',
         url: 'https://t.me/',
         metadata: {
           username: '',
+        },
+      };
+    case 'twitter_x':
+      return {
+        title: 'ایکس (توییتر)',
+        url: 'https://x.com/',
+        metadata: {
+          username: '',
+        },
+      };
+    case 'pinterest':
+      return {
+        title: 'پینترست (Pinterest)',
+        url: 'https://pinterest.com/',
+        metadata: {
+          username: '',
+        },
+      };
+    case 'facebook':
+      return {
+        title: 'فیسبوک (Facebook)',
+        url: 'https://facebook.com/',
+        metadata: {
+          username: '',
+          targetId: '',
+        },
+      };
+    case 'dribbble':
+      return {
+        title: 'دریبل (Dribbble)',
+        url: 'https://dribbble.com/',
+        metadata: {
+          username: '',
+        },
+      };
+    case 'behance':
+      return {
+        title: 'بیهنس (Behance)',
+        url: 'https://behance.net/',
+        metadata: {
+          username: '',
+        },
+      };
+    case 'youtube_channel':
+      return {
+        title: 'کانال یوتیوب (YouTube)',
+        url: 'https://youtube.com/@',
+        metadata: {
+          username: '',
+        },
+      };
+    case 'clubhouse':
+      return {
+        title: 'کلاب‌هاوس (Clubhouse)',
+        url: 'https://clubhouse.com/@',
+        metadata: {
+          username: '',
+        },
+      };
+    case 'patreon':
+      return {
+        title: 'پاترئون (Patreon)',
+        url: 'https://patreon.com/',
+        metadata: {
+          username: '',
+        },
+      };
+    case 'twitch':
+      return {
+        title: 'توییچ (Twitch)',
+        url: 'https://twitch.tv/',
+        metadata: {
+          username: '',
+        },
+      };
+    case 'github':
+      return {
+        title: 'گیت‌هاب (GitHub)',
+        url: 'https://github.com/',
+        metadata: {
+          username: '',
+        },
+      };
+    case 'aparat_channel':
+      return {
+        title: 'کانال آپارات (Aparat)',
+        url: 'https://aparat.com/',
+        metadata: {
+          username: '',
+        },
+      };
+    case 'tiktok':
+      return {
+        title: 'تیک‌تاک (TikTok)',
+        url: 'https://tiktok.com/@',
+        metadata: {
+          username: '',
+        },
+      };
+
+    // Audio & Podcasts
+    case 'apple_music':
+      return {
+        title: 'اپل موزیک (Apple Music)',
+        url: 'https://music.apple.com',
+        metadata: {
+          targetId: '',
+        },
+      };
+    case 'youtube_music':
+      return {
+        title: 'یوتیوب موزیک (YouTube Music)',
+        url: 'https://music.youtube.com',
+        metadata: {
+          targetId: '',
+        },
+      };
+    case 'castbox':
+      return {
+        title: 'کست‌باکس (Castbox)',
+        url: 'https://castbox.fm/ch/',
+        metadata: {
+          targetId: '',
+        },
+      };
+    case 'radio_javan':
+      return {
+        title: 'رادیو جوان (Radio Javan)',
+        url: 'https://play.radiojavan.com/podcast/',
+        metadata: {
+          targetId: '',
+        },
+      };
+    case 'spotify_podcaster':
+      return {
+        title: 'اسپاتیفای پادکستر (Anchor)',
+        url: 'https://podcasters.spotify.com/',
+        metadata: {
+          username: '',
+        },
+      };
+    case 'spotify':
+      return {
+        title: 'اسپاتیفای (Spotify)',
+        url: 'https://open.spotify.com/',
+        metadata: {
+          targetId: '',
+        },
+      };
+    case 'soundcloud':
+      return {
+        title: 'ساوندکلاود (SoundCloud)',
+        url: 'https://soundcloud.com/',
+        metadata: {
+          username: '',
+          targetId: '',
+        },
+      };
+
+    // Direct Messengers
+    case 'skype':
+      return {
+        title: 'اسکایپ (Skype)',
+        url: 'skype:',
+        metadata: {
+          username: '',
+        },
+      };
+    case 'wechat':
+      return {
+        title: 'ویچت (WeChat)',
+        url: 'weixin://dl/chat?',
+        metadata: {
+          targetId: '',
+        },
+      };
+    case 'messenger':
+      return {
+        title: 'فیسبوک مسنجر (Messenger)',
+        url: 'https://m.me/',
+        metadata: {
+          targetId: '',
+        },
+      };
+    case 'signal':
+      return {
+        title: 'سیگنال (Signal)',
+        url: 'https://signal.me/#p/+93',
+        metadata: {
+          phoneNumber: '+93',
         },
       };
 
@@ -393,6 +589,12 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   isLoading: false,
   lastSavedAt: null,
   saveError: null,
+
+  // Module Accordion & Dirty Tracking
+  expandedModuleId: null,
+  setExpandedModuleId: (id) => set({ expandedModuleId: id }),
+  unconfirmedModuleId: null,
+  setUnconfirmedModuleId: (id) => set({ unconfirmedModuleId: id }),
 
   // Multi-Profile State (Dynamic from MongoDB)
   profilesList: [],
@@ -678,45 +880,46 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       isDirty: true,
     })),
 
-  addModule: (moduleType) =>
-    set((state) => {
-      const defaults = getDefaultModuleConfig(moduleType);
-      const newId = `module_${Date.now()}`;
-      const newLink: ProfileLinkItem = {
-        id: newId,
-        title: defaults.title,
-        url: defaults.url,
-        moduleType,
-        isActive: true,
-        isPinned: false,
-        order: state.profile.links.length,
-        clickCount: 0,
-        metadata: defaults.metadata,
-        advancedSettings: {
-          scheduling: {
-            enabled: false,
-            days: [0, 1, 2, 3, 4, 5, 6],
-            startTime: '08:00',
-            endTime: '20:00',
-          },
-          monetization: {
-            isLocked: false,
-            price: 50,
-            currency: 'AFN',
-            unlockNote: 'برای مشاهده محتوا یا لینک اختصاصی، پرداخت فرمایید.',
-          },
-          customStyling: {},
+  addModule: (moduleType) => {
+    const defaults = getDefaultModuleConfig(moduleType);
+    const newId = `module_${Date.now()}`;
+    const newLink: ProfileLinkItem = {
+      id: newId,
+      title: defaults.title,
+      url: defaults.url,
+      moduleType,
+      isActive: true,
+      isPinned: false,
+      order: get().profile.links.length,
+      clickCount: 0,
+      metadata: defaults.metadata,
+      advancedSettings: {
+        scheduling: {
+          enabled: false,
+          days: [0, 1, 2, 3, 4, 5, 6],
+          startTime: '08:00',
+          endTime: '20:00',
         },
-      };
+        monetization: {
+          isLocked: false,
+          price: 50,
+          currency: 'AFN',
+          unlockNote: 'برای مشاهده محتوا یا لینک اختصاصی، پرداخت فرمایید.',
+        },
+        customStyling: {},
+      },
+    };
 
-      return {
-        profile: {
-          ...state.profile,
-          links: [newLink, ...state.profile.links],
-        },
-        isDirty: true,
-      };
-    }),
+    set((state) => ({
+      profile: {
+        ...state.profile,
+        links: [newLink, ...state.profile.links],
+      },
+      expandedModuleId: newId,
+      unconfirmedModuleId: newId,
+      isDirty: true,
+    }));
+  },
 
   addLink: (newLinkData) =>
     set((state) => {
@@ -804,14 +1007,19 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       isDirty: true,
     })),
 
-  removeLink: (id) =>
+  removeLink: (id) => {
     set((state) => ({
       profile: {
         ...state.profile,
         links: state.profile.links.filter((link) => link.id !== id),
       },
       isDirty: true,
-    })),
+    }));
+    // Live Auto-Save to database
+    setTimeout(() => {
+      get().saveProfileData();
+    }, 150);
+  },
 
   reorderLinks: (reorderedList) =>
     set((state) => ({

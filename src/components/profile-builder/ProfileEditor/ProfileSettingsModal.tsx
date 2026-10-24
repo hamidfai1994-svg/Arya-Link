@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useEditorStore } from '@/store/editor-store';
-import { ProfileLanguage, ProfileType } from '@/types/profile.types';
+import { ProfileLanguage, ProfileType, ProfileData } from '@/types/profile.types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
@@ -24,6 +24,8 @@ import {
   Loader2,
   Sparkles,
   Link2,
+  X,
+  ChevronDown,
 } from 'lucide-react';
 
 interface ProfileSettingsModalProps {
@@ -44,11 +46,49 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
     setProfileType,
     updateVerificationData,
     submitVerification,
+    saveProfileData,
+    resetState,
   } = useEditorStore();
 
   const [activeTab, setActiveTab] = useState<'general' | 'seo' | 'access' | 'kyc'>('general');
   const [copiedLink, setCopiedLink] = useState(false);
   const [isSubmittingKYC, setIsSubmittingKYC] = useState(false);
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
+
+  // Snapshot profile state on modal open so "انصراف" can revert changes
+  const snapshotRef = useRef<ProfileData | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      snapshotRef.current = JSON.parse(JSON.stringify(profile));
+    }
+  }, [isOpen]);
+
+  const handleSaveAndConfirm = async () => {
+    setIsSavingSettings(true);
+    const toastId = toast.loading('در حال ذخیره و اعمال تنظیمات...');
+    try {
+      const res = await saveProfileData();
+      if (res.success) {
+        toast.success('تنظیمات پروفایل با موفقیت ذخیره و اعمال شد.', { id: toastId });
+        onClose();
+      } else {
+        toast.error(res.message || 'خطا در ذخیره‌سازی تنظیمات.', { id: toastId });
+      }
+    } catch (err) {
+      toast.error('خطای شبکه در ذخیره‌سازی تنظیمات.', { id: toastId });
+    } finally {
+      setIsSavingSettings(false);
+    }
+  };
+
+  const handleCancel = () => {
+    if (snapshotRef.current) {
+      resetState(snapshotRef.current);
+    }
+    toast.info('تغییرات نادیده گرفته شد و فرم بسته شد.');
+    onClose();
+  };
 
   const handleCopyLink = () => {
     const url = `https://aryal.ink/${profile.alias}`;
@@ -161,29 +201,43 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
                 </div>
               </div>
 
-              {/* Language Selection */}
-              <div className="p-4 bg-muted/30 border border-border rounded-2xl space-y-2">
-                <label className="text-xs font-bold text-foreground block">
-                  زبان پیش‌فرض کارت هوشمند
-                </label>
-                <div className="grid grid-cols-3 gap-2.5">
-                  {[
-                    { id: 'dari', label: 'دری' },
-                    { id: 'pashto', label: 'پښتو' },
-                    { id: 'en', label: 'English' },
-                  ].map((l) => (
-                    <button
-                      key={l.id}
-                      type="button"
-                      onClick={() => setProfileLanguage(l.id as ProfileLanguage)}
-                      className={`py-2 px-3 rounded-xl text-xs font-semibold border transition-all ${(profile.profileLanguage || 'dari') === l.id
-                        ? 'bg-cyan-500 text-slate-950 font-bold border-cyan-400 shadow-md shadow-cyan-500/20'
-                        : 'bg-card border-border text-foreground hover:bg-muted'
-                        }`}
+              {/* Profile Type & Language Dropdowns */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Profile Type Selection */}
+                <div className="p-4 bg-muted/30 border border-border rounded-2xl space-y-2">
+                  <label className="text-xs font-bold text-foreground block">
+                    نوع پروفایل کارت
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={profile.profileType || 'personal'}
+                      onChange={(e) => setProfileType(e.target.value as any)}
+                      className="w-full bg-card border border-border rounded-xl px-3.5 py-2.5 text-xs text-foreground focus:outline-none focus:border-cyan-500 appearance-none font-sans font-medium cursor-pointer shadow-sm transition-colors"
                     >
-                      {l.label}
-                    </button>
-                  ))}
+                      <option value="personal">👤 شخصی / حقیقی (فردی، فریلنسر)</option>
+                      <option value="business">🏢 تجاری / حقوقی (شرکت‌ها و برندها)</option>
+                    </select>
+                    <ChevronDown className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
+                </div>
+
+                {/* Language Selection */}
+                <div className="p-4 bg-muted/30 border border-border rounded-2xl space-y-2">
+                  <label className="text-xs font-bold text-foreground block">
+                    زبان پیش‌فرض کارت
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={profile.profileLanguage || 'dari'}
+                      onChange={(e) => setProfileLanguage(e.target.value as any)}
+                      className="w-full bg-card border border-border rounded-xl px-3.5 py-2.5 text-xs text-foreground focus:outline-none focus:border-cyan-500 appearance-none font-sans font-medium cursor-pointer shadow-sm transition-colors"
+                    >
+                      <option value="dari">🇦🇫 دری (Dari)</option>
+                      <option value="pashto">🇦🇫 پښتو (Pashto)</option>
+                      <option value="en">🌐 English (انگلیسی)</option>
+                    </select>
+                    <ChevronDown className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
                 </div>
               </div>
 
@@ -390,41 +444,21 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
           {/* TAB 4: KYC & VERIFICATION */}
           {activeTab === 'kyc' && (
             <div className="space-y-4 animate-in fade-in duration-200">
-              {/* Profile Type Toggle */}
+              {/* Profile Type Select Dropdown */}
               <div className="p-4 bg-muted/30 border border-border rounded-2xl space-y-2">
-                <span className="text-xs font-bold text-foreground block">
+                <label className="text-xs font-bold text-foreground block">
                   نوع پروفایل کارت
-                </span>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setProfileType('personal')}
-                    className={`p-3 rounded-xl border text-right transition-all flex items-center gap-2.5 ${(profile.profileType || 'personal') === 'personal'
-                      ? 'bg-cyan-500/10 border-cyan-500 ring-2 ring-cyan-500/20'
-                      : 'bg-card border-border hover:bg-muted/50'
-                      }`}
+                </label>
+                <div className="relative">
+                  <select
+                    value={profile.profileType || 'personal'}
+                    onChange={(e) => setProfileType(e.target.value as any)}
+                    className="w-full bg-card border border-border rounded-xl px-3.5 py-2.5 text-xs text-foreground focus:outline-none focus:border-cyan-500 appearance-none font-sans font-medium cursor-pointer shadow-sm transition-colors"
                   >
-                    <User className="w-4 h-4 text-cyan-500 shrink-0" />
-                    <div>
-                      <span className="text-xs font-bold text-foreground block">شخصی / حقیقی</span>
-                      <span className="text-[10px] text-muted-foreground mt-0.5 block">فردی، فریلنسر یا کارشناس</span>
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setProfileType('business')}
-                    className={`p-3 rounded-xl border text-right transition-all flex items-center gap-2.5 ${profile.profileType === 'business'
-                      ? 'bg-cyan-500/10 border-cyan-500 ring-2 ring-cyan-500/20'
-                      : 'bg-card border-border hover:bg-muted/50'
-                      }`}
-                  >
-                    <Building2 className="w-4 h-4 text-cyan-500 shrink-0" />
-                    <div>
-                      <span className="text-xs font-bold text-foreground block">تجاری / حقوقی</span>
-                      <span className="text-[10px] text-muted-foreground mt-0.5 block">شرکت‌ها و فروشگاه‌ها</span>
-                    </div>
-                  </button>
+                    <option value="personal">👤 شخصی / حقیقی (فردی، فریلنسر یا کارشناس)</option>
+                    <option value="business">🏢 تجاری / حقوقی (شرکت‌ها، سازمان‌ها و فروشگاه‌ها)</option>
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 </div>
               </div>
 
@@ -543,17 +577,42 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
         </div>
 
         {/* Modal Footer */}
-        <div className="p-4 border-t border-border bg-muted/40 flex items-center justify-between">
-          <span className="text-xs text-muted-foreground">
-            تغییرات شما به صورت درجا اعمال می‌شوند.
+        <div className="p-4 border-t border-border bg-muted/40 flex items-center justify-between gap-3">
+          <span className="text-xs text-muted-foreground hidden sm:inline">
+            تغییرات شما پس از تایید به صورت زنده ذخیره می‌شوند.
           </span>
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-5 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs shadow-md shadow-cyan-500/20 transition-all cursor-pointer"
-          >
-            تایید و بستن
-          </button>
+          <div className="flex items-center gap-2 mr-auto w-full sm:w-auto justify-end">
+            {/* Cancel Button */}
+            <button
+              type="button"
+              onClick={handleCancel}
+              disabled={isSavingSettings}
+              className="px-4 py-2 rounded-xl bg-muted hover:bg-rose-500/10 text-muted-foreground hover:text-rose-500 border border-border font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 disabled:opacity-50"
+            >
+              <X className="w-3.5 h-3.5" />
+              <span>انصراف</span>
+            </button>
+
+            {/* Save & Confirm Button */}
+            <button
+              type="button"
+              onClick={handleSaveAndConfirm}
+              disabled={isSavingSettings}
+              className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold text-xs shadow-md shadow-emerald-500/25 transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 disabled:opacity-50"
+            >
+              {isSavingSettings ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
+                  <span>در حال ذخیره...</span>
+                </>
+              ) : (
+                <>
+                  <CheckCheck className="w-3.5 h-3.5" />
+                  <span>ذخیره و تایید</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

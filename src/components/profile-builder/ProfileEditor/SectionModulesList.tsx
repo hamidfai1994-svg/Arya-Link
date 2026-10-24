@@ -5,8 +5,37 @@ import { useEditorStore } from '@/store/editor-store';
 import { ProfileLinkItem, LinkModuleType, FAQItem } from '@/types/profile.types';
 import { FileUploader } from '@/components/ui/file-uploader';
 import { JalaliDatePicker } from '@/components/ui/jalali-date-picker';
-import { WhatsAppIcon } from '@/components/icons';
+import {
+  WhatsAppIcon,
+  TelegramIcon,
+  InstagramIcon,
+  LinkedInIcon,
+  XTwitterIcon,
+  PinterestIcon,
+  FacebookIcon,
+  DribbbleIcon,
+  BehanceIcon,
+  YouTubeIcon,
+  ClubhouseIcon,
+  PatreonIcon,
+  TwitchIcon,
+  GitHubIcon,
+  AparatIcon,
+  TikTokIcon,
+  AppleMusicIcon,
+  YouTubeMusicIcon,
+  CastboxIcon,
+  RadioJavanIcon,
+  SpotifyIcon,
+  SoundCloudIcon,
+  SkypeIcon,
+  WeChatIcon,
+  MessengerIcon,
+  SignalIcon,
+} from '@/components/icons';
+import { getSmartLink, formatDisplayValue } from '@/lib/smart-link';
 import { PhoneInput } from '@/components/ui/phone-input';
+import { toast } from 'sonner';
 import {
   MessageSquare,
   Instagram,
@@ -52,25 +81,110 @@ import {
   AlignLeft,
   Sparkles,
   Check,
+  RotateCcw,
 } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 
 export const SectionModulesList: React.FC = () => {
   const {
     profile,
-    updateLink,
-    updateLinkMetadata,
-    updateLinkAdvancedSettings,
-    removeLink,
+    updateLink: rawUpdateLink,
+    updateLinkMetadata: rawUpdateLinkMetadata,
+    updateLinkAdvancedSettings: rawUpdateLinkAdvancedSettings,
+    removeLink: rawRemoveLink,
+    saveProfileData,
+    expandedModuleId,
+    setExpandedModuleId,
+    unconfirmedModuleId,
+    setUnconfirmedModuleId,
   } = useEditorStore();
 
-  const [expandedId, setExpandedId] = useState<string | null>(
-    profile.links.length > 0 ? profile.links[0].id : null
-  );
-
   const [activeSettingsTab, setActiveSettingsTab] = useState<Record<string, 'content' | 'advanced'>>({});
+  const snapshotsRef = React.useRef<Record<string, ProfileLinkItem>>({});
+
+  React.useEffect(() => {
+    if (expandedModuleId) {
+      const currentLink = profile.links.find((l) => l.id === expandedModuleId);
+      if (currentLink && !snapshotsRef.current[expandedModuleId]) {
+        snapshotsRef.current[expandedModuleId] = JSON.parse(JSON.stringify(currentLink));
+      }
+    }
+  }, [expandedModuleId, profile.links]);
+
+  const markDirty = (id: string) => {
+    if (!snapshotsRef.current[id]) {
+      const currentLink = profile.links.find((l) => l.id === id);
+      if (currentLink) {
+        snapshotsRef.current[id] = JSON.parse(JSON.stringify(currentLink));
+      }
+    }
+    setUnconfirmedModuleId(id);
+  };
+
+  const updateLink = (id: string, updates: Partial<ProfileLinkItem>) => {
+    markDirty(id);
+    rawUpdateLink(id, updates);
+  };
+
+  const updateLinkMetadata = (id: string, metadataUpdates: any) => {
+    markDirty(id);
+    rawUpdateLinkMetadata(id, metadataUpdates);
+  };
+
+  const updateLinkAdvancedSettings = (id: string, settingsUpdates: any) => {
+    markDirty(id);
+    rawUpdateLinkAdvancedSettings(id, settingsUpdates);
+  };
 
   const toggleExpand = (id: string) => {
-    setExpandedId((prev) => (prev === id ? null : id));
+    if (unconfirmedModuleId && unconfirmedModuleId !== id) {
+      toast.error('این بخش هنوز تایید نشده است. لطفاً ابتدا تغییرات را تایید یا لغو کنید.');
+      return;
+    }
+    if (unconfirmedModuleId && unconfirmedModuleId === id) {
+      toast.error('این بخش هنوز تایید نشده است. لطفاً ابتدا تغییرات را تایید یا لغو کنید.');
+      return;
+    }
+    if (expandedModuleId === id) {
+      setExpandedModuleId(null);
+    } else {
+      const currentLink = profile.links.find((l) => l.id === id);
+      if (currentLink) {
+        snapshotsRef.current[id] = JSON.parse(JSON.stringify(currentLink));
+      }
+      setExpandedModuleId(id);
+    }
+  };
+
+  const handleConfirm = (id: string) => {
+    delete snapshotsRef.current[id];
+    setUnconfirmedModuleId(null);
+    setExpandedModuleId(null);
+    saveProfileData();
+    toast.success('تنظیمات ماژول تایید و ذخیره شد');
+  };
+
+  const handleCancel = (id: string) => {
+    const snapshot = snapshotsRef.current[id];
+    if (snapshot) {
+      rawUpdateLink(id, snapshot);
+      delete snapshotsRef.current[id];
+    }
+    setUnconfirmedModuleId(null);
+    setExpandedModuleId(null);
+    toast.info('تغییرات ماژول لغو شد');
+  };
+
+  const handleRemoveLink = (id: string) => {
+    if (unconfirmedModuleId && unconfirmedModuleId !== id) {
+      toast.error('این بخش هنوز تایید نشده است. لطفاً ابتدا تغییرات را تایید یا لغو کنید.');
+      return;
+    }
+    rawRemoveLink(id);
+    delete snapshotsRef.current[id];
+    if (unconfirmedModuleId === id) setUnconfirmedModuleId(null);
+    if (expandedModuleId === id) setExpandedModuleId(null);
+    toast.success('ماژول حذف شد');
   };
 
   const isInteractiveModule = (type: LinkModuleType): boolean => {
@@ -83,6 +197,29 @@ export const SectionModulesList: React.FC = () => {
       'telegram_channel',
       'instagram_profile',
       'linkedin_profile',
+      'twitter_x',
+      'pinterest',
+      'facebook',
+      'dribbble',
+      'behance',
+      'youtube_channel',
+      'clubhouse',
+      'patreon',
+      'twitch',
+      'github',
+      'aparat_channel',
+      'tiktok',
+      'apple_music',
+      'youtube_music',
+      'castbox',
+      'radio_javan',
+      'spotify_podcaster',
+      'spotify',
+      'soundcloud',
+      'skype',
+      'wechat',
+      'messenger',
+      'signal',
       'video_meeting',
       'map_navigation',
       'phone_call',
@@ -97,11 +234,57 @@ export const SectionModulesList: React.FC = () => {
       case 'whatsapp_direct':
         return <WhatsAppIcon className="w-4 h-4 text-emerald-500 fill-current" />;
       case 'telegram_channel':
-        return <Send className="w-4 h-4 text-sky-500" />;
+        return <TelegramIcon className="w-4 h-4 text-sky-500" />;
       case 'instagram_profile':
-        return <Instagram className="w-4 h-4 text-pink-500" />;
+        return <InstagramIcon className="w-4 h-4 text-pink-500" />;
       case 'linkedin_profile':
-        return <Linkedin className="w-4 h-4 text-blue-500" />;
+        return <LinkedInIcon className="w-4 h-4 text-blue-500" />;
+      case 'twitter_x':
+        return <XTwitterIcon className="w-4 h-4 text-foreground" />;
+      case 'pinterest':
+        return <PinterestIcon className="w-4 h-4 text-rose-500" />;
+      case 'facebook':
+        return <FacebookIcon className="w-4 h-4 text-blue-600" />;
+      case 'dribbble':
+        return <DribbbleIcon className="w-4 h-4 text-pink-500" />;
+      case 'behance':
+        return <BehanceIcon className="w-4 h-4 text-blue-500" />;
+      case 'youtube_channel':
+        return <YouTubeIcon className="w-4 h-4 text-red-600" />;
+      case 'clubhouse':
+        return <ClubhouseIcon className="w-4 h-4 text-amber-500" />;
+      case 'patreon':
+        return <PatreonIcon className="w-4 h-4 text-rose-500" />;
+      case 'twitch':
+        return <TwitchIcon className="w-4 h-4 text-purple-500" />;
+      case 'github':
+        return <GitHubIcon className="w-4 h-4 text-foreground" />;
+      case 'aparat_channel':
+        return <AparatIcon className="w-4 h-4 text-rose-500" />;
+      case 'tiktok':
+        return <TikTokIcon className="w-4 h-4 text-foreground" />;
+      case 'apple_music':
+        return <AppleMusicIcon className="w-4 h-4 text-rose-500" />;
+      case 'youtube_music':
+        return <YouTubeMusicIcon className="w-4 h-4 text-red-500" />;
+      case 'castbox':
+        return <CastboxIcon className="w-4 h-4 text-amber-500" />;
+      case 'radio_javan':
+        return <RadioJavanIcon className="w-4 h-4 text-indigo-500" />;
+      case 'spotify_podcaster':
+        return <SpotifyIcon className="w-4 h-4 text-purple-500" />;
+      case 'spotify':
+        return <SpotifyIcon className="w-4 h-4 text-emerald-500" />;
+      case 'soundcloud':
+        return <SoundCloudIcon className="w-4 h-4 text-orange-500" />;
+      case 'skype':
+        return <SkypeIcon className="w-4 h-4 text-sky-500" />;
+      case 'wechat':
+        return <WeChatIcon className="w-4 h-4 text-green-500" />;
+      case 'messenger':
+        return <MessengerIcon className="w-4 h-4 text-blue-500" />;
+      case 'signal':
+        return <SignalIcon className="w-4 h-4 text-blue-400" />;
       case 'simple_text':
         return <Type className="w-4 h-4 text-indigo-500" />;
       case 'divider_heading':
@@ -128,7 +311,7 @@ export const SectionModulesList: React.FC = () => {
       case 'youtube_embed':
         return <Youtube className="w-4 h-4 text-red-500" />;
       case 'aparat_embed':
-        return <Youtube className="w-4 h-4 text-rose-500" />;
+        return <AparatIcon className="w-4 h-4 text-rose-500" />;
       case 'music_player':
         return <Music className="w-4 h-4 text-emerald-500" />;
       case 'single_image':
@@ -375,102 +558,6 @@ export const SectionModulesList: React.FC = () => {
     );
   };
 
-  // 3.5 SOCIAL BRAND SELECTOR GRID (انتخابگر تصویری شبکه اجتماعی با لوگوهای رنگی)
-  const socialBrands = [
-    {
-      type: 'whatsapp_direct' as LinkModuleType,
-      name: 'واتساپ',
-      icon: WhatsAppIcon,
-      colorClass: 'text-emerald-500 fill-current',
-      bgClass: 'bg-emerald-500/15 text-emerald-500 hover:bg-emerald-500/25',
-      borderClass: 'border-emerald-500/40',
-    },
-    {
-      type: 'telegram_channel' as LinkModuleType,
-      name: 'تلگرام',
-      icon: Send,
-      colorClass: 'text-sky-500',
-      bgClass: 'bg-sky-500/15 text-sky-500 hover:bg-sky-500/25',
-      borderClass: 'border-sky-500/40',
-    },
-    {
-      type: 'instagram_profile' as LinkModuleType,
-      name: 'اینستاگرام',
-      icon: Instagram,
-      colorClass: 'text-pink-500',
-      bgClass: 'bg-pink-500/15 text-pink-500 hover:bg-pink-500/25',
-      borderClass: 'border-pink-500/40',
-    },
-    {
-      type: 'linkedin_profile' as LinkModuleType,
-      name: 'لینکدین',
-      icon: Linkedin,
-      colorClass: 'text-blue-500',
-      bgClass: 'bg-blue-500/15 text-blue-500 hover:bg-blue-500/25',
-      borderClass: 'border-blue-500/40',
-    },
-    {
-      type: 'youtube_embed' as LinkModuleType,
-      name: 'یوتیوب',
-      icon: Youtube,
-      colorClass: 'text-red-500',
-      bgClass: 'bg-red-500/15 text-red-500 hover:bg-red-500/25',
-      borderClass: 'border-red-500/40',
-    },
-    {
-      type: 'phone_call' as LinkModuleType,
-      name: 'تماس',
-      icon: Phone,
-      colorClass: 'text-green-500',
-      bgClass: 'bg-green-500/15 text-green-500 hover:bg-green-500/25',
-      borderClass: 'border-green-500/40',
-    },
-    {
-      type: 'email_direct' as LinkModuleType,
-      name: 'ایمیل',
-      icon: Mail,
-      colorClass: 'text-amber-500',
-      bgClass: 'bg-amber-500/15 text-amber-500 hover:bg-amber-500/25',
-      borderClass: 'border-amber-500/40',
-    },
-  ];
-
-  const renderSocialBrandGrid = (link: ProfileLinkItem) => {
-    return (
-      <div className="mb-3 pb-3 border-b border-border/50 space-y-1.5">
-        <label className="block text-[11px] font-bold text-foreground">
-          انتخاب شبکه ارتباطی (کلیک روی لوگو برای تغییر و ورود شناسه)
-        </label>
-        <div className="grid grid-cols-4 sm:grid-cols-7 gap-1.5">
-          {socialBrands.map((b) => {
-            const isSelected = link.moduleType === b.type;
-            const Icon = b.icon;
-            return (
-              <button
-                key={b.type}
-                type="button"
-                onClick={() => {
-                  if (link.moduleType !== b.type) {
-                    updateLink(link.id, { moduleType: b.type, title: b.name });
-                  }
-                }}
-                className={`p-2 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all ${
-                  isSelected
-                    ? `${b.bgClass} ${b.borderClass} ring-2 ring-cyan-500/40 shadow-sm font-bold scale-[1.02]`
-                    : 'bg-muted/40 border-border text-muted-foreground hover:text-foreground hover:bg-muted/70'
-                }`}
-                title={b.name}
-              >
-                <Icon className={`w-4 h-4 ${isSelected ? b.colorClass : 'opacity-80'}`} />
-                <span className="text-[10px] block truncate max-w-full">{b.name}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    );
-  };
-
   // 4. MODULE-SPECIFIC CONTENT INPUTS
   const renderModuleSpecificInputs = (link: ProfileLinkItem) => {
     const meta = link.metadata || {};
@@ -624,14 +711,13 @@ export const SectionModulesList: React.FC = () => {
           </div>
         );
 
-      // SOCIAL MODULES
+      // SOCIAL NETWORKS & PLATFORMS
       case 'whatsapp_direct':
         return (
           <div className="space-y-3 pt-1">
-            {renderSocialBrandGrid(link)}
             <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-2">
               <WhatsAppIcon className="w-5 h-5 text-emerald-500 fill-current shrink-0" />
-              <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">چت مستقیم واتساپ</span>
+              <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">چت مستقیم واتساپ (WhatsApp)</span>
             </div>
             <div>
               <label className="block text-[11px] font-medium text-foreground mb-1">شماره تماس واتساپ</label>
@@ -648,6 +734,9 @@ export const SectionModulesList: React.FC = () => {
                 placeholder="799 123 456"
                 defaultCountry="AF"
               />
+              <p className="text-[10px] text-muted-foreground mt-1 font-outfit" dir="ltr">
+                دیپ‌لینک: whatsapp://send?phone={(meta.phoneNumber || '').replace(/[^0-9]/g, '')}
+              </p>
             </div>
             <div>
               <label className="block text-[11px] font-medium text-foreground mb-1">متن پیام پیش‌فرض (اختیاری)</label>
@@ -674,10 +763,9 @@ export const SectionModulesList: React.FC = () => {
       case 'telegram_channel':
         return (
           <div className="space-y-3 pt-1">
-            {renderSocialBrandGrid(link)}
             <div className="p-2.5 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center gap-2">
-              <Send className="w-5 h-5 text-sky-500 shrink-0" />
-              <span className="text-xs font-bold text-sky-600 dark:text-sky-400">کانال یا ربات تلگرام</span>
+              <TelegramIcon className="w-5 h-5 text-sky-500 shrink-0" />
+              <span className="text-xs font-bold text-sky-600 dark:text-sky-400">تلگرام (Telegram)</span>
             </div>
             <div>
               <label className="block text-[11px] font-medium text-foreground mb-1">شناسه یا لینک تلگرام</label>
@@ -693,6 +781,9 @@ export const SectionModulesList: React.FC = () => {
                 className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-outfit text-left"
                 dir="ltr"
               />
+              <p className="text-[10px] text-muted-foreground mt-1 font-outfit" dir="ltr">
+                دیپ‌لینک: tg://resolve?domain={formatDisplayValue(link.url || '')}
+              </p>
             </div>
           </div>
         );
@@ -700,10 +791,9 @@ export const SectionModulesList: React.FC = () => {
       case 'instagram_profile':
         return (
           <div className="space-y-3 pt-1">
-            {renderSocialBrandGrid(link)}
             <div className="p-2.5 rounded-xl bg-pink-500/10 border border-pink-500/20 flex items-center gap-2">
-              <Instagram className="w-5 h-5 text-pink-500 shrink-0" />
-              <span className="text-xs font-bold text-pink-600 dark:text-pink-400">صفحه اینستاگرام</span>
+              <InstagramIcon className="w-5 h-5 text-pink-500 shrink-0" />
+              <span className="text-xs font-bold text-pink-600 dark:text-pink-400">صفحه اینستاگرام (Instagram)</span>
             </div>
             <div>
               <label className="block text-[11px] font-medium text-foreground mb-1">نام کاربری اینستاگرام (آیدی)</label>
@@ -722,6 +812,9 @@ export const SectionModulesList: React.FC = () => {
                   dir="ltr"
                 />
               </div>
+              <p className="text-[10px] text-muted-foreground mt-1 font-outfit" dir="ltr">
+                دیپ‌لینک: instagram://user?username={meta.username || 'username'}
+              </p>
             </div>
           </div>
         );
@@ -729,10 +822,9 @@ export const SectionModulesList: React.FC = () => {
       case 'linkedin_profile':
         return (
           <div className="space-y-3 pt-1">
-            {renderSocialBrandGrid(link)}
             <div className="p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center gap-2">
-              <Linkedin className="w-5 h-5 text-blue-500 shrink-0" />
-              <span className="text-xs font-bold text-blue-600 dark:text-blue-400">پروفایل لینکدین</span>
+              <LinkedInIcon className="w-5 h-5 text-blue-500 shrink-0" />
+              <span className="text-xs font-bold text-blue-600 dark:text-blue-400">پروفایل لینکدین (LinkedIn)</span>
             </div>
             <div>
               <label className="block text-[11px] font-medium text-foreground mb-1">آدرس پروفایل یا آیدی لینکدین</label>
@@ -744,6 +836,621 @@ export const SectionModulesList: React.FC = () => {
                 className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-outfit text-left"
                 dir="ltr"
               />
+              <p className="text-[10px] text-muted-foreground mt-1 font-outfit" dir="ltr">
+                دیپ‌لینک: linkedin://profile/{formatDisplayValue(link.url || '')}
+              </p>
+            </div>
+          </div>
+        );
+
+      case 'twitter_x':
+        return (
+          <div className="space-y-3 pt-1">
+            <div className="p-2.5 rounded-xl bg-slate-900/10 dark:bg-white/10 border border-border flex items-center gap-2">
+              <XTwitterIcon className="w-5 h-5 text-foreground shrink-0" />
+              <span className="text-xs font-bold text-foreground">ایکس / توییتر (X)</span>
+            </div>
+            <div>
+              <label className="block text-[11px] font-medium text-foreground mb-1">نام کاربری ایکس (Twitter Username)</label>
+              <div className="flex items-center bg-background border border-border rounded-xl px-3 focus-within:border-cyan-500">
+                <span className="text-muted-foreground text-xs font-outfit">@</span>
+                <input
+                  type="text"
+                  value={meta.username || ''}
+                  onChange={(e) => {
+                    const u = e.target.value.replace(/[@/]/g, '').trim();
+                    updateLinkMetadata(link.id, { username: u });
+                    updateLink(link.id, { url: getSmartLink('twitter_x', u) });
+                  }}
+                  placeholder="username"
+                  className="w-full bg-transparent border-0 py-1.5 px-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none font-outfit text-left"
+                  dir="ltr"
+                />
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-1 font-outfit" dir="ltr">
+                دیپ‌لینک: twitter://user?screen_name={meta.username || 'username'}
+              </p>
+            </div>
+          </div>
+        );
+
+      case 'pinterest':
+        return (
+          <div className="space-y-3 pt-1">
+            <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center gap-2">
+              <PinterestIcon className="w-5 h-5 text-rose-500 shrink-0" />
+              <span className="text-xs font-bold text-rose-600 dark:text-rose-400">پینترست (Pinterest)</span>
+            </div>
+            <div>
+              <label className="block text-[11px] font-medium text-foreground mb-1">نام کاربری پینترست</label>
+              <input
+                type="text"
+                value={meta.username || ''}
+                onChange={(e) => {
+                  const u = e.target.value.replace(/[@/]/g, '').trim();
+                  updateLinkMetadata(link.id, { username: u });
+                  updateLink(link.id, { url: getSmartLink('pinterest', u) });
+                }}
+                placeholder="pinterest_username"
+                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-outfit text-left"
+                dir="ltr"
+              />
+              <p className="text-[10px] text-muted-foreground mt-1 font-outfit" dir="ltr">
+                دیپ‌لینک: pinterest://user/{meta.username || 'username'}
+              </p>
+            </div>
+          </div>
+        );
+
+      case 'facebook':
+        return (
+          <div className="space-y-3 pt-1">
+            <div className="p-2.5 rounded-xl bg-blue-600/10 border border-blue-600/20 flex items-center gap-2">
+              <FacebookIcon className="w-5 h-5 text-blue-600 shrink-0" />
+              <span className="text-xs font-bold text-blue-600 dark:text-blue-400">فیسبوک (Facebook)</span>
+            </div>
+            <div>
+              <label className="block text-[11px] font-medium text-foreground mb-1">شناسه یا نام کاربری فیسبوک</label>
+              <input
+                type="text"
+                value={meta.username || meta.targetId || ''}
+                onChange={(e) => {
+                  const u = e.target.value.trim();
+                  updateLinkMetadata(link.id, { username: u, targetId: u });
+                  updateLink(link.id, { url: getSmartLink('facebook', u) });
+                }}
+                placeholder="profile_id یا username"
+                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-outfit text-left"
+                dir="ltr"
+              />
+              <p className="text-[10px] text-muted-foreground mt-1 font-outfit" dir="ltr">
+                دیپ‌لینک: fb://profile/{meta.targetId || meta.username || 'ID'} یا https://facebook.com/{meta.username || 'username'}
+              </p>
+            </div>
+          </div>
+        );
+
+      case 'dribbble':
+        return (
+          <div className="space-y-3 pt-1">
+            <div className="p-2.5 rounded-xl bg-pink-500/10 border border-pink-500/20 flex items-center gap-2">
+              <DribbbleIcon className="w-5 h-5 text-pink-500 shrink-0" />
+              <span className="text-xs font-bold text-pink-600 dark:text-pink-400">دریبل (Dribbble)</span>
+            </div>
+            <div>
+              <label className="block text-[11px] font-medium text-foreground mb-1">نام کاربری دریبل</label>
+              <input
+                type="text"
+                value={meta.username || ''}
+                onChange={(e) => {
+                  const u = e.target.value.replace(/[@/]/g, '').trim();
+                  updateLinkMetadata(link.id, { username: u });
+                  updateLink(link.id, { url: getSmartLink('dribbble', u) });
+                }}
+                placeholder="designer_username"
+                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-outfit text-left"
+                dir="ltr"
+              />
+            </div>
+          </div>
+        );
+
+      case 'behance':
+        return (
+          <div className="space-y-3 pt-1">
+            <div className="p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center gap-2">
+              <BehanceIcon className="w-5 h-5 text-blue-500 shrink-0" />
+              <span className="text-xs font-bold text-blue-600 dark:text-blue-400">بیهنس (Behance)</span>
+            </div>
+            <div>
+              <label className="block text-[11px] font-medium text-foreground mb-1">نام کاربری بیهنس</label>
+              <input
+                type="text"
+                value={meta.username || ''}
+                onChange={(e) => {
+                  const u = e.target.value.replace(/[@/]/g, '').trim();
+                  updateLinkMetadata(link.id, { username: u });
+                  updateLink(link.id, { url: getSmartLink('behance', u) });
+                }}
+                placeholder="portfolio_username"
+                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-outfit text-left"
+                dir="ltr"
+              />
+            </div>
+          </div>
+        );
+
+      case 'youtube_channel':
+        return (
+          <div className="space-y-3 pt-1">
+            <div className="p-2.5 rounded-xl bg-red-600/10 border border-red-600/20 flex items-center gap-2">
+              <YouTubeIcon className="w-5 h-5 text-red-600 shrink-0" />
+              <span className="text-xs font-bold text-red-600 dark:text-red-400">کانال یوتیوب (YouTube Channel)</span>
+            </div>
+            <div>
+              <label className="block text-[11px] font-medium text-foreground mb-1">هندل یا نام کانال یوتیوب</label>
+              <div className="flex items-center bg-background border border-border rounded-xl px-3 focus-within:border-cyan-500">
+                <span className="text-muted-foreground text-xs font-outfit">@</span>
+                <input
+                  type="text"
+                  value={meta.username || ''}
+                  onChange={(e) => {
+                    const u = e.target.value.replace(/[@/]/g, '').trim();
+                    updateLinkMetadata(link.id, { username: u });
+                    updateLink(link.id, { url: getSmartLink('youtube_channel', u) });
+                  }}
+                  placeholder="channelHandle"
+                  className="w-full bg-transparent border-0 py-1.5 px-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none font-outfit text-left"
+                  dir="ltr"
+                />
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-1 font-outfit" dir="ltr">
+                دیپ‌لینک: vnd.youtube://www.youtube.com/@{meta.username || 'channel'}
+              </p>
+            </div>
+          </div>
+        );
+
+      case 'clubhouse':
+        return (
+          <div className="space-y-3 pt-1">
+            <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center gap-2">
+              <ClubhouseIcon className="w-5 h-5 text-amber-500 shrink-0" />
+              <span className="text-xs font-bold text-amber-600 dark:text-amber-400">کلاب‌هاوس (Clubhouse)</span>
+            </div>
+            <div>
+              <label className="block text-[11px] font-medium text-foreground mb-1">نام کاربری کلاب‌هاوس</label>
+              <input
+                type="text"
+                value={meta.username || ''}
+                onChange={(e) => {
+                  const u = e.target.value.replace(/[@/]/g, '').trim();
+                  updateLinkMetadata(link.id, { username: u });
+                  updateLink(link.id, { url: getSmartLink('clubhouse', u) });
+                }}
+                placeholder="clubhouse_username"
+                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-outfit text-left"
+                dir="ltr"
+              />
+              <p className="text-[10px] text-muted-foreground mt-1 font-outfit" dir="ltr">
+                دیپ‌لینک: clubhouse://user/{meta.username || 'username'}
+              </p>
+            </div>
+          </div>
+        );
+
+      case 'patreon':
+        return (
+          <div className="space-y-3 pt-1">
+            <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center gap-2">
+              <PatreonIcon className="w-5 h-5 text-rose-500 shrink-0" />
+              <span className="text-xs font-bold text-rose-600 dark:text-rose-400">پاترئون (Patreon)</span>
+            </div>
+            <div>
+              <label className="block text-[11px] font-medium text-foreground mb-1">شناسه یا نام کاربری پاترئون</label>
+              <input
+                type="text"
+                value={meta.username || ''}
+                onChange={(e) => {
+                  const u = e.target.value.replace(/[@/]/g, '').trim();
+                  updateLinkMetadata(link.id, { username: u });
+                  updateLink(link.id, { url: getSmartLink('patreon', u) });
+                }}
+                placeholder="creator_handle"
+                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-outfit text-left"
+                dir="ltr"
+              />
+            </div>
+          </div>
+        );
+
+      case 'twitch':
+        return (
+          <div className="space-y-3 pt-1">
+            <div className="p-2.5 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center gap-2">
+              <TwitchIcon className="w-5 h-5 text-purple-500 shrink-0" />
+              <span className="text-xs font-bold text-purple-600 dark:text-purple-400">توییچ استریم (Twitch)</span>
+            </div>
+            <div>
+              <label className="block text-[11px] font-medium text-foreground mb-1">نام کانال توییچ</label>
+              <input
+                type="text"
+                value={meta.username || ''}
+                onChange={(e) => {
+                  const u = e.target.value.replace(/[@/]/g, '').trim();
+                  updateLinkMetadata(link.id, { username: u });
+                  updateLink(link.id, { url: getSmartLink('twitch', u) });
+                }}
+                placeholder="streamer_name"
+                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-outfit text-left"
+                dir="ltr"
+              />
+              <p className="text-[10px] text-muted-foreground mt-1 font-outfit" dir="ltr">
+                دیپ‌لینک: twitch://stream/{meta.username || 'username'}
+              </p>
+            </div>
+          </div>
+        );
+
+      case 'github':
+        return (
+          <div className="space-y-3 pt-1">
+            <div className="p-2.5 rounded-xl bg-slate-900/10 dark:bg-white/10 border border-border flex items-center gap-2">
+              <GitHubIcon className="w-5 h-5 text-foreground shrink-0" />
+              <span className="text-xs font-bold text-foreground">گیت‌هاب (GitHub)</span>
+            </div>
+            <div>
+              <label className="block text-[11px] font-medium text-foreground mb-1">نام کاربری یا سازمان گیت‌هاب</label>
+              <input
+                type="text"
+                value={meta.username || ''}
+                onChange={(e) => {
+                  const u = e.target.value.replace(/[@/]/g, '').trim();
+                  updateLinkMetadata(link.id, { username: u });
+                  updateLink(link.id, { url: getSmartLink('github', u) });
+                }}
+                placeholder="developer_username"
+                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-outfit text-left"
+                dir="ltr"
+              />
+            </div>
+          </div>
+        );
+
+      case 'aparat_channel':
+        return (
+          <div className="space-y-3 pt-1">
+            <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center gap-2">
+              <AparatIcon className="w-5 h-5 text-rose-500 shrink-0" />
+              <span className="text-xs font-bold text-rose-600 dark:text-rose-400">کانال آپارات (Aparat)</span>
+            </div>
+            <div>
+              <label className="block text-[11px] font-medium text-foreground mb-1">نام کاربری کانال آپارات</label>
+              <input
+                type="text"
+                value={meta.username || ''}
+                onChange={(e) => {
+                  const u = e.target.value.replace(/[@/]/g, '').trim();
+                  updateLinkMetadata(link.id, { username: u });
+                  updateLink(link.id, { url: getSmartLink('aparat_channel', u) });
+                }}
+                placeholder="channel_id"
+                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-outfit text-left"
+                dir="ltr"
+              />
+            </div>
+          </div>
+        );
+
+      case 'tiktok':
+        return (
+          <div className="space-y-3 pt-1">
+            <div className="p-2.5 rounded-xl bg-slate-900/10 dark:bg-white/10 border border-border flex items-center gap-2">
+              <TikTokIcon className="w-5 h-5 text-foreground shrink-0" />
+              <span className="text-xs font-bold text-foreground">تیک‌تاک (TikTok)</span>
+            </div>
+            <div>
+              <label className="block text-[11px] font-medium text-foreground mb-1">نام کاربری تیک‌تاک</label>
+              <div className="flex items-center bg-background border border-border rounded-xl px-3 focus-within:border-cyan-500">
+                <span className="text-muted-foreground text-xs font-outfit">@</span>
+                <input
+                  type="text"
+                  value={meta.username || ''}
+                  onChange={(e) => {
+                    const u = e.target.value.replace(/[@/]/g, '').trim();
+                    updateLinkMetadata(link.id, { username: u });
+                    updateLink(link.id, { url: getSmartLink('tiktok', u) });
+                  }}
+                  placeholder="tiktok_handle"
+                  className="w-full bg-transparent border-0 py-1.5 px-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none font-outfit text-left"
+                  dir="ltr"
+                />
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-1 font-outfit" dir="ltr">
+                دیپ‌لینک: snssdk1233://user/profile/{meta.username || 'username'}
+              </p>
+            </div>
+          </div>
+        );
+
+      // AUDIO & PODCAST PLATFORMS
+      case 'apple_music':
+        return (
+          <div className="space-y-3 pt-1">
+            <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center gap-2">
+              <AppleMusicIcon className="w-5 h-5 text-rose-500 shrink-0" />
+              <span className="text-xs font-bold text-rose-600 dark:text-rose-400">آیتونز / اپل موزیک (Apple Music)</span>
+            </div>
+            <div>
+              <label className="block text-[11px] font-medium text-foreground mb-1">لینک هنرمند یا آلبوم در Apple Music</label>
+              <input
+                type="text"
+                value={link.url}
+                onChange={(e) => updateLink(link.id, { url: e.target.value })}
+                placeholder="https://music.apple.com/..."
+                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-outfit text-left"
+                dir="ltr"
+              />
+            </div>
+          </div>
+        );
+
+      case 'youtube_music':
+        return (
+          <div className="space-y-3 pt-1">
+            <div className="p-2.5 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center gap-2">
+              <YouTubeMusicIcon className="w-5 h-5 text-red-500 shrink-0" />
+              <span className="text-xs font-bold text-red-600 dark:text-red-400">یوتیوب موزیک (YouTube Music)</span>
+            </div>
+            <div>
+              <label className="block text-[11px] font-medium text-foreground mb-1">لینک یا شناسه در YouTube Music</label>
+              <input
+                type="text"
+                value={link.url}
+                onChange={(e) => updateLink(link.id, { url: e.target.value })}
+                placeholder="https://music.youtube.com/..."
+                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-outfit text-left"
+                dir="ltr"
+              />
+            </div>
+          </div>
+        );
+
+      case 'castbox':
+        return (
+          <div className="space-y-3 pt-1">
+            <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center gap-2">
+              <CastboxIcon className="w-5 h-5 text-amber-500 shrink-0" />
+              <span className="text-xs font-bold text-amber-600 dark:text-amber-400">کست‌باکس (Castbox)</span>
+            </div>
+            <div>
+              <label className="block text-[11px] font-medium text-foreground mb-1">شناسه یا لینک کانال پادکست کست‌باکس</label>
+              <input
+                type="text"
+                value={meta.targetId || link.url || ''}
+                onChange={(e) => {
+                  const val = e.target.value.trim();
+                  updateLinkMetadata(link.id, { targetId: val });
+                  updateLink(link.id, { url: getSmartLink('castbox', val) });
+                }}
+                placeholder="https://castbox.fm/ch/12345 یا شناسه عددی"
+                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-outfit text-left"
+                dir="ltr"
+              />
+              <p className="text-[10px] text-muted-foreground mt-1 font-outfit" dir="ltr">
+                قالب وب: https://castbox.fm/ch/[ID]
+              </p>
+            </div>
+          </div>
+        );
+
+      case 'radio_javan':
+        return (
+          <div className="space-y-3 pt-1">
+            <div className="p-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center gap-2">
+              <RadioJavanIcon className="w-5 h-5 text-indigo-500 shrink-0" />
+              <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">رادیو جوان (Radio Javan)</span>
+            </div>
+            <div>
+              <label className="block text-[11px] font-medium text-foreground mb-1">شناسه یا آیدی پادکست رادیو جوان</label>
+              <input
+                type="text"
+                value={meta.targetId || ''}
+                onChange={(e) => {
+                  const val = e.target.value.trim();
+                  updateLinkMetadata(link.id, { targetId: val });
+                  updateLink(link.id, { url: getSmartLink('radio_javan', val) });
+                }}
+                placeholder="podcast-id"
+                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-outfit text-left"
+                dir="ltr"
+              />
+              <p className="text-[10px] text-muted-foreground mt-1 font-outfit" dir="ltr">
+                دیپ‌لینک: rj://podcast/{meta.targetId || 'ID'}
+              </p>
+            </div>
+          </div>
+        );
+
+      case 'spotify_podcaster':
+        return (
+          <div className="space-y-3 pt-1">
+            <div className="p-2.5 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center gap-2">
+              <SpotifyIcon className="w-5 h-5 text-purple-500 shrink-0" />
+              <span className="text-xs font-bold text-purple-600 dark:text-purple-400">اسپاتیفای پادکستر (Anchor)</span>
+            </div>
+            <div>
+              <label className="block text-[11px] font-medium text-foreground mb-1">لینک پادکست در Spotify for Podcasters</label>
+              <input
+                type="text"
+                value={link.url}
+                onChange={(e) => updateLink(link.id, { url: e.target.value })}
+                placeholder="https://podcasters.spotify.com/pod/show/..."
+                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-outfit text-left"
+                dir="ltr"
+              />
+            </div>
+          </div>
+        );
+
+      case 'spotify':
+        return (
+          <div className="space-y-3 pt-1">
+            <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-2">
+              <SpotifyIcon className="w-5 h-5 text-emerald-500 shrink-0" />
+              <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">اسپاتیفای (Spotify)</span>
+            </div>
+            <div>
+              <label className="block text-[11px] font-medium text-foreground mb-1">شناسه یا لینک هنرمند / کاربر در Spotify</label>
+              <input
+                type="text"
+                value={link.url}
+                onChange={(e) => updateLink(link.id, { url: e.target.value })}
+                placeholder="spotify:artist:[ID] یا https://open.spotify.com/..."
+                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-outfit text-left"
+                dir="ltr"
+              />
+              <p className="text-[10px] text-muted-foreground mt-1 font-outfit" dir="ltr">
+                دیپ‌لینک: spotify:artist:[ID] یا spotify:user:[ID]
+              </p>
+            </div>
+          </div>
+        );
+
+      case 'soundcloud':
+        return (
+          <div className="space-y-3 pt-1">
+            <div className="p-2.5 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center gap-2">
+              <SoundCloudIcon className="w-5 h-5 text-orange-500 shrink-0" />
+              <span className="text-xs font-bold text-orange-600 dark:text-orange-400">ساوندکلاود (SoundCloud)</span>
+            </div>
+            <div>
+              <label className="block text-[11px] font-medium text-foreground mb-1">شناسه یا نام کاربری ساوندکلاود</label>
+              <input
+                type="text"
+                value={meta.username || meta.targetId || ''}
+                onChange={(e) => {
+                  const val = e.target.value.trim();
+                  updateLinkMetadata(link.id, { username: val, targetId: val });
+                  updateLink(link.id, { url: getSmartLink('soundcloud', val) });
+                }}
+                placeholder="username یا user_id"
+                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-outfit text-left"
+                dir="ltr"
+              />
+              <p className="text-[10px] text-muted-foreground mt-1 font-outfit" dir="ltr">
+                دیپ‌لینک: soundcloud://users/[ID] یا https://soundcloud.com/[username]
+              </p>
+            </div>
+          </div>
+        );
+
+      // DIRECT MESSENGERS
+      case 'skype':
+        return (
+          <div className="space-y-3 pt-1">
+            <div className="p-2.5 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center gap-2">
+              <SkypeIcon className="w-5 h-5 text-sky-500 shrink-0" />
+              <span className="text-xs font-bold text-sky-600 dark:text-sky-400">اسکایپ (Skype)</span>
+            </div>
+            <div>
+              <label className="block text-[11px] font-medium text-foreground mb-1">نام کاربری یا شناسه اسکایپ (Skype Handle)</label>
+              <input
+                type="text"
+                value={meta.username || ''}
+                onChange={(e) => {
+                  const val = e.target.value.trim();
+                  updateLinkMetadata(link.id, { username: val });
+                  updateLink(link.id, { url: `skype:${val}?chat` });
+                }}
+                placeholder="live:username"
+                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-outfit text-left"
+                dir="ltr"
+              />
+              <p className="text-[10px] text-muted-foreground mt-1 font-outfit" dir="ltr">
+                دیپ‌لینک: skype:{meta.username || 'username'}?chat
+              </p>
+            </div>
+          </div>
+        );
+
+      case 'wechat':
+        return (
+          <div className="space-y-3 pt-1">
+            <div className="p-2.5 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center gap-2">
+              <WeChatIcon className="w-5 h-5 text-green-500 shrink-0" />
+              <span className="text-xs font-bold text-green-600 dark:text-green-400">ویچت (WeChat)</span>
+            </div>
+            <div>
+              <label className="block text-[11px] font-medium text-foreground mb-1">شناسه کاربری ویچت (WeChat ID)</label>
+              <input
+                type="text"
+                value={meta.targetId || ''}
+                onChange={(e) => {
+                  const val = e.target.value.trim();
+                  updateLinkMetadata(link.id, { targetId: val });
+                  updateLink(link.id, { url: `weixin://dl/chat?${val}` });
+                }}
+                placeholder="wechat_id"
+                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-outfit text-left"
+                dir="ltr"
+              />
+              <p className="text-[10px] text-muted-foreground mt-1 font-outfit" dir="ltr">
+                دیپ‌لینک: weixin://dl/chat?{meta.targetId || 'ID'}
+              </p>
+            </div>
+          </div>
+        );
+
+      case 'messenger':
+        return (
+          <div className="space-y-3 pt-1">
+            <div className="p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center gap-2">
+              <MessengerIcon className="w-5 h-5 text-blue-500 shrink-0" />
+              <span className="text-xs font-bold text-blue-600 dark:text-blue-400">مسنجر فیسبوک (Messenger)</span>
+            </div>
+            <div>
+              <label className="block text-[11px] font-medium text-foreground mb-1">شناسه یا نام کاربری مسنجر</label>
+              <input
+                type="text"
+                value={meta.targetId || meta.username || ''}
+                onChange={(e) => {
+                  const val = e.target.value.trim();
+                  updateLinkMetadata(link.id, { targetId: val, username: val });
+                  updateLink(link.id, { url: getSmartLink('messenger', val) });
+                }}
+                placeholder="username یا user_id"
+                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-outfit text-left"
+                dir="ltr"
+              />
+              <p className="text-[10px] text-muted-foreground mt-1 font-outfit" dir="ltr">
+                دیپ‌لینک: fb-messenger://user-thread/{meta.targetId || 'ID'} یا https://m.me/{meta.targetId || 'username'}
+              </p>
+            </div>
+          </div>
+        );
+
+      case 'signal':
+        return (
+          <div className="space-y-3 pt-1">
+            <div className="p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center gap-2">
+              <SignalIcon className="w-5 h-5 text-blue-500 shrink-0" />
+              <span className="text-xs font-bold text-blue-600 dark:text-blue-400">سیگنال (Signal)</span>
+            </div>
+            <div>
+              <label className="block text-[11px] font-medium text-foreground mb-1">شماره تماس در سیگنال</label>
+              <PhoneInput
+                value={meta.phoneNumber || ''}
+                onChange={(val) => {
+                  updateLinkMetadata(link.id, { phoneNumber: val });
+                  updateLink(link.id, { url: getSmartLink('signal', val) });
+                }}
+                placeholder="799 123 456"
+                defaultCountry="AF"
+              />
+              <p className="text-[10px] text-muted-foreground mt-1 font-outfit" dir="ltr">
+                دیپ‌لینک: sgnl://signal.me/#p/{(meta.phoneNumber || '').replace(/[^0-9]/g, '')}
+              </p>
             </div>
           </div>
         );
@@ -952,7 +1659,6 @@ export const SectionModulesList: React.FC = () => {
       case 'phone_call':
         return (
           <div className="space-y-3 pt-1">
-            {renderSocialBrandGrid(link)}
             <div>
               <label className="block text-[11px] font-medium text-foreground mb-1">شماره تماس جهت برقراری مستقیم</label>
               <PhoneInput
@@ -971,7 +1677,6 @@ export const SectionModulesList: React.FC = () => {
       case 'email_direct':
         return (
           <div className="space-y-3 pt-1">
-            {renderSocialBrandGrid(link)}
             <div>
               <label className="block text-[11px] font-medium text-foreground mb-1">آدرس ایمیل گیرنده</label>
               <input
@@ -1216,11 +1921,9 @@ export const SectionModulesList: React.FC = () => {
             <span className="text-xs font-bold text-foreground block">باز شدن در پنجره جدید (Open in new tab)</span>
             <span className="text-[10px] text-muted-foreground block">هنگام کلیک، این لینک در یک صفحه مجزا باز شود</span>
           </div>
-          <input
-            type="checkbox"
+          <Switch
             checked={adv.openInNewTab !== false}
-            onChange={(e) => updateLinkAdvancedSettings(link.id, { openInNewTab: e.target.checked })}
-            className="rounded text-cyan-500 w-4 h-4 cursor-pointer"
+            onCheckedChange={(checked) => updateLinkAdvancedSettings(link.id, { openInNewTab: checked })}
           />
         </div>
 
@@ -1231,15 +1934,13 @@ export const SectionModulesList: React.FC = () => {
               <Clock className="w-4 h-4 text-cyan-500" />
               <span className="text-xs font-bold text-foreground">زمان‌بندی هوشمند نمایش دکمه</span>
             </div>
-            <input
-              type="checkbox"
+            <Switch
               checked={sched.enabled}
-              onChange={(e) =>
+              onCheckedChange={(checked) =>
                 updateLinkAdvancedSettings(link.id, {
-                  scheduling: { ...sched, enabled: e.target.checked },
+                  scheduling: { ...sched, enabled: checked },
                 })
               }
-              className="rounded bg-muted border-border text-cyan-500 w-4 h-4 cursor-pointer"
             />
           </div>
 
@@ -1287,15 +1988,13 @@ export const SectionModulesList: React.FC = () => {
               <Lock className="w-4 h-4 text-amber-500" />
               <span className="text-xs font-bold text-foreground">لینک قفل‌شده / محتوای پولی (Locked Link)</span>
             </div>
-            <input
-              type="checkbox"
+            <Switch
               checked={lock.isLocked}
-              onChange={(e) =>
+              onCheckedChange={(checked) =>
                 updateLinkAdvancedSettings(link.id, {
-                  monetization: { ...lock, isLocked: e.target.checked },
+                  monetization: { ...lock, isLocked: checked },
                 })
               }
-              className="rounded bg-muted border-border text-amber-500 w-4 h-4 cursor-pointer"
             />
           </div>
 
@@ -1431,7 +2130,8 @@ export const SectionModulesList: React.FC = () => {
   return (
     <div className="space-y-3">
       {profile.links.map((link) => {
-        const isExpanded = expandedId === link.id;
+        const isExpanded = expandedModuleId === link.id;
+        const isUnconfirmed = unconfirmedModuleId === link.id;
         const currentTab = activeSettingsTab[link.id] || 'content';
         const isInteractive = isInteractiveModule(link.moduleType);
 
@@ -1478,6 +2178,11 @@ export const SectionModulesList: React.FC = () => {
                       className="bg-transparent border-0 text-xs font-bold text-foreground focus:outline-none focus:ring-0 p-0 font-sans w-full truncate"
                       placeholder="عنوان ماژول..."
                     />
+                  )}
+                  {isUnconfirmed && (
+                    <span className="text-[10px] bg-amber-500/15 text-amber-600 dark:text-amber-400 font-bold px-2 py-0.5 rounded-full border border-amber-500/30 shrink-0">
+                      تاییدنشده
+                    </span>
                   )}
                   {link.advancedSettings?.monetization?.isLocked && (
                     <span className="text-[10px] bg-amber-500/15 text-amber-500 font-bold px-2 py-0.5 rounded-full border border-amber-500/30 flex items-center gap-1 shrink-0 font-outfit">
@@ -1527,7 +2232,7 @@ export const SectionModulesList: React.FC = () => {
                 {/* Delete Button */}
                 <button
                   type="button"
-                  onClick={() => removeLink(link.id)}
+                  onClick={() => handleRemoveLink(link.id)}
                   className="w-7 h-7 rounded-lg text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 transition-colors flex items-center justify-center"
                   title="حذف ماژول"
                 >
@@ -1578,6 +2283,27 @@ export const SectionModulesList: React.FC = () => {
                 ) : (
                   renderModuleSpecificInputs(link)
                 )}
+
+                {/* Confirmation Footer */}
+                <div className="pt-3 border-t border-border flex items-center justify-between">
+                  <button
+                    type="button"
+                    onClick={() => handleCancel(link.id)}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all active:scale-95 border border-border"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    لغو
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleConfirm(link.id)}
+                    className="inline-flex items-center gap-1.5 px-5 py-1.5 rounded-xl text-xs font-bold bg-emerald-500 hover:bg-emerald-600 text-slate-950 shadow-sm transition-all active:scale-95"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    تایید
+                  </button>
+                </div>
               </div>
             )}
           </div>
