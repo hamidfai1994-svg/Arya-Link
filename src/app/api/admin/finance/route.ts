@@ -22,8 +22,12 @@ export async function GET() {
 
     await connectToDatabase();
 
-    // 1. Fetch all store product orders
-    const allOrders = await Order.find({}).sort({ createdAt: -1 }).lean();
+    // 1. Fetch all store product orders (excluding any legacy mock/fake data)
+    const fakeFilter = {
+      orderNumber: { $nin: ['ORD-84920', 'ORD-84921', 'ORD-84922'] },
+      customerName: { $nin: ['محمد ابراهیمی', 'سارا عزیزی', 'احمد فیاض'] },
+    };
+    const allOrders = await Order.find(fakeFilter).sort({ createdAt: -1 }).lean();
 
     // 2. Fetch all user payouts
     const allPayouts = await Payout.find({}).sort({ requestedAt: -1 }).lean();
@@ -32,17 +36,18 @@ export async function GET() {
     const proUsersCount = await User.countDocuments({ subscriptionPlan: 'pro' });
     const enterpriseUsersCount = await User.countDocuments({ subscriptionPlan: 'enterprise' });
 
-    // Financial calculations
-    const totalOrderRevenue = allOrders
-      .filter((o) => o.paymentStatus === 'paid')
-      .reduce((sum, o) => sum + (o.totalPrice || 0), 0);
+    // Financial calculations based strictly on real database data
+    const paidOrders = allOrders.filter((o) => o.paymentStatus === 'paid');
+    const totalOrderRevenue = paidOrders.reduce((sum, o) => sum + (o.totalPrice || 0), 0);
 
     const subscriptionRevenue = proUsersCount * 590 + enterpriseUsersCount * 2500;
 
-    // Simulated NFC card sales
-    const nfcCardRevenue = 145000;
+    // Real NFC card sales from paid orders
+    const nfcCardRevenue = paidOrders
+      .filter((o) => o.productTitle?.includes('NFC') || o.cardSpecs)
+      .reduce((sum, o) => sum + (o.totalPrice || 0), 0);
 
-    const totalGrossRevenue = totalOrderRevenue + subscriptionRevenue + nfcCardRevenue;
+    const totalGrossRevenue = totalOrderRevenue + subscriptionRevenue;
 
     const totalPayoutsPaid = allPayouts
       .filter((p) => p.status === 'completed')

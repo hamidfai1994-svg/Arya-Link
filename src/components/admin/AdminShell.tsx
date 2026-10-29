@@ -47,8 +47,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
           {/* Right utility items */}
           <div className="flex items-center gap-3">
-            <span className="text-xs text-muted-foreground hidden md:inline font-outfit">
-              زمان سرور: {new Date().toLocaleTimeString('fa-IR')}
+            <span className="text-xs text-muted-foreground hidden md:inline font-outfit" dir="ltr">
+              Server Time: {new Date().toLocaleTimeString('en-US')}
             </span>
             <ThemeToggle />
           </div>

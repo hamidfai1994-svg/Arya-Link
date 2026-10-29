@@ -116,7 +116,7 @@ export function SocialProofMarquee() {
               ))}
             </div>
             <span className="font-bold text-foreground font-outfit">4.9 / 5</span>
-            <span className="text-[11px] text-muted-foreground font-sans">(بیش از ۱,۲۰۰ کاربر راضی)</span>
+            <span className="text-[11px] text-muted-foreground font-sans">(بیش از 1,200 کاربر راضی)</span>
           </div>
         </div>
       </div>

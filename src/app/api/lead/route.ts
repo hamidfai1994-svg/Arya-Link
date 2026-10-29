@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
       email: l.email || '',
       message: l.message,
       status: l.status,
-      dateStr: new Date(l.createdAt).toLocaleDateString('fa-IR', {
+      dateStr: new Date(l.createdAt).toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
         hour: '2-digit',

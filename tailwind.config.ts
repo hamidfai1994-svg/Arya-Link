@@ -19,30 +19,30 @@ const config: Config = {
       fontFamily: {
         sans: [
           "var(--font-vazirmatn)",
-          "var(--font-outfit)",
+          "var(--font-inter)",
           "system-ui",
           "-apple-system",
           "BlinkMacSystemFont",
-          "Segoe UI",
-          "Roboto",
           "sans-serif",
         ],
         outfit: [
+          "var(--font-vazirmatn)",
+          "var(--font-inter)",
           "var(--font-outfit)",
-          "system-ui",
-          "-apple-system",
-          "BlinkMacSystemFont",
           "sans-serif",
         ],
         mono: [
-          "var(--font-jetbrains)",
-          "var(--font-outfit)",
+          "var(--font-inter)",
           "ui-monospace",
           "SFMono-Regular",
           "Menlo",
           "Monaco",
           "Consolas",
           "monospace",
+        ],
+        inter: [
+          "var(--font-inter)",
+          "sans-serif",
         ],
       },
       colors: {

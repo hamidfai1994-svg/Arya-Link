@@ -176,7 +176,7 @@ export default function SingleBlogPostPage() {
             می‌خواهید کارت هوشمند اختصاصی خود را بسازید؟
           </h3>
           <p className="text-xs text-muted-foreground max-w-md mx-auto">
-            در کمتر از ۱ دقیقه حساب کاربری خود را در آریا لینک بسازید و از قابلیت‌های مدرن کارت ویزیت هوشمند بهره‌مند شوید.
+            در کمتر از 1 دقیقه حساب کاربری خود را در آریا لینک بسازید و از قابلیت‌های مدرن کارت ویزیت هوشمند بهره‌مند شوید.
           </p>
           <Link href="/register">
             <Button className="rounded-2xl bg-cyan-500 text-white font-bold text-xs h-11 px-8">

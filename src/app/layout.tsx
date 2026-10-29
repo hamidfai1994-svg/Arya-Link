@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Vazirmatn, Outfit, JetBrains_Mono } from 'next/font/google';
+import { Vazirmatn, Inter, Outfit, JetBrains_Mono } from 'next/font/google';
 import { cookies } from 'next/headers';
 import { ThemeProvider } from '@/components/theme-provider';
 import { AuthProvider } from '@/components/providers/AuthProvider';
@@ -12,23 +12,32 @@ import { DEFAULT_SITE_SETTINGS } from '@/types/settings';
 import { Toaster } from '@/components/ui/sonner';
 import './globals.css';
 
+// Strict Typography: Persian/Dari/Pashto standard (Regular 400 & Bold 700)
 const vazirmatn = Vazirmatn({
   subsets: ['arabic', 'latin'],
-  weight: ['300', '400', '500', '600', '700', '800'],
+  weight: ['400', '700'],
   variable: '--font-vazirmatn',
+  display: 'swap',
+});
+
+// Strict Typography: English Minimalist standard (Regular 400 & Bold 700)
+const inter = Inter({
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  variable: '--font-inter',
   display: 'swap',
 });
 
 const outfit = Outfit({
   subsets: ['latin'],
-  weight: ['300', '400', '500', '600', '700', '800'],
+  weight: ['400', '700'],
   variable: '--font-outfit',
   display: 'swap',
 });
 
 const jetbrainsMono = JetBrains_Mono({
   subsets: ['latin'],
-  weight: ['400', '500', '600'],
+  weight: ['400', '700'],
   variable: '--font-jetbrains',
   display: 'swap',
 });
@@ -68,7 +77,7 @@ export default async function RootLayout({
     <html
       lang={initialLanguage}
       dir={initialDir}
-      className={`${vazirmatn.variable} ${outfit.variable} ${jetbrainsMono.variable}`}
+      className={`${vazirmatn.variable} ${inter.variable} ${outfit.variable} ${jetbrainsMono.variable}`}
       suppressHydrationWarning
     >
       <head>

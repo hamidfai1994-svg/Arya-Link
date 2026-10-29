@@ -308,7 +308,7 @@ export default function AdminDashboardPage() {
             </div>
           </div>
           <div className="text-2xl sm:text-3xl font-black font-outfit text-foreground tracking-tight">
-            {totalUsers.toLocaleString('fa-IR')}
+            {totalUsers.toLocaleString('en-US')}
           </div>
           <p className="text-[11px] text-muted-foreground mt-1">تعداد کل حساب‌های ایجاد شده</p>
         </Card>
@@ -322,7 +322,7 @@ export default function AdminDashboardPage() {
             </div>
           </div>
           <div className="text-2xl sm:text-3xl font-black font-outfit text-amber-500 tracking-tight">
-            {pendingKycCount.toLocaleString('fa-IR')}
+            {pendingKycCount.toLocaleString('en-US')}
           </div>
           <p className="text-[11px] text-amber-600 dark:text-amber-400 mt-1">نیازمند بررسی سلفی و مدارک</p>
         </Card>
@@ -336,7 +336,7 @@ export default function AdminDashboardPage() {
             </div>
           </div>
           <div className="text-2xl sm:text-3xl font-black font-outfit text-emerald-500 tracking-tight">
-            {verifiedCount.toLocaleString('fa-IR')}
+            {verifiedCount.toLocaleString('en-US')}
           </div>
           <p className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-1">احراز هویت شده و تایید شده</p>
         </Card>
@@ -350,7 +350,7 @@ export default function AdminDashboardPage() {
             </div>
           </div>
           <div className="text-2xl sm:text-3xl font-black font-outfit text-foreground tracking-tight">
-            {users.filter((u) => u.isActive).length.toLocaleString('fa-IR')}
+            {users.filter((u) => u.isActive).length.toLocaleString('en-US')}
           </div>
           <p className="text-[11px] text-muted-foreground mt-1">دسترسی مجاز به سیستم</p>
         </Card>

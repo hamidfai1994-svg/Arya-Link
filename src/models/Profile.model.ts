@@ -107,6 +107,8 @@ const ProfileThemeConfigSchema = new Schema(
     backgroundType: { type: String, enum: ['solid', 'gradient', 'pattern'], default: 'gradient' },
     buttonBorderStyle: { type: String, enum: ['none', 'solid', 'dashed'], default: 'solid' },
     buttonShadowStyle: { type: String, enum: ['none', 'sm', 'md', 'glow'], default: 'sm' },
+    fontFa: { type: String, default: 'vazirmatn' },
+    fontEn: { type: String, default: 'inter' },
   },
   { _id: false }
 );

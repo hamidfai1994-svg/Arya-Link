@@ -43,7 +43,10 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { cn } from '@/lib/utils';
 import { useEditorStore } from '@/store/editor-store';
+import { PaginationBar } from '@/components/ui/pagination-bar';
+import { CreditCard } from 'lucide-react';
 
 interface ProfileItem {
   id: string;
@@ -69,6 +72,14 @@ export default function UserDashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
+
   // Create Profile Modal State
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [newDisplayName, setNewDisplayName] = useState('');
@@ -87,6 +98,10 @@ export default function UserDashboardPage() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       setDomainHost(window.location.host || 'aryal.ink');
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('error') === 'unauthorized_admin' || params.get('error') === 'admin_only') {
+        toast.error('خطای 403: عدم دسترسی به پنل مدیریت ارشد. این بخش مخصوص مدیران کل است.');
+      }
     }
     loadProfiles();
   }, []);
@@ -146,10 +161,10 @@ export default function UserDashboardPage() {
       setNewHeadline('');
       loadProfiles();
 
-      // Switch to this profile and direct to editor
+      // Switch to this profile and direct to isolated editor
       if (data.data?.id) {
         await switchProfile(data.data.id);
-        router.push(`/dashboard/editor?alias=${data.data.alias}`);
+        router.push(`/dashboard/editor/${data.data.id}`);
       }
     } catch (err) {
       console.error('Create profile error:', err);
@@ -192,7 +207,35 @@ export default function UserDashboardPage() {
 
   const handleEditProfile = async (profile: ProfileItem) => {
     await switchProfile(profile.id);
-    router.push(`/dashboard/editor?alias=${profile.alias}`);
+    router.push(`/dashboard/editor/${profile.id}`);
+  };
+
+  const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
+
+  const handleDuplicateProfile = async (profile: ProfileItem) => {
+    setDuplicatingId(profile.id);
+    try {
+      const res = await fetch('/api/profile/list', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'duplicate',
+          sourceProfileId: profile.id,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success(`یک نسخه کپی از کارت «${profile.displayName}» با موفقیت ساخته شد.`);
+        loadProfiles();
+      } else {
+        toast.error('خطا در کپی کارت', { description: data.message });
+      }
+    } catch (err) {
+      console.error('Duplicate error:', err);
+      toast.error('خطای شبکه در کپی کارت.');
+    } finally {
+      setDuplicatingId(null);
+    }
   };
 
   const filteredProfiles = profiles.filter((p) => {
@@ -205,6 +248,16 @@ export default function UserDashboardPage() {
     );
   });
 
+  const totalViews = profiles.reduce((sum, p) => sum + (p.viewsCount || 0), 0);
+  const totalLinks = profiles.reduce((sum, p) => sum + (p.linksCount || 0), 0);
+  const totalLeads = profiles.reduce((sum, p) => sum + (p.leadsCount || 0), 0);
+
+  const totalPages = Math.max(1, Math.ceil(filteredProfiles.length / itemsPerPage));
+  const paginatedProfiles = filteredProfiles.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
   return (
     <div className="space-y-8 select-none" dir="rtl">
       {/* Top Banner & Header */}
@@ -212,14 +265,14 @@ export default function UserDashboardPage() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-              لینک‌های شما
+              داشبورد و لینک‌های من
             </h1>
-            <Badge variant="cyan" className="font-outfit text-xs">
-              {profiles.length} کارت فعال
+            <Badge variant="cyan" className="text-xs font-bold font-mono">
+              {profiles.length} Active Cards
             </Badge>
           </div>
           <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-            کارت‌های ویزیت دیجیتال NFC و صفحات اختصاصی بیو خود را در این بخش مدیریت و ویرایش کنید.
+            فهرست کارت‌های هوشمند NFC، صفحات اختصاصی بیو و آمار کلی عملکرد حساب کاربری شما
           </p>
         </div>
 
@@ -227,11 +280,98 @@ export default function UserDashboardPage() {
         <Button
           onClick={() => setIsCreateOpen(true)}
           size="lg"
-          className="h-12 px-6 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-sm shadow-xl shadow-cyan-500/25 flex items-center gap-2 active:scale-95 transition-all self-start md:self-auto shrink-0"
+          className="h-12 px-6 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-sm shadow-xl shadow-cyan-500/25 flex items-center gap-2 active:scale-95 transition-all self-start md:self-auto shrink-0 cursor-pointer"
         >
           <Plus className="w-5 h-5" />
           <span>+ ساخت کارت/لینک جدید</span>
         </Button>
+      </div>
+
+      {/* Aggregated Overview Section (مجموع آمار کل لینک‌های این کاربر - Strictly English Numbers) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        {/* Metric 1: Total Views */}
+        <div className="p-4 sm:p-5 rounded-3xl bg-card/70 backdrop-blur-md border border-border shadow-xs hover:border-cyan-500/30 transition-all flex flex-col justify-between space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] sm:text-xs font-bold text-muted-foreground">
+              مجموع کل بازدیدها
+            </span>
+            <div className="w-8 h-8 rounded-xl bg-cyan-500/10 text-cyan-500 flex items-center justify-center border border-cyan-500/20">
+              <Eye className="w-4 h-4" />
+            </div>
+          </div>
+          <div>
+            <span className="text-2xl sm:text-3xl font-black text-foreground font-mono tracking-tight block">
+              {totalViews.toLocaleString('en-US')}
+            </span>
+            <span className="text-[10px] text-muted-foreground mt-0.5 block">
+              تعداد دفعات دیده شدن تمام لینک‌های شما
+            </span>
+          </div>
+        </div>
+
+        {/* Metric 2: Total Clicks & Leads */}
+        <div className="p-4 sm:p-5 rounded-3xl bg-card/70 backdrop-blur-md border border-border shadow-xs hover:border-blue-500/30 transition-all flex flex-col justify-between space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] sm:text-xs font-bold text-muted-foreground">
+              کلیک‌ها و تعاملات
+            </span>
+            <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center border border-blue-500/20">
+              <MousePointerClick className="w-4 h-4" />
+            </div>
+          </div>
+          <div>
+            <span className="text-2xl sm:text-3xl font-black text-foreground font-mono tracking-tight block">
+              {(totalLinks + totalLeads).toLocaleString('en-US')}
+            </span>
+            <span className="text-[10px] text-muted-foreground mt-0.5 block">
+              مجموع کلیک روی لینک‌ها و تماس‌ها
+            </span>
+          </div>
+        </div>
+
+        {/* Metric 3: Active Links & Profiles Count */}
+        <div className="p-4 sm:p-5 rounded-3xl bg-card/70 backdrop-blur-md border border-border shadow-xs hover:border-emerald-500/30 transition-all flex flex-col justify-between space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] sm:text-xs font-bold text-muted-foreground">
+              کارت‌ها و لینک‌های فعال
+            </span>
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center border border-emerald-500/20">
+              <Layers className="w-4 h-4" />
+            </div>
+          </div>
+          <div>
+            <span className="text-2xl sm:text-3xl font-black text-foreground font-mono tracking-tight block">
+              {profiles.length.toLocaleString('en-US')}
+            </span>
+            <span className="text-[10px] text-muted-foreground mt-0.5 block">
+              تعداد صفحات و کارت‌های هوشمند فعال
+            </span>
+          </div>
+        </div>
+
+        {/* Metric 4: My Physical Cards Shortcut */}
+        <Link
+          href="/dashboard/orders"
+          className="p-4 sm:p-5 rounded-3xl bg-amber-500/5 hover:bg-amber-500/10 border border-amber-500/25 shadow-xs hover:border-amber-500/40 transition-all flex flex-col justify-between space-y-2 group cursor-pointer"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] sm:text-xs font-bold text-amber-600 dark:text-amber-400">
+              سفارشات کارت NFC
+            </span>
+            <div className="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-500 flex items-center justify-center border border-amber-500/30 group-hover:scale-110 transition-transform">
+              <CreditCard className="w-4 h-4" />
+            </div>
+          </div>
+          <div>
+            <span className="text-sm font-bold text-foreground group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors flex items-center gap-1.5">
+              <span>پیگیری سفارشات من</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </span>
+            <span className="text-[10px] text-muted-foreground mt-0.5 block">
+              مشاهده وضعیت چاپ، بسته‌بندی و ارسال
+            </span>
+          </div>
+        </Link>
       </div>
 
       {/* Quick Filter & Search Bar */}
@@ -281,13 +421,13 @@ export default function UserDashboardPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {filteredProfiles.map((profile) => {
+          {paginatedProfiles.map((profile) => {
             const fullUrl = `${domainHost}/${profile.alias}`;
 
             return (
               <div
                 key={profile.id}
-                className="group relative rounded-2xl sm:rounded-3xl border border-border bg-card/90 hover:border-cyan-500/40 p-4 sm:p-5 transition-all shadow-sm hover:shadow-xl hover:shadow-cyan-500/5 flex flex-col md:flex-row md:items-center justify-between gap-4"
+                className="group relative rounded-2xl sm:rounded-3xl border border-border hover:border-cyan-500/40 bg-card/90 p-4 sm:p-5 transition-all shadow-sm hover:shadow-xl hover:shadow-cyan-500/5 flex flex-col md:flex-row md:items-center justify-between gap-4"
               >
                 {/* Left Area: Avatar + Details */}
                 <div className="flex items-center gap-4 min-w-0">
@@ -352,87 +492,106 @@ export default function UserDashboardPage() {
 
                       <span className="text-xs text-muted-foreground hidden sm:inline">•</span>
 
-                      <div className="hidden sm:flex items-center gap-3 text-[11px] text-muted-foreground">
+                      <div className="hidden sm:flex items-center gap-3 text-[11px] text-muted-foreground font-mono">
                         <span className="flex items-center gap-1">
                           <Eye className="w-3 h-3 text-cyan-500" />
-                          <span>{profile.viewsCount || 0} بازدید</span>
+                          <span>{(profile.viewsCount || 0).toLocaleString('en-US')} Views</span>
                         </span>
                         <span className="flex items-center gap-1">
                           <MousePointerClick className="w-3 h-3 text-blue-500" />
-                          <span>{profile.linksCount || 0} لینک</span>
+                          <span>{(profile.linksCount || 0).toLocaleString('en-US')} Links</span>
                         </span>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Right Area: Action Buttons & 3-dots Menu */}
-                <div className="flex items-center gap-2.5 self-end md:self-auto shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-border/50 w-full md:w-auto justify-end">
-                  {/* Main "ویرایش" Button */}
+                {/* Right Area: Action Buttons (ویرایش، کپی، مشاهده و منوی بیشتر) */}
+                <div className="flex items-center gap-2 self-end md:self-auto shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-border/50 w-full md:w-auto justify-end">
+                  {/* دکمه اصلی ویرایش (ورود به محیط ایزوله ویرایشگر لینک) */}
                   <Button
                     onClick={() => handleEditProfile(profile)}
-                    variant="outline"
-                    className="h-10 px-4 rounded-xl border-border bg-background hover:bg-muted text-foreground hover:text-cyan-500 font-bold text-xs flex items-center gap-1.5 shadow-sm active:scale-95 transition-all"
+                    className="h-9 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-cyan-500/20 active:scale-95 transition-all"
+                    title="ورود به محیط ویرایشگر اختصاصی این لینک"
                   >
-                    <Edit3 className="w-3.5 h-3.5 text-cyan-500" />
-                    <span>ویرایش کارت</span>
+                    <Edit3 className="w-3.5 h-3.5 text-white" />
+                    <span>ویرایش</span>
                   </Button>
 
-                  {/* Public Output Button */}
+                  {/* دکمه کپی (Duplicate) */}
+                  <Button
+                    onClick={() => handleDuplicateProfile(profile)}
+                    disabled={duplicatingId === profile.id}
+                    variant="outline"
+                    className="h-9 px-3.5 rounded-xl border-border bg-background hover:bg-blue-500/10 text-foreground hover:text-blue-600 dark:hover:text-blue-400 font-bold text-xs flex items-center gap-1.5 shadow-xs active:scale-95 transition-all"
+                    title="ساخت نسخه کپی (Duplicate) از این کارت"
+                  >
+                    {duplicatingId === profile.id ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-500" />
+                    ) : (
+                      <Copy className="w-3.5 h-3.5 text-blue-500" />
+                    )}
+                    <span>کپی (Duplicate)</span>
+                  </Button>
+
+                  {/* دکمه مشاهده خروجی زنده */}
                   <Link
                     href={`/${profile.alias}`}
                     target="_blank"
-                    className="h-10 px-3 rounded-xl border border-border bg-background hover:bg-muted text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors shadow-sm"
+                    className="h-9 w-9 rounded-xl border border-border bg-background hover:bg-muted text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors shadow-xs"
                     title="مشاهده صفحه عمومی کارت"
                   >
-                    <ExternalLink className="w-4 h-4" />
+                    <ExternalLink className="w-3.5 h-3.5" />
                   </Link>
 
-                  {/* Three-dots Menu */}
+                  {/* منوی سه‌نقطه (الگوبرداری از تکلینک: مشاهده، تنظیمات، آمار، حذف) */}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-10 w-10 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted"
+                      <button
+                        type="button"
+                        className="h-9 w-9 rounded-xl border border-border bg-background hover:bg-muted text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors shadow-xs cursor-pointer"
+                        title="گزینه‌های بیشتر"
                       >
                         <MoreVertical className="w-4 h-4" />
-                      </Button>
+                      </button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48">
-                      <DropdownMenuItem
-                        onClick={() => handleCopyLink(profile.alias)}
-                        className="flex items-center gap-2 text-xs"
-                      >
-                        <Copy className="w-3.5 h-3.5 text-cyan-500" />
-                        <span>کپی لینک کارت</span>
-                      </DropdownMenuItem>
-
+                    <DropdownMenuContent align="end" className="w-48 rounded-2xl p-1.5 shadow-xl border border-border text-right">
                       <DropdownMenuItem
                         onClick={() => window.open(`/${profile.alias}`, '_blank')}
-                        className="flex items-center gap-2 text-xs"
+                        className="flex items-center justify-between rounded-xl px-3 py-2 text-xs cursor-pointer"
                       >
-                        <ExternalLink className="w-3.5 h-3.5 text-blue-500" />
-                        <span>نمایش خروجی زنده</span>
+                        <span>مشاهده نسخه زنده</span>
+                        <ExternalLink className="w-3.5 h-3.5 text-muted-foreground" />
                       </DropdownMenuItem>
-
                       <DropdownMenuItem
-                        onClick={() => handleEditProfile(profile)}
-                        className="flex items-center gap-2 text-xs"
+                        onClick={async () => {
+                          await switchProfile(profile.id);
+                          router.push(`/dashboard/editor/${profile.id}?tab=settings`);
+                        }}
+                        className="flex items-center justify-between rounded-xl px-3 py-2 text-xs cursor-pointer"
                       >
-                        <Edit3 className="w-3.5 h-3.5 text-emerald-500" />
-                        <span>ورود به ویرایشگر</span>
+                        <span>تنظیمات و سئو</span>
+                        <Sparkles className="w-3.5 h-3.5 text-cyan-500" />
                       </DropdownMenuItem>
-
+                      <DropdownMenuItem
+                        onClick={async () => {
+                          await switchProfile(profile.id);
+                          router.push(`/dashboard/editor/${profile.id}?tab=analytics`);
+                        }}
+                        className="flex items-center justify-between rounded-xl px-3 py-2 text-xs cursor-pointer"
+                      >
+                        <span>آمار و تحلیل</span>
+                        <Eye className="w-3.5 h-3.5 text-blue-500" />
+                      </DropdownMenuItem>
                       {profiles.length > 1 && (
                         <>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
                             onClick={() => setProfileToDelete(profile)}
-                            className="flex items-center gap-2 text-xs text-rose-500 focus:text-rose-500"
+                            className="flex items-center justify-between rounded-xl px-3 py-2 text-xs text-rose-500 focus:text-rose-500 focus:bg-rose-500/10 cursor-pointer font-bold"
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
-                            <span>حذف این کارت</span>
+                            <span>حذف لینک</span>
+                            <Trash2 className="w-3.5 h-3.5 text-rose-500" />
                           </DropdownMenuItem>
                         </>
                       )}
@@ -442,12 +601,28 @@ export default function UserDashboardPage() {
               </div>
             );
           })}
+
+          {/* Pagination */}
+          <div className="pt-2">
+            <PaginationBar
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={filteredProfiles.length}
+              itemsPerPage={itemsPerPage}
+              onPageChange={setCurrentPage}
+              onItemsPerPageChange={(val) => {
+                setItemsPerPage(val);
+                setCurrentPage(1);
+              }}
+              itemLabel="کارت"
+            />
+          </div>
         </div>
       )}
 
       {/* Modal: + ساخت کارت/لینک جدید */}
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <DialogContent className="sm:max-w-md rounded-3xl" dir="rtl">
+        <DialogContent showCloseButton={false} className="sm:max-w-md rounded-3xl" dir="rtl">
           <DialogHeader className="text-right">
             <DialogTitle className="text-lg font-bold text-foreground flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-cyan-500" />
@@ -589,7 +764,7 @@ export default function UserDashboardPage() {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={!!profileToDelete} onOpenChange={() => setProfileToDelete(null)}>
-        <DialogContent className="sm:max-w-sm rounded-3xl" dir="rtl">
+        <DialogContent showCloseButton={false} className="sm:max-w-sm rounded-3xl" dir="rtl">
           <DialogHeader className="text-right">
             <DialogTitle className="text-base font-bold text-rose-500 flex items-center gap-2">
               <Trash2 className="w-4 h-4" />

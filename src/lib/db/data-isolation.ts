@@ -63,3 +63,33 @@ export function buildUserIsolationQuery(sessionUser: UserSessionData | undefined
 
   return { $or: conditions };
 }
+
+/**
+ * Builds a strict MongoDB isolation query filter for Orders belonging to the authenticated user.
+ * Prevents any regular user from querying or accessing orders belonging to other accounts.
+ * Strictly checks that the order's userId or sellerUserId exactly matches session.user.id.
+ */
+export function buildOrderIsolationQuery(sessionUser: UserSessionData | undefined | null): Record<string, any> {
+  if (!sessionUser?.id || typeof sessionUser.id !== 'string') {
+    return { _id: null };
+  }
+
+  const rawId = sessionUser.id.trim();
+  if (!rawId) {
+    return { _id: null };
+  }
+
+  const conditions: any[] = [
+    { userId: rawId },
+    { sellerUserId: rawId },
+  ];
+
+  if (mongoose.isValidObjectId(rawId)) {
+    const objId = new mongoose.Types.ObjectId(rawId);
+    conditions.push({ userId: objId });
+    conditions.push({ sellerUserId: objId });
+  }
+
+  return { $or: conditions };
+}
+

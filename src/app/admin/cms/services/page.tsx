@@ -460,7 +460,7 @@ export default function AdminServicesPage() {
                 <Input
                   value={pricingInfo}
                   onChange={(e) => setPricingInfo(e.target.value)}
-                  placeholder="شروع از ۱,۵۰۰ افغانی یا پلن PRO"
+                  placeholder="شروع از 1,500 افغانی یا پلن PRO"
                   className="h-10 rounded-xl text-xs"
                 />
               </div>

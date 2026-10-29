@@ -6,69 +6,54 @@ import { usePathname } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import {
   Layers,
-  LayoutDashboard,
+  Sliders,
   BarChart3,
-  ShoppingBag,
-  Wallet,
-  ShieldCheck,
-  ShieldAlert,
+  CreditCard,
+  Truck,
   LogOut,
   ExternalLink,
-  Sparkles,
+  ShieldAlert,
   ChevronLeft,
-  UserCheck,
+  Sparkles,
+  Settings,
+  ShoppingBag,
+  UserCog,
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { SiteLogo } from '@/components/SiteLogo';
 
-interface NavItem {
+export interface UserNavItem {
   title: string;
+  subtitle: string;
   href: string;
   icon: React.ElementType;
   badge?: string;
-  adminOnly?: boolean;
+  badgeVariant?: 'cyan' | 'default' | 'outline' | 'secondary';
 }
 
-const navItems: NavItem[] = [
+// User Dashboard Navigation Items (Master View - Strictly 3 Items)
+const userNavItems: UserNavItem[] = [
   {
-    title: 'لینک‌های شما',
+    title: 'داشبورد و لینک‌های من',
+    subtitle: 'لیست لینک‌ها و آمار مجموع بازدیدها',
     href: '/dashboard',
     icon: Layers,
   },
   {
-    title: 'ویرایشگر کارت هوشمند',
-    href: '/dashboard/editor',
-    icon: LayoutDashboard,
-    badge: 'سازنده',
-  },
-  {
-    title: 'آمار و تحلیل',
-    href: '/dashboard/analytics',
-    icon: BarChart3,
-  },
-  {
-    title: 'سفارشات محصولات',
+    title: 'سفارشات من',
+    subtitle: 'پیگیری کارت‌های فیزیکی هوشمند NFC',
     href: '/dashboard/orders',
     icon: ShoppingBag,
+    badge: 'NFC',
+    badgeVariant: 'cyan',
   },
   {
-    title: 'تسویه حساب مالی',
-    href: '/dashboard/payouts',
-    icon: Wallet,
-  },
-  {
-    title: 'احراز هویت (KYC)',
-    href: '/dashboard/kyc',
-    icon: ShieldCheck,
-  },
-  {
-    title: 'پنل مدیریت کل (Admin)',
-    href: '/admin/dashboard',
-    icon: ShieldAlert,
-    adminOnly: true,
-    badge: 'مدیر',
+    title: 'تنظیمات حساب کاربری',
+    subtitle: 'اطلاعات هویتی، امنیت و اشتراک PRO',
+    href: '/dashboard/account',
+    icon: UserCog,
   },
 ];
 
@@ -77,10 +62,10 @@ export function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: () => void
   const { data: session } = useSession();
 
   const userRole = (session?.user?.role || '').toLowerCase();
-  const isAdmin = userRole === 'admin' || userRole === 'superadmin';
+  const isSuperAdmin = userRole === 'superadmin' || userRole === 'admin';
 
   return (
-    <aside className="w-72 h-full flex flex-col bg-card/80 backdrop-blur-xl border-l border-border select-none">
+    <aside className="w-72 h-full flex flex-col bg-card/80 dark:bg-slate-950/90 backdrop-blur-xl border-l border-border select-none">
       {/* Brand Header */}
       <div className="p-5 border-b border-border/80 flex items-center justify-between">
         <Link
@@ -94,64 +79,19 @@ export function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: () => void
             showText={true}
             showBadge={true}
             badgeText="PRO"
-            subtitle="پنل مدیریت یکپارچه"
+            subtitle="داشبورد کاربری"
           />
         </Link>
         <ThemeToggle />
       </div>
 
-      {/* User Mini Profile Card */}
-      <div className="p-4 mx-3 my-3 rounded-2xl bg-muted/40 border border-border/60">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500/30 to-blue-600/30 border border-cyan-500/30 flex items-center justify-center text-cyan-400 font-bold overflow-hidden shrink-0">
-            {session?.user?.image ? (
-              <img
-                src={session.user.image}
-                alt={session.user.name || 'User'}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <span>{session?.user?.name ? session.user.name.charAt(0) : 'U'}</span>
-            )}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1">
-              <span className="text-xs font-bold text-foreground truncate block">
-                {session?.user?.name || 'کاربر گرامی'}
-              </span>
-            </div>
-            <p className="text-[10px] text-muted-foreground truncate font-outfit">
-              {session?.user?.email || ''}
-            </p>
-          </div>
+      {/* Main User Navigation List (Strictly 4 Items) */}
+      <nav className="flex-1 px-3 space-y-1.5 overflow-y-auto custom-scrollbar">
+        <div className="px-3 py-2 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+          مدیریت کارت و پروفایل
         </div>
 
-        {isAdmin && (
-          <div className="mt-2.5 pt-2 border-t border-border/50 flex items-center justify-between text-[11px]">
-            <span className="text-muted-foreground flex items-center gap-1">
-              <ShieldAlert className="w-3.5 h-3.5 text-amber-500" />
-              <span>نقش: مدیر ارشد</span>
-            </span>
-            <Link
-              href="/admin/dashboard"
-              className="text-cyan-500 hover:text-cyan-400 font-medium text-[11px] flex items-center gap-0.5"
-            >
-              <span>ورود</span>
-              <ChevronLeft className="w-3 h-3" />
-            </Link>
-          </div>
-        )}
-      </div>
-
-      {/* Navigation List */}
-      <nav className="flex-1 px-3 space-y-1 overflow-y-auto">
-        <div className="px-3 py-2 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-          ابزارهای اصلی و تجاری
-        </div>
-
-        {navItems.map((item) => {
-          if (item.adminOnly && !isAdmin) return null;
-
+        {userNavItems.map((item) => {
           const isActive = pathname === item.href;
           const Icon = item.icon;
 
@@ -161,30 +101,39 @@ export function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: () => void
               href={item.href}
               onClick={onCloseMobile}
               className={cn(
-                'flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all group',
+                'flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs transition-all group',
                 isActive
-                  ? 'bg-gradient-to-r from-cyan-500/15 to-blue-600/10 text-cyan-500 dark:text-cyan-400 font-bold border border-cyan-500/20 shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                  ? 'bg-cyan-500 text-white font-bold shadow-lg shadow-cyan-500/20'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
               )}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 min-w-0">
                 <Icon
                   className={cn(
-                    'w-4 h-4 transition-colors',
-                    isActive
-                      ? 'text-cyan-500 dark:text-cyan-400'
-                      : 'text-muted-foreground group-hover:text-foreground'
+                    'w-4 h-4 shrink-0 transition-colors',
+                    isActive ? 'text-white' : 'text-muted-foreground group-hover:text-cyan-500'
                   )}
                 />
-                <span>{item.title}</span>
+                <div className="text-right truncate">
+                  <span className="block truncate">{item.title}</span>
+                  <span
+                    className={cn(
+                      'text-[10px] block font-normal truncate opacity-80',
+                      isActive ? 'text-white/80' : 'text-muted-foreground'
+                    )}
+                  >
+                    {item.subtitle}
+                  </span>
+                </div>
               </div>
+
               {item.badge && (
                 <span
                   className={cn(
-                    'text-[10px] px-2 py-0.5 rounded-full font-bold',
-                    item.adminOnly
-                      ? 'bg-amber-500/15 text-amber-500 border border-amber-500/30'
-                      : 'bg-cyan-500/10 text-cyan-500 border border-cyan-500/20'
+                    'text-[10px] px-2 py-0.5 rounded-lg font-bold shrink-0',
+                    isActive
+                      ? 'bg-white/20 text-white'
+                      : 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20'
                   )}
                 >
                   {item.badge}
@@ -195,28 +144,38 @@ export function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: () => void
         })}
       </nav>
 
-      {/* Footer Actions */}
-      <div className="p-4 border-t border-border/80 space-y-2">
-        <Link
-          href="/"
-          target="_blank"
-          className="w-full flex items-center justify-between px-3.5 py-2 rounded-xl text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
-        >
-          <div className="flex items-center gap-2.5">
-            <ExternalLink className="w-3.5 h-3.5" />
-            <span>مشاهده صفحه اصلی سایت</span>
-          </div>
-        </Link>
+      {/* Super Admin Switcher (Isolated from User Tabs) */}
+      {isSuperAdmin && (
+        <div className="px-3 py-2 border-t border-border/60">
+          <Link
+            href="/admin/dashboard"
+            onClick={onCloseMobile}
+            className="flex items-center justify-between p-3 rounded-2xl bg-amber-500/10 hover:bg-amber-500/15 border border-amber-500/25 text-amber-600 dark:text-amber-400 transition-all group"
+          >
+            <div className="flex items-center gap-2.5 min-w-0">
+              <ShieldAlert className="w-4 h-4 shrink-0 text-amber-500 animate-pulse" />
+              <div className="text-right">
+                <span className="text-xs font-bold block">پنل مدیریت کل (Admin)</span>
+                <span className="text-[10px] opacity-80 block">نظارت بر سرور و کاربران</span>
+              </div>
+            </div>
+            <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+          </Link>
+        </div>
+      )}
 
+      {/* Sign Out Footer */}
+      <div className="p-4 border-t border-border">
         <button
           type="button"
           onClick={() => signOut({ callbackUrl: '/login' })}
-          className="w-full flex items-center gap-2.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-rose-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+          className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 transition-colors"
         >
-          <LogOut className="w-3.5 h-3.5" />
-          <span>خروج از حساب</span>
+          <LogOut className="w-4 h-4" />
+          <span>خروج از حساب کاربری</span>
         </button>
       </div>
     </aside>
   );
 }
+export default DashboardSidebar;

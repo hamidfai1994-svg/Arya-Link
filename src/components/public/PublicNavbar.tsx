@@ -28,6 +28,7 @@ export function PublicNavbar() {
 
   const navLinks = [
     { title: t('nav.home', 'صفحه اصلی'), href: '/' },
+    { title: t('nav.order', 'سفارش کارت'), href: '/order' },
     { title: t('nav.pricing', 'تعرفه‌ها'), href: '/#pricing' },
     { title: t('nav.services', 'خدمات'), href: '/services' },
     { title: t('nav.examples', 'نمونه‌های کارت'), href: '/#how-it-works' },
@@ -92,10 +93,10 @@ export function PublicNavbar() {
             <Link href="/dashboard">
               <Button
                 size="sm"
-                className="h-10 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs shadow-lg shadow-cyan-500/25 flex items-center gap-2"
+                className="h-10 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs shadow-lg shadow-cyan-500/25 flex items-center gap-2 max-w-[200px]"
               >
-                <LayoutDashboard className="w-4 h-4" />
-                <span>{t('nav.dashboard', 'داشبورد')}</span>
+                <User className="w-4 h-4 shrink-0" />
+                <span className="truncate">{session.user?.name || t('nav.dashboard', 'داشبورد')}</span>
               </Button>
             </Link>
           ) : (
@@ -156,8 +157,8 @@ export function PublicNavbar() {
             {session ? (
               <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)}>
                 <Button className="w-full h-11 rounded-xl bg-cyan-500 text-white font-bold text-xs flex items-center justify-center gap-2">
-                  <LayoutDashboard className="w-4 h-4" />
-                  <span>{t('nav.dashboard', 'داشبورد کاربری')}</span>
+                  <User className="w-4 h-4" />
+                  <span className="truncate">{session.user?.name || t('nav.dashboard', 'داشبورد کاربری')}</span>
                 </Button>
               </Link>
             ) : (

@@ -1,6 +1,23 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
 
+export interface IOrderCardSpecs {
+  material?: string;
+  templateId?: string;
+  templateName?: string;
+  orientation?: 'horizontal' | 'vertical';
+  firstName?: string;
+  lastName?: string;
+  jobTitle?: string;
+  companyName?: string;
+  logoUrl?: string;
+  finishAccent?: string;
+  cardUrl?: string;
+  customArtworkFront?: string;
+  customArtworkBack?: string;
+}
+
 export interface IOrderDocument extends Document {
+  userId?: mongoose.Types.ObjectId | string;
   sellerUserId: mongoose.Types.ObjectId | string;
   profileId?: mongoose.Types.ObjectId | string;
   orderNumber: string;
@@ -13,8 +30,10 @@ export interface IOrderDocument extends Document {
   totalPrice: number;
   currency: 'AFN' | 'USD';
   paymentStatus: 'paid' | 'pending' | 'failed' | 'refunded';
-  orderStatus: 'completed' | 'processing' | 'pending' | 'cancelled';
+  orderStatus: 'completed' | 'processing' | 'printing' | 'shipped' | 'pending' | 'cancelled';
   paymentMethod: string;
+  trackingNumber?: string;
+  cardSpecs?: IOrderCardSpecs;
   notes?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -22,6 +41,7 @@ export interface IOrderDocument extends Document {
 
 const OrderSchema = new Schema<IOrderDocument>(
   {
+    userId: { type: Schema.Types.Mixed, index: true },
     sellerUserId: { type: Schema.Types.Mixed, required: true, index: true },
     profileId: { type: Schema.Types.Mixed, index: true },
     orderNumber: { type: String, required: true, unique: true, index: true },
@@ -41,11 +61,27 @@ const OrderSchema = new Schema<IOrderDocument>(
     },
     orderStatus: {
       type: String,
-      enum: ['completed', 'processing', 'pending', 'cancelled'],
-      default: 'completed',
+      enum: ['completed', 'processing', 'printing', 'shipped', 'pending', 'cancelled'],
+      default: 'pending',
       index: true,
     },
     paymentMethod: { type: String, default: 'HesabPay' },
+    trackingNumber: { type: String, default: '' },
+    cardSpecs: {
+      material: { type: String, default: '' },
+      templateId: { type: String, default: '' },
+      templateName: { type: String, default: '' },
+      orientation: { type: String, default: 'horizontal' },
+      firstName: { type: String, default: '' },
+      lastName: { type: String, default: '' },
+      jobTitle: { type: String, default: '' },
+      companyName: { type: String, default: '' },
+      logoUrl: { type: String, default: '' },
+      finishAccent: { type: String, default: 'gold' },
+      cardUrl: { type: String, default: '' },
+      customArtworkFront: { type: String, default: '' },
+      customArtworkBack: { type: String, default: '' },
+    },
     notes: { type: String, default: '' },
   },
   { timestamps: true }

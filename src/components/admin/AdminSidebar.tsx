@@ -6,125 +6,63 @@ import { usePathname } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import {
   LayoutDashboard,
-  FileText,
-  Briefcase,
-  Building,
-  Image as ImageIcon,
   Users,
-  ShieldCheck,
-  Building2,
   Wallet,
-  CreditCard,
-  BarChart3,
+  Settings,
+  ShieldCheck,
   LogOut,
+  ChevronLeft,
+  ArrowRight,
   ShieldAlert,
-  ChevronDown,
+  User,
   Sparkles,
-  Palette,
+  ShoppingBag,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Badge } from '@/components/ui/badge';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { SiteLogo } from '@/components/SiteLogo';
 
-interface NavGroup {
-  groupTitle: string;
-  items: {
-    title: string;
-    href: string;
-    icon: React.ElementType;
-    badge?: string;
-    requiredRoles?: string[];
-  }[];
+export interface AdminNavItem {
+  title: string;
+  subtitle: string;
+  href: string;
+  icon: React.ElementType;
+  badge?: string;
 }
 
-const adminNavGroups: NavGroup[] = [
+// Core Super Admin Navigation Items
+const adminNavItems: AdminNavItem[] = [
   {
-    groupTitle: 'داشبورد مدیریتی',
-    items: [
-      {
-        title: 'مرکز کنترل و آمار ERP',
-        href: '/admin/dashboard',
-        icon: LayoutDashboard,
-      },
-    ],
+    title: 'نمای کلی پلتفرم (Overview)',
+    subtitle: 'آمار زنده، سرور و وضعیت سیستم',
+    href: '/admin/dashboard',
+    icon: LayoutDashboard,
+    badge: 'LIVE',
   },
   {
-    groupTitle: 'مدیریت محتوا (CMS)',
-    items: [
-      {
-        title: 'پست‌های بلاگ و مقالات',
-        href: '/admin/cms/blog',
-        icon: FileText,
-      },
-      {
-        title: 'خدمات شرکت',
-        href: '/admin/cms/services',
-        icon: Briefcase,
-      },
-      {
-        title: 'درباره ما و نمایندگی‌ها',
-        href: '/admin/cms/company',
-        icon: Building,
-      },
-      {
-        title: 'گالری رسانه و عکس',
-        href: '/admin/cms/media',
-        icon: ImageIcon,
-      },
-    ],
+    title: 'مدیریت کاربران (Users)',
+    subtitle: 'لیست کاربران، نقش‌ها و تایید هویت KYC',
+    href: '/admin/users',
+    icon: Users,
   },
   {
-    groupTitle: 'کاربران و هویت (Identity)',
-    items: [
-      {
-        title: 'لیست کاربران و نقش‌ها',
-        href: '/admin/users',
-        icon: Users,
-      },
-      {
-        title: 'تایید احراز هویت (KYC)',
-        href: '/admin/kyc',
-        icon: ShieldCheck,
-        badge: 'تیک آبی',
-      },
-      {
-        title: 'حساب‌های شرکتی',
-        href: '/admin/companies',
-        icon: Building2,
-      },
-    ],
+    title: 'مدیریت سفارشات (Orders)',
+    subtitle: 'سفارشات کارت فیزیکی و تغییر وضعیت چاپ',
+    href: '/admin/orders',
+    icon: ShoppingBag,
+    badge: 'NFC',
   },
   {
-    groupTitle: 'مدیریت مالی و فروش (Finance)',
-    items: [
-      {
-        title: 'حسابداری و درآمدهای فروش',
-        href: '/admin/finance',
-        icon: Wallet,
-      },
-    ],
+    title: 'تراکنش‌ها و مالی (Finance)',
+    subtitle: 'گردش حساب‌ها، درگاه‌های پرداخت و تسویه',
+    href: '/admin/finance',
+    icon: Wallet,
   },
   {
-    groupTitle: 'گزارشات و آنالیتیکس',
-    items: [
-      {
-        title: 'گزارشات رشد و بازدیدها',
-        href: '/admin/reports',
-        icon: BarChart3,
-      },
-    ],
-  },
-  {
-    groupTitle: 'تنظیمات و هویت سامانه (Settings)',
-    items: [
-      {
-        title: 'تنظیمات برند و هویت بصری',
-        href: '/admin/settings/branding',
-        icon: Palette,
-        badge: 'مرحله ۲۴',
-      },
-    ],
+    title: 'تنظیمات پلتفرم (Platform Settings)',
+    subtitle: 'تعرفه‌ها، درگاه‌های بانکی، امنیت و لجستیک',
+    href: '/admin/settings',
+    icon: Settings,
   },
 ];
 
@@ -134,10 +72,10 @@ export function AdminSidebar({ onCloseMobile }: { onCloseMobile?: () => void }) 
 
   const userRole = (session?.user?.role || '').toLowerCase();
 
-  const getRoleBadgeLabel = (role: string) => {
+  const getRoleLabel = (role: string) => {
     switch (role) {
       case 'superadmin':
-        return 'مدیر ارشد کل (Super Admin)';
+        return 'مدیر ارشد پلتفرم (Super Admin)';
       case 'financial_admin':
         return 'مدیر مالی (Finance Admin)';
       case 'content_editor':
@@ -152,29 +90,36 @@ export function AdminSidebar({ onCloseMobile }: { onCloseMobile?: () => void }) 
     <aside className="w-72 h-full flex flex-col bg-slate-950 text-slate-100 border-l border-slate-800 select-none">
       {/* Admin Branding Header */}
       <div className="p-5 border-b border-slate-800/80 flex items-center justify-between">
-        <Link href="/admin/dashboard" className="flex items-center gap-3 group" onClick={onCloseMobile}>
+        <Link
+          href="/admin/dashboard"
+          className="flex items-center gap-3 group"
+          onClick={onCloseMobile}
+        >
           <SiteLogo
             width={38}
             height={38}
             showText={true}
             showBadge={true}
             badgeText="ENTERPRISE"
-            subtitle="پنل مستقل مدیریت کل"
+            subtitle="پنل مدیریت ارشد سیستم"
             textClassName="text-white text-sm"
           />
         </Link>
-
         <ThemeToggle />
       </div>
 
       {/* Admin User Mini Card */}
-      <div className="p-3.5 mx-3 my-3 rounded-2xl bg-slate-900 border border-slate-800">
+      <div className="p-3.5 mx-3 my-3 rounded-2xl bg-slate-900/90 border border-slate-800">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-rose-500/20 border border-rose-500/30 text-rose-400 font-bold flex items-center justify-center text-xs overflow-hidden shrink-0">
+          <div className="w-10 h-10 rounded-full bg-rose-500/20 border border-rose-500/30 text-rose-400 font-bold flex items-center justify-center text-xs overflow-hidden shrink-0">
             {session?.user?.image ? (
-              <img src={session.user.image} alt="Admin" className="w-full h-full object-cover" />
+              <img
+                src={session.user.image}
+                alt="Admin"
+                className="w-full h-full object-cover"
+              />
             ) : (
-              session?.user?.name?.charAt(0) || 'A'
+              <span>{session?.user?.name?.charAt(0) || 'A'}</span>
             )}
           </div>
           <div className="flex-1 min-w-0">
@@ -182,58 +127,85 @@ export function AdminSidebar({ onCloseMobile }: { onCloseMobile?: () => void }) 
               {session?.user?.name || 'مدیر سیستم'}
             </span>
             <span className="text-[10px] text-amber-400 font-semibold truncate block">
-              {getRoleBadgeLabel(userRole)}
+              {getRoleLabel(userRole)}
             </span>
           </div>
         </div>
       </div>
 
-      {/* Navigation Groups */}
-      <nav className="flex-1 px-3 space-y-5 overflow-y-auto custom-scrollbar pb-6">
-        {adminNavGroups.map((group, gIdx) => (
-          <div key={gIdx} className="space-y-1">
-            <div className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-              {group.groupTitle}
-            </div>
+      {/* Admin Navigation List (Strictly 4 Items) */}
+      <nav className="flex-1 px-3 space-y-1.5 overflow-y-auto custom-scrollbar">
+        <div className="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+          مدیریت ارشد پلتفرم
+        </div>
 
-            {group.items.map((item) => {
-              const isActive = pathname === item.href;
-              const Icon = item.icon;
+        {adminNavItems.map((item) => {
+          const isActive = pathname === item.href;
+          const Icon = item.icon;
 
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={onCloseMobile}
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={onCloseMobile}
+              className={cn(
+                'flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs transition-all group',
+                isActive
+                  ? 'bg-gradient-to-r from-rose-500/25 to-amber-500/15 text-rose-400 font-bold border border-rose-500/30 shadow-md'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-900/70'
+              )}
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <Icon
                   className={cn(
-                    'flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all group',
-                    isActive
-                      ? 'bg-gradient-to-r from-rose-500/20 to-amber-500/10 text-rose-400 font-bold border border-rose-500/30 shadow-sm'
-                      : 'text-slate-400 hover:text-white hover:bg-slate-900/60'
+                    'w-4 h-4 shrink-0 transition-colors',
+                    isActive ? 'text-rose-400' : 'text-slate-400 group-hover:text-white'
                   )}
-                >
-                  <div className="flex items-center gap-3">
-                    <Icon
-                      className={cn(
-                        'w-4 h-4 transition-colors',
-                        isActive ? 'text-rose-400' : 'text-slate-400 group-hover:text-white'
-                      )}
-                    />
-                    <span>{item.title}</span>
-                  </div>
-                  {item.badge && (
-                    <span className="text-[9px] px-2 py-0.5 rounded-full font-bold bg-cyan-500/15 text-cyan-400 border border-cyan-500/30">
-                      {item.badge}
-                    </span>
-                  )}
-                </Link>
-              );
-            })}
-          </div>
-        ))}
+                />
+                <div className="text-right truncate">
+                  <span className="block truncate">{item.title}</span>
+                  <span
+                    className={cn(
+                      'text-[10px] block font-normal truncate opacity-70',
+                      isActive ? 'text-rose-200' : 'text-slate-400'
+                    )}
+                  >
+                    {item.subtitle}
+                  </span>
+                </div>
+              </div>
+
+              {item.badge && (
+                <span className="text-[9px] px-2 py-0.5 rounded-full font-black font-outfit uppercase shrink-0 bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                  {item.badge}
+                </span>
+              )}
+            </Link>
+          );
+        })}
       </nav>
 
-      {/* Dedicated Admin Sign Out */}
+      {/* Redirect to Personal User Dashboard Button */}
+      <div className="px-3 py-3 border-t border-slate-800/80">
+        <Link
+          href="/dashboard"
+          onClick={onCloseMobile}
+          className="flex items-center justify-between p-3 rounded-2xl bg-cyan-500/10 hover:bg-cyan-500/15 border border-cyan-500/20 text-cyan-400 transition-all group"
+        >
+          <div className="flex items-center gap-2.5 min-w-0">
+            <User className="w-4 h-4 shrink-0 text-cyan-400" />
+            <div className="text-right truncate">
+              <span className="text-xs font-bold block">داشبورد کاربری شخصی</span>
+              <span className="text-[10px] text-slate-400 block truncate">
+                ویرایش کارت‌ها و لینک‌های بیو
+              </span>
+            </div>
+          </div>
+          <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+        </Link>
+      </div>
+
+      {/* Admin Sign Out */}
       <div className="p-4 border-t border-slate-800">
         <button
           type="button"

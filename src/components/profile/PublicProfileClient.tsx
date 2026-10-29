@@ -140,6 +140,9 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
   const isLtr = profile.profileLanguage === 'en';
   const isPashto = profile.profileLanguage === 'pashto';
   const isVerifiedApproved = Boolean(profile.isVerified && profile.verificationStatus === 'verified');
+  const activeFontClass = isLtr
+    ? (themeConfig.fontEn ? `font-${themeConfig.fontEn}` : 'font-inter')
+    : (themeConfig.fontFa ? `font-${themeConfig.fontFa}` : 'font-vazirmatn');
 
   // Live URL for QR Code and sharing
   const [currentUrl, setCurrentUrl] = useState(`https://aryal.ink/${profile.alias}`);
@@ -1269,7 +1272,7 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
                 {meta.productTitle || link.title}
               </span>
               <span className="text-xs font-outfit font-bold text-cyan-400 mt-1 block">
-                {meta.productPrice ? Number(meta.productPrice).toLocaleString() : '۰'} {meta.productCurrency || 'AFN'}
+                {meta.productPrice ? Number(meta.productPrice).toLocaleString('en-US') : '0'} {meta.productCurrency || 'AFN'}
               </span>
             </div>
           </div>
@@ -1658,7 +1661,7 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
   if (!isUnlocked) {
     return (
       <div
-        className={`min-h-screen w-full flex flex-col justify-center items-center p-4 selection:bg-cyan-500 selection:text-white ${getThemeBackground()}`}
+        className={`min-h-screen w-full flex flex-col justify-center items-center p-4 selection:bg-cyan-500 selection:text-white ${activeFontClass} ${getThemeBackground()}`}
         dir={isLtr ? 'ltr' : 'rtl'}
       >
         <div className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-lg h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none -z-10" />
@@ -1717,7 +1720,7 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
 
   return (
     <div
-      className={`min-h-screen w-full flex flex-col justify-between relative selection:bg-cyan-500 selection:text-white ${getThemeBackground()}`}
+      className={`min-h-screen w-full flex flex-col justify-between relative selection:bg-cyan-500 selection:text-white ${activeFontClass} ${getThemeBackground()}`}
       dir={isLtr ? 'ltr' : 'rtl'}
     >
       {/* Background Ambience Glows */}

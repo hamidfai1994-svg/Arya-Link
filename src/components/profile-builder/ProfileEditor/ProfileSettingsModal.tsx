@@ -6,21 +6,17 @@ import { ProfileLanguage, ProfileType, ProfileData } from '@/types/profile.types
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
-import { FileUploader } from '@/components/ui/file-uploader';
-import { PhoneInput } from '@/components/ui/phone-input';
 import { toast } from 'sonner';
 import {
   Settings,
   Globe,
   Search,
-  ShieldCheck,
   Lock,
   Copy,
   CheckCheck,
   ExternalLink,
   Building2,
   User,
-  ShieldAlert,
   Loader2,
   Sparkles,
   Link2,
@@ -44,15 +40,12 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
     toggleDirectMode,
     updateProSettings,
     setProfileType,
-    updateVerificationData,
-    submitVerification,
     saveProfileData,
     resetState,
   } = useEditorStore();
 
-  const [activeTab, setActiveTab] = useState<'general' | 'seo' | 'access' | 'kyc'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'seo' | 'access'>('general');
   const [copiedLink, setCopiedLink] = useState(false);
-  const [isSubmittingKYC, setIsSubmittingKYC] = useState(false);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
 
   // Snapshot profile state on modal open so "انصراف" can revert changes
@@ -98,25 +91,10 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
     setTimeout(() => setCopiedLink(false), 2000);
   };
 
-  const handleSubmitKYCDocuments = async () => {
-    setIsSubmittingKYC(true);
-    const toastId = toast.loading('در حال ارسال مدارک احراز هویت به سرور...');
-    try {
-      await submitVerification();
-      toast.success('مدارک هویتی شما با موفقیت ثبت شد و در صف بررسی تیک آبی قرار گرفت.', {
-        id: toastId,
-        description: 'نتیجه احراز هویت به زودی از طریق واتساپ به اطلاع شما خواهد رسید.',
-      });
-    } catch (e) {
-      toast.error('خطا در ارسال مدارک. لطفاً مجدداً تلاش فرمایید.', { id: toastId });
-    } finally {
-      setIsSubmittingKYC(false);
-    }
-  };
-
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
+        showCloseButton={false}
         className="max-w-2xl max-h-[90vh] flex flex-col p-0 overflow-hidden bg-card text-foreground border border-border shadow-2xl font-sans"
         dir="rtl"
       >
@@ -128,33 +106,29 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
             </div>
             <div>
               <DialogTitle className="text-sm font-bold text-foreground">
-                تنظیمات پیشرفته پروفایل و کارت هوشمند
+                تنظیمات اختصاصی این لینک
               </DialogTitle>
               <DialogDescription className="text-[11px] text-muted-foreground mt-0.5">
-                مدیریت نام کاربری، زبان، بهینه‌سازی سئو، امنیت دسترسی و دریافت تیک آبی
+                مدیریت نام کاربری، زبان، سئو، وایت‌لیبل و امنیت دسترسی مختص همین کارت
               </DialogDescription>
             </div>
           </div>
 
-          {/* 4 Tabs Bar */}
+          {/* 3 Tabs Bar (Strictly Link-Specific) */}
           <div className="pt-3">
             <Tabs value={activeTab} onValueChange={(val: any) => setActiveTab(val)}>
-              <TabsList className="grid grid-cols-4 w-full bg-muted/80 p-1 rounded-xl">
+              <TabsList className="grid grid-cols-3 w-full bg-muted/80 p-1 rounded-xl">
                 <TabsTrigger value="general" className="text-xs font-semibold gap-1.5 data-[state=active]:font-bold">
                   <Globe className="w-3.5 h-3.5" />
-                  <span>عمومی</span>
+                  <span>عمومی و زبان</span>
                 </TabsTrigger>
                 <TabsTrigger value="seo" className="text-xs font-semibold gap-1.5 data-[state=active]:font-bold">
                   <Search className="w-3.5 h-3.5" />
-                  <span>سئو</span>
+                  <span>سئو و متاتگ</span>
                 </TabsTrigger>
                 <TabsTrigger value="access" className="text-xs font-semibold gap-1.5 data-[state=active]:font-bold">
                   <Lock className="w-3.5 h-3.5" />
-                  <span>دسترسی</span>
-                </TabsTrigger>
-                <TabsTrigger value="kyc" className="text-xs font-semibold gap-1.5 data-[state=active]:font-bold">
-                  <ShieldCheck className="w-3.5 h-3.5" />
-                  <span>احراز هویت</span>
+                  <span>دسترسی و هدایت</span>
                 </TabsTrigger>
               </TabsList>
             </Tabs>
@@ -198,6 +172,48 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
                     placeholder="username"
                     className="w-full bg-transparent border-0 py-2 px-3 text-xs font-outfit text-foreground focus:outline-none"
                   />
+                </div>
+              </div>
+
+              {/* Direct Contact: Phone & Email (Fully Editable) */}
+              <div className="p-4 bg-muted/30 border border-border rounded-2xl space-y-3">
+                <div>
+                  <span className="text-xs font-bold text-foreground block">
+                    اطلاعات تماس مستقیم و عمومی کارت
+                  </span>
+                  <span className="text-[11px] text-muted-foreground mt-0.5 block">
+                    شماره تماس و ایمیل رسمی شما جهت برقراری ارتباط سریع مخاطبان (قابل ویرایش)
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-foreground mb-1">
+                      شماره تماس مستقیم (موبایل یا واتساپ)
+                    </label>
+                    <input
+                      type="tel"
+                      value={profile.phone || ''}
+                      onChange={(e) => updateBasicInfo({ phone: e.target.value })}
+                      placeholder="+93 79 123 4567"
+                      dir="ltr"
+                      className="w-full bg-card border border-border rounded-xl px-3 py-2 text-xs font-sans text-foreground focus:outline-none focus:border-cyan-500 text-left"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-foreground mb-1">
+                      آدرس ایمیل مستقیم
+                    </label>
+                    <input
+                      type="email"
+                      value={profile.email || ''}
+                      onChange={(e) => updateBasicInfo({ email: e.target.value })}
+                      placeholder="info@company.com"
+                      dir="ltr"
+                      className="w-full bg-card border border-border rounded-xl px-3 py-2 text-xs font-sans text-foreground focus:outline-none focus:border-cyan-500 text-left"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -437,140 +453,6 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
                     </div>
                   </div>
                 )}
-              </div>
-            </div>
-          )}
-
-          {/* TAB 4: KYC & VERIFICATION */}
-          {activeTab === 'kyc' && (
-            <div className="space-y-4 animate-in fade-in duration-200">
-              {/* Profile Type Select Dropdown */}
-              <div className="p-4 bg-muted/30 border border-border rounded-2xl space-y-2">
-                <label className="text-xs font-bold text-foreground block">
-                  نوع پروفایل کارت
-                </label>
-                <div className="relative">
-                  <select
-                    value={profile.profileType || 'personal'}
-                    onChange={(e) => setProfileType(e.target.value as any)}
-                    className="w-full bg-card border border-border rounded-xl px-3.5 py-2.5 text-xs text-foreground focus:outline-none focus:border-cyan-500 appearance-none font-sans font-medium cursor-pointer shadow-sm transition-colors"
-                  >
-                    <option value="personal">👤 شخصی / حقیقی (فردی، فریلنسر یا کارشناس)</option>
-                    <option value="business">🏢 تجاری / حقوقی (شرکت‌ها، سازمان‌ها و فروشگاه‌ها)</option>
-                  </select>
-                  <ChevronDown className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                </div>
-              </div>
-
-              {/* KYC Document Uploads */}
-              <div className="p-4 bg-muted/30 border border-border rounded-2xl space-y-3.5">
-                <div className="flex items-center gap-2 pb-2 border-b border-border/80">
-                  <ShieldCheck className="w-4 h-4 text-cyan-500" />
-                  <span className="text-xs font-bold text-foreground">
-                    مدارک تایید هویت ضد جعل (جهت دریافت تیک آبی رسمی)
-                  </span>
-                </div>
-
-                {/* WhatsApp Phone */}
-                <div>
-                  <label className="block text-xs font-medium text-foreground mb-1">
-                    شماره واتساپ معتبر (جهت تماس تایید هویت)
-                  </label>
-                  <PhoneInput
-                    value={profile.verificationData?.whatsappNumber ?? profile.whatsapp ?? ''}
-                    onChange={(val) => updateVerificationData({ whatsappNumber: val })}
-                    placeholder="700 000 000"
-                    defaultCountry="AF"
-                  />
-                </div>
-
-                {/* Selfie with ID */}
-                <div>
-                  <label className="block text-xs font-semibold text-foreground mb-1">
-                    ۱. عکس سلفی همراه با مدرک شناسایی در کنار چهره
-                  </label>
-                  <FileUploader
-                    value={profile.verificationData?.selfieWithIdUrl || ''}
-                    onChange={(url) => updateVerificationData({ selfieWithIdUrl: url })}
-                    fileType="image"
-                    folder="documents"
-                    label="آپلود عکس سلفی با مدرک"
-                    description="حداکثر ۲ مگابایت (JPG یا PNG)"
-                    aspectRatio="free"
-                  />
-                </div>
-
-                {/* ID Front */}
-                <div>
-                  <label className="block text-xs font-semibold text-foreground mb-1">
-                    ۲. عکس مستقیم از روی کارت شناسایی / تذکره
-                  </label>
-                  <FileUploader
-                    value={profile.verificationData?.idCardFrontUrl || ''}
-                    onChange={(url) => updateVerificationData({ idCardFrontUrl: url })}
-                    fileType="image"
-                    folder="documents"
-                    label="آپلود روی کارت شناسایی"
-                    description="حداکثر ۲ مگابایت (JPG یا PNG)"
-                    aspectRatio="free"
-                  />
-                </div>
-
-                {/* ID Back */}
-                <div>
-                  <label className="block text-xs font-semibold text-foreground mb-1">
-                    ۳. عکس مستقیم از پشت کارت شناسایی
-                  </label>
-                  <FileUploader
-                    value={profile.verificationData?.idCardBackUrl || ''}
-                    onChange={(url) => updateVerificationData({ idCardBackUrl: url })}
-                    fileType="image"
-                    folder="documents"
-                    label="آپلود پشت کارت شناسایی"
-                    description="حداکثر ۲ مگابایت (JPG یا PNG)"
-                    aspectRatio="free"
-                  />
-                </div>
-
-                {/* Business License */}
-                {profile.profileType === 'business' && (
-                  <div className="pt-2 border-t border-border/80">
-                    <label className="block text-xs font-semibold text-foreground mb-1">
-                      ۴. اسکن یا فایل جواز تجاری رسمی شرکت
-                    </label>
-                    <FileUploader
-                      value={profile.verificationData?.businessLicenseUrl || ''}
-                      onChange={(url) => updateVerificationData({ businessLicenseUrl: url })}
-                      fileType="document"
-                      folder="documents"
-                      label="آپلود جواز تجاری شرکت"
-                      description="حداکثر ۵ مگابایت (PDF یا JPG)"
-                      aspectRatio="free"
-                    />
-                  </div>
-                )}
-
-                {/* Submit Verification Button */}
-                <div className="pt-2">
-                  <button
-                    type="button"
-                    onClick={handleSubmitKYCDocuments}
-                    disabled={isSubmittingKYC}
-                    className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-bold text-xs shadow-lg shadow-sky-500/25 flex items-center justify-center gap-2 transition-all active:scale-98 cursor-pointer disabled:opacity-60"
-                  >
-                    {isSubmittingKYC ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin text-white" />
-                        <span>در حال ارسال مدارک...</span>
-                      </>
-                    ) : (
-                      <>
-                        <ShieldCheck className="w-4 h-4 text-white" />
-                        <span>ارسال مدارک ضد جعل جهت بررسی و دریافت تیک آبی</span>
-                      </>
-                    )}
-                  </button>
-                </div>
               </div>
             </div>
           )}

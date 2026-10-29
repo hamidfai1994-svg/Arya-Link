@@ -351,7 +351,7 @@ export function HeroPhoneMockup({ smoothX, smoothY }: HeroPhoneMockupProps) {
                       گفتگوی مستقیم واتساپ
                     </span>
                     <span className="text-[9px] text-emerald-400 block">
-                      پاسخگویی سریع کمتر از ۱۵ دقیقه
+                      پاسخگویی سریع کمتر از 15 دقیقه
                     </span>
                   </div>
                 </div>

@@ -1503,7 +1503,7 @@ export const SectionModulesList: React.FC = () => {
                 fileType="image"
                 folder="products"
                 label="تصویر محصول"
-                description="عکس باکیفیت محصول یا خدمات (حداکثر ۲ مگابایت)"
+                description="عکس باکیفیت محصول یا خدمات (حداکثر 2 مگابایت)"
                 maxSizeMB={2}
                 aspectRatio="square"
               />
@@ -1538,7 +1538,7 @@ export const SectionModulesList: React.FC = () => {
                   updateLinkMetadata(link.id, { checkoutItemName: e.target.value });
                   updateLink(link.id, { title: e.target.value });
                 }}
-                placeholder="مثال: رزرو وقت مشاوره ۱ ساعته"
+                placeholder="مثال: رزرو وقت مشاوره 1 ساعته"
                 className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-sans"
               />
             </div>
@@ -1720,7 +1720,7 @@ export const SectionModulesList: React.FC = () => {
               fileType="document"
               folder="documents"
               label="فایل سند یا کاتالوگ (PDF)"
-              description="فرمت PDF، حداکثر ۵ مگابایت"
+              description="فرمت PDF، حداکثر 5 مگابایت"
               maxSizeMB={5}
             />
             <div>
@@ -1793,7 +1793,7 @@ export const SectionModulesList: React.FC = () => {
               fileType="image"
               folder="general"
               label="تصویر تک بنری"
-              description="حداکثر ۲ مگابایت"
+              description="حداکثر 2 مگابایت"
               maxSizeMB={2}
             />
             <div>

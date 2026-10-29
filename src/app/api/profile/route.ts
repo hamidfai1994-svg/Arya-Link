@@ -33,8 +33,16 @@ export async function GET(req: NextRequest) {
 
     if (id && mongoose.isValidObjectId(id)) {
       profile = await Profile.findOne({ _id: new mongoose.Types.ObjectId(id), ...userCondition }).lean();
-    } else if (alias && alias.trim()) {
+    } else if (alias && mongoose.isValidObjectId(alias)) {
+      profile = await Profile.findOne({ _id: new mongoose.Types.ObjectId(alias), ...userCondition }).lean();
+    }
+
+    if (!profile && alias && alias.trim()) {
       profile = await Profile.findOne({ alias: alias.toLowerCase().trim(), ...userCondition }).lean();
+    }
+
+    if (!profile && id && id.trim() && !mongoose.isValidObjectId(id)) {
+      profile = await Profile.findOne({ alias: id.toLowerCase().trim(), ...userCondition }).lean();
     }
 
     // Fallback to any existing profile belonging strictly to this user

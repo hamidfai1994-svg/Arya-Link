@@ -180,7 +180,7 @@ export default function UserKYCPage() {
           <div>
             <h2 className="text-xl font-black text-foreground">مدارک شما در صف بررسی است</h2>
             <p className="text-xs text-muted-foreground mt-1 max-w-md mx-auto">
-              مدارک هویتی و عکس سلفی شما با موفقیت دریافت شد و کارشناس احراز هویت در حال مطابقت اطلاعات است. نتیجه معمولاً ظرف ۲ تا ۴ ساعت اعلام می‌شود.
+              مدارک هویتی و عکس سلفی شما با موفقیت دریافت شد و کارشناس احراز هویت در حال مطابقت اطلاعات است. نتیجه معمولاً ظرف 2 تا 4 ساعت اعلام می‌شود.
             </p>
           </div>
         </Card>
@@ -204,7 +204,7 @@ export default function UserKYCPage() {
             <div className="space-y-4">
               <h2 className="text-base font-bold text-foreground flex items-center gap-2">
                 <FileText className="w-4 h-4 text-cyan-500" />
-                <span>۱. اطلاعات هویتی و فردی</span>
+                <span>1. اطلاعات هویتی و فردی</span>
               </h2>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -257,7 +257,7 @@ export default function UserKYCPage() {
             <div className="border-t border-border pt-6 space-y-4">
               <h2 className="text-base font-bold text-foreground flex items-center gap-2">
                 <Camera className="w-4 h-4 text-cyan-500" />
-                <span>۲. تصاویر مدارک و عکس سلفی</span>
+                <span>2. تصاویر مدارک و عکس سلفی</span>
               </h2>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

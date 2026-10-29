@@ -104,7 +104,7 @@ export default function PayoutsPage() {
     e.preventDefault();
     const numAmount = Number(amount);
     if (!numAmount || numAmount < 100) {
-      toast.error('حداقل مبلغ تسویه حساب ۱۰۰ افغانی است.');
+      toast.error('حداقل مبلغ تسویه حساب 100 افغانی است.');
       return;
     }
 
@@ -277,7 +277,7 @@ export default function PayoutsPage() {
             </div>
           </div>
           <div className="text-3xl font-black font-outfit text-emerald-500 tracking-tight">
-            {balance.availableBalance.toLocaleString('fa-IR')}{' '}
+            {balance.availableBalance.toLocaleString('en-US')}{' '}
             <span className="text-xs text-muted-foreground font-sans">افغانی</span>
           </div>
           <p className="text-[11px] text-muted-foreground mt-2">
@@ -294,7 +294,7 @@ export default function PayoutsPage() {
             </div>
           </div>
           <div className="text-3xl font-black font-outfit text-amber-500 tracking-tight">
-            {balance.pendingPayoutAmount.toLocaleString('fa-IR')}{' '}
+            {balance.pendingPayoutAmount.toLocaleString('en-US')}{' '}
             <span className="text-xs text-muted-foreground font-sans">افغانی</span>
           </div>
           <p className="text-[11px] text-muted-foreground mt-2">
@@ -311,7 +311,7 @@ export default function PayoutsPage() {
             </div>
           </div>
           <div className="text-3xl font-black font-outfit text-foreground tracking-tight">
-            {balance.totalWithdrawn.toLocaleString('fa-IR')}{' '}
+            {balance.totalWithdrawn.toLocaleString('en-US')}{' '}
             <span className="text-xs text-muted-foreground font-sans">افغانی</span>
           </div>
           <p className="text-[11px] text-muted-foreground mt-2">
@@ -342,7 +342,7 @@ export default function PayoutsPage() {
               </TableHeader>
               <TableBody>
                 {data.payouts.map((p) => {
-                  const reqDate = new Date(p.requestedAt).toLocaleDateString('fa-IR', {
+                  const reqDate = new Date(p.requestedAt).toLocaleDateString('en-US', {
                     year: 'numeric',
                     month: 'short',
                     day: 'numeric',
@@ -351,7 +351,7 @@ export default function PayoutsPage() {
                   return (
                     <TableRow key={p.id} className="border-border">
                       <TableCell className="font-outfit font-black text-xs text-foreground">
-                        {p.amount.toLocaleString('fa-IR')} {p.currency}
+                        {p.amount.toLocaleString('en-US')} {p.currency}
                       </TableCell>
                       <TableCell className="text-xs font-semibold">{p.bankOrProvider}</TableCell>
                       <TableCell className="text-xs">{p.accountTitle}</TableCell>
@@ -396,7 +396,7 @@ export default function PayoutsPage() {
 
       {/* Modal: Request Payout */}
       <Dialog open={isRequestOpen} onOpenChange={setIsRequestOpen}>
-        <DialogContent className="sm:max-w-md rounded-3xl" dir="rtl">
+        <DialogContent showCloseButton={false} className="sm:max-w-md rounded-3xl" dir="rtl">
           <DialogHeader className="text-right">
             <DialogTitle className="text-lg font-bold text-foreground flex items-center gap-2">
               <Wallet className="w-5 h-5 text-emerald-500" />
@@ -431,8 +431,8 @@ export default function PayoutsPage() {
               </div>
               <div className="flex justify-between text-[11px] text-muted-foreground">
                 <span>حداکثر قابل تسویه:</span>
-                <span className="font-bold text-emerald-500">
-                  {balance.availableBalance.toLocaleString('fa-IR')} افغانی
+                <span className="font-bold text-emerald-500 font-outfit">
+                  {balance.availableBalance.toLocaleString('en-US')} افغانی
                 </span>
               </div>
             </div>

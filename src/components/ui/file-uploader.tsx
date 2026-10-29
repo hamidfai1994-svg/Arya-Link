@@ -309,9 +309,9 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
       {/* Size limit reminder under upload button */}
       <div className="flex items-center justify-between text-[11px] text-muted-foreground px-1">
         <span className="font-sans font-medium text-[11px]">
-          سایز مناسب: ۲ مگابایت برای عکس، ۵ مگابایت برای فایل
+          سایز مناسب: 2 مگابایت برای عکس، 5 مگابایت برای فایل
         </span>
-        <span className="text-[10px] font-outfit">Google Drive برای بیش از ۵MB</span>
+        <span className="text-[10px] font-outfit">Google Drive برای بیش از 5MB</span>
       </div>
 
       {/* Google Drive Guideline & External Link Box for Large Files */}

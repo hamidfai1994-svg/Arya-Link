@@ -205,6 +205,8 @@ export interface ProfileThemeConfig {
   backgroundType?: 'solid' | 'gradient' | 'pattern';
   buttonBorderStyle?: 'none' | 'solid' | 'dashed';
   buttonShadowStyle?: 'none' | 'sm' | 'md' | 'glow';
+  fontFa?: 'vazirmatn' | 'yekan_bakh' | 'shabnam' | 'sahel';
+  fontEn?: 'inter' | 'outfit' | 'plus_jakarta' | 'playfair';
 }
 
 export type HeaderLayoutType = 'curve' | 'gradient_mask' | 'minimal';

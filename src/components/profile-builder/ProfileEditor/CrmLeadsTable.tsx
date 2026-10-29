@@ -44,9 +44,9 @@ const INITIAL_MOCK_LEADS: LeadItem[] = [
     name: 'احمد رفیق کاکر',
     phone: '0789123456',
     email: 'ahmad.rafiq@gmail.com',
-    message: 'سلام و احترام. در رابطه با خدمات مشاوره و سفارش ۵۰ عدد کارت هوشمند برای شرکت‌مان می‌خواستم شرایط و پیش‌فاکتور را دریافت کنم.',
+    message: 'سلام و احترام. در رابطه با خدمات مشاوره و سفارش 50 عدد کارت هوشمند برای شرکت‌مان می‌خواستم شرایط و پیش‌فاکتور را دریافت کنم.',
     status: 'new',
-    dateStr: 'امروز - ۱۰:۴۵',
+    dateStr: 'امروز - 10:45',
   },
   {
     id: 'lead-2',
@@ -55,7 +55,7 @@ const INITIAL_MOCK_LEADS: LeadItem[] = [
     email: 'm.hossaini@outlook.com',
     message: 'با سلام، من در همایش کارآفرینی کابل با کارت شما آشنا شدم. مایل به همکاری در بخش دیجیتال مارکتینگ و فروش هستم.',
     status: 'new',
-    dateStr: 'امروز - ۰۸:۲۰',
+    dateStr: 'امروز - 08:20',
   },
   {
     id: 'lead-3',
@@ -64,7 +64,7 @@ const INITIAL_MOCK_LEADS: LeadItem[] = [
     email: 'info@kabul-novin.af',
     message: 'جهت هماهنگی جلسه حضوری در دفتر کابل برای عقد قرارداد رسمی تامین تجهیزات لطفاً تماس بگیرید.',
     status: 'contacted',
-    dateStr: 'دیروز - ۱۶:۳۰',
+    dateStr: 'دیروز - 16:30',
   },
   {
     id: 'lead-4',
@@ -73,7 +73,7 @@ const INITIAL_MOCK_LEADS: LeadItem[] = [
     email: 'farhad.nouri@yahoo.com',
     message: 'سلام روزتان بخیر، تعرفه طراحی کارت هوشمند با متریال چوب گردو و حک لوگو به صورت عمده چقدر است؟',
     status: 'contacted',
-    dateStr: '۳ روز قبل',
+    dateStr: '3 روز قبل',
   },
 ];
 

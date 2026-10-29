@@ -7,7 +7,7 @@ import { buildUserIsolationQuery, isValidUserSession } from '@/lib/db/data-isola
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!isValidUserSession(session?.user)) {
@@ -22,15 +22,36 @@ export async function GET() {
 
     const profiles = await Profile.find(userQuery).lean();
 
-    const totalViews = profiles.reduce((sum, p) => sum + (p.viewsCount || 0), 0);
-    const totalClicks = profiles.reduce((sum, p) => {
+    const url = new URL(req.url);
+    const profileId = url.searchParams.get('profileId');
+
+    let targetProfiles = profiles;
+    let selectedProfileSummary = null;
+
+    if (profileId && profileId !== 'all') {
+      const match = profiles.find(
+        (p) => p._id.toString() === profileId || p.alias.toLowerCase() === profileId.toLowerCase()
+      );
+      if (match) {
+        targetProfiles = [match];
+        selectedProfileSummary = {
+          id: match._id.toString(),
+          alias: match.alias,
+          displayName: match.displayName,
+          headline: match.headline,
+        };
+      }
+    }
+
+    const totalViews = targetProfiles.reduce((sum, p) => sum + (p.viewsCount || 0), 0);
+    const totalClicks = targetProfiles.reduce((sum, p) => {
       const linkClicks = Array.isArray(p.links)
         ? p.links.reduce((lSum: number, link: any) => lSum + (link.clickCount || 0), 0)
         : 0;
       return sum + linkClicks;
     }, 0);
 
-    const totalLeads = profiles.reduce((sum, p) => sum + (p.leadsCount || 0), 0);
+    const totalLeads = targetProfiles.reduce((sum, p) => sum + (p.leadsCount || 0), 0);
     const ctr = totalViews > 0 ? Number(((totalClicks / totalViews) * 100).toFixed(1)) : 0;
 
     // Generate recent 7 days timeline data
@@ -43,7 +64,7 @@ export async function GET() {
       const d = new Date(today);
       d.setDate(today.getDate() - i);
       const dayName = persianDays[d.getDay()];
-      const dateFormatted = d.toLocaleDateString('fa-IR', { month: 'numeric', day: 'numeric' });
+      const dateFormatted = d.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' });
 
       // Calculate pseudo realistic distributed metrics based on total
       const factor = 0.8 + ((d.getDate() * 7) % 50) / 100;
@@ -61,7 +82,7 @@ export async function GET() {
 
     // Top links summary
     const allLinks: any[] = [];
-    profiles.forEach((p) => {
+    targetProfiles.forEach((p) => {
       if (Array.isArray(p.links)) {
         p.links.forEach((l) => {
           allLinks.push({
@@ -80,8 +101,9 @@ export async function GET() {
 
     return NextResponse.json({
       success: true,
+      activeProfile: selectedProfileSummary,
       summary: {
-        totalProfiles: profiles.length,
+        totalProfiles: targetProfiles.length,
         totalViews,
         totalClicks,
         totalLeads,

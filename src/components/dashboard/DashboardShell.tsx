@@ -3,69 +3,65 @@
 import React, { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Menu, X, ArrowRight, LayoutDashboard, ChevronRight } from 'lucide-react';
+import { useSession } from 'next-auth/react';
+import { Menu, X, CreditCard, Sparkles, UserCheck } from 'lucide-react';
 import { DashboardSidebar } from './DashboardSidebar';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { SiteLogo } from '@/components/SiteLogo';
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { data: session } = useSession();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // If we are on the profile builder page (/dashboard/editor), render editor with top bar
+  // Isolated Detail View environment (/dashboard/editor/[cardId]) renders its own dedicated sidebar & layout
   if (pathname.startsWith('/dashboard/editor')) {
-    return (
-      <div className="min-h-screen w-full flex flex-col bg-slate-950">
-        {/* Editor Top Navigation Bar */}
-        <header className="h-12 border-b border-slate-800 bg-slate-900/90 backdrop-blur-md px-4 flex items-center justify-between shrink-0 z-30" dir="rtl">
-          <div className="flex items-center gap-3">
-            <Link
-              href="/dashboard"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors"
-            >
-              <ArrowRight className="w-3.5 h-3.5 text-cyan-400" />
-              <span>بازگشت به داشبورد</span>
-            </Link>
-            <span className="text-slate-500 text-xs hidden sm:inline">/</span>
-            <span className="text-xs text-slate-300 font-bold hidden sm:inline">
-              ویرایشگر کارت هوشمند NFC و لینک بیو
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Link
-              href="/dashboard/analytics"
-              className="text-xs text-slate-400 hover:text-white px-2.5 py-1 rounded-lg hover:bg-slate-800 transition-colors"
-            >
-              آمار
-            </Link>
-            <Link
-              href="/dashboard/orders"
-              className="text-xs text-slate-400 hover:text-white px-2.5 py-1 rounded-lg hover:bg-slate-800 transition-colors"
-            >
-              سفارشات
-            </Link>
-            <ThemeToggle />
-          </div>
-        </header>
-
-        {/* Editor Body */}
-        <div className="flex-1 overflow-hidden">
-          {children}
-        </div>
-      </div>
-    );
+    return <>{children}</>;
   }
 
   return (
     <div className="min-h-screen w-full flex bg-background font-sans" dir="rtl">
-      {/* Desktop Persistent Sidebar */}
+      {/* Desktop Persistent Master Sidebar */}
       <div className="hidden lg:block shrink-0 h-screen sticky top-0 z-30">
         <DashboardSidebar />
       </div>
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
+        {/* Desktop Sticky Header (Clean, without card selector dropdown) */}
+        <header className="hidden lg:flex h-16 border-b border-border bg-card/60 backdrop-blur-md px-6 items-center justify-between sticky top-0 z-20">
+          <div className="flex items-center gap-2.5">
+            <div className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse" />
+            <span className="text-xs font-bold text-foreground">
+              داشبورد مدیریت یکپارچه آریا لینک
+            </span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Link
+              href="/order"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20 text-xs font-bold transition-all"
+            >
+              <CreditCard className="w-3.5 h-3.5" />
+              <span>سفارش کارت فیزیکی NFC</span>
+            </Link>
+
+            {session?.user && (
+              <Link
+                href="/dashboard/account"
+                className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-muted/50 hover:bg-muted border border-border text-xs font-semibold text-foreground transition-colors"
+              >
+                <UserCheck className="w-3.5 h-3.5 text-cyan-500" />
+                <span className="truncate max-w-[140px]">
+                  {session.user.name || session.user.email}
+                </span>
+              </Link>
+            )}
+
+            <ThemeToggle />
+          </div>
+        </header>
+
         {/* Mobile Sticky Top Header */}
         <header className="lg:hidden h-16 border-b border-border bg-card/90 backdrop-blur-md px-4 flex items-center justify-between sticky top-0 z-40">
           <button

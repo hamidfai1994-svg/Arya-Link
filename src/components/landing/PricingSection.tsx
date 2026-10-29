@@ -145,9 +145,14 @@ export function PricingSection() {
 
                 <div className="space-y-1.5">
                   <div className="flex items-baseline gap-2">
-                    <span className="text-4xl sm:text-5xl font-black font-outfit text-foreground tracking-tight">
-                      0 AFN
-                    </span>
+                    <div className="flex items-baseline gap-1.5 font-outfit" dir="ltr">
+                      <span className="text-4xl sm:text-5xl font-black text-foreground tracking-tight">
+                        0
+                      </span>
+                      <span className="text-xl sm:text-2xl font-bold text-muted-foreground">
+                        AFN
+                      </span>
+                    </div>
                     <span className="text-xs text-muted-foreground font-bold">/ برای همیشه</span>
                   </div>
                   <span className="text-xs text-emerald-500 font-semibold block">
@@ -269,19 +274,28 @@ export function PricingSection() {
                       className="space-y-1.5"
                     >
                       <div className="flex items-baseline gap-2">
-                        <span className="text-4xl sm:text-5xl font-black font-outfit text-cyan-500 dark:text-cyan-400">
-                          {billingCycle === 'yearly' ? '380 AFN' : '590 AFN'}
-                        </span>
+                        <div className="flex items-baseline gap-1.5 font-outfit" dir="ltr">
+                          <span className="text-4xl sm:text-5xl font-black text-cyan-500 dark:text-cyan-400 tracking-tight">
+                            {billingCycle === 'yearly' ? '380' : '590'}
+                          </span>
+                          <span className="text-xl sm:text-2xl font-bold text-cyan-600 dark:text-cyan-300">
+                            AFN
+                          </span>
+                        </div>
                         <span className="text-xs text-foreground font-bold">
                           / ماهانه
                         </span>
                       </div>
                       {billingCycle === 'yearly' ? (
-                        <span className="text-xs text-emerald-500 font-bold block font-outfit">
-                          پرداخت سالانه 4,560 AFN (صرفه‌جویی سالانه 2,520 AFN)
-                        </span>
+                        <div className="text-xs text-emerald-500 font-bold flex items-center gap-1.5 flex-wrap">
+                          <span>پرداخت سالانه</span>
+                          <span dir="ltr" className="font-outfit font-black">4,560 AFN</span>
+                          <span>(صرفه‌جویی سالانه</span>
+                          <span dir="ltr" className="font-outfit font-black">2,520 AFN</span>
+                          <span>)</span>
+                        </div>
                       ) : (
-                        <span className="text-xs text-muted-foreground block font-outfit">
+                        <span className="text-xs text-muted-foreground block font-sans">
                           پرداخت ماهانه بدون قرارداد سالانه
                         </span>
                       )}
@@ -327,7 +341,7 @@ export function PricingSection() {
 
                     <div className="flex items-center gap-2.5 text-foreground font-semibold">
                       <CheckCircle2 className="w-4 h-4 text-cyan-500 shrink-0" />
-                      <span>پشتیبانی VIP و اولویت‌دار ۲۴/۷</span>
+                      <span>پشتیبانی VIP و اولویت‌دار 24/7</span>
                     </div>
                   </div>
                 </div>

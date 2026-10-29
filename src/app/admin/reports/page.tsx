@@ -114,11 +114,11 @@ export default function AdminReportsPage() {
                 </div>
               </div>
               <div className="text-2xl sm:text-3xl font-black font-outfit text-foreground tracking-tight">
-                {stats?.totalViews.toLocaleString('fa-IR')}
+                {stats?.totalViews.toLocaleString('en-US')}
               </div>
               <div className="flex items-center gap-1 text-[11px] text-emerald-500 mt-1 font-bold">
                 <TrendingUp className="w-3.5 h-3.5" />
-                <span>+۲۸٪ رشد نسبت به ماه گذشته</span>
+                <span>+28% رشد نسبت به ماه گذشته</span>
               </div>
             </Card>
 
@@ -131,7 +131,7 @@ export default function AdminReportsPage() {
                 </div>
               </div>
               <div className="text-2xl sm:text-3xl font-black font-outfit text-foreground tracking-tight">
-                {stats?.totalClicks.toLocaleString('fa-IR')}
+                {stats?.totalClicks.toLocaleString('en-US')}
               </div>
               <p className="text-[11px] text-muted-foreground mt-1">
                 نرخ تعامل میانگین: <span className="font-bold text-rose-500 font-outfit">{stats?.averageCtr}</span>
@@ -147,7 +147,7 @@ export default function AdminReportsPage() {
                 </div>
               </div>
               <div className="text-2xl sm:text-3xl font-black font-outfit text-foreground tracking-tight">
-                {stats?.totalProfiles.toLocaleString('fa-IR')}
+                {stats?.totalProfiles.toLocaleString('en-US')}
               </div>
               <p className="text-[11px] text-muted-foreground mt-1">پروفایل‌های آنلاین دارای لینک بایو</p>
             </Card>
@@ -161,7 +161,7 @@ export default function AdminReportsPage() {
                 </div>
               </div>
               <div className="text-2xl sm:text-3xl font-black font-outfit text-emerald-500 tracking-tight">
-                {stats?.totalLeads.toLocaleString('fa-IR')}
+                {stats?.totalLeads.toLocaleString('en-US')}
               </div>
               <p className="text-[11px] text-muted-foreground mt-1">مخاطبین جذب‌شده توسط مشتریان</p>
             </Card>
@@ -227,13 +227,13 @@ export default function AdminReportsPage() {
                     </div>
 
                     <div className="text-xl font-black font-outfit text-foreground tracking-tight">
-                      {d.percent}٪
+                      <span dir="ltr" className="font-outfit">{d.percent}%</span>
                     </div>
                   </div>
                 ))}
 
                 <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-600 dark:text-emerald-400 leading-relaxed">
-                  💡 <span className="font-bold">بینش تجاری:</span> بیش از ۷۸٪ ترافیک از طریق گوشی‌های هوشمند ناشی از لمس کارت NFC یا اسکن QR در جلسات کاری ثبت شده است.
+                  💡 <span className="font-bold">بینش تجاری:</span> بیش از 78% ترافیک از طریق گوشی‌های هوشمند ناشی از لمس کارت NFC یا اسکن QR در جلسات کاری ثبت شده است.
                 </div>
               </div>
             </Card>

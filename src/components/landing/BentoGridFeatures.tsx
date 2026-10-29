@@ -304,7 +304,7 @@ export function BentoGridFeatures() {
                   </div>
 
                   <span className="px-2.5 py-1 rounded-xl bg-blue-500/15 text-blue-400 font-bold text-[10px] border border-blue-500/30">
-                    سطح ۳ (حرفه‌ای)
+                    سطح 3 (حرفه‌ای)
                   </span>
                 </div>
               </motion.div>
@@ -491,7 +491,7 @@ export function BentoGridFeatures() {
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="text-[10px] text-muted-foreground block">بازدید ۷ روز اخیر</span>
+                    <span className="text-[10px] text-muted-foreground block">بازدید 7 روز اخیر</span>
                     <span className="text-base font-black font-outfit text-foreground">+4,850</span>
                   </div>
                   <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-500 text-[10px] font-bold">

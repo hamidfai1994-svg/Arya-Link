@@ -151,7 +151,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          message: `موجودی ناکافی است. حداکثر مبلغ قابل برداشت: ${availableBalance.toLocaleString('fa-IR')} افغانی`,
+          message: `موجودی ناکافی است. حداکثر مبلغ قابل برداشت: ${availableBalance.toLocaleString('en-US')} افغانی`,
         },
         { status: 400 }
       );

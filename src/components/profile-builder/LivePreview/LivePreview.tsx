@@ -84,11 +84,15 @@ export const LivePreview: React.FC = () => {
   const isLtr = profile.profileLanguage === 'en';
   const isPashto = profile.profileLanguage === 'pashto';
   const isVerifiedApproved = Boolean(profile.isVerified && profile.verificationStatus === 'verified');
+  const previewFontClass = isLtr
+    ? (themeConfig.fontEn ? `font-${themeConfig.fontEn}` : 'font-inter')
+    : (themeConfig.fontFa ? `font-${themeConfig.fontFa}` : 'font-vazirmatn');
   const [searchFilter, setSearchFilter] = useState('');
   const [openFaqId, setOpenFaqId] = useState<string | null>(null);
 
   const handleDownloadPNG = () => {
-    const canvas = document.getElementById('profile-qr-canvas') as HTMLCanvasElement;
+    const canvas = (document.getElementById('profile-qr-canvas-hires') ||
+      document.getElementById('profile-qr-canvas')) as HTMLCanvasElement;
     if (!canvas) {
       toast.error('خطا در دسترسی به بارکد');
       return;
@@ -98,7 +102,7 @@ export const LivePreview: React.FC = () => {
     a.href = url;
     a.download = `aryalink-${profile.alias || 'qrcode'}.png`;
     a.click();
-    toast.success('تصویر PNG بارکد با موفقیت دانلود شد');
+    toast.success('تصویر PNG با کیفیت فوق‌العاده بارکد با موفقیت دانلود شد');
   };
 
   const handleDownloadSVG = () => {
@@ -120,7 +124,8 @@ export const LivePreview: React.FC = () => {
   };
 
   const handleDownloadJPG = () => {
-    const canvas = document.getElementById('profile-qr-canvas') as HTMLCanvasElement;
+    const canvas = (document.getElementById('profile-qr-canvas-hires') ||
+      document.getElementById('profile-qr-canvas')) as HTMLCanvasElement;
     if (!canvas) {
       toast.error('خطا در دسترسی به بارکد');
       return;
@@ -133,12 +138,12 @@ export const LivePreview: React.FC = () => {
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
     ctx.drawImage(canvas, 0, 0);
-    const url = tempCanvas.toDataURL('image/jpeg', 0.95);
+    const url = tempCanvas.toDataURL('image/jpeg', 1.0);
     const a = document.createElement('a');
     a.href = url;
     a.download = `aryalink-${profile.alias || 'qrcode'}.jpg`;
     a.click();
-    toast.success('تصویر JPG بارکد با موفقیت دانلود شد');
+    toast.success('تصویر JPG با کیفیت فوق‌العاده بارکد با موفقیت دانلود شد');
   };
 
   const handleShare = async () => {
@@ -878,7 +883,7 @@ export const LivePreview: React.FC = () => {
                 {meta.productTitle || link.title}
               </span>
               <span className="text-xs font-outfit font-bold text-cyan-600 dark:text-cyan-400 mt-0.5 block">
-                {meta.productPrice?.toLocaleString() || '۰'} {meta.productCurrency || 'AFN'}
+                {meta.productPrice?.toLocaleString('en-US') || '0'} {meta.productCurrency || 'AFN'}
               </span>
             </div>
           </div>
@@ -914,7 +919,7 @@ export const LivePreview: React.FC = () => {
                 {meta.checkoutItemName || link.title}
               </span>
               <span className="text-xs font-outfit font-bold text-emerald-600 dark:text-emerald-400 mt-0.5 block">
-                {meta.checkoutAmount?.toLocaleString() || '۵۰۰'} {meta.paymentCurrency || 'AFN'}
+                {meta.checkoutAmount?.toLocaleString('en-US') || '500'} {meta.paymentCurrency || 'AFN'}
               </span>
             </div>
           </div>
@@ -1236,7 +1241,7 @@ export const LivePreview: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 h-full bg-slate-900/40 dark:bg-slate-950/60 p-4 md:p-8 flex flex-col items-center justify-center overflow-hidden relative select-none">
+    <div className="flex-1 h-full bg-slate-100/70 dark:bg-slate-950/60 p-4 md:p-8 flex flex-col items-center justify-center overflow-hidden relative select-none">
       {/* Decorative Lighting */}
       <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
@@ -1281,13 +1286,6 @@ export const LivePreview: React.FC = () => {
           <QrCode className="w-3.5 h-3.5" />
           <span>ساخت QR کد</span>
         </button>
-        <div className="h-3.5 w-[1px] bg-border mx-0.5" />
-        <span
-          className="px-2.5 py-1 rounded-full text-[11px] font-outfit text-cyan-600 dark:text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 flex items-center gap-1"
-          dir="ltr"
-        >
-          <span>aryal.ink/{profile.alias}</span>
-        </span>
       </div>
 
       {previewTab === 'qr' ? (
@@ -1316,12 +1314,19 @@ export const LivePreview: React.FC = () => {
               level="H"
               includeMargin={true}
             />
-            {/* Hidden SVG element for pure vector download */}
+            {/* Hidden Hi-Res Canvas and SVG elements for high-resolution 1500px print-ready download */}
             <div className="hidden">
+              <QRCodeCanvas
+                id="profile-qr-canvas-hires"
+                value={`https://aryal.ink/${profile.alias}`}
+                size={1500}
+                level="H"
+                includeMargin={true}
+              />
               <QRCodeSVG
                 id="profile-qr-svg"
                 value={`https://aryal.ink/${profile.alias}`}
-                size={500}
+                size={1500}
                 level="H"
                 includeMargin={true}
               />
@@ -1417,7 +1422,7 @@ export const LivePreview: React.FC = () => {
 
         {/* Screen Glass Surface */}
         <div
-          className={`w-full h-full overflow-hidden flex flex-col relative transition-all duration-300 font-sans ${selectedDeviceId === 'iphone' ? 'rounded-[44px]' : 'rounded-[24px]'
+          className={`w-full h-full overflow-hidden flex flex-col relative transition-all duration-300 ${previewFontClass} ${selectedDeviceId === 'iphone' ? 'rounded-[44px]' : 'rounded-[24px]'
             }`}
           style={{
             background: isLight ? 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%)' : themeConfig.backgroundColor,

@@ -20,7 +20,9 @@ import { HeroSection } from '@/components/landing/HeroSection';
 import { StatsAndMarqueeSection } from '@/components/landing/StatsAndMarqueeSection';
 import { BentoGridFeatures } from '@/components/landing/BentoGridFeatures';
 import { NfcShowcaseSection } from '@/components/landing/NfcShowcaseSection';
+import { LuxuryMaterialsShowcase } from '@/components/landing/LuxuryMaterialsShowcase';
 import { PricingSection } from '@/components/landing/PricingSection';
+import { TestimonialsAndSocialProof } from '@/components/landing/TestimonialsAndSocialProof';
 
 const EASE_SNAPPY = [0, 0.7, 0.2, 1] as const;
 const SPRING_FAST = { type: 'spring', stiffness: 250, damping: 25, mass: 0.5 } as const;
@@ -64,7 +66,7 @@ export default function LandingPage() {
       badge: 'گام اول',
       color: 'from-cyan-500 to-blue-600',
       title: 'ثبت‌نام و انتخاب نام اختصاصی',
-      desc: 'حساب کاربری خود را در کمتر از ۱ دقیقه رایگان ایجاد کنید و آدرس یکتا مانند aryal.ink/ali را برای برند شخصی یا تجاری خود رزرو نمایید.',
+      desc: 'حساب کاربری خود را در کمتر از 1 دقیقه رایگان ایجاد کنید و آدرس یکتا مانند aryal.ink/ali را برای برند شخصی یا تجاری خود رزرو نمایید.',
     },
     {
       num: '02',
@@ -109,27 +111,32 @@ export default function LandingPage() {
     <div className="min-h-screen bg-background text-foreground font-sans select-none overflow-x-hidden" dir={dir}>
       
       {/* =========================================
-          ۱. هیرو سکشن (Link-in-Bio & 3D Interactive Phone)
+          1. هیرو سکشن (Link-in-Bio & 3D Interactive Phone)
       ========================================= */}
       <HeroSection />
 
       {/* =========================================
-          ۲ و ۳. سکشن ادغام‌شده آمار و نوار متحرک (Merged Stats & Seamless Marquee)
+          2 و 3. سکشن ادغام‌شده آمار و نوار متحرک (Merged Stats & Seamless Marquee)
       ========================================= */}
       <StatsAndMarqueeSection />
 
       {/* =========================================
-          ۴. بخش امکانات (Bento Grid Features)
+          4. بخش امکانات (Bento Grid Features)
       ========================================= */}
       <BentoGridFeatures />
 
       {/* =========================================
-          ۵. سکشن جذاب NFC Showcase (فقط با یک تماس)
+          5. سکشن جذاب NFC Showcase (فقط با یک تماس)
       ========================================= */}
       <NfcShowcaseSection />
 
       {/* =========================================
-          ۶. نحوه کارکرد (۳ گام تا کارت هوشمند)
+          6. گالری متریال کارت‌های لوکس (Luxury Materials Showcase)
+      ========================================= */}
+      <LuxuryMaterialsShowcase />
+
+      {/* =========================================
+          7. نحوه کارکرد (3 گام تا کارت هوشمند)
       ========================================= */}
       <section id="how-it-works" className="py-20 sm:py-28 border-t border-border/80 relative overflow-hidden">
         {/* Soft Ambient Glow */}
@@ -153,13 +160,13 @@ export default function LandingPage() {
               variants={headerItemVariants}
               className="text-3xl sm:text-4xl font-black text-foreground tracking-tight"
             >
-              در ۳ گام ساده کارت هوشمند خود را بسازید
+              در 3 گام ساده کارت هوشمند خود را بسازید
             </motion.h2>
             <motion.p
               variants={headerItemVariants}
               className="text-xs sm:text-sm text-muted-foreground leading-relaxed"
             >
-              کمتر از ۲ دقیقه زمان می‌برد تا کسب‌وکار یا صفحه شخصی خود را به دنیای فناوری NFC متصل کنید.
+              کمتر از 2 دقیقه زمان می‌برد تا کسب‌وکار یا صفحه شخصی خود را به دنیای فناوری NFC متصل کنید.
             </motion.p>
           </motion.div>
 
@@ -215,12 +222,17 @@ export default function LandingPage() {
       </section>
 
       {/* =========================================
-          ۷. بخش تعرفه‌ها (Shimmer Pro Pricing)
+          8. بخش تعرفه‌ها (Shimmer Pro Pricing)
       ========================================= */}
       <PricingSection />
 
       {/* =========================================
-          ۸. سوالات متداول (FAQ Section With Snappy Ease-Out & Spring)
+          9. سکشن اعتماد و نظرات مشتریان (Social Proof & Testimonials)
+      ========================================= */}
+      <TestimonialsAndSocialProof />
+
+      {/* =========================================
+          10. سوالات متداول (FAQ Section With Snappy Ease-Out & Spring)
       ========================================= */}
       <section id="faq" className="py-20 sm:py-28 border-t border-border/80 relative">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
@@ -309,7 +321,7 @@ export default function LandingPage() {
       </section>
 
       {/* =========================================
-          ۹. بنر نهایی دعوت به اقدام (Final Conversion CTA)
+          11. بنر نهایی دعوت به اقدام (Final Conversion CTA)
       ========================================= */}
       <section className="py-16 sm:py-24 border-t border-border/80 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 via-blue-600/10 to-purple-600/10 pointer-events-none" />

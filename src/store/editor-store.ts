@@ -644,14 +644,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   },
 
   switchProfile: async (profileId: string) => {
-    if (profileId === get().activeProfileId) return;
-
-    // Verify target profile belongs strictly to current user's profile list
-    const targetItem = get().profilesList.find((p) => p.id === profileId);
-    if (!targetItem) {
-      console.warn('Unauthorized or non-existent profile switch:', profileId);
-      return;
-    }
+    if (!profileId) return;
+    if (profileId === get().activeProfileId && get().profile.id === profileId) return;
 
     // 1. Cache current profile changes
     const current = get().profile;
@@ -661,33 +655,36 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       ...(currentId ? { [currentId]: current } : {}),
     };
 
+    const targetItem = get().profilesList.find(
+      (p) => p.id === profileId || p.alias.toLowerCase() === profileId.toLowerCase()
+    );
+    const resolvedId = targetItem?.id || profileId;
+
     // 2. Check if target profile is in cache
-    const cachedTarget = updatedCache[profileId];
+    const cachedTarget = updatedCache[resolvedId];
 
     // 3. Mark active in list
     const updatedList = get().profilesList.map((p) => ({
       ...p,
-      isActive: p.id === profileId,
+      isActive: p.id === resolvedId || p.alias.toLowerCase() === profileId.toLowerCase(),
     }));
 
     if (cachedTarget) {
       set({
         profile: cachedTarget,
-        activeProfileId: profileId,
+        activeProfileId: resolvedId,
         profilesList: updatedList,
         profilesCache: updatedCache,
         isDirty: false,
       });
     } else {
       set({
-        activeProfileId: profileId,
+        activeProfileId: resolvedId,
         profilesList: updatedList,
         profilesCache: updatedCache,
         isDirty: false,
       });
-      if (targetItem.alias) {
-        await get().fetchProfileData(targetItem.alias);
-      }
+      await get().fetchProfileData(targetItem?.alias || profileId);
     }
   },
 
@@ -1066,11 +1063,14 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   fetchProfileData: async (aliasOrId?: string) => {
     set({ isLoading: true, saveError: null });
     try {
-      const activeAlias = aliasOrId || get().profile.alias;
-      const res = await fetch(`/api/profile?alias=${encodeURIComponent(activeAlias)}`, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-      });
+      const target = aliasOrId || get().profile.id || get().profile.alias || '';
+      const res = await fetch(
+        `/api/profile?id=${encodeURIComponent(target)}&alias=${encodeURIComponent(target)}`,
+        {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
 
       if (!res.ok) {
         set({ isLoading: false });

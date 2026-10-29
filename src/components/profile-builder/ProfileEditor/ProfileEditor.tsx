@@ -5,7 +5,6 @@ import { useEditorStore } from '@/store/editor-store';
 import { ProfileThemeConfig, HeaderLayoutType, ProfileLanguage, ProfileType, VerificationData } from '@/types/profile.types';
 import { ModuleSelectorModal } from './ModuleSelectorModal';
 import { SectionModulesList } from './SectionModulesList';
-import { ProfileSwitcher } from './ProfileSwitcher';
 import { CrmLeadsTable } from './CrmLeadsTable';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { FileUploader } from '@/components/ui/file-uploader';
@@ -42,6 +41,7 @@ import {
   Mail,
   Settings,
   X,
+  Type,
 } from 'lucide-react';
 
 export const ProfileEditor: React.FC = () => {
@@ -71,7 +71,7 @@ export const ProfileEditor: React.FC = () => {
     unconfirmedModuleId,
   } = useEditorStore();
 
-  const [activeTab, setActiveTab] = useState<'content' | 'appearance' | 'settings' | 'crm'>('content');
+  const [activeTab, setActiveTab] = useState<'content' | 'appearance' | 'fonts' | 'settings' | 'crm'>('content');
   const [isModuleModalOpen, setIsModuleModalOpen] = useState(false);
   const [isProfileSettingsOpen, setIsProfileSettingsOpen] = useState(false);
   const [copiedAlias, setCopiedAlias] = useState(false);
@@ -167,6 +167,7 @@ export const ProfileEditor: React.FC = () => {
   const t = {
     contentTab: isLangEn ? 'Content & Modules' : isLangPs ? 'منځپانګه او ماډلونه' : 'محتوا و ماژول‌ها',
     appearanceTab: isLangEn ? 'Design & Theme' : isLangPs ? 'ډیزاین او بڼه' : 'طراحی و تم',
+    fontsTab: isLangEn ? 'Fonts' : isLangPs ? 'لیکبڼه' : 'تنظیمات فونت',
     settingsTab: isLangEn ? 'Settings & SEO' : isLangPs ? 'تنظیمات او SEO' : 'تنظیمات، سئو و وایت‌لیبل',
     basicInfo: isLangEn ? 'Profile Identity' : isLangPs ? 'د پروفایل پیژندنه' : 'اطلاعات شناسنامه‌ای پروفایل',
     displayName: isLangEn ? 'Full Name' : isLangPs ? 'بشپړ نوم' : 'نام و تخلص',
@@ -180,10 +181,12 @@ export const ProfileEditor: React.FC = () => {
     crmTab: isLangEn ? 'Messages' : isLangPs ? 'پیغامونه' : 'پیام‌ها',
   };
 
-  // Auto-fetch profile data & profiles list from MongoDB on mount
+  // Only fetch profiles list if no profile is loaded yet
   useEffect(() => {
-    fetchProfilesList();
-  }, [fetchProfilesList]);
+    if (!profile.id && !profile.alias) {
+      fetchProfilesList();
+    }
+  }, [profile.id, profile.alias, fetchProfilesList]);
 
   const handleCopyLink = () => {
     const fullUrl = `https://aryal.ink/${profile.alias}`;
@@ -198,45 +201,62 @@ export const ProfileEditor: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full bg-card text-foreground border-l border-border w-full max-w-2xl mx-auto shadow-2xl overflow-hidden font-sans transition-colors duration-200" dir="rtl">
-      {/* Editor Header */}
+      {/* Editor Header (Isolated Single-Card Context — No Card Selector Dropdown) */}
       <header className="p-4 border-b border-border flex items-center justify-between bg-card/80 backdrop-blur-md sticky top-0 z-20 gap-3">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center font-bold text-white shadow-lg shadow-cyan-500/20 font-outfit shrink-0">
-            AL
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center font-bold text-white shadow-lg shadow-cyan-500/20 font-outfit shrink-0 overflow-hidden">
+            {profile.avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={profile.avatarUrl} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <span>{profile.displayName?.charAt(0) || 'A'}</span>
+            )}
           </div>
-          <ProfileSwitcher />
-
-          {/* Profile Settings Gear Icon Button */}
-          <button
-            type="button"
-            onClick={() => setIsProfileSettingsOpen(true)}
-            className="w-9 h-9 rounded-xl border border-border bg-card hover:bg-muted text-muted-foreground hover:text-cyan-500 transition-colors flex items-center justify-center shrink-0 shadow-sm cursor-pointer"
-            title="تنظیمات پیشرفته پروفایل و وب‌سایت"
-            aria-label="تنظیمات پروفایل"
-          >
-            <Settings className="w-4 h-4" />
-          </button>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-extrabold text-foreground truncate">
+                {profile.displayName || 'کارت هوشمند'}
+              </span>
+              {isSaving ? (
+                <span className="text-[10px] text-cyan-500 flex items-center gap-1 font-medium">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  <span>در حال ذخیره...</span>
+                </span>
+              ) : (
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 font-bold">
+                  ذخیره خودکار فعال
+                </span>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={handleCopyLink}
+              className="text-[11px] font-outfit text-cyan-600 dark:text-cyan-400 hover:underline flex items-center gap-1 mt-0.5"
+              dir="ltr"
+              title="کپی آدرس لینک"
+            >
+              <span>aryal.ink/{profile.alias || 'card'}</span>
+              <Copy className="w-3 h-3 opacity-70" />
+            </button>
+          </div>
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          {/* Dashboard Dark/Light Theme Switcher */}
-          <ThemeToggle />
-
-          {/* User Sign Out */}
-          {session?.user && (
-            <button
-              type="button"
-              onClick={() => signOut({ callbackUrl: '/login' })}
-              className="w-9 h-9 rounded-xl border border-border bg-card hover:bg-muted text-muted-foreground hover:text-rose-500 transition-colors flex items-center justify-center shrink-0 cursor-pointer"
-              title={`خروج از حساب (${session.user.name || session.user.email})`}
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
-          )}
+          {/* Link Settings Gear Icon Button */}
+          <button
+            type="button"
+            onClick={() => setIsProfileSettingsOpen(true)}
+            className="h-9 px-3 rounded-xl border border-border bg-card hover:bg-muted text-muted-foreground hover:text-cyan-500 transition-colors flex items-center gap-1.5 shrink-0 shadow-sm cursor-pointer text-xs font-semibold"
+            title="تنظیمات اختصاصی این لینک"
+            aria-label="تنظیمات لینک"
+          >
+            <Settings className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">تنظیمات لینک</span>
+          </button>
         </div>
       </header>
 
-      {/* Navigation Tabs - 3 Main Tabs */}
+      {/* Navigation Tabs - 4 Builder Sub-Tabs */}
       <div className="flex border-b border-border bg-muted/40 p-1.5 gap-1.5">
         <button
           onClick={() => setActiveTab('content')}
@@ -259,14 +279,14 @@ export const ProfileEditor: React.FC = () => {
           <span>{t.appearanceTab}</span>
         </button>
         <button
-          onClick={() => setActiveTab('settings')}
-          className={`flex-1 py-2 text-xs font-medium rounded-xl transition-all flex items-center justify-center gap-1.5 ${activeTab === 'settings'
-            ? 'bg-card text-foreground shadow-sm font-bold border border-border'
+          onClick={() => setActiveTab('fonts')}
+          className={`flex-1 py-2 text-xs font-medium rounded-xl transition-all flex items-center justify-center gap-1.5 ${activeTab === 'fonts'
+            ? 'bg-card text-foreground shadow-sm font-bold border border-border text-cyan-600 dark:text-cyan-400'
             : 'text-muted-foreground hover:text-foreground hover:bg-muted/80'
             }`}
         >
-          <Sliders className="w-3.5 h-3.5" />
-          <span>{t.settingsTab}</span>
+          <Type className="w-3.5 h-3.5" />
+          <span>{t.fontsTab}</span>
         </button>
         <button
           onClick={() => setActiveTab('crm')}
@@ -299,13 +319,8 @@ export const ProfileEditor: React.FC = () => {
                     )}
                   </div>
                   <div>
-                    <h2 className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                      <span>{profile.displayName || 'نام و هویت تنظیم نشده'}</span>
-                      {profile.alias && (
-                        <span className="text-[11px] text-cyan-600 dark:text-cyan-400 font-outfit" dir="ltr">
-                          (@{profile.alias})
-                        </span>
-                      )}
+                    <h2 className="text-xs font-bold text-foreground">
+                      {profile.displayName || 'نام و هویت تنظیم نشده'}
                     </h2>
                     <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">
                       {profile.headline || 'عنوان یا تخصص شغلی وارد نشده است'}
@@ -360,6 +375,33 @@ export const ProfileEditor: React.FC = () => {
                     </div>
                   </div>
 
+                  {/* Direct Contact: Phone & Email */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-medium text-muted-foreground mb-1.5">شماره تماس مستقیم</label>
+                      <input
+                        type="tel"
+                        value={profile.phone || ''}
+                        onChange={(e) => updateBasicInfo({ phone: e.target.value })}
+                        placeholder="+93 79 123 4567"
+                        dir="ltr"
+                        className="w-full bg-background border border-border rounded-xl px-3 py-2 text-sm text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-colors font-sans text-left"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-muted-foreground mb-1.5">آدرس ایمیل مستقیم</label>
+                      <input
+                        type="email"
+                        value={profile.email || ''}
+                        onChange={(e) => updateBasicInfo({ email: e.target.value })}
+                        placeholder="you@domain.com"
+                        dir="ltr"
+                        className="w-full bg-background border border-border rounded-xl px-3 py-2 text-sm text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-colors font-sans text-left"
+                      />
+                    </div>
+                  </div>
+
                   <div>
                     <label className="block text-xs font-medium text-muted-foreground mb-1.5">{t.bio}</label>
                     <textarea
@@ -396,7 +438,7 @@ export const ProfileEditor: React.FC = () => {
                           <div className="w-6 h-6 rounded-full bg-cyan-400 border-2 border-background relative z-10 -bottom-1 shadow-sm" />
                         </div>
                         <div>
-                          <p className="text-xs font-bold text-foreground">۱. منحنی</p>
+                          <p className="text-xs font-bold text-foreground">1. منحنی</p>
                           <p className="text-[10px] text-muted-foreground mt-0.5 leading-relaxed">
                             کاور بالا با لبه قوسی و آواتار دایره‌ای در مرکز روی خط تقاطع
                           </p>
@@ -419,7 +461,7 @@ export const ProfileEditor: React.FC = () => {
                           <div className="w-7 h-7 rounded-lg bg-cyan-400 border border-white/50 shadow-sm" />
                         </div>
                         <div>
-                          <p className="text-xs font-bold text-foreground">۲. ماسک گرادیانت</p>
+                          <p className="text-xs font-bold text-foreground">2. ماسک گرادیانت</p>
                           <p className="text-[10px] text-muted-foreground mt-0.5 leading-relaxed">
                             کاور مستطیلی محو شونده با آواتار گوشه‌گرد و نام در کنار آن
                           </p>
@@ -442,7 +484,7 @@ export const ProfileEditor: React.FC = () => {
                           <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-cyan-500 to-blue-600 shadow-md ring-2 ring-cyan-400/40" />
                         </div>
                         <div>
-                          <p className="text-xs font-bold text-foreground">۳. مینیمال</p>
+                          <p className="text-xs font-bold text-foreground">3. مینیمال</p>
                           <p className="text-[10px] text-muted-foreground mt-0.5 leading-relaxed">
                             بدون تصویر کاور، فقط عکس پروفایل بزرگ در مرکز
                           </p>
@@ -462,7 +504,7 @@ export const ProfileEditor: React.FC = () => {
                       fileType="image"
                       folder="avatars"
                       label="تصویر پروفایل / آواتار"
-                      description="فرمت‌های JPG، PNG، WEBP (فشرده‌سازی خودکار تا ۲ مگابایت)"
+                      description="فرمت‌های JPG، PNG، WEBP (فشرده‌سازی خودکار تا 2 مگابایت)"
                       maxSizeMB={2}
                       aspectRatio="square"
                       className="w-full"
@@ -475,7 +517,7 @@ export const ProfileEditor: React.FC = () => {
                         fileType="image"
                         folder="covers"
                         label="تصویر کاور هدر"
-                        description="تصویر بنر بالای پروفایل (حداکثر ۲ مگابایت با بهینه‌سازی خودکار)"
+                        description="تصویر بنر بالای پروفایل (حداکثر 2 مگابایت با بهینه‌سازی خودکار)"
                         maxSizeMB={2}
                         aspectRatio="banner"
                         className="w-full"
@@ -868,7 +910,294 @@ export const ProfileEditor: React.FC = () => {
           </section>
         )}
 
-        {/* TAB 3: SETTINGS, SEO & WHITE-LABEL */}
+        {/* TAB 3: FONTS & TYPOGRAPHY SETTINGS */}
+        {activeTab === 'fonts' && (
+          <div className="space-y-6 animate-in fade-in duration-200">
+            {/* Header intro card */}
+            <section className="bg-muted/30 border border-border rounded-2xl p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xs font-bold text-foreground uppercase tracking-wider mb-1 flex items-center gap-2">
+                    <Type className="w-4 h-4 text-cyan-500" />
+                    تنظیمات تایپوگرافی و فونت مینی‌سایت
+                  </h2>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    فونت‌های گلچین‌شده و اختصاصی کارت و صفحه بیو خود را انتخاب کنید. تغییرات بلافاصله در پیش‌نمایش زنده اعمال می‌شوند.
+                  </p>
+                </div>
+                <span className="text-[10px] bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20 px-2.5 py-0.5 rounded-full font-bold">
+                  تایپوگرافی زنده
+                </span>
+              </div>
+            </section>
+
+            {/* 1. Persian / Pashto / Dari Font Selection */}
+            <section className="bg-muted/30 border border-border rounded-2xl p-5 space-y-4">
+              <div>
+                <h3 className="text-xs font-bold text-foreground flex items-center gap-2 mb-1">
+                  <span className="w-2 h-2 rounded-full bg-cyan-500"></span>
+                  فونت زبان‌های فارسی، دری و پشتو
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  این فونت برای متون اصلی، عناوین ماژول‌ها و توضیحات بیو در زبان‌های ملی استفاده می‌شود.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {[
+                  {
+                    id: 'vazirmatn',
+                    title: 'وزیرمتن (Vazirmatn)',
+                    badge: 'پیش‌فرض و استاندارد',
+                    desc: 'طراحی مدرن، خوانایی استثنایی در تمام نمایشگرها و هماهنگی کامل وب.',
+                    sample: 'کارت ویزیت هوشمند و صفحه اختصاصی ارتباطی شما',
+                    fontClass: 'font-vazirmatn',
+                  },
+                  {
+                    id: 'yekan_bakh',
+                    title: 'یکان‌بخ (Yekan Bakh)',
+                    badge: 'شیک و هندسی',
+                    desc: 'خطوط هندسی و مینیمال، ایده‌آل برای برندهای تجاری و فناوری.',
+                    sample: 'کارت ویزیت هوشمند و صفحه اختصاصی ارتباطی شما',
+                    fontClass: 'font-yekan_bakh',
+                  },
+                  {
+                    id: 'shabnam',
+                    title: 'شبنم (Shabnam)',
+                    badge: 'رسمی و چشم‌نواز',
+                    desc: 'زاویه‌های نرم و دلنشین با حس اعتماد و ارتباط صمیمی با مخاطب.',
+                    sample: 'کارت ویزیت هوشمند و صفحه اختصاصی ارتباطی شما',
+                    fontClass: 'font-shabnam',
+                  },
+                  {
+                    id: 'sahel',
+                    title: 'ساحل (Sahel)',
+                    badge: 'کلاسیک و آرام',
+                    desc: 'تایپوگرافی لطیف، متوازن و بسیار روان برای متن‌های طولانی و مقالات.',
+                    sample: 'کارت ویزیت هوشمند و صفحه اختصاصی ارتباطی شما',
+                    fontClass: 'font-sahel',
+                  },
+                ].map((f) => {
+                  const isSelected = (profile.themeConfig?.fontFa || 'vazirmatn') === f.id;
+                  return (
+                    <button
+                      key={f.id}
+                      type="button"
+                      onClick={() => updateTheme({ fontFa: f.id as any })}
+                      className={`p-4 rounded-2xl border text-right transition-all flex flex-col justify-between cursor-pointer relative overflow-hidden ${
+                        isSelected
+                          ? 'bg-cyan-500/10 border-cyan-500 ring-2 ring-cyan-500/30 shadow-md shadow-cyan-500/10'
+                          : 'bg-card border-border hover:border-cyan-500/40 hover:bg-muted/40'
+                      }`}
+                    >
+                      <div className="w-full">
+                        <div className="flex items-center justify-between gap-2 mb-1.5">
+                          <span className={`text-xs font-bold ${isSelected ? 'text-cyan-600 dark:text-cyan-400' : 'text-foreground'}`}>
+                            {f.title}
+                          </span>
+                          <span
+                            className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                              isSelected
+                                ? 'bg-cyan-500 text-slate-950'
+                                : 'bg-muted text-muted-foreground'
+                            }`}
+                          >
+                            {isSelected ? '✓ فعال' : f.badge}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground leading-relaxed mb-3">
+                          {f.desc}
+                        </p>
+                      </div>
+
+                      {/* Live text sample in that exact font */}
+                      <div
+                        className={`w-full p-2.5 rounded-xl border border-border/80 bg-background/80 text-xs font-medium text-foreground ${f.fontClass}`}
+                      >
+                        {f.sample}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+
+            {/* 2. English Font Selection */}
+            <section className="bg-muted/30 border border-border rounded-2xl p-5 space-y-4">
+              <div>
+                <h3 className="text-xs font-bold text-foreground flex items-center gap-2 mb-1">
+                  <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                  فونت زبان انگلیسی (English Typography)
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  این فونت برای واژه‌های انگلیسی، آدرس وب‌سایت، شناسه‌ها و نمای انگلیسی کارت اعمال می‌گردد.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {[
+                  {
+                    id: 'inter',
+                    title: 'Inter',
+                    badge: 'Minimal (Default)',
+                    desc: 'Clean, neutral and ultra-legible UI typeface designed by Rasmus Andersson.',
+                    sample: 'Smart Digital Business Card & Bio',
+                    fontClass: 'font-inter',
+                  },
+                  {
+                    id: 'outfit',
+                    title: 'Outfit',
+                    badge: 'Geometric & Trendy',
+                    desc: 'Modern geometric sans inspired by digital brands and lifestyle tech.',
+                    sample: 'Smart Digital Business Card & Bio',
+                    fontClass: 'font-outfit',
+                  },
+                  {
+                    id: 'plus_jakarta',
+                    title: 'Plus Jakarta Sans',
+                    badge: 'Corporate Tech',
+                    desc: 'Friendly yet professional contemporary grotesque font family.',
+                    sample: 'Smart Digital Business Card & Bio',
+                    fontClass: 'font-plus_jakarta',
+                  },
+                  {
+                    id: 'playfair',
+                    title: 'Playfair Display',
+                    badge: 'Luxury Serif',
+                    desc: 'High-contrast luxury transitional serif for elite, boutique & VIP cards.',
+                    sample: 'Smart Digital Business Card & Bio',
+                    fontClass: 'font-playfair',
+                  },
+                ].map((f) => {
+                  const isSelected = (profile.themeConfig?.fontEn || 'inter') === f.id;
+                  return (
+                    <button
+                      key={f.id}
+                      type="button"
+                      onClick={() => updateTheme({ fontEn: f.id as any })}
+                      className={`p-4 rounded-2xl border text-left transition-all flex flex-col justify-between cursor-pointer relative overflow-hidden ${
+                        isSelected
+                          ? 'bg-blue-500/10 border-blue-500 ring-2 ring-blue-500/30 shadow-md shadow-blue-500/10'
+                          : 'bg-card border-border hover:border-blue-500/40 hover:bg-muted/40'
+                      }`}
+                      dir="ltr"
+                    >
+                      <div className="w-full">
+                        <div className="flex items-center justify-between gap-2 mb-1.5">
+                          <span className={`text-xs font-bold ${isSelected ? 'text-blue-500' : 'text-foreground'}`}>
+                            {f.title}
+                          </span>
+                          <span
+                            className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                              isSelected
+                                ? 'bg-blue-500 text-white'
+                                : 'bg-muted text-muted-foreground'
+                            }`}
+                          >
+                            {isSelected ? '✓ Active' : f.badge}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground leading-relaxed mb-3">
+                          {f.desc}
+                        </p>
+                      </div>
+
+                      {/* Live English text sample */}
+                      <div
+                        className={`w-full p-2.5 rounded-xl border border-border/80 bg-background/80 text-xs font-medium text-foreground ${f.fontClass}`}
+                      >
+                        {f.sample}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+
+            {/* 3. Live Typography Pair Preview */}
+            <section className="bg-muted/30 border border-border rounded-2xl p-5 space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold text-foreground flex items-center gap-2">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                  نمای زنده ترکیب فونت‌های انتخابی
+                </h3>
+                <span className="text-[10px] text-muted-foreground">
+                  فارسی: {profile.themeConfig?.fontFa || 'vazirmatn'} | انگلیسی: {profile.themeConfig?.fontEn || 'inter'}
+                </span>
+              </div>
+
+              <div
+                className={`p-5 rounded-2xl border border-border bg-card shadow-sm space-y-3 ${
+                  profile.themeConfig?.fontFa ? `font-${profile.themeConfig.fontFa}` : 'font-vazirmatn'
+                }`}
+              >
+                <div>
+                  <h4 className="text-base font-bold text-foreground">
+                    {profile.displayName || 'احمد نیازی'}
+                  </h4>
+                  <p className="text-xs text-cyan-600 dark:text-cyan-400 font-semibold mt-0.5">
+                    {profile.headline || 'Senior Marketing Director'}
+                  </p>
+                </div>
+
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  {profile.bio || 'تیم ما ارائه‌دهنده راه‌کارهای مدرن هویت دیجیتال و ابزارهای ارتباطی هوشمند در افغانستان است.'}
+                </p>
+
+                <div className="pt-2 flex items-center gap-2">
+                  <div
+                    className={`px-4 py-2 rounded-xl text-xs font-bold text-white shadow-sm flex items-center gap-1.5`}
+                    style={{
+                      background: `linear-gradient(135deg, ${profile.themeConfig?.primaryColor || '#0ea5e9'}, ${profile.themeConfig?.accentColor || '#06b6d4'})`,
+                    }}
+                  >
+                    <span>ارتباط مستقیم در واتساپ</span>
+                    <span className="text-[11px] font-outfit" dir="ltr">WhatsApp</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Bottom Actions Bar */}
+            <div className="p-4 bg-card border border-border rounded-2xl flex items-center justify-between gap-3 shadow-sm">
+              <span className="text-xs text-muted-foreground hidden sm:inline">
+                تنظیمات فونت مینی‌سایت
+              </span>
+              <div className="flex items-center gap-2 mr-auto w-full sm:w-auto justify-end">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab('content');
+                    toast.info('به تب محتوا بازگشتید.');
+                  }}
+                  className="px-4 py-2 rounded-xl bg-muted hover:bg-rose-500/10 text-muted-foreground hover:text-rose-500 border border-border text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+                >
+                  <X className="w-3.5 h-3.5" />
+                  <span>انصراف</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const res = await saveProfileData();
+                    if (res.success) {
+                      toast.success('تنظیمات فونت با موفقیت ذخیره شد.');
+                      setActiveTab('content');
+                    } else {
+                      toast.error(res.message || 'خطا در ذخیره‌سازی.');
+                    }
+                  }}
+                  className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white text-xs font-bold shadow-md shadow-emerald-500/20 transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+                >
+                  <CheckCheck className="w-3.5 h-3.5" />
+                  <span>ذخیره و تایید</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 4: SETTINGS, SEO & WHITE-LABEL */}
         {activeTab === 'settings' && (
           <div className="space-y-6">
             {/* 1. PROFILE ALIAS & UNIQUE URL */}

@@ -13,7 +13,8 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
     pathname === '/' ||
     pathname.startsWith('/blog') ||
     pathname.startsWith('/services') ||
-    pathname.startsWith('/about');
+    pathname.startsWith('/about') ||
+    pathname.startsWith('/order');
 
   if (!isMarketingPage) {
     return <>{children}</>;

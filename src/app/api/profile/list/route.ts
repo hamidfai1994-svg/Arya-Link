@@ -132,7 +132,70 @@ export async function POST(req: NextRequest) {
     await connectToDatabase();
 
     const body = await req.json();
-    const { alias, displayName, roleType, headline } = body;
+    const { action, sourceProfileId, alias, displayName, roleType, headline } = body;
+
+    // Handle Duplicate Profile Request
+    if (action === 'duplicate' && sourceProfileId) {
+      const userQuery = buildUserIsolationQuery(session!.user);
+      const source = await Profile.findOne({ ...userQuery, _id: sourceProfileId }).lean();
+      if (!source) {
+        return NextResponse.json(
+          { success: false, message: 'کارت مورد نظر جهت کپی یافت نشد.' },
+          { status: 404 }
+        );
+      }
+
+      const cloneAlias = await generateUniqueAlias(`${source.alias}_copy`);
+      const clonedLinks = Array.isArray(source.links)
+        ? source.links.map((link: any) => ({
+            ...link,
+            id: `mod_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+            clickCount: 0,
+          }))
+        : [];
+
+      const duplicatedProfile = await Profile.create({
+        userId: currentUserId,
+        email: currentUserEmail,
+        userEmail: currentUserEmail,
+        alias: cloneAlias,
+        displayName: `${source.displayName} (کپی)`,
+        headline: source.headline || '',
+        bio: source.bio || '',
+        avatarUrl: source.avatarUrl || '',
+        coverUrl: source.coverUrl || '',
+        headerLayout: source.headerLayout || 'curve',
+        phone: source.phone || '',
+        whatsapp: source.whatsapp || '',
+        location: source.location || '',
+        directModeEnabled: false,
+        directModeUrl: source.directModeUrl || '',
+        themeConfig: source.themeConfig || {},
+        links: clonedLinks,
+        profileType: (source as any).profileType || 'personal',
+        hideBranding: source.hideBranding || false,
+        seoTitle: source.seoTitle ? `${source.seoTitle} (کپی)` : '',
+        seoDescription: source.seoDescription || '',
+        isActive: true,
+      });
+
+      return NextResponse.json(
+        {
+          success: true,
+          message: 'کارت با موفقیت کپی (Duplicate) شد.',
+          data: {
+            id: duplicatedProfile._id.toString(),
+            alias: duplicatedProfile.alias,
+            displayName: duplicatedProfile.displayName,
+            headline: duplicatedProfile.headline,
+            avatarUrl: duplicatedProfile.avatarUrl,
+            roleType: ((duplicatedProfile as any).profileType || 'personal') as any,
+            isActive: true,
+          },
+        },
+        { status: 201 }
+      );
+    }
 
     if (!displayName || typeof displayName !== 'string' || !displayName.trim()) {
       return NextResponse.json(

@@ -292,6 +292,7 @@ export const ProfileSwitcher: React.FC = () => {
       {/* Modal for Creating New Profile */}
       <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
         <DialogContent
+          showCloseButton={false}
           className="max-w-md p-6 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl font-sans"
           dir="rtl"
         >

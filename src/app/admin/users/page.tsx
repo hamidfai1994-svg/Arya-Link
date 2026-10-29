@@ -40,6 +40,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { PaginationBar } from '@/components/ui/pagination-bar';
 import { toast } from 'sonner';
 
 interface AdminUser {
@@ -64,6 +65,14 @@ export default function AdminUsersPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [planFilter, setPlanFilter] = useState<string>('all');
+
+  // Pagination state (Strictly English numbers)
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [itemsPerPage, setItemsPerPage] = useState<number>(10);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, roleFilter, planFilter]);
 
   // Edit user state
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
@@ -191,6 +200,12 @@ export default function AdminUsersPage() {
     );
   });
 
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / itemsPerPage));
+  const paginatedUsers = filteredUsers.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
   return (
     <div className="space-y-8 select-none" dir="rtl">
       {/* Top Banner */}
@@ -289,7 +304,7 @@ export default function AdminUsersPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredUsers.map((user) => (
+                {paginatedUsers.map((user) => (
                   <TableRow key={user.id} className="border-border hover:bg-muted/40 transition-colors">
                     {/* User Info */}
                     <TableCell>
@@ -397,6 +412,21 @@ export default function AdminUsersPage() {
                 ))}
               </TableBody>
             </Table>
+            {/* Pagination Bar */}
+            <div className="p-4 border-t border-border">
+              <PaginationBar
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={filteredUsers.length}
+                itemsPerPage={itemsPerPage}
+                onPageChange={setCurrentPage}
+                onItemsPerPageChange={(val) => {
+                  setItemsPerPage(val);
+                  setCurrentPage(1);
+                }}
+                itemLabel="کاربر"
+              />
+            </div>
           </div>
         )}
       </Card>

@@ -100,17 +100,27 @@ export default function AdminFinancePage() {
       const res = await fetch('/api/admin/finance');
       const data = await res.json();
       if (data.success) {
-        setMetrics(data.metrics);
+        setMetrics(data.metrics || null);
         setOrders(data.recentOrders || []);
         setPayouts(data.recentPayouts || []);
         setPendingPayouts(data.pendingPayouts || []);
+      } else {
+        setOrders([]);
+        setPayouts([]);
+        setPendingPayouts([]);
       }
     } catch (err) {
       toast.error('خطا در دریافت اطلاعات مالی');
+      setOrders([]);
+      setPayouts([]);
+      setPendingPayouts([]);
     } finally {
       setIsLoading(false);
     }
   };
+
+  // Structured fetchOrders function for future API integration
+  const fetchOrders = fetchFinanceData;
 
   const handleOpenPayoutModal = (payout: PayoutItem, action: 'pay' | 'reject') => {
     setSelectedPayout(payout);
@@ -189,7 +199,7 @@ export default function AdminFinancePage() {
             </div>
           </div>
           <div className="text-2xl sm:text-3xl font-black font-outfit text-emerald-500 tracking-tight">
-            {metrics?.totalGrossRevenue.toLocaleString('fa-IR')} <span className="text-sm font-normal">افغانی</span>
+            {(metrics?.totalGrossRevenue ?? 0).toLocaleString('en-US')} <span className="text-sm font-normal">افغانی</span>
           </div>
           <p className="text-[11px] text-muted-foreground mt-1">NFC + اشتراک‌ها + فروشگاه</p>
         </Card>
@@ -203,7 +213,7 @@ export default function AdminFinancePage() {
             </div>
           </div>
           <div className="text-2xl sm:text-3xl font-black font-outfit text-foreground tracking-tight">
-            {metrics?.nfcCardRevenue.toLocaleString('fa-IR')} <span className="text-sm font-normal">افغانی</span>
+            {(metrics?.nfcCardRevenue ?? 0).toLocaleString('en-US')} <span className="text-sm font-normal">افغانی</span>
           </div>
           <p className="text-[11px] text-muted-foreground mt-1">سفارشات کارت PVC و چوبی</p>
         </Card>
@@ -217,10 +227,10 @@ export default function AdminFinancePage() {
             </div>
           </div>
           <div className="text-2xl sm:text-3xl font-black font-outfit text-foreground tracking-tight">
-            {metrics?.subscriptionRevenue.toLocaleString('fa-IR')} <span className="text-sm font-normal">افغانی</span>
+            {(metrics?.subscriptionRevenue ?? 0).toLocaleString('en-US')} <span className="text-sm font-normal">افغانی</span>
           </div>
           <p className="text-[11px] text-muted-foreground mt-1">
-            {metrics?.proSubscribersCount} مشترک PRO و {metrics?.enterpriseSubscribersCount} سازمانی
+            {(metrics?.proSubscribersCount ?? 0).toLocaleString('en-US')} مشترک PRO و {(metrics?.enterpriseSubscribersCount ?? 0).toLocaleString('en-US')} سازمانی
           </p>
         </Card>
 
@@ -233,10 +243,10 @@ export default function AdminFinancePage() {
             </div>
           </div>
           <div className="text-2xl sm:text-3xl font-black font-outfit text-rose-500 tracking-tight">
-            {metrics?.pendingPayoutsTotal.toLocaleString('fa-IR')} <span className="text-sm font-normal">افغانی</span>
+            {(metrics?.pendingPayoutsTotal ?? 0).toLocaleString('en-US')} <span className="text-sm font-normal">افغانی</span>
           </div>
           <p className="text-[11px] text-muted-foreground mt-1">
-            {pendingPayouts.length} درخواست در صف پرداخت
+            {pendingPayouts.length.toLocaleString('en-US')} درخواست در صف پرداخت
           </p>
         </Card>
       </div>
@@ -247,7 +257,7 @@ export default function AdminFinancePage() {
           <div>
             <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
               <Wallet className="w-4 h-4 text-rose-500" />
-              <span>صف تسویه‌حساب‌های کاربران و فروشندگان ({pendingPayouts.length} مورد)</span>
+              <span>صف تسویه‌حساب‌های کاربران و فروشندگان ({pendingPayouts.length.toLocaleString('en-US')} مورد)</span>
             </h2>
             <p className="text-[11px] text-muted-foreground mt-0.5">
               مبالغ قابل پرداخت حاصل از فروش خدمات و محصولات کاربران در پلتفرم آریا لینک
@@ -256,8 +266,16 @@ export default function AdminFinancePage() {
         </div>
 
         {pendingPayouts.length === 0 ? (
-          <div className="p-8 text-center text-xs text-muted-foreground">
-            هیچ درخواست تسویه‌حساب معلقی در صف پرداخت وجود ندارد.
+          <div className="p-12 text-center rounded-2xl bg-muted/10 border border-dashed border-border/80 flex flex-col items-center justify-center space-y-2">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+              <CheckCircle2 className="w-5 h-5" />
+            </div>
+            <p className="text-xs font-semibold text-foreground">
+              هیچ درخواست تسویه‌حساب معلقی در صف پرداخت وجود ندارد.
+            </p>
+            <p className="text-[11px] text-muted-foreground">
+              تمامی مبالغ و مطالبات کاربران و فروشندگان در پلتفرم تسویه شده است.
+            </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -276,7 +294,7 @@ export default function AdminFinancePage() {
                 {pendingPayouts.map((p) => (
                   <TableRow key={p._id} className="border-border hover:bg-muted/40 transition-colors">
                     <TableCell className="font-outfit text-xs font-bold text-emerald-500">
-                      {p.amount.toLocaleString('fa-IR')} افغانی
+                      {p.amount.toLocaleString('en-US')} افغانی
                     </TableCell>
 
                     <TableCell className="text-xs font-bold text-foreground">
@@ -291,8 +309,12 @@ export default function AdminFinancePage() {
                       {p.accountNumber}
                     </TableCell>
 
-                    <TableCell className="text-[11px] text-muted-foreground">
-                      {new Date(p.requestedAt).toLocaleDateString('fa-AF')}
+                    <TableCell className="text-[11px] text-muted-foreground font-outfit">
+                      {new Date(p.requestedAt).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                      })}
                     </TableCell>
 
                     <TableCell className="text-center">
@@ -338,8 +360,16 @@ export default function AdminFinancePage() {
         </div>
 
         {orders.length === 0 ? (
-          <div className="p-8 text-center text-xs text-muted-foreground">
-            هیچ سفارشی هنوز ثبت نشده است.
+          <div className="p-12 text-center rounded-2xl bg-muted/10 border border-dashed border-border/80 flex flex-col items-center justify-center space-y-2">
+            <div className="w-10 h-10 rounded-xl bg-muted text-muted-foreground flex items-center justify-center">
+              <CreditCard className="w-5 h-5 opacity-60" />
+            </div>
+            <p className="text-xs font-semibold text-foreground">
+              هنوز هیچ سفارشی در سیستم ثبت نگردیده است.
+            </p>
+            <p className="text-[11px] text-muted-foreground">
+              تراکنش‌های ثبت‌شده از طریق درگاه‌های پرداخت آنلاین یا حواله‌های بانکی در این بخش نمایش داده می‌شوند.
+            </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -368,7 +398,7 @@ export default function AdminFinancePage() {
                     </TableCell>
 
                     <TableCell className="font-outfit text-xs font-bold text-emerald-500">
-                      {o.totalPrice.toLocaleString('fa-IR')} افغانی
+                      {o.totalPrice.toLocaleString('en-US')} افغانی
                     </TableCell>
 
                     <TableCell className="text-xs text-muted-foreground">
@@ -403,7 +433,7 @@ export default function AdminFinancePage() {
 
       {/* Payout Action Modal */}
       <Dialog open={!!selectedPayout} onOpenChange={() => setSelectedPayout(null)}>
-        <DialogContent className="sm:max-w-md rounded-3xl" dir="rtl">
+        <DialogContent showCloseButton={false} className="sm:max-w-md rounded-3xl" dir="rtl">
           <DialogHeader className="text-right">
             <DialogTitle className="text-lg font-bold text-foreground flex items-center gap-2">
               <Wallet className="w-5 h-5 text-emerald-500" />
@@ -412,7 +442,7 @@ export default function AdminFinancePage() {
               </span>
             </DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground">
-              مبلغ: {selectedPayout?.amount.toLocaleString('fa-IR')} افغانی برای «
+              مبلغ: {selectedPayout?.amount.toLocaleString('en-US')} افغانی برای «
               {selectedPayout?.accountHolderName}»
             </DialogDescription>
           </DialogHeader>
