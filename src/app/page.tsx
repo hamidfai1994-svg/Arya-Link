@@ -23,6 +23,7 @@ import { NfcShowcaseSection } from '@/components/landing/NfcShowcaseSection';
 import { LuxuryMaterialsShowcase } from '@/components/landing/LuxuryMaterialsShowcase';
 import { PricingSection } from '@/components/landing/PricingSection';
 import { TestimonialsAndSocialProof } from '@/components/landing/TestimonialsAndSocialProof';
+import { MovingBorderButton } from '@/components/landing/MovingBorderButton';
 
 const EASE_SNAPPY = [0, 0.7, 0.2, 1] as const;
 const SPRING_FAST = { type: 'spring', stiffness: 250, damping: 25, mass: 0.5 } as const;
@@ -138,35 +139,35 @@ export default function LandingPage() {
       {/* =========================================
           7. نحوه کارکرد (3 گام تا کارت هوشمند)
       ========================================= */}
-      <section id="how-it-works" className="py-20 sm:py-28 border-t border-border/80 relative overflow-hidden">
+      <section id="how-it-works" className="py-24 sm:py-36 border-t border-border/80 relative overflow-hidden">
         {/* Soft Ambient Glow */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-cyan-500/5 rounded-full blur-[140px] pointer-events-none -z-10" />
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16 sm:space-y-20">
           {/* Header (Staggered Children 0.15s Cascade) */}
           <motion.div
             variants={headerContainerVariants}
             initial="hidden"
             whileInView="visible"
             viewport={{ once: false, amount: 0.2 }}
-            className="text-center max-w-2xl mx-auto space-y-3"
+            className="text-center max-w-2xl mx-auto space-y-4"
           >
             <motion.div variants={headerItemVariants} className="inline-block">
-              <Badge variant="cyan" className="font-sans text-xs">
+              <Badge variant="cyan" className="font-sans text-xs px-3.5 py-1">
                 ساده، مدرن و سریع
               </Badge>
             </motion.div>
             <motion.h2
               variants={headerItemVariants}
-              className="text-3xl sm:text-4xl font-black text-foreground tracking-tight"
+              className="text-3xl sm:text-5xl font-black text-foreground tracking-tight leading-[1.18]"
             >
-              در 3 گام ساده کارت هوشمند خود را بسازید
+              در 3 گام ساده پیوند و کارت هوشمند خود را بسازید
             </motion.h2>
             <motion.p
               variants={headerItemVariants}
-              className="text-xs sm:text-sm text-muted-foreground leading-relaxed"
+              className="text-xs sm:text-sm lg:text-base text-muted-foreground leading-relaxed font-normal"
             >
-              کمتر از 2 دقیقه زمان می‌برد تا کسب‌وکار یا صفحه شخصی خود را به دنیای فناوری NFC متصل کنید.
+              کمتر از 1 دقیقه زمان می‌برد تا کسب‌وکار یا برند شخصی خود را به دنیای فناوری نوین NFC متصل نمایید.
             </motion.p>
           </motion.div>
 
@@ -323,7 +324,7 @@ export default function LandingPage() {
       {/* =========================================
           11. بنر نهایی دعوت به اقدام (Final Conversion CTA)
       ========================================= */}
-      <section className="py-16 sm:py-24 border-t border-border/80 relative overflow-hidden">
+      <section className="py-24 sm:py-36 border-t border-border/80 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 via-blue-600/10 to-purple-600/10 pointer-events-none" />
         
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -332,44 +333,37 @@ export default function LandingPage() {
             whileInView={{ opacity: 1, y: 0, scale: 1 }}
             viewport={{ once: false, amount: 0.2 }}
             transition={{ duration: 0.6, ease: EASE_SNAPPY }}
-            className="p-8 sm:p-12 rounded-[32px] bg-card/85 dark:bg-slate-950/85 border border-cyan-500/30 backdrop-blur-2xl shadow-2xl shadow-cyan-500/15 text-center space-y-6"
+            className="p-8 sm:p-14 lg:p-16 rounded-[36px] bg-card/85 dark:bg-slate-950/85 border border-cyan-500/30 backdrop-blur-2xl shadow-2xl shadow-cyan-500/15 text-center space-y-7"
           >
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-cyan-500/15 text-cyan-400 text-xs font-bold">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-cyan-500/15 text-cyan-400 text-xs font-bold border border-cyan-500/25">
               <Zap className="w-3.5 h-3.5 fill-cyan-400" />
-              <span>پیوستن به نسل جدید کارت‌های هوشمند</span>
+              <span>پیوستن به نسل نوین کارت‌های هوشمند</span>
             </div>
 
-            <h2 className="text-3xl sm:text-5xl font-black text-foreground tracking-tight leading-[1.25]">
+            <h2 className="text-3xl sm:text-5xl lg:text-6xl font-black text-foreground tracking-tight leading-[1.15]">
               آماده‌اید ارتباطات کاری خود را متحول کنید؟
             </h2>
 
-            <p className="text-xs sm:text-sm text-muted-foreground max-w-xl mx-auto leading-relaxed">
-              همین حالا به صورت رایگان ثبت‌نام کنید، مینی‌وب‌سایت اختصاصی خود را بسازید یا کارت فیزیکی لوکس NFC را با ارسال رایگان سفارش دهید.
+            <p className="text-xs sm:text-sm lg:text-base text-muted-foreground max-w-xl mx-auto leading-relaxed font-normal">
+              همین حالا به صورت رایگان ثبت‌نام کنید، مینی‌ویب‌سایت اختصاصی خود را بسازید یا کارت فیزیکی لوکس NFC را با ارسال رایگان سفارش دهید.
             </p>
 
-            <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-4">
+            <div className="pt-3 flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link href="/register" className="w-full sm:w-auto">
-                <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.96 }}
-                  transition={SPRING_FAST}
-                  className="w-full sm:w-auto"
+                <MovingBorderButton
+                  duration={3.5}
+                  containerClassName="w-full sm:w-auto shadow-2xl shadow-cyan-500/30"
+                  className="h-14 px-8 text-sm sm:text-base font-black bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 hover:from-cyan-950/60 hover:to-blue-950/60"
                 >
-                  <Button
-                    size="lg"
-                    className="w-full sm:w-auto h-14 px-8 rounded-2xl bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 hover:from-cyan-400 hover:to-blue-500 text-white font-black text-sm sm:text-base shadow-xl shadow-cyan-500/30 active:scale-95 transition-all flex items-center justify-center gap-2.5 relative overflow-hidden group"
-                  >
-                    <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 pointer-events-none" />
-                    <Sparkles className="w-4 h-4 fill-white" />
-                    <span>شروع رایگان و ساخت کارت</span>
-                    <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1.5 transition-transform" />
-                  </Button>
-                </motion.div>
+                  <Sparkles className="w-4 h-4 text-cyan-400 fill-cyan-400" />
+                  <span>شروع رایگان و ساخت کارت</span>
+                  <ArrowLeft className="w-4 h-4 text-cyan-300 transition-transform group-hover:-translate-x-1.5" />
+                </MovingBorderButton>
               </Link>
 
               <Link href="/services" className="w-full sm:w-auto">
                 <motion.div
-                  whileHover={{ scale: 1.05 }}
+                  whileHover={{ scale: 1.04 }}
                   whileTap={{ scale: 0.96 }}
                   transition={SPRING_FAST}
                   className="w-full sm:w-auto"
@@ -377,7 +371,7 @@ export default function LandingPage() {
                   <Button
                     variant="outline"
                     size="lg"
-                    className="w-full sm:w-auto h-14 px-7 rounded-2xl border-border bg-card/60 backdrop-blur-md text-foreground font-bold text-xs sm:text-sm hover:bg-muted"
+                    className="w-full sm:w-auto h-14 px-8 rounded-2xl border-border bg-card/60 backdrop-blur-md text-foreground font-bold text-xs sm:text-sm hover:bg-muted cursor-pointer"
                   >
                     <span>سفارش سازمانی و شرکتی</span>
                   </Button>
