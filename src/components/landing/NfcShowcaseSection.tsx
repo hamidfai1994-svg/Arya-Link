@@ -75,7 +75,7 @@ function NfcCardChassis() {
           <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-amber-400/25 via-amber-300/10 to-transparent border border-amber-400/40 flex items-center justify-center text-amber-300 shadow-sm">
             <Zap className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
           </div>
-          <span className="text-[11px] font-outfit font-black tracking-widest text-amber-300/90 uppercase">
+          <span className="text-[11px] font-sans font-black tracking-widest text-amber-300/90 uppercase">
             ARYA LINK
           </span>
         </div>
@@ -83,29 +83,29 @@ function NfcCardChassis() {
         {/* NFC Waves Icon */}
         <div className="flex items-center gap-1.5 text-amber-300">
           <Wifi className="w-6 h-6 rotate-90" />
-          <span className="text-xs font-outfit font-black tracking-widest uppercase">NFC</span>
+          <span className="text-xs font-sans font-black tracking-widest uppercase">NFC</span>
         </div>
       </div>
 
       {/* Card Center: Modern Clean Arya Link Monogram & Tag */}
       <div className="space-y-0.5">
         <div className="flex items-center gap-2">
-          <span className="text-2xl font-outfit font-black tracking-tight text-white">
+          <span className="text-2xl font-sans font-black tracking-tight text-white">
             ARYA <span className="text-amber-400">LINK</span>
           </span>
           <span className="text-[9px] px-2 py-0.5 rounded-md bg-amber-400/20 text-amber-300 font-bold border border-amber-400/30">
             PRO
           </span>
         </div>
-        <p className="text-[9px] text-slate-400 tracking-widest font-mono uppercase">
+        <p className="text-[9px] text-slate-400 tracking-widest font-sans uppercase">
           Digital Identity Card
         </p>
       </div>
 
       {/* Bottom: Cardholder Name */}
-      <div className="flex items-center justify-between text-xs text-slate-200 font-mono tracking-wider font-semibold">
+      <div className="flex items-center justify-between text-xs text-slate-200 font-sans tracking-wider font-semibold">
         <span>FARHAD ARYA</span>
-        <span className="text-amber-400 font-outfit font-black tracking-widest">SMART TAP</span>
+        <span className="text-amber-400 font-sans font-black tracking-widest">SMART TAP</span>
       </div>
     </div>
   );
@@ -186,7 +186,7 @@ export function NfcShowcaseSection() {
             className="text-3xl sm:text-5xl font-black text-foreground tracking-tight leading-[1.2]"
           >
             فقط با یک تماس{' '}
-            <span className="bg-gradient-to-l from-cyan-400 via-sky-300 to-blue-500 bg-clip-text text-transparent font-outfit">
+            <span className="bg-gradient-to-l from-cyan-400 via-sky-300 to-blue-500 bg-clip-text text-transparent font-sans">
               (Tap)
             </span>
           </motion.h2>
@@ -292,7 +292,7 @@ export function NfcShowcaseSection() {
                       className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-10"
                     >
                       {/* Top Status Bar (Time 09:41) */}
-                      <div className="absolute top-3 inset-x-6 flex justify-between items-center text-[10px] text-white/50 font-mono">
+                      <div className="absolute top-3 inset-x-6 flex justify-between items-center text-[10px] text-white/50 font-sans">
                         <span>09:41</span>
                         <div className="flex items-center gap-1">
                           <Wifi className="w-2.5 h-2.5" />
@@ -321,7 +321,7 @@ export function NfcShowcaseSection() {
                       </div>
 
                       {/* Small Bottom Status Badge */}
-                      <div className="absolute bottom-6 flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/5 border border-white/10 text-[9px] text-slate-300 font-mono">
+                      <div className="absolute bottom-6 flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/5 border border-white/10 text-[9px] text-slate-300 font-sans">
                         <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
                         <span>NFC READY • STANDBY</span>
                       </div>
@@ -457,7 +457,7 @@ export function NfcShowcaseSection() {
                             <span className="font-bold text-[10px] text-white block">
                               رزرو نوبت مشاوره اختصاصی
                             </span>
-                            <span className="text-[8px] text-cyan-300 block font-outfit">
+                            <span className="text-[8px] text-cyan-300 block font-sans">
                               500 AFN • پرداخت با حساب‌پی
                             </span>
                           </div>
@@ -485,7 +485,7 @@ export function NfcShowcaseSection() {
 
                       {/* Footer inside Screen (Hero 1:1) */}
                       <div className="pt-0.5 text-center">
-                        <span className="text-[8px] text-slate-500 font-outfit">
+                        <span className="text-[8px] text-slate-500 font-sans">
                           Powered by <span className="font-bold text-cyan-400">Arya Link</span>
                         </span>
                       </div>

@@ -97,7 +97,7 @@ export function MultilingualTextarea({
             <button
               type="button"
               onClick={() => setActiveTab('en')}
-              className={`px-2.5 py-1 rounded-lg font-bold font-outfit transition-all ${
+              className={`px-2.5 py-1 rounded-lg font-bold font-sans transition-all ${
                 activeTab === 'en'
                   ? 'bg-background text-cyan-500 shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
@@ -155,7 +155,7 @@ export function MultilingualTextarea({
           onChange={(e) => onChange({ ...value, en: e.target.value })}
           placeholder={placeholder?.en || 'Enter English description or details...'}
           rows={rows}
-          className="rounded-xl text-xs bg-background font-outfit text-left leading-relaxed"
+          className="rounded-xl text-xs bg-background font-sans text-left leading-relaxed"
           dir="ltr"
         />
       )}

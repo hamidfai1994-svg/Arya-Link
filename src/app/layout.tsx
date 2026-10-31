@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Vazirmatn, Inter, Outfit, JetBrains_Mono } from 'next/font/google';
+import { Vazirmatn, Inter } from 'next/font/google';
 import { cookies } from 'next/headers';
 import { ThemeProvider } from '@/components/theme-provider';
 import { AuthProvider } from '@/components/providers/AuthProvider';
@@ -25,20 +25,6 @@ const inter = Inter({
   subsets: ['latin'],
   weight: ['400', '700'],
   variable: '--font-inter',
-  display: 'swap',
-});
-
-const outfit = Outfit({
-  subsets: ['latin'],
-  weight: ['400', '700'],
-  variable: '--font-outfit',
-  display: 'swap',
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ['latin'],
-  weight: ['400', '700'],
-  variable: '--font-jetbrains',
   display: 'swap',
 });
 
@@ -77,7 +63,7 @@ export default async function RootLayout({
     <html
       lang={initialLanguage}
       dir={initialDir}
-      className={`${vazirmatn.variable} ${inter.variable} ${outfit.variable} ${jetbrainsMono.variable}`}
+      className={`${vazirmatn.variable} ${inter.variable}`}
       suppressHydrationWarning
     >
       <head>

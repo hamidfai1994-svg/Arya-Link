@@ -978,7 +978,7 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
                   onChange={(e) => setFormPhone(e.target.value)}
                   placeholder="0700 000 000"
                   dir="ltr"
-                  className={`w-full rounded-xl px-3.5 py-2.5 text-xs font-outfit text-left border focus:outline-none focus:border-cyan-500 transition-all ${
+                  className={`w-full rounded-xl px-3.5 py-2.5 text-xs font-sans text-left border focus:outline-none focus:border-cyan-500 transition-all ${
                     isLight
                       ? 'bg-slate-50 border-slate-200 text-slate-800 placeholder-slate-400'
                       : 'bg-white/5 border-white/10 text-white placeholder-slate-500'
@@ -996,7 +996,7 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
                   onChange={(e) => setFormEmail(e.target.value)}
                   placeholder="name@example.com"
                   dir="ltr"
-                  className={`w-full rounded-xl px-3.5 py-2.5 text-xs font-outfit text-left border focus:outline-none focus:border-cyan-500 transition-all ${
+                  className={`w-full rounded-xl px-3.5 py-2.5 text-xs font-sans text-left border focus:outline-none focus:border-cyan-500 transition-all ${
                     isLight
                       ? 'bg-slate-50 border-slate-200 text-slate-800 placeholder-slate-400'
                       : 'bg-white/5 border-white/10 text-white placeholder-slate-500'
@@ -1178,7 +1178,7 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
                 {link.title || 'تماس تلفنی مستقیم'}
               </span>
               {phoneVal && (
-                <span className="text-[11px] font-outfit text-slate-400 block mt-0.5 tracking-wider truncate" dir="ltr">
+                <span className="text-[11px] font-sans text-slate-400 block mt-0.5 tracking-wider truncate" dir="ltr">
                   {formatDisplayValue(phoneVal)}
                 </span>
               )}
@@ -1226,7 +1226,7 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
                 {link.title || 'ارسال ایمیل مستقیم'}
               </span>
               {emailVal && (
-                <span className="text-[11px] font-outfit text-slate-400 block mt-0.5 tracking-wider truncate" dir="ltr">
+                <span className="text-[11px] font-sans text-slate-400 block mt-0.5 tracking-wider truncate" dir="ltr">
                   {formatDisplayValue(emailVal)}
                 </span>
               )}
@@ -1271,7 +1271,7 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
               <span className={`text-xs font-bold block truncate ${isLight ? 'text-slate-900' : 'text-white'}`}>
                 {meta.productTitle || link.title}
               </span>
-              <span className="text-xs font-outfit font-bold text-cyan-400 mt-1 block">
+              <span className="text-xs font-sans font-bold text-cyan-400 mt-1 block">
                 {meta.productPrice ? Number(meta.productPrice).toLocaleString('en-US') : '0'} {meta.productCurrency || 'AFN'}
               </span>
             </div>
@@ -1922,7 +1922,7 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
               }`}
             >
               <span>{isLtr ? 'Powered by ⚡' : isPashto ? 'جوړ شوی لخوا ⚡' : 'طراحی شده با ⚡'}</span>
-              <span className="text-cyan-400 font-bold font-outfit">Arya Link</span>
+              <span className="text-cyan-400 font-bold font-sans">Arya Link</span>
             </a>
           </motion.div>
         )}

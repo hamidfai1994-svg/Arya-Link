@@ -169,7 +169,7 @@ export default function AdminKycPage() {
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
               تایید احراز هویت مدارک (KYC Verification)
             </h1>
-            <Badge variant="cyan" className="font-outfit text-xs">
+            <Badge variant="cyan" className="font-sans text-xs">
               تیک آبی
             </Badge>
           </div>
@@ -273,7 +273,7 @@ export default function AdminKycPage() {
                             <span>{req.name}</span>
                             {req.isVerified && <CheckCircle2 className="w-3.5 h-3.5 text-cyan-500" />}
                           </div>
-                          <div className="text-[11px] text-muted-foreground font-outfit" dir="ltr">
+                          <div className="text-[11px] text-muted-foreground font-sans" dir="ltr">
                             {req.email}
                           </div>
                         </div>
@@ -290,7 +290,7 @@ export default function AdminKycPage() {
                     </TableCell>
 
                     {/* National ID */}
-                    <TableCell className="font-outfit text-xs font-bold text-foreground" dir="ltr">
+                    <TableCell className="font-sans text-xs font-bold text-foreground" dir="ltr">
                       {req.kycData?.nationalId || '---'}
                     </TableCell>
 
@@ -380,13 +380,13 @@ export default function AdminKycPage() {
                 </div>
                 <div>
                   <span className="text-muted-foreground block text-[11px]">شماره مدرک:</span>
-                  <span className="font-outfit font-bold text-cyan-500" dir="ltr">
+                  <span className="font-sans font-bold text-cyan-500" dir="ltr">
                     {reviewingKyc.kycData?.nationalId || '---'}
                   </span>
                 </div>
                 <div>
                   <span className="text-muted-foreground block text-[11px]">ایمیل:</span>
-                  <span className="font-outfit text-muted-foreground truncate block" dir="ltr">
+                  <span className="font-sans text-muted-foreground truncate block" dir="ltr">
                     {reviewingKyc.email}
                   </span>
                 </div>

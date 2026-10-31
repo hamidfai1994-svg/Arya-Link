@@ -453,7 +453,7 @@ function getDefaultModuleConfig(moduleType: LinkModuleType): { title: string; ur
         url: '#location',
         metadata: {
           address: 'کابل، شهر نو، جاده شهید مزاری',
-          workingHours: 'شنبه تا چهارشنبه: ۸:۰۰ الی ۱۶:۳۰',
+          workingHours: 'شنبه تا چهارشنبه: 8:00 الی 16:30',
           mapLink: '',
         },
       };

@@ -95,7 +95,7 @@ export function SiteLogo({
       <div
         style={{ width: `${width}px`, height: `${height}px` }}
         className={cn(
-          'rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white font-black font-outfit shadow-md shadow-cyan-500/25 shrink-0 select-none group-hover:scale-105 transition-transform duration-200',
+          'rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white font-black font-sans shadow-md shadow-cyan-500/25 shrink-0 select-none group-hover:scale-105 transition-transform duration-200',
           fontSizeClass,
           imageClassName
         )}
@@ -113,7 +113,7 @@ export function SiteLogo({
           <div className="flex items-center gap-1.5">
             <span
               className={cn(
-                'font-extrabold text-foreground tracking-tight font-outfit text-base sm:text-lg',
+                'font-extrabold text-foreground tracking-tight font-sans text-base sm:text-lg',
                 textClassName
               )}
             >

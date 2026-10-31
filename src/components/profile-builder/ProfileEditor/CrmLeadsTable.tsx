@@ -206,7 +206,7 @@ export const CrmLeadsTable: React.FC<CrmLeadsTableProps> = ({ profileAlias }) =>
         <div className="grid grid-cols-3 gap-2.5 pt-4 mt-4 border-t border-border/80">
           <div className="p-3 rounded-xl bg-card border border-border flex flex-col justify-between">
             <span className="text-[11px] text-muted-foreground font-medium">کل پیام‌ها</span>
-            <div className="text-lg font-bold text-foreground font-outfit mt-1 flex items-center justify-between">
+            <div className="text-lg font-bold text-foreground font-sans mt-1 flex items-center justify-between">
               <span>{totalLeads}</span>
               <Inbox className="w-4 h-4 text-muted-foreground/60" />
             </div>
@@ -217,7 +217,7 @@ export const CrmLeadsTable: React.FC<CrmLeadsTableProps> = ({ profileAlias }) =>
               <span>پیام‌های جدید</span>
               {newLeads > 0 && <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping"></span>}
             </span>
-            <div className="text-lg font-bold text-amber-600 dark:text-amber-400 font-outfit mt-1 flex items-center justify-between">
+            <div className="text-lg font-bold text-amber-600 dark:text-amber-400 font-sans mt-1 flex items-center justify-between">
               <span>{newLeads}</span>
               <Sparkles className="w-4 h-4 text-amber-500" />
             </div>
@@ -225,7 +225,7 @@ export const CrmLeadsTable: React.FC<CrmLeadsTableProps> = ({ profileAlias }) =>
 
           <div className="p-3 rounded-xl bg-card border border-border flex flex-col justify-between">
             <span className="text-[11px] text-muted-foreground font-medium">پاسخ داده شده</span>
-            <div className="text-lg font-bold text-emerald-600 dark:text-emerald-400 font-outfit mt-1 flex items-center justify-between">
+            <div className="text-lg font-bold text-emerald-600 dark:text-emerald-400 font-sans mt-1 flex items-center justify-between">
               <span>{contactedLeads}</span>
               <UserCheck className="w-4 h-4 text-emerald-500" />
             </div>
@@ -305,7 +305,7 @@ export const CrmLeadsTable: React.FC<CrmLeadsTableProps> = ({ profileAlias }) =>
                           {lead.name}
                         </div>
                         {lead.email && (
-                          <div className="text-[10px] text-muted-foreground font-outfit truncate max-w-[110px] sm:max-w-none" dir="ltr">
+                          <div className="text-[10px] text-muted-foreground font-sans truncate max-w-[110px] sm:max-w-none" dir="ltr">
                             {lead.email}
                           </div>
                         )}
@@ -316,7 +316,7 @@ export const CrmLeadsTable: React.FC<CrmLeadsTableProps> = ({ profileAlias }) =>
                   {/* Phone Number */}
                   <TableCell className="py-2.5 px-3">
                     <div className="flex items-center gap-1.5" dir="ltr">
-                      <span className="text-xs font-outfit font-semibold text-foreground">{lead.phone}</span>
+                      <span className="text-xs font-sans font-semibold text-foreground">{lead.phone}</span>
                       <button
                         type="button"
                         onClick={() => handleCopyPhone(lead.phone)}
@@ -421,7 +421,7 @@ export const CrmLeadsTable: React.FC<CrmLeadsTableProps> = ({ profileAlias }) =>
                 </div>
                 <div>
                   <h4 className="text-sm font-bold text-foreground">{selectedMessage.name}</h4>
-                  <span className="text-[11px] text-muted-foreground font-outfit" dir="ltr">{selectedMessage.phone}</span>
+                  <span className="text-[11px] text-muted-foreground font-sans" dir="ltr">{selectedMessage.phone}</span>
                 </div>
               </div>
               <span className="text-xs text-muted-foreground">{selectedMessage.dateStr}</span>

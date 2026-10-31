@@ -203,9 +203,9 @@ export function BentoGridFeatures() {
                     <div className="text-right">
                       <span className="text-xs font-bold text-foreground block">کارت پی وی سی NFC آریا لینک</span>
                       <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-xs font-black font-outfit text-cyan-500">1,200 AFN</span>
-                        <span className="text-[10px] text-muted-foreground line-through font-outfit">1,600</span>
-                        <span className="px-1.5 py-0.2 rounded-full bg-emerald-500/15 text-emerald-500 text-[9px] font-bold font-outfit">25% OFF</span>
+                        <span className="text-xs font-black font-sans text-cyan-500">1,200 AFN</span>
+                        <span className="text-[10px] text-muted-foreground line-through font-sans">1,600</span>
+                        <span className="px-1.5 py-0.2 rounded-full bg-emerald-500/15 text-emerald-500 text-[9px] font-bold font-sans">25% OFF</span>
                       </div>
                     </div>
                   </div>
@@ -363,7 +363,7 @@ export function BentoGridFeatures() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 mt-2.5">
-                    <span className="text-[10px] font-bold text-muted-foreground font-outfit">aryal.ink/farhad</span>
+                    <span className="text-[10px] font-bold text-muted-foreground font-sans">aryal.ink/farhad</span>
                   </div>
                 </div>
               </motion.div>
@@ -374,7 +374,7 @@ export function BentoGridFeatures() {
               className="pt-4 flex items-center justify-between text-[11px] text-muted-foreground relative z-10 border-t border-border/40 mt-5"
             >
               <span>دانلود با کیفیت وکتور:</span>
-              <div className="flex items-center gap-1.5 font-outfit font-bold text-[10px]">
+              <div className="flex items-center gap-1.5 font-sans font-bold text-[10px]">
                 <span className="px-2 py-0.5 rounded-md bg-muted border border-border">SVG</span>
                 <span className="px-2 py-0.5 rounded-md bg-muted border border-border">PNG HD</span>
               </div>
@@ -421,7 +421,7 @@ export function BentoGridFeatures() {
                     <MessageCircle className="w-4 h-4 text-emerald-400" />
                     <span className="font-bold text-foreground">گفتگوی مستقیم واتساپ</span>
                   </div>
-                  <span className="text-[10px] font-outfit text-emerald-400 font-bold">+540 Clicks</span>
+                  <span className="text-[10px] font-sans text-emerald-400 font-bold">+540 Clicks</span>
                 </div>
 
                 <div className="p-2.5 rounded-xl bg-muted/40 dark:bg-zinc-950/60 border border-pink-500/30 flex items-center justify-between text-xs">
@@ -429,7 +429,7 @@ export function BentoGridFeatures() {
                     <Instagram className="w-4 h-4 text-pink-400" />
                     <span className="font-bold text-foreground">پیج اینستاگرام کاری</span>
                   </div>
-                  <span className="text-[10px] font-outfit text-pink-400 font-bold">+1,280 Clicks</span>
+                  <span className="text-[10px] font-sans text-pink-400 font-bold">+1,280 Clicks</span>
                 </div>
 
                 <div className="p-2.5 rounded-xl bg-muted/40 dark:bg-zinc-950/60 border border-sky-500/30 flex items-center justify-between text-xs">
@@ -437,7 +437,7 @@ export function BentoGridFeatures() {
                     <Send className="w-4 h-4 text-sky-400" />
                     <span className="font-bold text-foreground">کانال رسمی تلگرام</span>
                   </div>
-                  <span className="text-[10px] font-outfit text-sky-400 font-bold">+310 Clicks</span>
+                  <span className="text-[10px] font-sans text-sky-400 font-bold">+310 Clicks</span>
                 </div>
               </motion.div>
             </motion.div>
@@ -492,11 +492,11 @@ export function BentoGridFeatures() {
                 <div className="flex items-center justify-between">
                   <div>
                     <span className="text-[10px] text-muted-foreground block">بازدید 7 روز اخیر</span>
-                    <span className="text-base font-black font-outfit text-foreground">+4,850</span>
+                    <span className="text-base font-black font-sans text-foreground">+4,850</span>
                   </div>
                   <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-500 text-[10px] font-bold">
                     <TrendingUp className="w-3 h-3" />
-                    <span className="font-outfit">+28%</span>
+                    <span className="font-sans">+28%</span>
                   </div>
                 </div>
 
@@ -511,7 +511,7 @@ export function BentoGridFeatures() {
                             : 'bg-muted-foreground/20'
                           }`}
                       />
-                      <span className="text-[8px] text-muted-foreground font-mono">
+                      <span className="text-[8px] text-muted-foreground font-sans">
                         {['ش', 'ی', 'د', 'س', 'چ', 'پ', 'ج'][i]}
                       </span>
                     </div>
@@ -525,7 +525,7 @@ export function BentoGridFeatures() {
               className="pt-4 flex items-center justify-between text-[11px] text-muted-foreground relative z-10 border-t border-border/40 mt-5"
             >
               <span>نرخ تبدیل (CTR):</span>
-              <span className="font-bold text-emerald-500 font-outfit text-xs">84.8%</span>
+              <span className="font-bold text-emerald-500 font-sans text-xs">84.8%</span>
             </motion.div>
           </motion.div>
 

@@ -172,7 +172,7 @@ export default function PayoutsPage() {
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
               تسویه حساب مالی
             </h1>
-            <Badge variant="destructive" className="font-outfit text-xs">
+            <Badge variant="destructive" className="font-sans text-xs">
               نیازمند احراز هویت
             </Badge>
           </div>
@@ -246,7 +246,7 @@ export default function PayoutsPage() {
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
               تسویه حساب مالی
             </h1>
-            <Badge variant="success" className="font-outfit text-xs flex items-center gap-1">
+            <Badge variant="success" className="font-sans text-xs flex items-center gap-1">
               <ShieldCheck className="w-3.5 h-3.5" />
               <span>احراز هویت شده</span>
             </Badge>
@@ -276,7 +276,7 @@ export default function PayoutsPage() {
               <Wallet className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-3xl font-black font-outfit text-emerald-500 tracking-tight">
+          <div className="text-3xl font-black font-sans text-emerald-500 tracking-tight">
             {balance.availableBalance.toLocaleString('en-US')}{' '}
             <span className="text-xs text-muted-foreground font-sans">افغانی</span>
           </div>
@@ -293,7 +293,7 @@ export default function PayoutsPage() {
               <Clock className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-3xl font-black font-outfit text-amber-500 tracking-tight">
+          <div className="text-3xl font-black font-sans text-amber-500 tracking-tight">
             {balance.pendingPayoutAmount.toLocaleString('en-US')}{' '}
             <span className="text-xs text-muted-foreground font-sans">افغانی</span>
           </div>
@@ -310,7 +310,7 @@ export default function PayoutsPage() {
               <CheckCircle2 className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-3xl font-black font-outfit text-foreground tracking-tight">
+          <div className="text-3xl font-black font-sans text-foreground tracking-tight">
             {balance.totalWithdrawn.toLocaleString('en-US')}{' '}
             <span className="text-xs text-muted-foreground font-sans">افغانی</span>
           </div>
@@ -350,12 +350,12 @@ export default function PayoutsPage() {
 
                   return (
                     <TableRow key={p.id} className="border-border">
-                      <TableCell className="font-outfit font-black text-xs text-foreground">
+                      <TableCell className="font-sans font-black text-xs text-foreground">
                         {p.amount.toLocaleString('en-US')} {p.currency}
                       </TableCell>
                       <TableCell className="text-xs font-semibold">{p.bankOrProvider}</TableCell>
                       <TableCell className="text-xs">{p.accountTitle}</TableCell>
-                      <TableCell className="font-outfit text-xs text-muted-foreground" dir="ltr">
+                      <TableCell className="font-sans text-xs text-muted-foreground" dir="ltr">
                         {p.accountNumber}
                       </TableCell>
                       <TableCell>
@@ -423,7 +423,7 @@ export default function PayoutsPage() {
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   required
-                  className="h-11 rounded-xl font-outfit text-sm text-left pl-3 pr-14"
+                  className="h-11 rounded-xl font-sans text-sm text-left pl-3 pr-14"
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground">
                   AFN
@@ -431,7 +431,7 @@ export default function PayoutsPage() {
               </div>
               <div className="flex justify-between text-[11px] text-muted-foreground">
                 <span>حداکثر قابل تسویه:</span>
-                <span className="font-bold text-emerald-500 font-outfit">
+                <span className="font-bold text-emerald-500 font-sans">
                   {balance.availableBalance.toLocaleString('en-US')} افغانی
                 </span>
               </div>
@@ -482,7 +482,7 @@ export default function PayoutsPage() {
                 value={accountNumber}
                 onChange={(e) => setAccountNumber(e.target.value)}
                 required
-                className="h-11 rounded-xl font-outfit text-xs text-left"
+                className="h-11 rounded-xl font-sans text-xs text-left"
               />
             </div>
 

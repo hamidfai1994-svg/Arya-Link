@@ -816,7 +816,7 @@ export function AuthPage({
                   <span className="font-bold block mb-0.5">{t.lockoutTitle}</span>
                   <span>
                     {t.lockoutDescPart1}{' '}
-                    <span className="font-mono font-bold text-rose-700 dark:text-rose-300 underline mx-1">
+                    <span className="font-sans font-bold text-rose-700 dark:text-rose-300 underline mx-1">
                       {formatLockoutTime(lockoutSecondsLeft)}
                     </span>{' '}
                     {t.lockoutDescPart2}
@@ -887,7 +887,7 @@ export function AuthPage({
                     onChange={(e) => setLoginEmail(e.target.value)}
                     placeholder={t.emailPlaceholder}
                     required
-                    className={`w-full h-11 rounded-xl bg-slate-100/70 dark:bg-slate-950/60 border border-slate-300/80 dark:border-white/10 text-slate-900 dark:text-white text-left placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 pl-10 pr-3 font-outfit text-sm transition-all ${
+                    className={`w-full h-11 rounded-xl bg-slate-100/70 dark:bg-slate-950/60 border border-slate-300/80 dark:border-white/10 text-slate-900 dark:text-white text-left placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 pl-10 pr-3 font-sans text-sm transition-all ${
                       isLockedOut ? 'opacity-50 cursor-not-allowed' : ''
                     }`}
                   />
@@ -909,7 +909,7 @@ export function AuthPage({
                     onChange={(e) => setLoginPassword(e.target.value)}
                     placeholder={t.passwordPlaceholder}
                     required
-                    className={`w-full h-11 rounded-xl bg-slate-100/70 dark:bg-slate-950/60 border border-slate-300/80 dark:border-white/10 text-slate-900 dark:text-white text-left placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 pl-10 pr-10 font-outfit text-sm transition-all ${
+                    className={`w-full h-11 rounded-xl bg-slate-100/70 dark:bg-slate-950/60 border border-slate-300/80 dark:border-white/10 text-slate-900 dark:text-white text-left placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 pl-10 pr-10 font-sans text-sm transition-all ${
                       isLockedOut ? 'opacity-50 cursor-not-allowed' : ''
                     }`}
                   />
@@ -1106,7 +1106,7 @@ export function AuthPage({
                     onChange={(e) => setRegisterEmail(e.target.value)}
                     placeholder={t.emailPlaceholder}
                     required
-                    className="w-full h-10 rounded-xl bg-slate-100/70 dark:bg-slate-950/60 border border-slate-300/80 dark:border-white/10 text-slate-900 dark:text-white text-left placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 pl-10 pr-3 font-outfit text-sm transition-all"
+                    className="w-full h-10 rounded-xl bg-slate-100/70 dark:bg-slate-950/60 border border-slate-300/80 dark:border-white/10 text-slate-900 dark:text-white text-left placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 pl-10 pr-3 font-sans text-sm transition-all"
                   />
                   <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 </div>
@@ -1141,7 +1141,7 @@ export function AuthPage({
                       placeholder={t.passwordPlaceholder}
                       required
                       minLength={6}
-                      className="w-full h-10 rounded-xl bg-slate-100/70 dark:bg-slate-950/60 border border-slate-300/80 dark:border-white/10 text-slate-900 dark:text-white text-left placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 pl-10 pr-3 font-outfit text-sm transition-all"
+                      className="w-full h-10 rounded-xl bg-slate-100/70 dark:bg-slate-950/60 border border-slate-300/80 dark:border-white/10 text-slate-900 dark:text-white text-left placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 pl-10 pr-3 font-sans text-sm transition-all"
                     />
                     <Lock className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                   </div>
@@ -1160,7 +1160,7 @@ export function AuthPage({
                       placeholder={t.passwordPlaceholder}
                       required
                       minLength={6}
-                      className="w-full h-10 rounded-xl bg-slate-100/70 dark:bg-slate-950/60 border border-slate-300/80 dark:border-white/10 text-slate-900 dark:text-white text-left placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 pl-10 pr-9 font-outfit text-sm transition-all"
+                      className="w-full h-10 rounded-xl bg-slate-100/70 dark:bg-slate-950/60 border border-slate-300/80 dark:border-white/10 text-slate-900 dark:text-white text-left placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 pl-10 pr-9 font-sans text-sm transition-all"
                     />
                     <button
                       type="button"
@@ -1418,7 +1418,7 @@ export function AuthPage({
                           onChange={(e) => setRecoveryEmail(e.target.value)}
                           placeholder={t.emailPlaceholder}
                           required
-                          className="w-full h-11 rounded-xl bg-slate-100/70 dark:bg-slate-950/70 border border-slate-300/80 dark:border-white/10 text-slate-900 dark:text-white text-left placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 pl-10 pr-3 font-outfit text-sm"
+                          className="w-full h-11 rounded-xl bg-slate-100/70 dark:bg-slate-950/70 border border-slate-300/80 dark:border-white/10 text-slate-900 dark:text-white text-left placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 pl-10 pr-3 font-sans text-sm"
                         />
                         <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                       </div>
@@ -1467,7 +1467,7 @@ export function AuthPage({
                     </h3>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
                       {t.recoveryStep2Subtitle}{' '}
-                      <span className="font-outfit font-semibold text-cyan-600 dark:text-cyan-400">
+                      <span className="font-sans font-semibold text-cyan-600 dark:text-cyan-400">
                         {recoveryEmail}
                       </span>
                     </p>
@@ -1487,7 +1487,7 @@ export function AuthPage({
                         onChange={(e) => setRecoveryOtp(e.target.value.replace(/[^0-9]/g, ''))}
                         placeholder={t.recoveryOtpPlaceholder}
                         required
-                        className="w-full h-12 rounded-xl bg-slate-100/70 dark:bg-slate-950/70 border border-slate-300/80 dark:border-white/10 text-slate-900 dark:text-white text-center tracking-[0.4em] font-mono text-xl font-bold placeholder:tracking-normal placeholder:font-outfit placeholder:text-slate-400 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
+                        className="w-full h-12 rounded-xl bg-slate-100/70 dark:bg-slate-950/70 border border-slate-300/80 dark:border-white/10 text-slate-900 dark:text-white text-center tracking-[0.4em] font-sans text-xl font-bold placeholder:tracking-normal placeholder:font-sans placeholder:text-slate-400 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
                       />
                     </div>
 
@@ -1506,7 +1506,7 @@ export function AuthPage({
                         <span>{t.recoveryResendCode}</span>
                       </button>
                       {resendCooldown > 0 && (
-                        <span className="font-mono text-[11px] text-slate-400">
+                        <span className="font-sans text-[11px] text-slate-400">
                           {resendCooldown}s
                         </span>
                       )}
@@ -1566,7 +1566,7 @@ export function AuthPage({
                           placeholder="••••••••"
                           required
                           minLength={6}
-                          className="w-full h-11 rounded-xl bg-slate-100/70 dark:bg-slate-950/70 border border-slate-300/80 dark:border-white/10 text-slate-900 dark:text-white text-left placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 pl-10 pr-10 font-outfit text-sm"
+                          className="w-full h-11 rounded-xl bg-slate-100/70 dark:bg-slate-950/70 border border-slate-300/80 dark:border-white/10 text-slate-900 dark:text-white text-left placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 pl-10 pr-10 font-sans text-sm"
                         />
                         <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                         <button
@@ -1593,7 +1593,7 @@ export function AuthPage({
                           placeholder="••••••••"
                           required
                           minLength={6}
-                          className="w-full h-11 rounded-xl bg-slate-100/70 dark:bg-slate-950/70 border border-slate-300/80 dark:border-white/10 text-slate-900 dark:text-white text-left placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 pl-10 pr-3 font-outfit text-sm"
+                          className="w-full h-11 rounded-xl bg-slate-100/70 dark:bg-slate-950/70 border border-slate-300/80 dark:border-white/10 text-slate-900 dark:text-white text-left placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 pl-10 pr-3 font-sans text-sm"
                         />
                         <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                       </div>

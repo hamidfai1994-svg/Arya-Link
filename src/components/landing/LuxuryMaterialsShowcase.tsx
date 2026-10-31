@@ -15,31 +15,29 @@ import {
   ArrowLeft,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-
-// =========================================================================
-// 1. DATA ARCHITECTURE (Mock Data for Future CMS & API Connection)
-// =========================================================================
+import { useLandingCms } from '@/context/LandingCmsContext';
 
 export interface CardMaterialItem {
   id: string;
   name: string;
   subtitle: string;
   materialType: 'pvc' | 'black_metal' | 'gold_steel' | 'wood';
-  orientation: 'horizontal' | 'vertical';
-  allowCustomUpload: boolean;
+  orientation?: 'horizontal' | 'vertical';
+  allowCustomUpload?: boolean;
   badge: string;
-  badgeStyle: string;
-  price: string;
+  badgeStyle?: string;
+  price: string | number;
   thickness: string;
   weight: string;
   chipset: string;
   description: string;
   features: string[];
-  gradientBg: string;
-  accentColor: string;
-  engravingColor: string;
-  foilEffect: string;
-  surfaceTexture: string;
+  gradientBg?: string;
+  accentColor?: string;
+  engravingColor?: string;
+  foilEffect?: string;
+  surfaceTexture?: string;
+  inStock?: boolean;
 }
 
 export const CARD_MATERIALS_DATA: CardMaterialItem[] = [
@@ -48,10 +46,7 @@ export const CARD_MATERIALS_DATA: CardMaterialItem[] = [
     name: 'پی‌وی‌سی مات مخملی',
     subtitle: 'Matte Obsidian PVC',
     materialType: 'pvc',
-    orientation: 'horizontal',
-    allowCustomUpload: true,
     badge: 'پرفروش‌ترین (Most Popular)',
-    badgeStyle: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20',
     price: '1,500 AFN',
     thickness: '0.84 mm',
     weight: '5g (فوق‌العاده سبک)',
@@ -63,21 +58,13 @@ export const CARD_MATERIALS_DATA: CardMaterialItem[] = [
       'تراشه NTAG216 سازگار با آیفون و اندروید',
       'چاپ باکیفیت UV صنعتی با وضوح بالا',
     ],
-    gradientBg: 'from-slate-900 via-slate-800 to-zinc-950',
-    accentColor: '#06b6d4',
-    engravingColor: 'text-white',
-    foilEffect: 'rgba(6, 182, 212, 0.4)',
-    surfaceTexture: 'matte',
   },
   {
     id: 'mat-black-metal',
     name: 'فلز مشکی تیتانیوم',
     subtitle: 'Black Titanium Metal',
     materialType: 'black_metal',
-    orientation: 'horizontal',
-    allowCustomUpload: true,
     badge: 'ویژه مدیران (Executive)',
-    badgeStyle: 'bg-slate-500/10 text-slate-700 dark:text-slate-300 border-slate-500/20',
     price: '3,500 AFN',
     thickness: '0.80 mm',
     weight: '24g (وزن سنگین لوکس)',
@@ -89,21 +76,13 @@ export const CARD_MATERIALS_DATA: CardMaterialItem[] = [
       'حکاکی دقیق لیزر فیبر با بازتاب نقره‌ای',
       'ماژول هیبریدی NFC تقویت‌شده ضدتداخل فلز',
     ],
-    gradientBg: 'from-zinc-900 via-stone-900 to-black',
-    accentColor: '#94a3b8',
-    engravingColor: 'text-slate-100',
-    foilEffect: 'rgba(255, 255, 255, 0.45)',
-    surfaceTexture: 'brushed_metal',
   },
   {
     id: 'mat-gold-steel',
     name: 'استیل طلایی آینه‌ای',
     subtitle: '24K Gold Mirror Steel',
     materialType: 'gold_steel',
-    orientation: 'horizontal',
-    allowCustomUpload: true,
     badge: 'فوق لوکس (Ultra Luxury)',
-    badgeStyle: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
     price: '3,900 AFN',
     thickness: '0.80 mm',
     weight: '24g (وزن سنگین لوکس)',
@@ -115,21 +94,13 @@ export const CARD_MATERIALS_DATA: CardMaterialItem[] = [
       'حکاکی لیزری عمیق با درخشش متالیک طلایی',
       'بسته‌بندی اختصاصی در هاردباکس کادویی مخملین',
     ],
-    gradientBg: 'from-[#451a03] via-[#78350f] to-[#1c1917]',
-    accentColor: '#f59e0b',
-    engravingColor: 'text-amber-200',
-    foilEffect: 'rgba(254, 240, 138, 0.55)',
-    surfaceTexture: 'mirror_gold',
   },
   {
     id: 'mat-wood',
     name: 'چوب طبیعی گردو',
     subtitle: 'Eco Walnut Wood',
     materialType: 'wood',
-    orientation: 'horizontal',
-    allowCustomUpload: true,
     badge: 'طبیعی و ارگانیک (Eco-Friendly)',
-    badgeStyle: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
     price: '2,400 AFN',
     thickness: '1.20 mm',
     weight: '7g (سبک و طبیعی)',
@@ -141,42 +112,69 @@ export const CARD_MATERIALS_DATA: CardMaterialItem[] = [
       'تراشه کپسولی NFC تعبیه‌شده در لایه‌های چوب',
       'پوشش روغن گیاهی محافظ در برابر رطوبت و تغییر رنگ',
     ],
+  },
+];
+
+const MATERIAL_STYLING: Record<string, {
+  gradientBg: string;
+  accentColor: string;
+  engravingColor: string;
+  foilEffect: string;
+  badgeStyle: string;
+}> = {
+  pvc: {
+    gradientBg: 'from-slate-900 via-slate-800 to-zinc-950',
+    accentColor: '#06b6d4',
+    engravingColor: 'text-white',
+    foilEffect: 'rgba(6, 182, 212, 0.4)',
+    badgeStyle: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20',
+  },
+  black_metal: {
+    gradientBg: 'from-zinc-900 via-stone-900 to-black',
+    accentColor: '#94a3b8',
+    engravingColor: 'text-slate-100',
+    foilEffect: 'rgba(255, 255, 255, 0.45)',
+    badgeStyle: 'bg-slate-500/10 text-slate-700 dark:text-slate-300 border-slate-500/20',
+  },
+  gold_steel: {
+    gradientBg: 'from-[#451a03] via-[#78350f] to-[#1c1917]',
+    accentColor: '#f59e0b',
+    engravingColor: 'text-amber-200',
+    foilEffect: 'rgba(254, 240, 138, 0.55)',
+    badgeStyle: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
+  },
+  wood: {
     gradientBg: 'from-[#3e2723] via-[#4e342e] to-[#271b18]',
     accentColor: '#10b981',
     engravingColor: 'text-amber-100',
     foilEffect: 'rgba(217, 119, 6, 0.4)',
-    surfaceTexture: 'wood_grain',
+    badgeStyle: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
   },
-];
+};
 
 const EASE_SNAPPY = [0, 0.7, 0.2, 1] as const;
-
-// =========================================================================
-// 2. INTERACTIVE 3D TILT & DYNAMIC GLARE CARD COMPONENT
-// =========================================================================
 
 function InteractiveMaterialCard({ material }: { material: CardMaterialItem }) {
   const cardRef = useRef<HTMLDivElement>(null);
 
-  // Motion values for normalized cursor coordinates (-0.5 to 0.5)
+  const styling = MATERIAL_STYLING[material.materialType] || MATERIAL_STYLING.pvc;
+
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
 
-  // Smooth springs for realistic inertia physics
   const springConfig = { stiffness: 280, damping: 22, mass: 0.5 };
   const smoothMouseX = useSpring(mouseX, springConfig);
   const smoothMouseY = useSpring(mouseY, springConfig);
 
-  // 3D Tilt angles (X and Y axis)
   const rotateX = useTransform(smoothMouseY, [-0.5, 0.5], [14, -14]);
   const rotateY = useTransform(smoothMouseX, [-0.5, 0.5], [-16, 16]);
 
-  // Dynamic Glare coordinates (from 0% to 100%)
   const glareX = useTransform(smoothMouseX, [-0.5, 0.5], ['0%', '100%']);
   const glareY = useTransform(smoothMouseY, [-0.5, 0.5], ['0%', '100%']);
   const glareOpacity = useTransform(smoothMouseX, [-0.5, 0, 0.5], [0.85, 0.4, 0.85]);
 
-  const glareBackground = useMotionTemplate`radial-gradient(circle 260px at ${glareX} ${glareY}, ${material.foilEffect} 0%, rgba(255, 255, 255, 0.1) 40%, transparent 75%)`;
+  const foilEffect = material.foilEffect || styling.foilEffect;
+  const glareBackground = useMotionTemplate`radial-gradient(circle 260px at ${glareX} ${glareY}, ${foilEffect} 0%, rgba(255, 255, 255, 0.1) 40%, transparent 75%)`;
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!cardRef.current) return;
@@ -192,14 +190,18 @@ function InteractiveMaterialCard({ material }: { material: CardMaterialItem }) {
     mouseY.set(0);
   };
 
+  const displayPrice = typeof material.price === 'number'
+    ? `${material.price.toLocaleString('en-US')} AFN`
+    : material.price;
+
   return (
-    <div className="flex flex-col h-full justify-between p-6 rounded-3xl bg-white/70 dark:bg-slate-900/60 border border-slate-200/80 dark:border-white/10 shadow-sm hover:shadow-2xl hover:border-cyan-500/40 transition-all duration-300 group backdrop-blur-xl">
+    <div className="flex flex-col h-full justify-between p-6 rounded-3xl bg-white/70 dark:bg-slate-900/60 border border-slate-200/80 dark:border-white/10 shadow-sm hover:shadow-2xl hover:border-cyan-500/40 transition-all duration-300 group backdrop-blur-xl font-sans">
       {/* 3D Perspective Card Display */}
       <div
         ref={cardRef}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
-        className="w-full aspect-[1.586/1] relative cursor-pointer select-none perspective-1000 mb-6 rounded-2xl"
+        className="w-full aspect-[1.586/1] relative cursor-pointer select-none mb-6 rounded-2xl"
         style={{ perspective: 1000 }}
       >
         <motion.div
@@ -208,9 +210,8 @@ function InteractiveMaterialCard({ material }: { material: CardMaterialItem }) {
             rotateY,
             transformStyle: 'preserve-3d',
           }}
-          className={`w-full h-full rounded-2xl p-5 shadow-2xl relative overflow-hidden border border-white/20 transition-shadow duration-300 flex flex-col justify-between bg-gradient-to-br ${material.gradientBg}`}
+          className={`w-full h-full rounded-2xl p-5 shadow-2xl relative overflow-hidden border border-white/20 transition-shadow duration-300 flex flex-col justify-between bg-gradient-to-br ${material.gradientBg || styling.gradientBg}`}
         >
-          {/* Surface Texture Layer */}
           {material.materialType === 'black_metal' && (
             <div className="absolute inset-0 bg-[linear-gradient(110deg,transparent_20%,rgba(255,255,255,0.08)_40%,transparent_60%)] pointer-events-none" />
           )}
@@ -232,20 +233,20 @@ function InteractiveMaterialCard({ material }: { material: CardMaterialItem }) {
             className="absolute inset-0 pointer-events-none z-20 mix-blend-overlay transition-opacity duration-300"
           />
 
-          {/* Front Card Header: Brand & Contactless Icon */}
+          {/* Front Card Header */}
           <div className="flex items-center justify-between relative z-10" style={{ transform: 'translateZ(24px)' }}>
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center font-black font-outfit text-white text-xs">
+              <div className="w-7 h-7 rounded-lg bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center font-black text-white text-xs">
                 A
               </div>
-              <span className="text-[11px] font-bold font-outfit tracking-wider uppercase text-white/90">
+              <span className="text-[11px] font-bold tracking-wider uppercase text-white/90">
                 Arya Link
               </span>
             </div>
 
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/15">
               <Zap className="w-3.5 h-3.5 text-cyan-400" />
-              <span className="text-[9px] font-bold tracking-widest text-white/80 font-outfit uppercase">
+              <span className="text-[9px] font-bold tracking-widest text-white/80 uppercase">
                 NFC
               </span>
             </div>
@@ -260,25 +261,25 @@ function InteractiveMaterialCard({ material }: { material: CardMaterialItem }) {
               </div>
             </div>
 
-            <span className="text-[10px] font-outfit tracking-widest uppercase opacity-60 text-white">
-              {material.chipset.split(' ')[0]}
+            <span className="text-[10px] tracking-widest uppercase opacity-60 text-white font-sans">
+              {material.chipset ? material.chipset.split(' ')[0] : 'NTAG216'}
             </span>
           </div>
 
-          {/* Front Card Bottom: User Name & Physical Card Finish */}
+          {/* Front Card Bottom */}
           <div className="pt-2 border-t border-white/15 flex items-end justify-between relative z-10" style={{ transform: 'translateZ(22px)' }}>
             <div className="space-y-0.5">
               <h4
-                className={`text-sm font-extrabold tracking-tight truncate ${material.engravingColor} drop-shadow-sm`}
+                className={`text-sm font-extrabold tracking-tight truncate ${material.engravingColor || styling.engravingColor} drop-shadow-sm`}
               >
                 {material.name}
               </h4>
-              <p className="text-[10px] text-white/70 font-outfit tracking-wide truncate">
+              <p className="text-[10px] text-white/70 tracking-wide truncate">
                 {material.subtitle}
               </p>
             </div>
 
-            <span className="text-[9px] font-outfit uppercase text-white/60 tracking-wider">
+            <span className="text-[9px] uppercase text-white/60 tracking-wider">
               ISO 7810
             </span>
           </div>
@@ -289,11 +290,11 @@ function InteractiveMaterialCard({ material }: { material: CardMaterialItem }) {
       <div className="space-y-4 flex-1 flex flex-col justify-between">
         <div className="space-y-2.5">
           <div className="flex items-center justify-between">
-            <span className={`text-[11px] font-bold px-3 py-1 rounded-full border ${material.badgeStyle}`}>
+            <span className={`text-[11px] font-bold px-3 py-1 rounded-full border ${material.badgeStyle || styling.badgeStyle}`}>
               {material.badge}
             </span>
-            <span className="text-lg font-black font-outfit text-slate-900 dark:text-white">
-              {material.price}
+            <span className="text-lg font-black text-slate-900 dark:text-white" dir="ltr">
+              {displayPrice}
             </span>
           </div>
 
@@ -333,23 +334,16 @@ function InteractiveMaterialCard({ material }: { material: CardMaterialItem }) {
   );
 }
 
-// =========================================================================
-// 3. MAIN SECTION COMPONENT (Dynamic & CMS-Ready)
-// =========================================================================
+export function LuxuryMaterialsShowcase() {
+  const { materials } = useLandingCms();
 
-export function LuxuryMaterialsShowcase({
-  materials = CARD_MATERIALS_DATA,
-}: {
-  materials?: CardMaterialItem[];
-}) {
   return (
-    <section id="luxury-materials" className="py-20 sm:py-28 border-t border-border/80 relative overflow-hidden">
+    <section id="luxury-materials" className="py-20 sm:py-28 border-t border-border/80 relative overflow-hidden font-sans">
       {/* Background Ambient Glows */}
       <div className="absolute top-1/4 right-10 w-[500px] h-[350px] bg-cyan-500/5 rounded-full blur-[140px] pointer-events-none -z-10" />
       <div className="absolute bottom-10 left-10 w-[500px] h-[350px] bg-amber-500/5 rounded-full blur-[140px] pointer-events-none -z-10" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
-        {/* Section Header (Badges cleaned up as requested) */}
         <motion.div
           initial={{ opacity: 0, y: 22 }}
           whileInView={{ opacity: 1, y: 0 }}

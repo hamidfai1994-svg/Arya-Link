@@ -111,7 +111,7 @@ export default function ServicesPage() {
                     <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center group-hover:scale-105 transition-transform">
                       {getServiceIcon(service.icon)}
                     </div>
-                    <Badge variant="outline" className="text-xs font-bold font-outfit text-cyan-500 border-cyan-500/30">
+                    <Badge variant="outline" className="text-xs font-bold font-sans text-cyan-500 border-cyan-500/30">
                       {service.pricingInfo}
                     </Badge>
                   </div>

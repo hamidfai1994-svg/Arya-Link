@@ -818,7 +818,7 @@ function OrderWizardInner() {
             <div className="bg-black/40 border border-white/10 rounded-2xl p-5 text-right space-y-3 text-xs">
               <div className="flex justify-between items-center border-b border-white/5 pb-2">
                 <span className="text-slate-400">شماره رهگیری سفارش:</span>
-                <span className="font-mono font-bold text-cyan-400 text-sm">{orderSuccessData.orderNumber}</span>
+                <span className="font-sans font-bold text-cyan-400 text-sm">{orderSuccessData.orderNumber}</span>
               </div>
               <div className="flex justify-between items-center border-b border-white/5 pb-2">
                 <span className="text-slate-400">تحویل‌گیرنده:</span>
@@ -962,7 +962,7 @@ function OrderWizardInner() {
                                 </div>
                                 <div className="min-w-0 text-right">
                                   <div className="text-xs font-bold text-white truncate">{p.displayName}</div>
-                                  <div className="text-[11px] font-mono text-cyan-400 truncate" dir="ltr">
+                                  <div className="text-[11px] font-sans text-cyan-400 truncate" dir="ltr">
                                     aryal.ink/{p.alias}
                                   </div>
                                 </div>
@@ -1016,7 +1016,7 @@ function OrderWizardInner() {
                       {selectedLinkType === 'custom' && (
                         <div className="mt-3 pt-3 border-t border-white/10">
                           <div className="relative flex items-center" dir="ltr">
-                            <span className="absolute left-3 text-xs font-mono text-slate-400 select-none">
+                            <span className="absolute left-3 text-xs font-sans text-slate-400 select-none">
                               https://aryal.ink/
                             </span>
                             <Input
@@ -1024,11 +1024,11 @@ function OrderWizardInner() {
                               value={customLinkAlias}
                               onChange={(e) => setCustomLinkAlias(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''))}
                               placeholder="yourname"
-                              className="pl-36 pr-4 h-11 bg-black/50 border-white/20 text-white font-mono text-xs rounded-xl focus:border-cyan-400"
+                              className="pl-36 pr-4 h-11 bg-black/50 border-white/20 text-white font-sans text-xs rounded-xl focus:border-cyan-400"
                             />
                           </div>
                           <p className="text-[11px] text-slate-400 mt-1.5 text-right">
-                            پیش‌نمایش آدرس نهایی: <span className="font-mono text-cyan-400" dir="ltr">{resolvedCardUrl}</span>
+                            پیش‌نمایش آدرس نهایی: <span className="font-sans text-cyan-400" dir="ltr">{resolvedCardUrl}</span>
                           </p>
                         </div>
                       )}
@@ -1156,7 +1156,7 @@ function OrderWizardInner() {
                                 <div className="w-4 h-4 rounded-full border border-white/40 flex items-center justify-center">
                                   <Zap className="w-2.5 h-2.5" style={{ color: tpl.accentColor }} />
                                 </div>
-                                <span className="font-mono text-[8px] font-bold tracking-widest text-white/70">
+                                <span className="font-sans text-[8px] font-bold tracking-widest text-white/70">
                                   ARYA LINK
                                 </span>
                               </div>
@@ -1206,7 +1206,7 @@ function OrderWizardInner() {
 
                             <div className="flex items-center justify-between pt-2 border-t border-white/10 text-xs">
                               <span className="text-slate-400 text-[11px]">{tpl.materialName}</span>
-                              <span className="font-bold text-cyan-400 font-mono">
+                              <span className="font-bold text-cyan-400 font-sans">
                                 {tpl.basePrice.toLocaleString()} AFN
                               </span>
                             </div>
@@ -1353,7 +1353,7 @@ function OrderWizardInner() {
                       <div className="w-full flex items-center justify-between pb-4 border-b border-white/10 mb-6">
                         <div className="text-right">
                           <span className="text-xs font-bold text-white block">پیش‌نمایش زنده کارت فیزیکی</span>
-                          <span className="text-[11px] text-cyan-400 font-mono">مدل: {activeTemplate.name}</span>
+                          <span className="text-[11px] text-cyan-400 font-sans">مدل: {activeTemplate.name}</span>
                         </div>
 
                         {/* Flip Card Toggle Button */}
@@ -1396,7 +1396,7 @@ function OrderWizardInner() {
                                 <div className="w-7 h-7 rounded-lg bg-black/40 border border-white/20 flex items-center justify-center">
                                   <Zap className="w-4 h-4" style={{ color: activeTemplate.accentColor }} />
                                 </div>
-                                <span className="font-mono text-[9px] font-black tracking-widest text-white/80">
+                                <span className="font-sans text-[9px] font-black tracking-widest text-white/80">
                                   NFC ENABLED
                                 </span>
                               </div>
@@ -1409,7 +1409,7 @@ function OrderWizardInner() {
                                   className="h-7 max-w-[80px] object-contain filter drop-shadow-md"
                                 />
                               ) : (
-                                <div className="font-mono text-[10px] font-bold text-white/50 tracking-wider">
+                                <div className="font-sans text-[10px] font-bold text-white/50 tracking-wider">
                                   {personalization.companyName || 'ARYA LINK'}
                                 </div>
                               )}
@@ -1444,7 +1444,7 @@ function OrderWizardInner() {
                               <div className="text-[11px] font-medium text-white/70 truncate">
                                 {personalization.jobTitle || 'موقعیت شغلی یا عنوان سازمان'}
                               </div>
-                              <div className="text-[9px] font-mono text-cyan-400/90 tracking-wider pt-0.5" dir="ltr">
+                              <div className="text-[9px] font-sans text-cyan-400/90 tracking-wider pt-0.5" dir="ltr">
                                 {resolvedCardUrl}
                               </div>
                             </div>
@@ -1459,7 +1459,7 @@ function OrderWizardInner() {
                           >
                             {/* Magnetic Stripe / Tech Bar */}
                             <div className="w-full h-8 bg-zinc-900 border-y border-white/10 -mx-5 px-5 flex items-center justify-end">
-                              <span className="font-mono text-[8px] text-white/30 tracking-widest">
+                              <span className="font-sans text-[8px] text-white/30 tracking-widest">
                                 ARYA-NFC-SECURE-CHIP-V4
                               </span>
                             </div>
@@ -1480,14 +1480,14 @@ function OrderWizardInner() {
                                 <p className="text-[9px] text-slate-400 leading-relaxed">
                                   گوشی خود را به این کارت نزدیک کنید یا با دوربین کد QR را اسکن فرمایید.
                                 </p>
-                                <div className="font-mono text-[9px] text-cyan-400 truncate" dir="ltr">
+                                <div className="font-sans text-[9px] text-cyan-400 truncate" dir="ltr">
                                   {resolvedCardUrl}
                                 </div>
                               </div>
                             </div>
 
                             {/* Footer Signature */}
-                            <div className="flex items-center justify-between border-t border-white/10 pt-2 text-[8px] text-slate-500 font-mono">
+                            <div className="flex items-center justify-between border-t border-white/10 pt-2 text-[8px] text-slate-500 font-sans">
                               <span>MADE WITH ARYA LINK</span>
                               <span>TAG: NTAG216</span>
                             </div>
@@ -1703,7 +1703,7 @@ function OrderWizardInner() {
                             onChange={(e) => setShipping((prev) => ({ ...prev, phone: e.target.value }))}
                             placeholder="+93 79 123 4567"
                             dir="ltr"
-                            className="h-11 bg-black/40 border-white/15 text-white rounded-xl text-xs font-mono"
+                            className="h-11 bg-black/40 border-white/15 text-white rounded-xl text-xs font-sans"
                           />
                         </div>
                       </div>
@@ -1783,7 +1783,7 @@ function OrderWizardInner() {
                         <div className="min-w-0 text-right flex-1">
                           <div className="text-xs font-bold text-white truncate">{activeTemplate.name}</div>
                           <div className="text-[11px] text-slate-400 truncate">{activeTemplate.materialName}</div>
-                          <div className="text-[10px] text-cyan-400 font-mono truncate" dir="ltr">
+                          <div className="text-[10px] text-cyan-400 font-sans truncate" dir="ltr">
                             {resolvedCardUrl}
                           </div>
                         </div>
@@ -1800,7 +1800,7 @@ function OrderWizardInner() {
                           >
                             -
                           </button>
-                          <span className="font-mono font-bold text-sm text-cyan-400 w-4 text-center">
+                          <span className="font-sans font-bold text-sm text-cyan-400 w-4 text-center">
                             {quantity}
                           </span>
                           <button
@@ -1817,7 +1817,7 @@ function OrderWizardInner() {
                       <div className="space-y-2.5 text-xs border-y border-white/10 py-4">
                         <div className="flex justify-between items-center text-slate-300">
                           <span>قیمت واحد کارت ({activeTemplate.name}):</span>
-                          <span className="font-mono">{baseCardPrice.toLocaleString()} AFN</span>
+                          <span className="font-sans">{baseCardPrice.toLocaleString()} AFN</span>
                         </div>
                         <div className="flex justify-between items-center text-slate-300">
                           <span>کدگذاری و هماهنگ‌سازی تراشه NFC:</span>
@@ -1829,14 +1829,14 @@ function OrderWizardInner() {
                         </div>
                         <div className="flex justify-between items-center text-slate-300">
                           <span>هزینه پست اکسپرس در سراسر افغانستان:</span>
-                          <span className="font-mono">{shippingFee.toLocaleString()} AFN</span>
+                          <span className="font-sans">{shippingFee.toLocaleString()} AFN</span>
                         </div>
                       </div>
 
                       {/* Total */}
                       <div className="flex justify-between items-center text-sm font-bold pt-1">
                         <span className="text-white">مجموع کل قابل پرداخت:</span>
-                        <span className="font-mono text-cyan-400 text-lg">
+                        <span className="font-sans text-cyan-400 text-lg">
                           {totalPrice.toLocaleString()} AFN
                         </span>
                       </div>

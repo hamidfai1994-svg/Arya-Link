@@ -39,7 +39,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               <span className="font-extrabold text-foreground text-sm tracking-tight hidden sm:inline">
                 سامانه جامع مدیریت سازمانی آریا لینک
               </span>
-              <Badge className="bg-rose-500/15 text-rose-500 border border-rose-500/30 text-[10px] font-mono">
+              <Badge className="bg-rose-500/15 text-rose-500 border border-rose-500/30 text-[10px] font-sans">
                 {role.toUpperCase()}
               </Badge>
             </div>
@@ -47,7 +47,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
           {/* Right utility items */}
           <div className="flex items-center gap-3">
-            <span className="text-xs text-muted-foreground hidden md:inline font-outfit" dir="ltr">
+            <span className="text-xs text-muted-foreground hidden md:inline font-sans" dir="ltr">
               Server Time: {new Date().toLocaleTimeString('en-US')}
             </span>
             <ThemeToggle />

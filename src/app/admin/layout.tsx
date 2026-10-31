@@ -36,7 +36,7 @@ export default async function AdminLayout({
           </div>
 
           <div className="space-y-2">
-            <span className="text-xs font-black font-outfit uppercase tracking-widest text-rose-400">
+            <span className="text-xs font-black font-sans uppercase tracking-widest text-rose-400">
               HTTP 403 - FORBIDDEN
             </span>
             <h1 className="text-xl font-black text-white">

@@ -180,7 +180,7 @@ export const ProfileSwitcher: React.FC = () => {
               <Layers className="w-3.5 h-3.5 text-cyan-500" />
               <span>پروفایل‌های شما</span>
             </div>
-            <span className="text-[10px] font-outfit px-1.5 py-0.5 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold">
+            <span className="text-[10px] font-sans px-1.5 py-0.5 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold">
               {profilesList.length} پروفایل
             </span>
           </div>
@@ -336,7 +336,7 @@ export const ProfileSwitcher: React.FC = () => {
                 شناسه آدرس اختصاصی (Alias)
               </label>
               <div className="flex items-center rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 overflow-hidden focus-within:border-cyan-500">
-                <span className="px-3 py-2 text-xs font-outfit text-slate-400 border-l border-slate-200 dark:border-slate-700 select-none bg-slate-100 dark:bg-slate-800" dir="ltr">
+                <span className="px-3 py-2 text-xs font-sans text-slate-400 border-l border-slate-200 dark:border-slate-700 select-none bg-slate-100 dark:bg-slate-800" dir="ltr">
                   aryal.ink/
                 </span>
                 <input
@@ -344,7 +344,7 @@ export const ProfileSwitcher: React.FC = () => {
                   value={newAlias}
                   onChange={(e) => setNewAlias(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''))}
                   placeholder="my-business"
-                  className="w-full bg-transparent border-0 py-2 px-3 text-xs font-outfit text-slate-900 dark:text-white focus:outline-none text-left"
+                  className="w-full bg-transparent border-0 py-2 px-3 text-xs font-sans text-slate-900 dark:text-white focus:outline-none text-left"
                   dir="ltr"
                 />
               </div>

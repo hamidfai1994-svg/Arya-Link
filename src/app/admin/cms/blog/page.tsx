@@ -256,7 +256,7 @@ export default function AdminBlogCmsPage() {
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
               مدیریت سه‌زبانه بلاگ و مقالات (Multilingual Blog CMS)
             </h1>
-            <Badge variant="cyan" className="font-outfit text-xs">
+            <Badge variant="cyan" className="font-sans text-xs">
               CMS 3-LANG
             </Badge>
           </div>
@@ -300,7 +300,7 @@ export default function AdminBlogCmsPage() {
           <Search className="w-4 h-4 text-muted-foreground absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
         </div>
 
-        <div className="flex items-center gap-2 text-xs text-muted-foreground font-outfit">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground font-sans">
           <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
           <span>{filteredPosts.length} مقاله ثبت‌شده</span>
         </div>
@@ -401,7 +401,7 @@ export default function AdminBlogCmsPage() {
 
                       <TableCell className="text-xs text-muted-foreground">{p.author}</TableCell>
 
-                      <TableCell className="font-outfit text-xs font-bold text-foreground">
+                      <TableCell className="font-sans text-xs font-bold text-foreground">
                         {p.viewsCount || 0}
                       </TableCell>
 
@@ -516,7 +516,7 @@ export default function AdminBlogCmsPage() {
                   value={slug}
                   onChange={(e) => setSlug(e.target.value)}
                   placeholder="nfc-smart-cards-guide"
-                  className="h-10 rounded-xl text-xs font-outfit"
+                  className="h-10 rounded-xl text-xs font-sans"
                   dir="ltr"
                   required
                 />
@@ -528,7 +528,7 @@ export default function AdminBlogCmsPage() {
                   value={coverImage}
                   onChange={(e) => setCoverImage(e.target.value)}
                   placeholder="https://... یا /uploads/media/..."
-                  className="h-10 rounded-xl text-xs font-outfit"
+                  className="h-10 rounded-xl text-xs font-sans"
                   dir="ltr"
                 />
               </div>

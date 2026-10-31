@@ -245,7 +245,7 @@ export default function AdminServicesPage() {
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
               مدیریت سه‌زبانه خدمات شرکت (Multilingual Services)
             </h1>
-            <Badge variant="cyan" className="font-outfit text-xs">
+            <Badge variant="cyan" className="font-sans text-xs">
               CMS 3-LANG
             </Badge>
           </div>
@@ -315,7 +315,7 @@ export default function AdminServicesPage() {
 
                   return (
                     <TableRow key={item._id} className="border-border hover:bg-muted/40 transition-colors">
-                      <TableCell className="font-outfit text-xs font-bold text-muted-foreground">
+                      <TableCell className="font-sans text-xs font-bold text-muted-foreground">
                         #{item.order}
                       </TableCell>
 
@@ -323,7 +323,7 @@ export default function AdminServicesPage() {
                         <div className="space-y-0.5">
                           <div className="font-bold text-xs text-foreground flex items-center gap-1.5">
                             <span>{titleDa}</span>
-                            <span className="text-[10px] text-muted-foreground font-outfit" dir="ltr">
+                            <span className="text-[10px] text-muted-foreground font-sans" dir="ltr">
                               /{item.slug}
                             </span>
                           </div>
@@ -349,7 +349,7 @@ export default function AdminServicesPage() {
                         {audienceDa}
                       </TableCell>
 
-                      <TableCell className="text-xs font-bold font-outfit text-emerald-500">
+                      <TableCell className="text-xs font-bold font-sans text-emerald-500">
                         {item.pricingInfo}
                       </TableCell>
 
@@ -449,7 +449,7 @@ export default function AdminServicesPage() {
                   value={slug}
                   onChange={(e) => setSlug(e.target.value)}
                   placeholder="nfc-cards"
-                  className="h-10 rounded-xl text-xs font-outfit"
+                  className="h-10 rounded-xl text-xs font-sans"
                   dir="ltr"
                   required
                 />
@@ -514,7 +514,7 @@ export default function AdminServicesPage() {
                 onChange={(e) => setFeaturesStr(e.target.value)}
                 rows={3}
                 placeholder="چیپ NTAG216 اصلی&#10;چاپ دو رو با روکش UV&#10;پنل مدیریت اختصاصی"
-                className="flex min-h-[80px] w-full rounded-xl border border-input bg-background/50 px-3.5 py-2.5 text-xs font-mono ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all font-sans"
+                className="flex min-h-[80px] w-full rounded-xl border border-input bg-background/50 px-3.5 py-2.5 text-xs font-sans ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all font-sans"
               />
             </div>
 
@@ -538,7 +538,7 @@ export default function AdminServicesPage() {
                   type="number"
                   value={order}
                   onChange={(e) => setOrder(Number(e.target.value))}
-                  className="w-20 h-8 rounded-lg text-xs font-outfit"
+                  className="w-20 h-8 rounded-lg text-xs font-sans"
                 />
               </div>
             </div>

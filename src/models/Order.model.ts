@@ -35,6 +35,10 @@ export interface IOrderDocument extends Document {
   trackingNumber?: string;
   cardSpecs?: IOrderCardSpecs;
   notes?: string;
+  isDeleted?: boolean;
+  deletedAt?: Date;
+  deletedBy?: string;
+  deletedReason?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -83,6 +87,10 @@ const OrderSchema = new Schema<IOrderDocument>(
       customArtworkBack: { type: String, default: '' },
     },
     notes: { type: String, default: '' },
+    isDeleted: { type: Boolean, default: false, index: true },
+    deletedAt: { type: Date },
+    deletedBy: { type: String },
+    deletedReason: { type: String },
   },
   { timestamps: true }
 );

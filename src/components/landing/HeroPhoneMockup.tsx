@@ -40,7 +40,7 @@ function DeviceClock() {
 
   return (
     <span
-      className="font-outfit font-bold tracking-tight text-white text-[11px]"
+      className="font-sans font-bold tracking-tight text-white text-[11px]"
       suppressHydrationWarning
     >
       {time}
@@ -223,10 +223,10 @@ export function HeroPhoneMockup({ smoothX, smoothY }: HeroPhoneMockupProps) {
             <TrendingUp className="w-4 h-4" />
           </div>
           <div className="text-right">
-            <span className="text-[11px] font-bold text-foreground font-outfit">
+            <span className="text-[11px] font-bold text-foreground font-sans">
               +2,450 Clicks
             </span>
-            <span className="text-[9px] text-emerald-500 block font-outfit font-semibold">
+            <span className="text-[9px] text-emerald-500 block font-sans font-semibold">
               84% Conversion
             </span>
           </div>
@@ -264,7 +264,7 @@ export function HeroPhoneMockup({ smoothX, smoothY }: HeroPhoneMockupProps) {
             <div className="absolute top-1.5 left-1/2 -translate-x-1/2 w-12 h-1 bg-slate-900 rounded-full z-40 border border-white/10 shadow-xs" />
 
             {/* Status Bar & Dynamic Island */}
-            <div className="relative z-30 pt-3.5 px-6 flex items-center justify-between text-white/80 text-[10px] font-mono">
+            <div className="relative z-30 pt-3.5 px-6 flex items-center justify-between text-white/80 text-[10px] font-sans">
               {/* Real-time Local Device Clock */}
               <DeviceClock />
 
@@ -371,7 +371,7 @@ export function HeroPhoneMockup({ smoothX, smoothY }: HeroPhoneMockupProps) {
                     <span className="font-bold text-[11px] text-white block">
                       رزرو نوبت مشاوره اختصاصی
                     </span>
-                    <span className="text-[9px] text-cyan-300 block font-outfit">
+                    <span className="text-[9px] text-cyan-300 block font-sans">
                       500 AFN • پرداخت با حساب‌پی
                     </span>
                   </div>
@@ -399,7 +399,7 @@ export function HeroPhoneMockup({ smoothX, smoothY }: HeroPhoneMockupProps) {
 
               {/* Footer inside Screen */}
               <div className="pt-1 text-center">
-                <span className="text-[9px] text-slate-500 font-outfit">
+                <span className="text-[9px] text-slate-500 font-sans">
                   Powered by <span className="font-bold text-cyan-400">Arya Link</span>
                 </span>
               </div>

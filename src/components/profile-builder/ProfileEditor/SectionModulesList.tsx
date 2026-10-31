@@ -398,7 +398,7 @@ export const SectionModulesList: React.FC = () => {
                   {item.renderLine()}
                   <div className="mt-1">
                     <span className="text-[11px] block">{item.title}</span>
-                    <span className="text-[9px] opacity-60 font-outfit block">{item.sub}</span>
+                    <span className="text-[9px] opacity-60 font-sans block">{item.sub}</span>
                   </div>
                 </button>
               );
@@ -497,7 +497,7 @@ export const SectionModulesList: React.FC = () => {
                 }
                 className="w-7 h-7 rounded-lg cursor-pointer bg-transparent border-0"
               />
-              <span className="font-outfit text-xs text-muted-foreground">{style.customBgColor || 'پیش‌فرض'}</span>
+              <span className="font-sans text-xs text-muted-foreground">{style.customBgColor || 'پیش‌فرض'}</span>
             </div>
           </div>
           <div>
@@ -513,7 +513,7 @@ export const SectionModulesList: React.FC = () => {
                 }
                 className="w-7 h-7 rounded-lg cursor-pointer bg-transparent border-0"
               />
-              <span className="font-outfit text-xs text-muted-foreground">{style.customTextColor || 'پیش‌فرض'}</span>
+              <span className="font-sans text-xs text-muted-foreground">{style.customTextColor || 'پیش‌فرض'}</span>
             </div>
           </div>
         </div>
@@ -547,7 +547,7 @@ export const SectionModulesList: React.FC = () => {
             value={meta.recipientEmail || ''}
             onChange={(e) => updateLinkMetadata(link.id, { recipientEmail: e.target.value })}
             placeholder="your-email@example.com"
-            className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-outfit text-left"
+            className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-sans text-left"
             dir="ltr"
           />
           <p className="text-[10px] text-muted-foreground mt-1">
@@ -734,7 +734,7 @@ export const SectionModulesList: React.FC = () => {
                 placeholder="799 123 456"
                 defaultCountry="AF"
               />
-              <p className="text-[10px] text-muted-foreground mt-1 font-outfit" dir="ltr">
+              <p className="text-[10px] text-muted-foreground mt-1 font-sans" dir="ltr">
                 دیپ‌لینک: whatsapp://send?phone={(meta.phoneNumber || '').replace(/[^0-9]/g, '')}
               </p>
             </div>
@@ -778,10 +778,10 @@ export const SectionModulesList: React.FC = () => {
                   updateLink(link.id, { url: val });
                 }}
                 placeholder="https://t.me/channel_name یا @channel"
-                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-outfit text-left"
+                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-sans text-left"
                 dir="ltr"
               />
-              <p className="text-[10px] text-muted-foreground mt-1 font-outfit" dir="ltr">
+              <p className="text-[10px] text-muted-foreground mt-1 font-sans" dir="ltr">
                 دیپ‌لینک: tg://resolve?domain={formatDisplayValue(link.url || '')}
               </p>
             </div>
@@ -798,7 +798,7 @@ export const SectionModulesList: React.FC = () => {
             <div>
               <label className="block text-[11px] font-medium text-foreground mb-1">نام کاربری اینستاگرام (آیدی)</label>
               <div className="flex items-center bg-background border border-border rounded-xl px-3 focus-within:border-cyan-500">
-                <span className="text-muted-foreground text-xs font-outfit">@</span>
+                <span className="text-muted-foreground text-xs font-sans">@</span>
                 <input
                   type="text"
                   value={meta.username || ''}
@@ -808,11 +808,11 @@ export const SectionModulesList: React.FC = () => {
                     updateLink(link.id, { url: `https://instagram.com/${cleanUsername}` });
                   }}
                   placeholder="your_username"
-                  className="w-full bg-transparent border-0 py-1.5 px-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none font-outfit text-left"
+                  className="w-full bg-transparent border-0 py-1.5 px-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none font-sans text-left"
                   dir="ltr"
                 />
               </div>
-              <p className="text-[10px] text-muted-foreground mt-1 font-outfit" dir="ltr">
+              <p className="text-[10px] text-muted-foreground mt-1 font-sans" dir="ltr">
                 دیپ‌لینک: instagram://user?username={meta.username || 'username'}
               </p>
             </div>
@@ -833,10 +833,10 @@ export const SectionModulesList: React.FC = () => {
                 value={link.url}
                 onChange={(e) => updateLink(link.id, { url: e.target.value })}
                 placeholder="https://linkedin.com/in/username"
-                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-outfit text-left"
+                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-sans text-left"
                 dir="ltr"
               />
-              <p className="text-[10px] text-muted-foreground mt-1 font-outfit" dir="ltr">
+              <p className="text-[10px] text-muted-foreground mt-1 font-sans" dir="ltr">
                 دیپ‌لینک: linkedin://profile/{formatDisplayValue(link.url || '')}
               </p>
             </div>
@@ -853,7 +853,7 @@ export const SectionModulesList: React.FC = () => {
             <div>
               <label className="block text-[11px] font-medium text-foreground mb-1">نام کاربری ایکس (Twitter Username)</label>
               <div className="flex items-center bg-background border border-border rounded-xl px-3 focus-within:border-cyan-500">
-                <span className="text-muted-foreground text-xs font-outfit">@</span>
+                <span className="text-muted-foreground text-xs font-sans">@</span>
                 <input
                   type="text"
                   value={meta.username || ''}
@@ -863,11 +863,11 @@ export const SectionModulesList: React.FC = () => {
                     updateLink(link.id, { url: getSmartLink('twitter_x', u) });
                   }}
                   placeholder="username"
-                  className="w-full bg-transparent border-0 py-1.5 px-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none font-outfit text-left"
+                  className="w-full bg-transparent border-0 py-1.5 px-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none font-sans text-left"
                   dir="ltr"
                 />
               </div>
-              <p className="text-[10px] text-muted-foreground mt-1 font-outfit" dir="ltr">
+              <p className="text-[10px] text-muted-foreground mt-1 font-sans" dir="ltr">
                 دیپ‌لینک: twitter://user?screen_name={meta.username || 'username'}
               </p>
             </div>
@@ -892,10 +892,10 @@ export const SectionModulesList: React.FC = () => {
                   updateLink(link.id, { url: getSmartLink('pinterest', u) });
                 }}
                 placeholder="pinterest_username"
-                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-outfit text-left"
+                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-sans text-left"
                 dir="ltr"
               />
-              <p className="text-[10px] text-muted-foreground mt-1 font-outfit" dir="ltr">
+              <p className="text-[10px] text-muted-foreground mt-1 font-sans" dir="ltr">
                 دیپ‌لینک: pinterest://user/{meta.username || 'username'}
               </p>
             </div>
@@ -920,10 +920,10 @@ export const SectionModulesList: React.FC = () => {
                   updateLink(link.id, { url: getSmartLink('facebook', u) });
                 }}
                 placeholder="profile_id یا username"
-                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-outfit text-left"
+                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-sans text-left"
                 dir="ltr"
               />
-              <p className="text-[10px] text-muted-foreground mt-1 font-outfit" dir="ltr">
+              <p className="text-[10px] text-muted-foreground mt-1 font-sans" dir="ltr">
                 دیپ‌لینک: fb://profile/{meta.targetId || meta.username || 'ID'} یا https://facebook.com/{meta.username || 'username'}
               </p>
             </div>
@@ -948,7 +948,7 @@ export const SectionModulesList: React.FC = () => {
                   updateLink(link.id, { url: getSmartLink('dribbble', u) });
                 }}
                 placeholder="designer_username"
-                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-outfit text-left"
+                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-sans text-left"
                 dir="ltr"
               />
             </div>
@@ -973,7 +973,7 @@ export const SectionModulesList: React.FC = () => {
                   updateLink(link.id, { url: getSmartLink('behance', u) });
                 }}
                 placeholder="portfolio_username"
-                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-outfit text-left"
+                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-sans text-left"
                 dir="ltr"
               />
             </div>
@@ -990,7 +990,7 @@ export const SectionModulesList: React.FC = () => {
             <div>
               <label className="block text-[11px] font-medium text-foreground mb-1">هندل یا نام کانال یوتیوب</label>
               <div className="flex items-center bg-background border border-border rounded-xl px-3 focus-within:border-cyan-500">
-                <span className="text-muted-foreground text-xs font-outfit">@</span>
+                <span className="text-muted-foreground text-xs font-sans">@</span>
                 <input
                   type="text"
                   value={meta.username || ''}
@@ -1000,11 +1000,11 @@ export const SectionModulesList: React.FC = () => {
                     updateLink(link.id, { url: getSmartLink('youtube_channel', u) });
                   }}
                   placeholder="channelHandle"
-                  className="w-full bg-transparent border-0 py-1.5 px-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none font-outfit text-left"
+                  className="w-full bg-transparent border-0 py-1.5 px-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none font-sans text-left"
                   dir="ltr"
                 />
               </div>
-              <p className="text-[10px] text-muted-foreground mt-1 font-outfit" dir="ltr">
+              <p className="text-[10px] text-muted-foreground mt-1 font-sans" dir="ltr">
                 دیپ‌لینک: vnd.youtube://www.youtube.com/@{meta.username || 'channel'}
               </p>
             </div>
@@ -1029,10 +1029,10 @@ export const SectionModulesList: React.FC = () => {
                   updateLink(link.id, { url: getSmartLink('clubhouse', u) });
                 }}
                 placeholder="clubhouse_username"
-                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-outfit text-left"
+                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-sans text-left"
                 dir="ltr"
               />
-              <p className="text-[10px] text-muted-foreground mt-1 font-outfit" dir="ltr">
+              <p className="text-[10px] text-muted-foreground mt-1 font-sans" dir="ltr">
                 دیپ‌لینک: clubhouse://user/{meta.username || 'username'}
               </p>
             </div>
@@ -1057,7 +1057,7 @@ export const SectionModulesList: React.FC = () => {
                   updateLink(link.id, { url: getSmartLink('patreon', u) });
                 }}
                 placeholder="creator_handle"
-                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-outfit text-left"
+                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-sans text-left"
                 dir="ltr"
               />
             </div>
@@ -1082,10 +1082,10 @@ export const SectionModulesList: React.FC = () => {
                   updateLink(link.id, { url: getSmartLink('twitch', u) });
                 }}
                 placeholder="streamer_name"
-                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-outfit text-left"
+                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-sans text-left"
                 dir="ltr"
               />
-              <p className="text-[10px] text-muted-foreground mt-1 font-outfit" dir="ltr">
+              <p className="text-[10px] text-muted-foreground mt-1 font-sans" dir="ltr">
                 دیپ‌لینک: twitch://stream/{meta.username || 'username'}
               </p>
             </div>
@@ -1110,7 +1110,7 @@ export const SectionModulesList: React.FC = () => {
                   updateLink(link.id, { url: getSmartLink('github', u) });
                 }}
                 placeholder="developer_username"
-                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-outfit text-left"
+                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-sans text-left"
                 dir="ltr"
               />
             </div>
@@ -1135,7 +1135,7 @@ export const SectionModulesList: React.FC = () => {
                   updateLink(link.id, { url: getSmartLink('aparat_channel', u) });
                 }}
                 placeholder="channel_id"
-                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-outfit text-left"
+                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-sans text-left"
                 dir="ltr"
               />
             </div>
@@ -1152,7 +1152,7 @@ export const SectionModulesList: React.FC = () => {
             <div>
               <label className="block text-[11px] font-medium text-foreground mb-1">نام کاربری تیک‌تاک</label>
               <div className="flex items-center bg-background border border-border rounded-xl px-3 focus-within:border-cyan-500">
-                <span className="text-muted-foreground text-xs font-outfit">@</span>
+                <span className="text-muted-foreground text-xs font-sans">@</span>
                 <input
                   type="text"
                   value={meta.username || ''}
@@ -1162,11 +1162,11 @@ export const SectionModulesList: React.FC = () => {
                     updateLink(link.id, { url: getSmartLink('tiktok', u) });
                   }}
                   placeholder="tiktok_handle"
-                  className="w-full bg-transparent border-0 py-1.5 px-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none font-outfit text-left"
+                  className="w-full bg-transparent border-0 py-1.5 px-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none font-sans text-left"
                   dir="ltr"
                 />
               </div>
-              <p className="text-[10px] text-muted-foreground mt-1 font-outfit" dir="ltr">
+              <p className="text-[10px] text-muted-foreground mt-1 font-sans" dir="ltr">
                 دیپ‌لینک: snssdk1233://user/profile/{meta.username || 'username'}
               </p>
             </div>
@@ -1188,7 +1188,7 @@ export const SectionModulesList: React.FC = () => {
                 value={link.url}
                 onChange={(e) => updateLink(link.id, { url: e.target.value })}
                 placeholder="https://music.apple.com/..."
-                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-outfit text-left"
+                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-sans text-left"
                 dir="ltr"
               />
             </div>
@@ -1209,7 +1209,7 @@ export const SectionModulesList: React.FC = () => {
                 value={link.url}
                 onChange={(e) => updateLink(link.id, { url: e.target.value })}
                 placeholder="https://music.youtube.com/..."
-                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-outfit text-left"
+                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-sans text-left"
                 dir="ltr"
               />
             </div>
@@ -1234,10 +1234,10 @@ export const SectionModulesList: React.FC = () => {
                   updateLink(link.id, { url: getSmartLink('castbox', val) });
                 }}
                 placeholder="https://castbox.fm/ch/12345 یا شناسه عددی"
-                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-outfit text-left"
+                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-sans text-left"
                 dir="ltr"
               />
-              <p className="text-[10px] text-muted-foreground mt-1 font-outfit" dir="ltr">
+              <p className="text-[10px] text-muted-foreground mt-1 font-sans" dir="ltr">
                 قالب وب: https://castbox.fm/ch/[ID]
               </p>
             </div>
@@ -1262,10 +1262,10 @@ export const SectionModulesList: React.FC = () => {
                   updateLink(link.id, { url: getSmartLink('radio_javan', val) });
                 }}
                 placeholder="podcast-id"
-                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-outfit text-left"
+                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-sans text-left"
                 dir="ltr"
               />
-              <p className="text-[10px] text-muted-foreground mt-1 font-outfit" dir="ltr">
+              <p className="text-[10px] text-muted-foreground mt-1 font-sans" dir="ltr">
                 دیپ‌لینک: rj://podcast/{meta.targetId || 'ID'}
               </p>
             </div>
@@ -1286,7 +1286,7 @@ export const SectionModulesList: React.FC = () => {
                 value={link.url}
                 onChange={(e) => updateLink(link.id, { url: e.target.value })}
                 placeholder="https://podcasters.spotify.com/pod/show/..."
-                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-outfit text-left"
+                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-sans text-left"
                 dir="ltr"
               />
             </div>
@@ -1307,10 +1307,10 @@ export const SectionModulesList: React.FC = () => {
                 value={link.url}
                 onChange={(e) => updateLink(link.id, { url: e.target.value })}
                 placeholder="spotify:artist:[ID] یا https://open.spotify.com/..."
-                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-outfit text-left"
+                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-sans text-left"
                 dir="ltr"
               />
-              <p className="text-[10px] text-muted-foreground mt-1 font-outfit" dir="ltr">
+              <p className="text-[10px] text-muted-foreground mt-1 font-sans" dir="ltr">
                 دیپ‌لینک: spotify:artist:[ID] یا spotify:user:[ID]
               </p>
             </div>
@@ -1335,10 +1335,10 @@ export const SectionModulesList: React.FC = () => {
                   updateLink(link.id, { url: getSmartLink('soundcloud', val) });
                 }}
                 placeholder="username یا user_id"
-                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-outfit text-left"
+                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-sans text-left"
                 dir="ltr"
               />
-              <p className="text-[10px] text-muted-foreground mt-1 font-outfit" dir="ltr">
+              <p className="text-[10px] text-muted-foreground mt-1 font-sans" dir="ltr">
                 دیپ‌لینک: soundcloud://users/[ID] یا https://soundcloud.com/[username]
               </p>
             </div>
@@ -1364,10 +1364,10 @@ export const SectionModulesList: React.FC = () => {
                   updateLink(link.id, { url: `skype:${val}?chat` });
                 }}
                 placeholder="live:username"
-                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-outfit text-left"
+                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-sans text-left"
                 dir="ltr"
               />
-              <p className="text-[10px] text-muted-foreground mt-1 font-outfit" dir="ltr">
+              <p className="text-[10px] text-muted-foreground mt-1 font-sans" dir="ltr">
                 دیپ‌لینک: skype:{meta.username || 'username'}?chat
               </p>
             </div>
@@ -1392,10 +1392,10 @@ export const SectionModulesList: React.FC = () => {
                   updateLink(link.id, { url: `weixin://dl/chat?${val}` });
                 }}
                 placeholder="wechat_id"
-                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-outfit text-left"
+                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-sans text-left"
                 dir="ltr"
               />
-              <p className="text-[10px] text-muted-foreground mt-1 font-outfit" dir="ltr">
+              <p className="text-[10px] text-muted-foreground mt-1 font-sans" dir="ltr">
                 دیپ‌لینک: weixin://dl/chat?{meta.targetId || 'ID'}
               </p>
             </div>
@@ -1420,10 +1420,10 @@ export const SectionModulesList: React.FC = () => {
                   updateLink(link.id, { url: getSmartLink('messenger', val) });
                 }}
                 placeholder="username یا user_id"
-                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-outfit text-left"
+                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-sans text-left"
                 dir="ltr"
               />
-              <p className="text-[10px] text-muted-foreground mt-1 font-outfit" dir="ltr">
+              <p className="text-[10px] text-muted-foreground mt-1 font-sans" dir="ltr">
                 دیپ‌لینک: fb-messenger://user-thread/{meta.targetId || 'ID'} یا https://m.me/{meta.targetId || 'username'}
               </p>
             </div>
@@ -1448,7 +1448,7 @@ export const SectionModulesList: React.FC = () => {
                 placeholder="799 123 456"
                 defaultCountry="AF"
               />
-              <p className="text-[10px] text-muted-foreground mt-1 font-outfit" dir="ltr">
+              <p className="text-[10px] text-muted-foreground mt-1 font-sans" dir="ltr">
                 دیپ‌لینک: sgnl://signal.me/#p/{(meta.phoneNumber || '').replace(/[^0-9]/g, '')}
               </p>
             </div>
@@ -1480,7 +1480,7 @@ export const SectionModulesList: React.FC = () => {
                   value={meta.productPrice || ''}
                   onChange={(e) => updateLinkMetadata(link.id, { productPrice: Number(e.target.value) })}
                   placeholder="1500"
-                  className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-outfit text-left"
+                  className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-sans text-left"
                   dir="ltr"
                 />
               </div>
@@ -1489,7 +1489,7 @@ export const SectionModulesList: React.FC = () => {
                 <select
                   value={meta.productCurrency || 'AFN'}
                   onChange={(e) => updateLinkMetadata(link.id, { productCurrency: e.target.value })}
-                  className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground focus:outline-none focus:border-cyan-500 font-outfit"
+                  className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground focus:outline-none focus:border-cyan-500 font-sans"
                 >
                   <option value="AFN">AFN (افغانی)</option>
                   <option value="USD">USD (دلار آمریکا)</option>
@@ -1518,7 +1518,7 @@ export const SectionModulesList: React.FC = () => {
                   updateLink(link.id, { url: e.target.value });
                 }}
                 placeholder="https://wa.me/93... یا آدرس سایت"
-                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-outfit text-left"
+                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-sans text-left"
                 dir="ltr"
               />
             </div>
@@ -1549,7 +1549,7 @@ export const SectionModulesList: React.FC = () => {
                   type="number"
                   value={meta.checkoutAmount || 500}
                   onChange={(e) => updateLinkMetadata(link.id, { checkoutAmount: Number(e.target.value) })}
-                  className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-outfit text-left"
+                  className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-sans text-left"
                   dir="ltr"
                 />
               </div>
@@ -1558,7 +1558,7 @@ export const SectionModulesList: React.FC = () => {
                 <select
                   value={meta.paymentCurrency || 'AFN'}
                   onChange={(e) => updateLinkMetadata(link.id, { paymentCurrency: e.target.value })}
-                  className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground focus:outline-none focus:border-cyan-500 font-outfit"
+                  className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground focus:outline-none focus:border-cyan-500 font-sans"
                 >
                   <option value="AFN">AFN (افغانی)</option>
                   <option value="USD">USD (دلار آمریکا)</option>
@@ -1572,7 +1572,7 @@ export const SectionModulesList: React.FC = () => {
                 value={link.url}
                 onChange={(e) => updateLink(link.id, { url: e.target.value })}
                 placeholder="https://hesabpay.af/pay/..."
-                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-outfit text-left"
+                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-sans text-left"
                 dir="ltr"
               />
             </div>
@@ -1616,7 +1616,7 @@ export const SectionModulesList: React.FC = () => {
                   updateLink(link.id, { url: e.target.value });
                 }}
                 placeholder="https://meet.google.com/xyz..."
-                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-outfit text-left"
+                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-sans text-left"
                 dir="ltr"
               />
             </div>
@@ -1637,7 +1637,7 @@ export const SectionModulesList: React.FC = () => {
                   updateLink(link.id, { url: e.target.value });
                 }}
                 placeholder="https://maps.google.com/?q=..."
-                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-outfit text-left"
+                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-sans text-left"
                 dir="ltr"
               />
             </div>
@@ -1648,7 +1648,7 @@ export const SectionModulesList: React.FC = () => {
                 value={meta.wazeLink || ''}
                 onChange={(e) => updateLinkMetadata(link.id, { wazeLink: e.target.value })}
                 placeholder="https://waze.com/ul?..."
-                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-outfit text-left"
+                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-sans text-left"
                 dir="ltr"
               />
             </div>
@@ -1687,7 +1687,7 @@ export const SectionModulesList: React.FC = () => {
                   updateLink(link.id, { url: `mailto:${e.target.value}?subject=${encodeURIComponent(meta.emailSubject || '')}` });
                 }}
                 placeholder="info@example.af"
-                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-outfit text-left"
+                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-sans text-left"
                 dir="ltr"
               />
             </div>
@@ -1753,7 +1753,7 @@ export const SectionModulesList: React.FC = () => {
                   updateLink(link.id, { url });
                 }}
                 placeholder="https://www.youtube.com/watch?v=..."
-                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-outfit text-left"
+                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-sans text-left"
                 dir="ltr"
               />
             </div>
@@ -1776,7 +1776,7 @@ export const SectionModulesList: React.FC = () => {
                   updateLink(link.id, { url });
                 }}
                 placeholder="https://www.aparat.com/v/xyz12"
-                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-outfit text-left"
+                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-sans text-left"
                 dir="ltr"
               />
             </div>
@@ -1803,7 +1803,7 @@ export const SectionModulesList: React.FC = () => {
                 value={meta.singleImageLink || ''}
                 onChange={(e) => updateLinkMetadata(link.id, { singleImageLink: e.target.value })}
                 placeholder="https://example.com"
-                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-outfit text-left"
+                className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-sans text-left"
                 dir="ltr"
               />
             </div>
@@ -1823,7 +1823,7 @@ export const SectionModulesList: React.FC = () => {
                   value={link.url}
                   onChange={(e) => updateLink(link.id, { url: e.target.value })}
                   placeholder="https://example.com"
-                  className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-outfit text-left"
+                  className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-sans text-left"
                   dir="ltr"
                 />
                 {link.url && (
@@ -1908,7 +1908,7 @@ export const SectionModulesList: React.FC = () => {
                 >
                   <div className="h-5 flex items-center justify-center">{anim.renderPreview()}</div>
                   <span className="text-xs font-semibold block">{anim.label}</span>
-                  <span className="text-[9px] opacity-65 block font-outfit" dir="ltr">{anim.sub}</span>
+                  <span className="text-[9px] opacity-65 block font-sans" dir="ltr">{anim.sub}</span>
                 </button>
               );
             })}
@@ -1960,7 +1960,7 @@ export const SectionModulesList: React.FC = () => {
                         scheduling: { ...sched, startTime: e.target.value },
                       })
                     }
-                    className="w-full bg-background border border-border rounded-lg px-2 py-1 text-xs text-foreground font-outfit"
+                    className="w-full bg-background border border-border rounded-lg px-2 py-1 text-xs text-foreground font-sans"
                   />
                 </div>
                 <div>
@@ -1973,7 +1973,7 @@ export const SectionModulesList: React.FC = () => {
                         scheduling: { ...sched, endTime: e.target.value },
                       })
                     }
-                    className="w-full bg-background border border-border rounded-lg px-2 py-1 text-xs text-foreground font-outfit"
+                    className="w-full bg-background border border-border rounded-lg px-2 py-1 text-xs text-foreground font-sans"
                   />
                 </div>
               </div>
@@ -2014,7 +2014,7 @@ export const SectionModulesList: React.FC = () => {
                         monetization: { ...lock, price: Number(e.target.value) },
                       })
                     }
-                    className="w-full bg-background border border-border rounded-lg px-2 py-1 text-xs text-foreground font-outfit text-left"
+                    className="w-full bg-background border border-border rounded-lg px-2 py-1 text-xs text-foreground font-sans text-left"
                     dir="ltr"
                   />
                 </div>
@@ -2027,7 +2027,7 @@ export const SectionModulesList: React.FC = () => {
                         monetization: { ...lock, currency: e.target.value as any },
                       })
                     }
-                    className="w-full bg-background border border-border rounded-lg px-2 py-1 text-xs text-foreground font-outfit"
+                    className="w-full bg-background border border-border rounded-lg px-2 py-1 text-xs text-foreground font-sans"
                   >
                     <option value="AFN">AFN (افغانی)</option>
                     <option value="USD">USD (دلار)</option>
@@ -2059,7 +2059,7 @@ export const SectionModulesList: React.FC = () => {
                   }
                   className="w-7 h-7 rounded-lg cursor-pointer bg-transparent border-0"
                 />
-                <span className="font-outfit text-xs text-muted-foreground">{style.customBgColor || 'پیش‌فرض'}</span>
+                <span className="font-sans text-xs text-muted-foreground">{style.customBgColor || 'پیش‌فرض'}</span>
               </div>
             </div>
             <div>
@@ -2075,7 +2075,7 @@ export const SectionModulesList: React.FC = () => {
                   }
                   className="w-7 h-7 rounded-lg cursor-pointer bg-transparent border-0"
                 />
-                <span className="font-outfit text-xs text-muted-foreground">{style.customTextColor || 'پیش‌فرض'}</span>
+                <span className="font-sans text-xs text-muted-foreground">{style.customTextColor || 'پیش‌فرض'}</span>
               </div>
             </div>
           </div>
@@ -2113,7 +2113,7 @@ export const SectionModulesList: React.FC = () => {
                     style={{ borderRadius: r.radiusStyle }}
                   />
                   <span className="text-[11px] font-semibold block">{r.label}</span>
-                  <span className="text-[9px] opacity-65 block font-outfit" dir="ltr">{r.sub}</span>
+                  <span className="text-[9px] opacity-65 block font-sans" dir="ltr">{r.sub}</span>
                 </button>
               );
             })}
@@ -2185,13 +2185,13 @@ export const SectionModulesList: React.FC = () => {
                     </span>
                   )}
                   {link.advancedSettings?.monetization?.isLocked && (
-                    <span className="text-[10px] bg-amber-500/15 text-amber-500 font-bold px-2 py-0.5 rounded-full border border-amber-500/30 flex items-center gap-1 shrink-0 font-outfit">
+                    <span className="text-[10px] bg-amber-500/15 text-amber-500 font-bold px-2 py-0.5 rounded-full border border-amber-500/30 flex items-center gap-1 shrink-0 font-sans">
                       <Lock className="w-2.5 h-2.5" />
                       پولی
                     </span>
                   )}
                   {link.advancedSettings?.buttonAnimation && link.advancedSettings.buttonAnimation !== 'none' && (
-                    <span className="text-[10px] bg-cyan-500/10 text-cyan-500 font-bold px-2 py-0.5 rounded-full border border-cyan-500/20 flex items-center gap-1 shrink-0 font-outfit">
+                    <span className="text-[10px] bg-cyan-500/10 text-cyan-500 font-bold px-2 py-0.5 rounded-full border border-cyan-500/20 flex items-center gap-1 shrink-0 font-sans">
                       <Sparkles className="w-2.5 h-2.5" />
                       {link.advancedSettings.buttonAnimation}
                     </span>

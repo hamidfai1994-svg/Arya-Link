@@ -137,7 +137,7 @@ export function CardSettingsPanel({ cardId }: { cardId?: string }) {
               <span className="text-xs font-bold text-foreground">
                 تنظیمات سئو و دامنه مختص لینک: {profile?.displayName || activeCard?.displayName || 'کارت هوشمند'}
               </span>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 font-outfit font-bold" dir="ltr">
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 font-sans font-bold" dir="ltr">
                 aryal.ink/{profile?.alias || activeCard?.alias || 'card'}
               </span>
             </div>
@@ -187,7 +187,7 @@ export function CardSettingsPanel({ cardId }: { cardId?: string }) {
                 />
                 <div className="flex justify-between text-[10px] text-slate-400">
                   <span>تعداد کاراکتر پیشنهادی بین 40 تا 60 کاراکتر است.</span>
-                  <span className="font-outfit">{seoTitle.length} / 70</span>
+                  <span className="font-sans">{seoTitle.length} / 70</span>
                 </div>
               </div>
 
@@ -205,7 +205,7 @@ export function CardSettingsPanel({ cardId }: { cardId?: string }) {
                 />
                 <div className="flex justify-between text-[10px] text-slate-400">
                   <span>حداکثر 160 کاراکتر جهت نمایش بهینه در گوگل.</span>
-                  <span className="font-outfit">{seoDescription.length} / 160</span>
+                  <span className="font-sans">{seoDescription.length} / 160</span>
                 </div>
               </div>
             </div>
@@ -220,7 +220,7 @@ export function CardSettingsPanel({ cardId }: { cardId?: string }) {
                   وایت‌لیبل و حذف برندینگ (White-label)
                 </h2>
               </div>
-              <Badge variant="cyan" className="text-[10px] font-outfit uppercase">
+              <Badge variant="cyan" className="text-[10px] font-sans uppercase">
                 ویژه Pro
               </Badge>
             </div>
@@ -258,14 +258,14 @@ export function CardSettingsPanel({ cardId }: { cardId?: string }) {
                   شناسه عمومی کارت شما (Alias)
                 </label>
                 <div className="flex items-center rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-white/10 overflow-hidden" dir="ltr">
-                  <span className="px-3.5 text-xs text-slate-400 font-outfit border-r border-slate-200 dark:border-white/10 select-none">
+                  <span className="px-3.5 text-xs text-slate-400 font-sans border-r border-slate-200 dark:border-white/10 select-none">
                     {currentHost}/
                   </span>
                   <Input
                     type="text"
                     value={alias}
                     onChange={(e) => setAlias(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''))}
-                    className="border-0 bg-transparent rounded-none h-11 text-xs font-outfit font-bold"
+                    className="border-0 bg-transparent rounded-none h-11 text-xs font-sans font-bold"
                   />
                 </div>
               </div>
@@ -273,7 +273,7 @@ export function CardSettingsPanel({ cardId }: { cardId?: string }) {
               <div className="space-y-1.5 pt-2">
                 <label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center justify-between">
                   <span>اتصال دامنه اختصاصی (Custom Domain)</span>
-                  <Badge variant="outline" className="text-[10px] font-outfit">
+                  <Badge variant="outline" className="text-[10px] font-sans">
                     سازمانی
                   </Badge>
                 </label>
@@ -282,11 +282,11 @@ export function CardSettingsPanel({ cardId }: { cardId?: string }) {
                   placeholder="مثال: card.mycompany.af"
                   value={customDomain}
                   onChange={(e) => setCustomDomain(e.target.value)}
-                  className="h-11 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-white/10 text-xs font-outfit"
+                  className="h-11 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-white/10 text-xs font-sans"
                   dir="ltr"
                 />
                 <div className="p-3 rounded-xl bg-cyan-500/10 text-[11px] text-cyan-700 dark:text-cyan-300 border border-cyan-500/20">
-                  برای فعال‌سازی دامنه، رکورد <code className="font-outfit font-bold">CNAME</code> دامنه خود را روی <code className="font-outfit font-bold">cname.aryalink.af</code> تنظیم کنید.
+                  برای فعال‌سازی دامنه، رکورد <code className="font-sans font-bold">CNAME</code> دامنه خود را روی <code className="font-sans font-bold">cname.aryalink.af</code> تنظیم کنید.
                 </div>
               </div>
             </div>
@@ -321,7 +321,7 @@ export function CardSettingsPanel({ cardId }: { cardId?: string }) {
                   placeholder="https://wa.me/93799123456"
                   value={directUrl}
                   onChange={(e) => setDirectUrl(e.target.value)}
-                  className="h-11 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-white/10 text-xs font-outfit"
+                  className="h-11 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-white/10 text-xs font-sans"
                   dir="ltr"
                 />
               </div>
@@ -339,7 +339,7 @@ export function CardSettingsPanel({ cardId }: { cardId?: string }) {
 
             {/* Google Result Card Mockup */}
             <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-white/10 space-y-1.5 text-right font-sans" dir="rtl">
-              <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400 font-outfit" dir="ltr">
+              <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400 font-sans" dir="ltr">
                 <span className="w-4 h-4 rounded-full bg-cyan-500/20 text-cyan-500 text-[10px] font-bold flex items-center justify-center">
                   A
                 </span>
@@ -368,11 +368,11 @@ export function CardSettingsPanel({ cardId }: { cardId?: string }) {
             </h3>
 
             <div className="rounded-2xl overflow-hidden border border-slate-200/80 dark:border-white/10 bg-slate-50 dark:bg-slate-800/60">
-              <div className="h-28 bg-gradient-to-r from-cyan-500 to-blue-600 flex items-center justify-center text-white font-black font-outfit text-xl">
+              <div className="h-28 bg-gradient-to-r from-cyan-500 to-blue-600 flex items-center justify-center text-white font-black font-sans text-xl">
                 {profile?.displayName || 'Arya Link Card'}
               </div>
               <div className="p-4 space-y-1">
-                <span className="text-[10px] text-slate-400 font-outfit block uppercase tracking-wider">
+                <span className="text-[10px] text-slate-400 font-sans block uppercase tracking-wider">
                   {currentHost}
                 </span>
                 <span className="text-xs font-bold text-slate-900 dark:text-white block truncate">

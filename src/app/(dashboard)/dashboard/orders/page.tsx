@@ -516,28 +516,28 @@ function OrdersDashboardInner() {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
                 <div className="p-4 rounded-2xl bg-card/60 backdrop-blur-md border border-border">
                   <span className="text-[11px] font-semibold text-muted-foreground block">کل سفارشات من</span>
-                  <span className="text-xl font-black text-foreground font-mono mt-1 block">
+                  <span className="text-xl font-black text-foreground font-sans mt-1 block">
                     {orders.length}
                   </span>
                 </div>
 
                 <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20">
                   <span className="text-[11px] font-semibold text-amber-500 block">در حال بررسی</span>
-                  <span className="text-xl font-black text-amber-500 font-mono mt-1 block">
+                  <span className="text-xl font-black text-amber-500 font-sans mt-1 block">
                     {pendingCount}
                   </span>
                 </div>
 
                 <div className="p-4 rounded-2xl bg-cyan-500/10 border border-cyan-500/20">
                   <span className="text-[11px] font-semibold text-cyan-500 block">در حال چاپ و کدگذاری</span>
-                  <span className="text-xl font-black text-cyan-500 font-mono mt-1 block">
+                  <span className="text-xl font-black text-cyan-500 font-sans mt-1 block">
                     {printingCount}
                   </span>
                 </div>
 
                 <div className="p-4 rounded-2xl bg-purple-500/10 border border-purple-500/20">
                   <span className="text-[11px] font-semibold text-purple-500 block">ارسال شده / تکمیل</span>
-                  <span className="text-xl font-black text-purple-500 font-mono mt-1 block">
+                  <span className="text-xl font-black text-purple-500 font-sans mt-1 block">
                     {shippedCount}
                   </span>
                 </div>
@@ -656,7 +656,7 @@ function OrdersDashboardInner() {
                     >
                       {/* Top Row: Order Number & Status Badge */}
                       <div className="flex items-center justify-between gap-2">
-                        <span className="font-mono font-bold text-xs text-cyan-500 bg-cyan-500/10 px-2.5 py-1 rounded-xl border border-cyan-500/20 group-hover:bg-cyan-500 group-hover:text-black transition-colors">
+                        <span className="font-sans font-bold text-xs text-cyan-500 bg-cyan-500/10 px-2.5 py-1 rounded-xl border border-cyan-500/20 group-hover:bg-cyan-500 group-hover:text-black transition-colors">
                           {order.orderNumber}
                         </span>
                         {renderStatusBadge(order.orderStatus)}
@@ -680,7 +680,7 @@ function OrdersDashboardInner() {
                               : order.customerName}
                           </span>
                         </div>
-                        <div className="text-[11px] text-muted-foreground font-mono flex items-center gap-2 pt-0.5">
+                        <div className="text-[11px] text-muted-foreground font-sans flex items-center gap-2 pt-0.5">
                           <Calendar className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                           <span>
                             {new Date(order.createdAt).toLocaleDateString('en-US', {
@@ -694,7 +694,7 @@ function OrdersDashboardInner() {
 
                       {/* Bottom Row: Price & Detail Action */}
                       <div className="flex items-center justify-between border-t border-border/70 pt-3 text-xs">
-                        <div className="font-mono font-bold text-foreground text-sm">
+                        <div className="font-sans font-bold text-foreground text-sm">
                           {order.totalPrice.toLocaleString('en-US')} AFN
                         </div>
                         <div className="flex items-center gap-1 text-cyan-500 font-bold text-xs group-hover:-translate-x-1 transition-transform">
@@ -718,7 +718,7 @@ function OrdersDashboardInner() {
                     >
                       {/* Left: Order Number + Recipient + Template */}
                       <div className="flex items-center gap-3 min-w-0">
-                        <span className="font-mono font-bold text-xs text-cyan-500 bg-cyan-500/10 px-2.5 py-1 rounded-xl border border-cyan-500/20 shrink-0">
+                        <span className="font-sans font-bold text-xs text-cyan-500 bg-cyan-500/10 px-2.5 py-1 rounded-xl border border-cyan-500/20 shrink-0">
                           {order.orderNumber}
                         </span>
 
@@ -733,7 +733,7 @@ function OrdersDashboardInner() {
                               ({order.cardSpecs?.templateName || order.productTitle})
                             </span>
                           </div>
-                          <div className="text-[10px] text-muted-foreground font-mono flex items-center gap-2 mt-0.5">
+                          <div className="text-[10px] text-muted-foreground font-sans flex items-center gap-2 mt-0.5">
                             <span>{order.cardSpecs?.material || 'کارت فیزیکی NFC'}</span>
                             <span>•</span>
                             <span>
@@ -751,7 +751,7 @@ function OrdersDashboardInner() {
                       <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-border/50">
                         {renderStatusBadge(order.orderStatus)}
 
-                        <span className="font-mono font-bold text-xs sm:text-sm text-foreground">
+                        <span className="font-sans font-bold text-xs sm:text-sm text-foreground">
                           {order.totalPrice.toLocaleString('en-US')} AFN
                         </span>
 
@@ -792,10 +792,10 @@ function OrdersDashboardInner() {
                             </div>
                             <div>
                               <div className="flex items-center gap-2">
-                                <span className="font-mono font-bold text-xs text-cyan-500 bg-cyan-500/10 px-2.5 py-1 rounded-xl border border-cyan-500/20">
+                                <span className="font-sans font-bold text-xs text-cyan-500 bg-cyan-500/10 px-2.5 py-1 rounded-xl border border-cyan-500/20">
                                   {order.orderNumber}
                                 </span>
-                                <span className="text-xs text-muted-foreground font-mono">
+                                <span className="text-xs text-muted-foreground font-sans">
                                   {new Date(order.createdAt).toLocaleDateString('en-US', {
                                     year: 'numeric',
                                     month: 'short',
@@ -811,7 +811,7 @@ function OrdersDashboardInner() {
 
                           <div className="flex items-center gap-3 self-end sm:self-auto">
                             {renderStatusBadge(order.orderStatus)}
-                            <span className="font-mono font-black text-base text-foreground">
+                            <span className="font-sans font-black text-base text-foreground">
                               {order.totalPrice.toLocaleString('en-US')} AFN
                             </span>
                           </div>
@@ -841,7 +841,7 @@ function OrdersDashboardInner() {
                           </div>
                           <div className="p-3 rounded-xl bg-muted/40 border border-border/60">
                             <span className="text-[10px] text-muted-foreground block">کد رهگیری پستی:</span>
-                            <span className="font-mono font-bold text-foreground block truncate mt-0.5" dir="ltr">
+                            <span className="font-sans font-bold text-foreground block truncate mt-0.5" dir="ltr">
                               {order.trackingNumber || 'در انتظار صدور'}
                             </span>
                           </div>
@@ -931,7 +931,7 @@ function OrdersDashboardInner() {
               </Button>
 
               <div className="flex items-center gap-2">
-                <span className="font-mono font-bold text-xs text-cyan-500 bg-cyan-500/10 px-2.5 py-1 rounded-xl border border-cyan-500/20">
+                <span className="font-sans font-bold text-xs text-cyan-500 bg-cyan-500/10 px-2.5 py-1 rounded-xl border border-cyan-500/20">
                   {selectedOrder.orderNumber}
                 </span>
                 <span className="text-xs text-muted-foreground hidden sm:inline">
@@ -941,7 +941,7 @@ function OrdersDashboardInner() {
             </div>
 
             <div className="flex items-center gap-3">
-              <span className="font-mono font-bold text-sm text-foreground">
+              <span className="font-sans font-bold text-sm text-foreground">
                 {selectedOrder.totalPrice.toLocaleString()} AFN
               </span>
 
@@ -1060,7 +1060,7 @@ function OrdersDashboardInner() {
                             >
                               {item.title}
                             </h3>
-                            <span className="text-[11px] font-mono text-muted-foreground">
+                            <span className="text-[11px] font-sans text-muted-foreground">
                               {item.dateText}
                             </span>
                           </div>
@@ -1083,7 +1083,7 @@ function OrdersDashboardInner() {
                         <span className="text-muted-foreground">مرسوله در حال حمل توسط پست اکسپرس می‌باشد.</span>
                       </div>
                     </div>
-                    <div className="font-mono font-bold text-purple-400 bg-black/40 px-3 py-1.5 rounded-xl border border-purple-500/30" dir="ltr">
+                    <div className="font-sans font-bold text-purple-400 bg-black/40 px-3 py-1.5 rounded-xl border border-purple-500/30" dir="ltr">
                       {selectedOrder.trackingNumber}
                     </div>
                   </div>
@@ -1112,7 +1112,7 @@ function OrdersDashboardInner() {
                     <Phone className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
                     <div>
                       <span className="text-muted-foreground block text-[11px]">شماره مبایل:</span>
-                      <span className="font-mono text-foreground" dir="ltr">{selectedOrder.customerPhone || 'نامشخص'}</span>
+                      <span className="font-sans text-foreground" dir="ltr">{selectedOrder.customerPhone || 'نامشخص'}</span>
                     </div>
                   </div>
 
@@ -1129,7 +1129,7 @@ function OrdersDashboardInner() {
                 <div className="pt-3 border-t border-border/80 space-y-2 text-xs">
                   <div className="flex justify-between items-center text-muted-foreground">
                     <span>مبلغ کارت فیزیکی:</span>
-                    <span className="font-mono">{selectedOrder.unitPrice.toLocaleString()} AFN</span>
+                    <span className="font-sans">{selectedOrder.unitPrice.toLocaleString()} AFN</span>
                   </div>
                   <div className="flex justify-between items-center text-muted-foreground">
                     <span>کدگذاری چیپست NFC:</span>
@@ -1137,11 +1137,11 @@ function OrdersDashboardInner() {
                   </div>
                   <div className="flex justify-between items-center text-muted-foreground">
                     <span>هزینه ارسال پستی:</span>
-                    <span className="font-mono">150 AFN</span>
+                    <span className="font-sans">150 AFN</span>
                   </div>
                   <div className="flex justify-between items-center font-bold text-foreground border-t border-border/60 pt-2 text-sm">
                     <span>مجموع پرداخت‌شده:</span>
-                    <span className="font-mono text-cyan-500">{selectedOrder.totalPrice.toLocaleString()} AFN</span>
+                    <span className="font-sans text-cyan-500">{selectedOrder.totalPrice.toLocaleString()} AFN</span>
                   </div>
                 </div>
 
@@ -1167,7 +1167,7 @@ function OrdersDashboardInner() {
                 <div className="w-full flex items-center justify-between pb-3 border-b border-border/80">
                   <div className="text-right">
                     <span className="text-xs font-bold text-foreground block">پیش‌نمایش کارت من</span>
-                    <span className="text-[11px] text-cyan-500 font-mono">
+                    <span className="text-[11px] text-cyan-500 font-sans">
                       {selectedOrder.cardSpecs?.templateName || selectedOrder.productTitle}
                     </span>
                   </div>
@@ -1216,7 +1216,7 @@ function OrdersDashboardInner() {
                             className="h-6 max-w-[70px] object-contain"
                           />
                         ) : (
-                          <span className="font-mono text-[9px] font-bold text-white/60">
+                          <span className="font-sans text-[9px] font-bold text-white/60">
                             {selectedOrder.cardSpecs?.companyName || 'ARYA LINK'}
                           </span>
                         )}
@@ -1233,7 +1233,7 @@ function OrdersDashboardInner() {
                         <div className="text-[10px] text-white/70 truncate">
                           {selectedOrder.cardSpecs?.jobTitle || 'مشخصات شغلی'}
                         </div>
-                        <div className="text-[8px] font-mono text-cyan-400 pt-0.5" dir="ltr">
+                        <div className="text-[8px] font-sans text-cyan-400 pt-0.5" dir="ltr">
                           {selectedOrder.cardSpecs?.cardUrl || 'aryal.ink'}
                         </div>
                       </div>
@@ -1247,7 +1247,7 @@ function OrdersDashboardInner() {
                       )}
                     >
                       <div className="w-full h-6 bg-zinc-900 border-y border-white/10 -mx-4 px-4 flex items-center justify-end">
-                        <span className="font-mono text-[7px] text-white/30">NFC SECURE CHIP</span>
+                        <span className="font-sans text-[7px] text-white/30">NFC SECURE CHIP</span>
                       </div>
 
                       <div className="flex items-center justify-between gap-3">
@@ -1266,7 +1266,7 @@ function OrdersDashboardInner() {
                         </div>
                       </div>
 
-                      <div className="border-t border-white/10 pt-1 text-[7px] font-mono text-slate-500 flex justify-between">
+                      <div className="border-t border-white/10 pt-1 text-[7px] font-sans text-slate-500 flex justify-between">
                         <span>MADE WITH ARYA LINK</span>
                         <span>NTAG216</span>
                       </div>
@@ -1366,7 +1366,7 @@ function OrdersDashboardInner() {
 
                   <div className="p-3.5 rounded-2xl bg-muted/40 border border-border/60">
                     <span className="text-muted-foreground text-[11px] block">لینک متصل به چیپ و QR:</span>
-                    <span className="font-mono text-cyan-500 mt-0.5 block truncate" dir="ltr">
+                    <span className="font-sans text-cyan-500 mt-0.5 block truncate" dir="ltr">
                       {selectedOrder.cardSpecs?.cardUrl || 'aryal.ink'}
                     </span>
                   </div>

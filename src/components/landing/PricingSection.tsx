@@ -16,6 +16,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
+import { useLandingCms } from '@/context/LandingCmsContext';
 
 const EASE_SNAPPY = [0, 0.7, 0.2, 1] as const;
 const SPRING_FAST = { type: 'spring', stiffness: 250, damping: 25, mass: 0.5 } as const;
@@ -45,11 +46,14 @@ const headerItemVariants = {
 
 export function PricingSection() {
   const { dir } = useLanguage();
-  const isRtl = dir === 'rtl';
+  const { plans } = useLandingCms();
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('yearly');
 
+  const freePlan = plans.find((p) => p.planId === 'free') || plans[0];
+  const proPlan = plans.find((p) => p.planId === 'pro') || plans[1] || plans[0];
+
   return (
-    <section id="pricing" className="py-20 sm:py-28 relative border-t border-border/80 bg-muted/15 overflow-hidden select-none">
+    <section id="pricing" className="py-20 sm:py-28 relative border-t border-border/80 bg-muted/15 overflow-hidden select-none font-sans">
       {/* Background Soft Glows */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[500px] bg-gradient-to-tr from-cyan-500/10 via-blue-600/10 to-purple-600/10 rounded-full blur-[160px] pointer-events-none -z-10" />
 
@@ -63,7 +67,7 @@ export function PricingSection() {
           className="text-center max-w-2xl mx-auto space-y-4"
         >
           <motion.div variants={headerItemVariants} className="inline-block">
-            <Badge variant="cyan" className="font-sans text-xs">
+            <Badge variant="cyan" className="text-xs font-semibold">
               شفاف و اقتصادی
             </Badge>
           </motion.div>
@@ -110,7 +114,7 @@ export function PricingSection() {
                 }`}
               >
                 <span>پرداخت سالانه</span>
-                <span className="px-1.5 py-0.2 rounded-full bg-emerald-400/25 text-emerald-300 font-outfit text-[10px] font-bold">
+                <span className="px-1.5 py-0.2 rounded-full bg-emerald-400/25 text-emerald-300 text-[10px] font-bold">
                   35% OFF
                 </span>
               </button>
@@ -122,7 +126,7 @@ export function PricingSection() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
           
           {/* ========================================================
-              CARD 1: FREE TIER (Col 5)
+              CARD 1: FREE TIER (Col 5) - DYNAMIC CMS DRIVEN
           ======================================================== */}
           <motion.div
             initial={{ opacity: 0, y: 35 }}
@@ -135,22 +139,22 @@ export function PricingSection() {
               <div className="space-y-6">
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
-                    <h3 className="text-xl font-bold text-foreground">پلن پایه (Free)</h3>
-                    <Badge variant="outline" className="text-[10px] font-outfit">FREE</Badge>
+                    <h3 className="text-xl font-bold text-foreground">{freePlan.name}</h3>
+                    <Badge variant="outline" className="text-[10px]">{freePlan.badge}</Badge>
                   </div>
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    مناسب برای استفاده‌های شخصی و شروع فعالیت در شبکه‌های اجتماعی
+                    {freePlan.description}
                   </p>
                 </div>
 
                 <div className="space-y-1.5">
                   <div className="flex items-baseline gap-2">
-                    <div className="flex items-baseline gap-1.5 font-outfit" dir="ltr">
+                    <div className="flex items-baseline gap-1.5" dir="ltr">
                       <span className="text-4xl sm:text-5xl font-black text-foreground tracking-tight">
-                        0
+                        {freePlan.priceMonthly.toLocaleString('en-US')}
                       </span>
                       <span className="text-xl sm:text-2xl font-bold text-muted-foreground">
-                        AFN
+                        {freePlan.currency}
                       </span>
                     </div>
                     <span className="text-xs text-muted-foreground font-bold">/ برای همیشه</span>
@@ -161,38 +165,16 @@ export function PricingSection() {
                 </div>
 
                 <div className="space-y-3 pt-4 border-t border-border/60 text-xs">
-                  <div className="flex items-center gap-2.5 text-foreground">
-                    <Check className="w-4 h-4 text-emerald-500 shrink-0" />
-                    <span>لینک‌بایو اختصاصی (aryal.ink/username)</span>
-                  </div>
-                  <div className="flex items-center gap-2.5 text-foreground">
-                    <Check className="w-4 h-4 text-emerald-500 shrink-0" />
-                    <span>ماژول‌های پایه شبکه‌های اجتماعی و تماس</span>
-                  </div>
-                  <div className="flex items-center gap-2.5 text-foreground">
-                    <Check className="w-4 h-4 text-emerald-500 shrink-0" />
-                    <span>پیش‌نمایش آنلاین در تمام تلفن‌های همراه</span>
-                  </div>
-                  <div className="flex items-center gap-2.5 text-muted-foreground">
-                    <Check className="w-4 h-4 text-muted-foreground/60 shrink-0" />
-                    <span>دارای نشان و برندینگ آریا لینک</span>
-                  </div>
-                  <div className="flex items-center gap-2.5 text-muted-foreground">
-                    <X className="w-4 h-4 text-rose-500/70 shrink-0" />
-                    <span className="line-through">فروشگاه آنلاین و درگاه حساب‌پی</span>
-                  </div>
-                  <div className="flex items-center gap-2.5 text-muted-foreground">
-                    <X className="w-4 h-4 text-rose-500/70 shrink-0" />
-                    <span className="line-through">اتصال دامنه اختصاصی</span>
-                  </div>
-                  <div className="flex items-center gap-2.5 text-muted-foreground">
-                    <X className="w-4 h-4 text-rose-500/70 shrink-0" />
-                    <span className="line-through">تیک آبی اصالت و احراز هویت</span>
-                  </div>
+                  {freePlan.features.map((feature, fIdx) => (
+                    <div key={fIdx} className="flex items-center gap-2.5 text-foreground">
+                      <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                      <span>{feature}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
 
-              {/* Action Button with Tactile Scale */}
+              {/* Action Button */}
               <div className="pt-8">
                 <Link href="/register">
                   <motion.div
@@ -204,7 +186,7 @@ export function PricingSection() {
                       variant="outline"
                       className="w-full h-14 rounded-2xl border-border bg-card/80 hover:bg-muted font-bold text-sm shadow-xs"
                     >
-                      شروع رایگان
+                      {freePlan.ctaText}
                     </Button>
                   </motion.div>
                 </Link>
@@ -213,7 +195,7 @@ export function PricingSection() {
           </motion.div>
 
           {/* ========================================================
-              CARD 2: SHIMMER PRO TIER (Col 7 - HIGHLIGHTED)
+              CARD 2: SHIMMER PRO TIER (Col 7 - HIGHLIGHTED & DYNAMIC)
           ======================================================== */}
           <motion.div
             initial={{ opacity: 0, y: 35 }}
@@ -246,7 +228,7 @@ export function PricingSection() {
                 <div className="absolute top-4 left-4 sm:top-5 sm:left-5">
                   <Badge className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold text-[11px] py-1 px-3 border-0 flex items-center gap-1.5 shadow-md shadow-cyan-500/25">
                     <Flame className="w-3.5 h-3.5 fill-white text-white animate-pulse" />
-                    <span>پیشنهاد ویژه و پرفروش</span>
+                    <span>{proPlan.badge}</span>
                   </Badge>
                 </div>
 
@@ -254,12 +236,12 @@ export function PricingSection() {
                   <div className="space-y-2 pr-1">
                     <div className="flex items-center gap-2">
                       <h3 className="text-xl sm:text-2xl font-black text-foreground">
-                        پلن حرفه‌ای (PRO)
+                        {proPlan.name}
                       </h3>
                       <ShieldCheck className="w-5 h-5 text-cyan-400" />
                     </div>
                     <p className="text-xs text-muted-foreground leading-relaxed max-w-md">
-                      برای مدیران، کسب‌وکارها، پزشکان، وکلا، فریلنسرها و شرکت‌های معتبر که می‌خواهند حداکثر اعتبار را ایجاد کنند.
+                      {proPlan.description}
                     </p>
                   </div>
 
@@ -274,12 +256,14 @@ export function PricingSection() {
                       className="space-y-1.5"
                     >
                       <div className="flex items-baseline gap-2">
-                        <div className="flex items-baseline gap-1.5 font-outfit" dir="ltr">
+                        <div className="flex items-baseline gap-1.5" dir="ltr">
                           <span className="text-4xl sm:text-5xl font-black text-cyan-500 dark:text-cyan-400 tracking-tight">
-                            {billingCycle === 'yearly' ? '380' : '590'}
+                            {billingCycle === 'yearly'
+                              ? proPlan.priceYearlyMonthly.toLocaleString('en-US')
+                              : proPlan.priceMonthly.toLocaleString('en-US')}
                           </span>
                           <span className="text-xl sm:text-2xl font-bold text-cyan-600 dark:text-cyan-300">
-                            AFN
+                            {proPlan.currency}
                           </span>
                         </div>
                         <span className="text-xs text-foreground font-bold">
@@ -289,13 +273,17 @@ export function PricingSection() {
                       {billingCycle === 'yearly' ? (
                         <div className="text-xs text-emerald-500 font-bold flex items-center gap-1.5 flex-wrap">
                           <span>پرداخت سالانه</span>
-                          <span dir="ltr" className="font-outfit font-black">4,560 AFN</span>
+                          <span dir="ltr" className="font-black">
+                            {(proPlan.priceYearlyMonthly * 12).toLocaleString('en-US')} {proPlan.currency}
+                          </span>
                           <span>(صرفه‌جویی سالانه</span>
-                          <span dir="ltr" className="font-outfit font-black">2,520 AFN</span>
+                          <span dir="ltr" className="font-black">
+                            {((proPlan.priceMonthly - proPlan.priceYearlyMonthly) * 12).toLocaleString('en-US')} {proPlan.currency}
+                          </span>
                           <span>)</span>
                         </div>
                       ) : (
-                        <span className="text-xs text-muted-foreground block font-sans">
+                        <span className="text-xs text-muted-foreground block">
                           پرداخت ماهانه بدون قرارداد سالانه
                         </span>
                       )}
@@ -304,45 +292,12 @@ export function PricingSection() {
 
                   {/* Pro Feature Checklist (Dual Column) */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4 border-t border-border/60 text-xs">
-                    <div className="flex items-center gap-2.5 text-foreground font-semibold">
-                      <CheckCircle2 className="w-4 h-4 text-cyan-500 shrink-0" />
-                      <span>تیک آبی رسمی تایید هویت (KYC)</span>
-                    </div>
-
-                    <div className="flex items-center gap-2.5 text-foreground font-semibold">
-                      <CheckCircle2 className="w-4 h-4 text-cyan-500 shrink-0" />
-                      <span>فروشگاه آنلاین با درگاه حساب‌پی</span>
-                    </div>
-
-                    <div className="flex items-center gap-2.5 text-foreground font-semibold">
-                      <CheckCircle2 className="w-4 h-4 text-cyan-500 shrink-0" />
-                      <span>اتصال دامنه اختصاصی (yourname.af)</span>
-                    </div>
-
-                    <div className="flex items-center gap-2.5 text-foreground font-semibold">
-                      <CheckCircle2 className="w-4 h-4 text-cyan-500 shrink-0" />
-                      <span>کارت فیزیکی لمسی NFC با لوگو</span>
-                    </div>
-
-                    <div className="flex items-center gap-2.5 text-foreground font-semibold">
-                      <CheckCircle2 className="w-4 h-4 text-cyan-500 shrink-0" />
-                      <span>حذف کامل لوگو و برندینگ آریا لینک</span>
-                    </div>
-
-                    <div className="flex items-center gap-2.5 text-foreground font-semibold">
-                      <CheckCircle2 className="w-4 h-4 text-cyan-500 shrink-0" />
-                      <span>کد QR وکتور با دانلود نامحدود</span>
-                    </div>
-
-                    <div className="flex items-center gap-2.5 text-foreground font-semibold">
-                      <CheckCircle2 className="w-4 h-4 text-cyan-500 shrink-0" />
-                      <span>آمار و تحلیل پیشرفته بازدیدها</span>
-                    </div>
-
-                    <div className="flex items-center gap-2.5 text-foreground font-semibold">
-                      <CheckCircle2 className="w-4 h-4 text-cyan-500 shrink-0" />
-                      <span>پشتیبانی VIP و اولویت‌دار 24/7</span>
-                    </div>
+                    {proPlan.features.map((feature, fIdx) => (
+                      <div key={fIdx} className="flex items-center gap-2.5 text-foreground font-semibold">
+                        <CheckCircle2 className="w-4 h-4 text-cyan-500 shrink-0" />
+                        <span>{feature}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
@@ -362,7 +317,7 @@ export function PricingSection() {
                         <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/25 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 pointer-events-none" />
                         
                         <Sparkles className="w-4 h-4 fill-white" />
-                        <span>خرید و فعال‌سازی اشتراک PRO</span>
+                        <span>{proPlan.ctaText}</span>
                         <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1.5 transition-transform" />
                       </Button>
                     </motion.div>

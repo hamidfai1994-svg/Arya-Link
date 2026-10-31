@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { connectToDatabase } from '@/lib/db/mongodb';
 import { Order } from '@/models/Order.model';
+import { AuditLog } from '@/models/AuditLog.model';
 import { buildOrderIsolationQuery } from '@/lib/db/data-isolation';
 
 export const dynamic = 'force-dynamic';
@@ -35,11 +36,12 @@ export async function GET(req: NextRequest) {
       query = buildOrderIsolationQuery(session.user);
     }
 
-    // Exclude any legacy demo/mock items (e.g. e-books, consulting packages, demo orders)
+    // Exclude any legacy demo/mock items (e.g. e-books, consulting packages, demo orders) and soft-deleted records
     const exclusionFilter = {
       orderNumber: { $nin: ['ORD-84920', 'ORD-84921', 'ORD-84922'] },
       customerName: { $nin: ['محمد ابراهیمی', 'سارا عزیزی', 'احمد فیاض'] },
       productTitle: { $nin: ['پکیج مشاوره کسب‌وکار (یک ساعته)', 'کتاب الکترونیکی بازاریابی دیجیتال'] },
+      isDeleted: { $ne: true },
     };
     query = { ...query, ...exclusionFilter };
 
@@ -245,6 +247,91 @@ export async function PATCH(req: NextRequest) {
     console.error('Error updating order:', error);
     return NextResponse.json(
       { success: false, message: 'خطا در به‌روزرسانی سفارش.' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    const userRole = (session?.user?.role || '').toLowerCase();
+    const isSuperAdmin = userRole === 'superadmin' || userRole === 'admin';
+
+    if (!session?.user?.id || !isSuperAdmin) {
+      return NextResponse.json(
+        { success: false, message: 'دسترسی غیرمجاز. فقط مدیران سیستم مجاز به حذف سفارش هستند.' },
+        { status: 403 }
+      );
+    }
+
+    await connectToDatabase();
+    const body = await req.json();
+    const { orderId, reason } = body;
+
+    if (!orderId) {
+      return NextResponse.json(
+        { success: false, message: 'شناسه سفارش الزامی است.' },
+        { status: 400 }
+      );
+    }
+
+    if (!reason || typeof reason !== 'string' || !reason.trim()) {
+      return NextResponse.json(
+        { success: false, message: 'ثبت دلیل حذف سفارش الزامی است و برای حسابرسی امنیتی ذخیره می‌شود.' },
+        { status: 400 }
+      );
+    }
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return NextResponse.json(
+        { success: false, message: 'سفارش مورد نظر یافت نشد.' },
+        { status: 404 }
+      );
+    }
+
+    if (order.isDeleted) {
+      return NextResponse.json(
+        { success: false, message: 'این سفارش قبلاً حذف شده و در زباله‌دان سیستم قرار دارد.' },
+        { status: 400 }
+      );
+    }
+
+    const adminName = session.user.name || 'مدیر سیستم';
+    const adminEmail = session.user.email || 'admin@aryalink.af';
+
+    // 1. Soft delete the order
+    order.isDeleted = true;
+    order.deletedAt = new Date();
+    order.deletedBy = adminName;
+    order.deletedReason = reason.trim();
+    await order.save();
+
+    // 2. Record security audit log
+    await AuditLog.create({
+      recordType: 'order',
+      recordId: order._id.toString(),
+      referenceNumber: order.orderNumber,
+      title: `${order.productTitle} (${order.customerName})`,
+      amount: order.totalPrice,
+      currency: order.currency || 'AFN',
+      deletedByAdminName: adminName,
+      deletedByAdminEmail: adminEmail,
+      deletedAt: new Date(),
+      deletedReason: reason.trim(),
+      originalData: order.toObject ? order.toObject() : order,
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: `سفارش #${order.orderNumber} با موفقیت به زباله‌دان سیستم منتقل گردید.`,
+      orderId: order._id,
+    });
+  } catch (error: any) {
+    console.error('Error soft deleting order:', error);
+    return NextResponse.json(
+      { success: false, message: 'خطا در حذف امن سفارش.' },
       { status: 500 }
     );
   }

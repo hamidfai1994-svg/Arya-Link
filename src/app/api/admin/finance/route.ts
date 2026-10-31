@@ -5,6 +5,7 @@ import { connectToDatabase } from '@/lib/db/mongodb';
 import { Order } from '@/models/Order.model';
 import { Payout } from '@/models/Payout.model';
 import { User } from '@/models/User.model';
+import { AuditLog } from '@/models/AuditLog.model';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,15 +23,16 @@ export async function GET() {
 
     await connectToDatabase();
 
-    // 1. Fetch all store product orders (excluding any legacy mock/fake data)
+    // 1. Fetch all store product orders (excluding soft-deleted & mock items)
     const fakeFilter = {
       orderNumber: { $nin: ['ORD-84920', 'ORD-84921', 'ORD-84922'] },
       customerName: { $nin: ['محمد ابراهیمی', 'سارا عزیزی', 'احمد فیاض'] },
+      isDeleted: { $ne: true },
     };
     const allOrders = await Order.find(fakeFilter).sort({ createdAt: -1 }).lean();
 
-    // 2. Fetch all user payouts
-    const allPayouts = await Payout.find({}).sort({ requestedAt: -1 }).lean();
+    // 2. Fetch all user payouts (excluding soft-deleted)
+    const allPayouts = await Payout.find({ isDeleted: { $ne: true } }).sort({ requestedAt: -1 }).lean();
 
     // 3. User subscription breakdown
     const proUsersCount = await User.countDocuments({ subscriptionPlan: 'pro' });
@@ -119,5 +121,107 @@ export async function POST(req: NextRequest) {
   } catch (error: any) {
     console.error('Error updating payout finance:', error);
     return NextResponse.json({ success: false, message: 'خطا در عملیات تسویه.' }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session || !isFinancialAdmin(session)) {
+      return NextResponse.json(
+        { success: false, message: 'دسترسی غیرمجاز برای حذف تراکنش‌های مالی.' },
+        { status: 403 }
+      );
+    }
+
+    await connectToDatabase();
+    const body = await req.json();
+    const { recordId, recordType, reason } = body;
+
+    if (!recordId || !recordType) {
+      return NextResponse.json(
+        { success: false, message: 'شناسه و نوع رکورد مالی الزامی است.' },
+        { status: 400 }
+      );
+    }
+
+    if (!reason || typeof reason !== 'string' || !reason.trim()) {
+      return NextResponse.json(
+        { success: false, message: 'درج دلیل حذف الزامی است و در گزارش حسابرسی امنیتی ثبت می‌شود.' },
+        { status: 400 }
+      );
+    }
+
+    const adminName = session.user.name || 'مدیر مالی';
+    const adminEmail = session.user.email || 'admin@aryalink.af';
+
+    if (recordType === 'payout') {
+      const payout = await Payout.findById(recordId);
+      if (!payout) {
+        return NextResponse.json({ success: false, message: 'رکورد تسویه حساب یافت نشد.' }, { status: 404 });
+      }
+
+      payout.isDeleted = true;
+      payout.deletedAt = new Date();
+      payout.deletedBy = adminName;
+      payout.deletedReason = reason.trim();
+      await payout.save();
+
+      await AuditLog.create({
+        recordType: 'payout',
+        recordId: payout._id.toString(),
+        referenceNumber: payout.referenceId || `PO-${payout._id.toString().slice(-6)}`,
+        title: `تسویه حساب: ${(payout as any).accountHolderName || payout.accountTitle} (${payout.bankOrProvider})`,
+        amount: payout.amount,
+        currency: payout.currency || 'AFN',
+        deletedByAdminName: adminName,
+        deletedByAdminEmail: adminEmail,
+        deletedAt: new Date(),
+        deletedReason: reason.trim(),
+        originalData: payout.toObject ? payout.toObject() : payout,
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: 'رکورد تسویه حساب با موفقیت به زباله‌دان سیستم منتقل گردید.',
+      });
+    } else {
+      // Order/Transaction deletion
+      const order = await Order.findById(recordId);
+      if (!order) {
+        return NextResponse.json({ success: false, message: 'تراکنش سفارش یافت نشد.' }, { status: 404 });
+      }
+
+      order.isDeleted = true;
+      order.deletedAt = new Date();
+      order.deletedBy = adminName;
+      order.deletedReason = reason.trim();
+      await order.save();
+
+      await AuditLog.create({
+        recordType: 'transaction',
+        recordId: order._id.toString(),
+        referenceNumber: order.orderNumber,
+        title: `تراکنش سفارش #${order.orderNumber} (${order.customerName})`,
+        amount: order.totalPrice,
+        currency: order.currency || 'AFN',
+        deletedByAdminName: adminName,
+        deletedByAdminEmail: adminEmail,
+        deletedAt: new Date(),
+        deletedReason: reason.trim(),
+        originalData: order.toObject ? order.toObject() : order,
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: `تراکنش #${order.orderNumber} با موفقیت به زباله‌دان سیستم منتقل گردید.`,
+      });
+    }
+  } catch (error: any) {
+    console.error('Error soft deleting finance record:', error);
+    return NextResponse.json(
+      { success: false, message: 'خطا در حذف امن رکورد مالی.' },
+      { status: 500 }
+    );
   }
 }

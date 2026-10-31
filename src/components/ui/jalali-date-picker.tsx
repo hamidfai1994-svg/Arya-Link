@@ -107,7 +107,7 @@ export const JalaliDatePicker: React.FC<JalaliDatePickerProps> = ({
             <select
               value={state.day}
               onChange={(e) => updateDate('day', parseInt(e.target.value, 10))}
-              className="w-full bg-card border border-border rounded-xl px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:border-cyan-500 font-outfit"
+              className="w-full bg-card border border-border rounded-xl px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:border-cyan-500 font-sans"
             >
               {days.map((d) => (
                 <option key={d} value={d}>
@@ -139,7 +139,7 @@ export const JalaliDatePicker: React.FC<JalaliDatePickerProps> = ({
             <select
               value={state.year}
               onChange={(e) => updateDate('year', parseInt(e.target.value, 10))}
-              className="w-full bg-card border border-border rounded-xl px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:border-cyan-500 font-outfit"
+              className="w-full bg-card border border-border rounded-xl px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:border-cyan-500 font-sans"
             >
               {years.map((y) => (
                 <option key={y} value={y}>
@@ -161,7 +161,7 @@ export const JalaliDatePicker: React.FC<JalaliDatePickerProps> = ({
             <select
               value={state.hour}
               onChange={(e) => updateDate('hour', parseInt(e.target.value, 10))}
-              className="bg-card border border-border rounded-lg px-2 py-1 text-xs text-foreground font-outfit focus:outline-none focus:border-cyan-500"
+              className="bg-card border border-border rounded-lg px-2 py-1 text-xs text-foreground font-sans focus:outline-none focus:border-cyan-500"
             >
               {Array.from({ length: 24 }, (_, i) => (
                 <option key={i} value={i}>
@@ -173,7 +173,7 @@ export const JalaliDatePicker: React.FC<JalaliDatePickerProps> = ({
             <select
               value={state.minute}
               onChange={(e) => updateDate('minute', parseInt(e.target.value, 10))}
-              className="bg-card border border-border rounded-lg px-2 py-1 text-xs text-foreground font-outfit focus:outline-none focus:border-cyan-500"
+              className="bg-card border border-border rounded-lg px-2 py-1 text-xs text-foreground font-sans focus:outline-none focus:border-cyan-500"
             >
               {Array.from({ length: 12 }, (_, i) => i * 5).map((m) => (
                 <option key={m} value={m}>

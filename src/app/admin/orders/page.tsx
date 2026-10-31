@@ -25,6 +25,7 @@ import {
   MapPin,
   Calendar,
   Layers,
+  Trash2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -94,6 +95,44 @@ export default function AdminOrdersPage() {
   const [modalTrackingNumber, setModalTrackingNumber] = useState<string>('');
   const [modalAdminNotes, setModalAdminNotes] = useState<string>('');
   const [isUpdating, setIsUpdating] = useState<boolean>(false);
+
+  // Soft Delete Modal State
+  const [orderToDelete, setOrderToDelete] = useState<AdminOrder | null>(null);
+  const [deleteReason, setDeleteReason] = useState<string>('');
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
+
+  const handleConfirmDelete = async () => {
+    if (!orderToDelete) return;
+    if (!deleteReason.trim()) {
+      toast.error('ثبت دلیل حذف الزامی است.');
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const res = await fetch('/api/orders', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId: orderToDelete.id,
+          reason: deleteReason.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(data.message);
+        setOrderToDelete(null);
+        setDeleteReason('');
+        fetchOrders();
+      } else {
+        toast.error(data.message || 'خطا در حذف سفارش.');
+      }
+    } catch (err) {
+      toast.error('خطای ارتباط با سرور.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   // Fetch all orders across platform (Structure for receiving real data)
   const fetchOrders = async () => {
@@ -252,35 +291,35 @@ export default function AdminOrdersPage() {
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
         <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800">
           <span className="text-[11px] font-semibold text-slate-400 block">کل سفارشات</span>
-          <span className="text-xl font-black text-white font-mono mt-1 block">
+          <span className="text-xl font-black text-white font-sans mt-1 block">
             {orders.length.toLocaleString('en-US')}
           </span>
         </div>
 
         <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20">
           <span className="text-[11px] font-semibold text-amber-400 block">در حال بررسی</span>
-          <span className="text-xl font-black text-amber-400 font-mono mt-1 block">
+          <span className="text-xl font-black text-amber-400 font-sans mt-1 block">
             {orders.filter((o) => o.orderStatus === 'pending' || o.orderStatus === 'processing').length.toLocaleString('en-US')}
           </span>
         </div>
 
         <div className="p-4 rounded-2xl bg-cyan-500/10 border border-cyan-500/20">
           <span className="text-[11px] font-semibold text-cyan-400 block">در حال چاپ و تولید</span>
-          <span className="text-xl font-black text-cyan-400 font-mono mt-1 block">
+          <span className="text-xl font-black text-cyan-400 font-sans mt-1 block">
             {orders.filter((o) => o.orderStatus === 'printing').length.toLocaleString('en-US')}
           </span>
         </div>
 
         <div className="p-4 rounded-2xl bg-purple-500/10 border border-purple-500/20">
           <span className="text-[11px] font-semibold text-purple-400 block">ارسال شده به مقصد</span>
-          <span className="text-xl font-black text-purple-400 font-mono mt-1 block">
+          <span className="text-xl font-black text-purple-400 font-sans mt-1 block">
             {orders.filter((o) => o.orderStatus === 'shipped' || o.orderStatus === 'completed').length.toLocaleString('en-US')}
           </span>
         </div>
 
         <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 col-span-2 lg:col-span-1">
           <span className="text-[11px] font-semibold text-emerald-400 block">مجموع عواید سفارشات</span>
-          <span className="text-xl font-black text-emerald-400 font-mono mt-1 block">
+          <span className="text-xl font-black text-emerald-400 font-sans mt-1 block">
             {orders
               .filter((o) => o.paymentStatus === 'paid')
               .reduce((sum, o) => sum + (o.totalPrice || 0), 0)
@@ -372,7 +411,7 @@ export default function AdminOrdersPage() {
                 paginatedOrders.map((order) => {
                   return (
                     <tr key={order.id} className="hover:bg-slate-800/30 transition-colors">
-                      <td className="p-4 font-mono font-bold text-cyan-400">
+                      <td className="p-4 font-sans font-bold text-cyan-400">
                         {order.orderNumber}
                       </td>
 
@@ -392,8 +431,8 @@ export default function AdminOrdersPage() {
                         </div>
                       </td>
 
-                      <td className="p-4 font-mono font-bold text-white">
-                        {order.totalPrice.toLocaleString()} AFN
+                      <td className="p-4 font-bold text-white">
+                        {order.totalPrice.toLocaleString('en-US')} AFN
                       </td>
 
                       <td className="p-4">
@@ -420,11 +459,11 @@ export default function AdminOrdersPage() {
                         )}
                       </td>
 
-                      <td className="p-4 font-mono text-slate-400" dir="ltr">
+                      <td className="p-4 text-slate-400" dir="ltr">
                         {order.trackingNumber || '-'}
                       </td>
 
-                      <td className="p-4 text-[11px] text-slate-400 font-mono">
+                      <td className="p-4 text-[11px] text-slate-400 font-sans">
                         {new Date(order.createdAt).toLocaleDateString('en-US', {
                           year: 'numeric',
                           month: 'numeric',
@@ -466,6 +505,21 @@ export default function AdminOrdersPage() {
                               ارسال پستی
                             </button>
                           )}
+
+                          {/* Soft Delete Trigger */}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              setOrderToDelete(order);
+                              setDeleteReason('');
+                            }}
+                            className="h-8 px-2 rounded-lg text-rose-400 hover:text-rose-300 hover:bg-rose-500/15 text-xs flex items-center gap-1"
+                            title="حذف ایمن سفارش و انتقال به زباله‌دان"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>حذف</span>
+                          </Button>
                         </div>
                       </td>
                     </tr>
@@ -501,7 +555,7 @@ export default function AdminOrdersPage() {
           <DialogHeader className="text-right">
             <DialogTitle className="text-base font-bold text-white flex items-center justify-between">
               <span>مدیریت سفارش {selectedOrder?.orderNumber}</span>
-              <span className="font-mono text-cyan-400 text-sm">
+              <span className="font-sans text-cyan-400 text-sm">
                 {selectedOrder?.totalPrice.toLocaleString()} AFN
               </span>
             </DialogTitle>
@@ -518,7 +572,7 @@ export default function AdminOrdersPage() {
                   <div>
                     <span className="text-slate-400 block text-[11px]">خریدار:</span>
                     <span className="font-semibold text-white">{selectedOrder.customerName}</span>
-                    <div className="text-[10px] font-mono text-slate-400" dir="ltr">{selectedOrder.customerPhone}</div>
+                    <div className="text-[10px] font-sans text-slate-400" dir="ltr">{selectedOrder.customerPhone}</div>
                   </div>
                   <div>
                     <span className="text-slate-400 block text-[11px]">مدل کارت:</span>
@@ -543,7 +597,7 @@ export default function AdminOrdersPage() {
                       href={selectedOrder.cardSpecs?.cardUrl || '#'}
                       target="_blank"
                       rel="noreferrer"
-                      className="font-mono text-cyan-400 hover:underline flex items-center gap-1 text-[11px]"
+                      className="font-sans text-cyan-400 hover:underline flex items-center gap-1 text-[11px]"
                       dir="ltr"
                     >
                       <span>{selectedOrder.cardSpecs?.cardUrl || 'aryal.ink'}</span>
@@ -598,7 +652,7 @@ export default function AdminOrdersPage() {
                   onChange={(e) => setModalTrackingNumber(e.target.value)}
                   placeholder="مثال: EXP-AF-98214"
                   dir="ltr"
-                  className="h-10 bg-black/40 border-slate-800 text-xs font-mono text-white rounded-xl"
+                  className="h-10 bg-black/40 border-slate-800 text-xs font-sans text-white rounded-xl"
                 />
               </div>
 
@@ -635,6 +689,65 @@ export default function AdminOrdersPage() {
               </div>
             </form>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Mandatory Reason Soft Delete Modal */}
+      <Dialog open={!!orderToDelete} onOpenChange={() => setOrderToDelete(null)}>
+        <DialogContent className="sm:max-w-md rounded-3xl bg-slate-950 border-slate-800 text-white" dir="rtl">
+          <DialogHeader className="text-right">
+            <DialogTitle className="text-lg font-bold text-rose-400 flex items-center gap-2">
+              <Trash2 className="w-5 h-5 text-rose-500" />
+              <span>حذف امن سفارش و انتقال به زباله‌دان</span>
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-400 mt-1">
+              سفارش #{orderToDelete?.orderNumber} برای «{orderToDelete?.customerName}» به ارزش {orderToDelete?.totalPrice.toLocaleString('en-US')} AFN به زباله‌دان سیستم منتقل خواهد شد.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="p-3 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs flex items-start gap-2">
+              <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>
+                طبق دستورالعمل‌های امنیتی، درج <strong>دلیل اجباری حذف</strong> برای ثبت در لاگ حسابرسی (Audit Log) پلتفرم الزامی می‌باشد.
+              </span>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-200 block">
+                دلیل حذف سفارش <span className="text-rose-500">*</span>:
+              </label>
+              <Input
+                type="text"
+                value={deleteReason}
+                onChange={(e) => setDeleteReason(e.target.value)}
+                placeholder="مثال: لغو به درخواست مشتری، ثبت تکراری، یا عدم تایید هویت..."
+                className="h-11 rounded-2xl bg-slate-900 border-slate-800 text-xs text-white placeholder:text-slate-500"
+                autoFocus
+              />
+            </div>
+
+            <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-800">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={isDeleting}
+                onClick={() => setOrderToDelete(null)}
+                className="h-10 px-4 rounded-xl text-xs border-slate-800 bg-slate-900 text-slate-300"
+              >
+                انصراف
+              </Button>
+              <Button
+                type="button"
+                disabled={isDeleting || !deleteReason.trim()}
+                onClick={handleConfirmDelete}
+                className="h-10 px-5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs flex items-center gap-1.5 disabled:opacity-50"
+              >
+                {isDeleting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                <span>تایید حذف و ثبت در لاگ امنیتی</span>
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

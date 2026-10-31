@@ -845,7 +845,7 @@ export const LivePreview: React.FC = () => {
               <div key={idx} className="min-w-[85%] rounded-2xl overflow-hidden aspect-[16/9] border border-border shadow-md shrink-0 snap-center relative">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={imgUrl} alt={`slide-${idx}`} className="w-full h-full object-cover" />
-                <span className="absolute bottom-2 left-2 px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-md text-white text-[9px] font-outfit">
+                <span className="absolute bottom-2 left-2 px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-md text-white text-[9px] font-sans">
                   {idx + 1} / {meta.imageUrls.length}
                 </span>
               </div>
@@ -882,7 +882,7 @@ export const LivePreview: React.FC = () => {
               <span className={`text-xs font-bold block truncate ${isLight ? 'text-slate-900' : 'text-white'}`}>
                 {meta.productTitle || link.title}
               </span>
-              <span className="text-xs font-outfit font-bold text-cyan-600 dark:text-cyan-400 mt-0.5 block">
+              <span className="text-xs font-sans font-bold text-cyan-600 dark:text-cyan-400 mt-0.5 block">
                 {meta.productPrice?.toLocaleString('en-US') || '0'} {meta.productCurrency || 'AFN'}
               </span>
             </div>
@@ -918,7 +918,7 @@ export const LivePreview: React.FC = () => {
               <span className={`text-xs font-bold block truncate ${isLight ? 'text-slate-900' : 'text-white'}`}>
                 {meta.checkoutItemName || link.title}
               </span>
-              <span className="text-xs font-outfit font-bold text-emerald-600 dark:text-emerald-400 mt-0.5 block">
+              <span className="text-xs font-sans font-bold text-emerald-600 dark:text-emerald-400 mt-0.5 block">
                 {meta.checkoutAmount?.toLocaleString('en-US') || '500'} {meta.paymentCurrency || 'AFN'}
               </span>
             </div>
@@ -1016,7 +1016,7 @@ export const LivePreview: React.FC = () => {
                 placeholder="0700 000 000"
                 readOnly
                 dir="ltr"
-                className={`w-full ${cardRadius} px-3 py-1.5 text-xs font-outfit text-left border focus:outline-none ${isLight ? 'bg-slate-50 border-slate-200 text-slate-800 placeholder-slate-400' : 'bg-white/5 border-white/10 text-white placeholder-slate-500'
+                className={`w-full ${cardRadius} px-3 py-1.5 text-xs font-sans text-left border focus:outline-none ${isLight ? 'bg-slate-50 border-slate-200 text-slate-800 placeholder-slate-400' : 'bg-white/5 border-white/10 text-white placeholder-slate-500'
                   }`}
               />
             </div>
@@ -1064,7 +1064,7 @@ export const LivePreview: React.FC = () => {
               <span className={`text-xs font-bold block truncate ${isLight ? 'text-slate-900' : 'text-white'}`}>
                 {link.title}
               </span>
-              <span className="text-[10px] font-outfit text-teal-600 dark:text-teal-400 block mt-0.5">
+              <span className="text-[10px] font-sans text-teal-600 dark:text-teal-400 block mt-0.5">
                 {platformName}
               </span>
             </div>
@@ -1215,14 +1215,14 @@ export const LivePreview: React.FC = () => {
                 {link.title}
               </span>
               {lock?.isLocked && (
-                <span className="text-[9px] bg-amber-500/20 text-amber-600 dark:text-amber-400 font-bold px-1.5 py-0.2 rounded-full flex items-center gap-0.5 border border-amber-500/30 shrink-0 font-outfit">
+                <span className="text-[9px] bg-amber-500/20 text-amber-600 dark:text-amber-400 font-bold px-1.5 py-0.2 rounded-full flex items-center gap-0.5 border border-amber-500/30 shrink-0 font-sans">
                   <Lock className="w-2.5 h-2.5" />
                   {lock.price} {lock.currency}
                 </span>
               )}
             </div>
             <span
-              className={`text-[11px] font-outfit font-medium tracking-wide truncate block mt-0.5 ${isLight ? 'text-slate-500' : 'text-slate-300/80'
+              className={`text-[11px] font-sans font-medium tracking-wide truncate block mt-0.5 ${isLight ? 'text-slate-500' : 'text-slate-300/80'
                 }`}
               dir="ltr"
             >
@@ -1331,7 +1331,7 @@ export const LivePreview: React.FC = () => {
                 includeMargin={true}
               />
             </div>
-            <div className="mt-2 px-3 py-0.5 rounded-full bg-slate-100 text-slate-800 text-[11px] font-outfit font-semibold border border-slate-200" dir="ltr">
+            <div className="mt-2 px-3 py-0.5 rounded-full bg-slate-100 text-slate-800 text-[11px] font-sans font-semibold border border-slate-200" dir="ltr">
               aryal.ink/{profile.alias}
             </div>
           </div>
@@ -1712,7 +1712,7 @@ export const LivePreview: React.FC = () => {
                       : isPashto
                         ? 'جوړ شوی لخوا ⚡'
                         : 'طراحی شده با ⚡'}{' '}
-                    <span className="text-cyan-500 dark:text-cyan-400 font-bold font-outfit">Arya Link</span>
+                    <span className="text-cyan-500 dark:text-cyan-400 font-bold font-sans">Arya Link</span>
                   </span>
                 </div>
               )}

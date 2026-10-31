@@ -159,7 +159,7 @@ function IsolatedCardEditorInner() {
           <button
             type="button"
             onClick={handleCopyCardUrl}
-            className="flex-1 flex items-center justify-between gap-1.5 px-2.5 py-1.5 rounded-xl bg-background/80 hover:bg-background border border-border text-[11px] font-outfit text-muted-foreground hover:text-foreground transition-colors truncate"
+            className="flex-1 flex items-center justify-between gap-1.5 px-2.5 py-1.5 rounded-xl bg-background/80 hover:bg-background border border-border text-[11px] font-sans text-muted-foreground hover:text-foreground transition-colors truncate"
             dir="ltr"
             title="کپی آدرس لینک"
           >

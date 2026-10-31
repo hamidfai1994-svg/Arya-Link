@@ -249,7 +249,7 @@ export default function UserKYCPage() {
                   value={nationalId}
                   onChange={(e) => setNationalId(e.target.value)}
                   required
-                  className="h-11 rounded-xl font-outfit text-xs text-left"
+                  className="h-11 rounded-xl font-sans text-xs text-left"
                 />
               </div>
             </div>
@@ -284,7 +284,7 @@ export default function UserKYCPage() {
                         placeholder="آدرس اینترنتی یا کلیک روی دکمه نمونه"
                         value={selfieUrl}
                         onChange={(e) => setSelfieUrl(e.target.value)}
-                        className="h-9 rounded-xl text-[11px] font-outfit text-left"
+                        className="h-9 rounded-xl text-[11px] font-sans text-left"
                       />
                       <Button
                         type="button"
@@ -322,7 +322,7 @@ export default function UserKYCPage() {
                         placeholder="آدرس اینترنتی تصویر مدرک"
                         value={documentUrl}
                         onChange={(e) => setDocumentUrl(e.target.value)}
-                        className="h-9 rounded-xl text-[11px] font-outfit text-left"
+                        className="h-9 rounded-xl text-[11px] font-sans text-left"
                       />
                       <Button
                         type="button"

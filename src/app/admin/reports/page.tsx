@@ -75,7 +75,7 @@ export default function AdminReportsPage() {
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
               گزارشات رشد و آنالیتیکس پلتفرم (Platform Analytics)
             </h1>
-            <Badge variant="cyan" className="font-outfit text-xs">
+            <Badge variant="cyan" className="font-sans text-xs">
               Live BI
             </Badge>
           </div>
@@ -113,7 +113,7 @@ export default function AdminReportsPage() {
                   <Eye className="w-4 h-4" />
                 </div>
               </div>
-              <div className="text-2xl sm:text-3xl font-black font-outfit text-foreground tracking-tight">
+              <div className="text-2xl sm:text-3xl font-black font-sans text-foreground tracking-tight">
                 {stats?.totalViews.toLocaleString('en-US')}
               </div>
               <div className="flex items-center gap-1 text-[11px] text-emerald-500 mt-1 font-bold">
@@ -130,11 +130,11 @@ export default function AdminReportsPage() {
                   <MousePointerClick className="w-4 h-4" />
                 </div>
               </div>
-              <div className="text-2xl sm:text-3xl font-black font-outfit text-foreground tracking-tight">
+              <div className="text-2xl sm:text-3xl font-black font-sans text-foreground tracking-tight">
                 {stats?.totalClicks.toLocaleString('en-US')}
               </div>
               <p className="text-[11px] text-muted-foreground mt-1">
-                نرخ تعامل میانگین: <span className="font-bold text-rose-500 font-outfit">{stats?.averageCtr}</span>
+                نرخ تعامل میانگین: <span className="font-bold text-rose-500 font-sans">{stats?.averageCtr}</span>
               </p>
             </Card>
 
@@ -146,7 +146,7 @@ export default function AdminReportsPage() {
                   <Layers className="w-4 h-4" />
                 </div>
               </div>
-              <div className="text-2xl sm:text-3xl font-black font-outfit text-foreground tracking-tight">
+              <div className="text-2xl sm:text-3xl font-black font-sans text-foreground tracking-tight">
                 {stats?.totalProfiles.toLocaleString('en-US')}
               </div>
               <p className="text-[11px] text-muted-foreground mt-1">پروفایل‌های آنلاین دارای لینک بایو</p>
@@ -160,7 +160,7 @@ export default function AdminReportsPage() {
                   <Users className="w-4 h-4" />
                 </div>
               </div>
-              <div className="text-2xl sm:text-3xl font-black font-outfit text-emerald-500 tracking-tight">
+              <div className="text-2xl sm:text-3xl font-black font-sans text-emerald-500 tracking-tight">
                 {stats?.totalLeads.toLocaleString('en-US')}
               </div>
               <p className="text-[11px] text-muted-foreground mt-1">مخاطبین جذب‌شده توسط مشتریان</p>
@@ -186,7 +186,7 @@ export default function AdminReportsPage() {
                   <div key={idx} className="space-y-1.5">
                     <div className="flex items-center justify-between text-xs">
                       <span className="font-bold text-foreground">{p.province}</span>
-                      <span className="font-outfit font-bold text-cyan-500">{p.visitorsPercent}٪</span>
+                      <span className="font-sans font-bold text-cyan-500">{p.visitorsPercent}٪</span>
                     </div>
                     <div className="w-full h-2 rounded-full bg-muted overflow-hidden">
                       <div
@@ -226,8 +226,8 @@ export default function AdminReportsPage() {
                       </div>
                     </div>
 
-                    <div className="text-xl font-black font-outfit text-foreground tracking-tight">
-                      <span dir="ltr" className="font-outfit">{d.percent}%</span>
+                    <div className="text-xl font-black font-sans text-foreground tracking-tight">
+                      <span dir="ltr" className="font-sans">{d.percent}%</span>
                     </div>
                   </div>
                 ))}

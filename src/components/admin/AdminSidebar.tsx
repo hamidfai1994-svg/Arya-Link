@@ -17,6 +17,7 @@ import {
   User,
   Sparkles,
   ShoppingBag,
+  Trash2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -63,6 +64,13 @@ const adminNavItems: AdminNavItem[] = [
     subtitle: 'تعرفه‌ها، درگاه‌های بانکی، امنیت و لجستیک',
     href: '/admin/settings',
     icon: Settings,
+  },
+  {
+    title: 'زباله‌دان سیستم (System Trash)',
+    subtitle: 'لاگ امنیتی حسابرسی و رکوردهای حذف‌شده',
+    href: '/admin/trash',
+    icon: Trash2,
+    badge: 'AUDIT',
   },
 ];
 
@@ -176,7 +184,7 @@ export function AdminSidebar({ onCloseMobile }: { onCloseMobile?: () => void }) 
               </div>
 
               {item.badge && (
-                <span className="text-[9px] px-2 py-0.5 rounded-full font-black font-outfit uppercase shrink-0 bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                <span className="text-[9px] px-2 py-0.5 rounded-full font-black font-sans uppercase shrink-0 bg-rose-500/20 text-rose-400 border border-rose-500/30">
                   {item.badge}
                 </span>
               )}

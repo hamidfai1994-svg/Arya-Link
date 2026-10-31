@@ -95,7 +95,7 @@ export function MultilingualInput({
             <button
               type="button"
               onClick={() => setActiveTab('en')}
-              className={`px-2.5 py-1 rounded-lg font-bold font-outfit transition-all ${
+              className={`px-2.5 py-1 rounded-lg font-bold font-sans transition-all ${
                 activeTab === 'en'
                   ? 'bg-background text-cyan-500 shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
@@ -150,7 +150,7 @@ export function MultilingualInput({
           value={value.en || ''}
           onChange={(e) => onChange({ ...value, en: e.target.value })}
           placeholder={placeholder?.en || 'Enter English translation...'}
-          className="h-10 rounded-xl text-xs bg-background font-outfit text-left"
+          className="h-10 rounded-xl text-xs bg-background font-sans text-left"
           dir="ltr"
         />
       )}

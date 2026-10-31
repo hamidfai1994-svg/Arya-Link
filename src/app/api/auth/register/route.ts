@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
     // 1. Validation
     if (!name || typeof name !== 'string' || name.trim().length < 2) {
       return NextResponse.json(
-        { success: false, message: 'نام و تخلص باید حداقل شامل ۲ کاراکتر باشد.' },
+        { success: false, message: 'نام و تخلص باید حداقل شامل 2 کاراکتر باشد.' },
         { status: 400 }
       );
     }
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
 
     if (!password || typeof password !== 'string' || password.length < 6) {
       return NextResponse.json(
-        { success: false, message: 'رمز عبور باید حداقل ۶ کاراکتر باشد.' },
+        { success: false, message: 'رمز عبور باید حداقل 6 کاراکتر باشد.' },
         { status: 400 }
       );
     }

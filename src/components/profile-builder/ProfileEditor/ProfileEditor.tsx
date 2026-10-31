@@ -204,7 +204,7 @@ export const ProfileEditor: React.FC = () => {
       {/* Editor Header (Isolated Single-Card Context — No Card Selector Dropdown) */}
       <header className="p-4 border-b border-border flex items-center justify-between bg-card/80 backdrop-blur-md sticky top-0 z-20 gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center font-bold text-white shadow-lg shadow-cyan-500/20 font-outfit shrink-0 overflow-hidden">
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center font-bold text-white shadow-lg shadow-cyan-500/20 font-sans shrink-0 overflow-hidden">
             {profile.avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={profile.avatarUrl} alt="" className="w-full h-full object-cover" />
@@ -231,7 +231,7 @@ export const ProfileEditor: React.FC = () => {
             <button
               type="button"
               onClick={handleCopyLink}
-              className="text-[11px] font-outfit text-cyan-600 dark:text-cyan-400 hover:underline flex items-center gap-1 mt-0.5"
+              className="text-[11px] font-sans text-cyan-600 dark:text-cyan-400 hover:underline flex items-center gap-1 mt-0.5"
               dir="ltr"
               title="کپی آدرس لینک"
             >
@@ -828,7 +828,7 @@ export const ProfileEditor: React.FC = () => {
                               <span className={`text-xs font-bold block ${isSelected ? 'text-foreground' : ''}`}>
                                 {r.label}
                               </span>
-                              <span className="text-[10px] opacity-70 block font-outfit mt-0.5" dir="ltr">
+                              <span className="text-[10px] opacity-70 block font-sans mt-0.5" dir="ltr">
                                 {r.id}
                               </span>
                             </div>
@@ -866,7 +866,7 @@ export const ProfileEditor: React.FC = () => {
                         />
                         <div>
                           <span className="text-xs font-medium text-foreground block">رنگ شروع گرادیانت</span>
-                          <span className="font-outfit font-semibold text-[11px] text-muted-foreground uppercase">
+                          <span className="font-sans font-semibold text-[11px] text-muted-foreground uppercase">
                             {profile.themeConfig.primaryColor || '#06b6d4'}
                           </span>
                         </div>
@@ -884,7 +884,7 @@ export const ProfileEditor: React.FC = () => {
                         />
                         <div>
                           <span className="text-xs font-medium text-foreground block">رنگ پایان گرادیانت</span>
-                          <span className="font-outfit font-semibold text-[11px] text-muted-foreground uppercase">
+                          <span className="font-sans font-semibold text-[11px] text-muted-foreground uppercase">
                             {profile.themeConfig.accentColor || '#3b82f6'}
                           </span>
                         </div>
@@ -959,7 +959,7 @@ export const ProfileEditor: React.FC = () => {
                     badge: 'شیک و هندسی',
                     desc: 'خطوط هندسی و مینیمال، ایده‌آل برای برندهای تجاری و فناوری.',
                     sample: 'کارت ویزیت هوشمند و صفحه اختصاصی ارتباطی شما',
-                    fontClass: 'font-yekan_bakh',
+                    fontClass: 'font-sans',
                   },
                   {
                     id: 'shabnam',
@@ -967,7 +967,7 @@ export const ProfileEditor: React.FC = () => {
                     badge: 'رسمی و چشم‌نواز',
                     desc: 'زاویه‌های نرم و دلنشین با حس اعتماد و ارتباط صمیمی با مخاطب.',
                     sample: 'کارت ویزیت هوشمند و صفحه اختصاصی ارتباطی شما',
-                    fontClass: 'font-shabnam',
+                    fontClass: 'font-sans',
                   },
                   {
                     id: 'sahel',
@@ -975,7 +975,7 @@ export const ProfileEditor: React.FC = () => {
                     badge: 'کلاسیک و آرام',
                     desc: 'تایپوگرافی لطیف، متوازن و بسیار روان برای متن‌های طولانی و مقالات.',
                     sample: 'کارت ویزیت هوشمند و صفحه اختصاصی ارتباطی شما',
-                    fontClass: 'font-sahel',
+                    fontClass: 'font-sans',
                   },
                 ].map((f) => {
                   const isSelected = (profile.themeConfig?.fontFa || 'vazirmatn') === f.id;
@@ -1050,7 +1050,7 @@ export const ProfileEditor: React.FC = () => {
                     badge: 'Geometric & Trendy',
                     desc: 'Modern geometric sans inspired by digital brands and lifestyle tech.',
                     sample: 'Smart Digital Business Card & Bio',
-                    fontClass: 'font-outfit',
+                    fontClass: 'font-sans',
                   },
                   {
                     id: 'plus_jakarta',
@@ -1066,7 +1066,7 @@ export const ProfileEditor: React.FC = () => {
                     badge: 'Luxury Serif',
                     desc: 'High-contrast luxury transitional serif for elite, boutique & VIP cards.',
                     sample: 'Smart Digital Business Card & Bio',
-                    fontClass: 'font-playfair',
+                    fontClass: 'font-sans',
                   },
                 ].map((f) => {
                   const isSelected = (profile.themeConfig?.fontEn || 'inter') === f.id;
@@ -1152,7 +1152,7 @@ export const ProfileEditor: React.FC = () => {
                     }}
                   >
                     <span>ارتباط مستقیم در واتساپ</span>
-                    <span className="text-[11px] font-outfit" dir="ltr">WhatsApp</span>
+                    <span className="text-[11px] font-sans" dir="ltr">WhatsApp</span>
                   </div>
                 </div>
               </div>
@@ -1223,7 +1223,7 @@ export const ProfileEditor: React.FC = () => {
                     نام کاربری (لینک پروفایل)
                   </label>
                   <div className="flex items-center rounded-xl border border-border bg-background overflow-hidden focus-within:border-cyan-500" dir="ltr">
-                    <span className="px-3 py-2 text-xs font-outfit text-muted-foreground border-r border-border select-none bg-muted/50" dir="ltr">
+                    <span className="px-3 py-2 text-xs font-sans text-muted-foreground border-r border-border select-none bg-muted/50" dir="ltr">
                       aryal.ink/
                     </span>
                     <input
@@ -1234,7 +1234,7 @@ export const ProfileEditor: React.FC = () => {
                         updateBasicInfo({ alias: clean });
                       }}
                       placeholder="username"
-                      className="w-full bg-transparent border-0 py-2 px-3 text-xs font-outfit text-foreground focus:outline-none text-left"
+                      className="w-full bg-transparent border-0 py-2 px-3 text-xs font-sans text-foreground focus:outline-none text-left"
                       dir="ltr"
                     />
                   </div>
@@ -1349,7 +1349,7 @@ export const ProfileEditor: React.FC = () => {
                     <span>پیش‌نمایش در نتایج گوگل</span>
                   </div>
                   <div className="space-y-0.5 text-right font-sans pt-1">
-                    <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-outfit" dir="ltr">
+                    <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-sans" dir="ltr">
                       https://aryal.ink › {profile.alias}
                     </div>
                     <div className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer truncate">
@@ -1396,7 +1396,7 @@ export const ProfileEditor: React.FC = () => {
                     value={profile.directModeUrl || ''}
                     onChange={(e) => toggleDirectMode(true, e.target.value)}
                     placeholder="https://instagram.com/your_id یا https://wa.me/..."
-                    className="w-full bg-background border border-cyan-500/40 rounded-xl px-3 py-2 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-400 font-outfit text-left"
+                    className="w-full bg-background border border-cyan-500/40 rounded-xl px-3 py-2 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-400 font-sans text-left"
                     dir="ltr"
                   />
                 </div>

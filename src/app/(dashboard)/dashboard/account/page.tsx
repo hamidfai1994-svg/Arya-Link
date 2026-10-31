@@ -296,7 +296,7 @@ export default function AccountSettingsPage() {
               <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
                 تنظیمات حساب کاربری
               </h1>
-              <Badge variant="cyan" className="font-outfit text-xs font-bold">
+              <Badge variant="cyan" className="font-sans text-xs font-bold">
                 Account Settings
               </Badge>
             </div>
@@ -353,7 +353,7 @@ export default function AccountSettingsPage() {
                     value={avatar}
                     onChange={(e) => setAvatar(e.target.value)}
                     placeholder="https://example.com/avatar.jpg"
-                    className="h-9 rounded-xl text-xs font-mono"
+                    className="h-9 rounded-xl text-xs font-sans"
                     dir="ltr"
                   />
                   <p className="text-[10px] text-muted-foreground">
@@ -439,7 +439,7 @@ export default function AccountSettingsPage() {
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="+93 799 123 456"
-                    className="h-10 rounded-xl text-xs pr-10 font-mono"
+                    className="h-10 rounded-xl text-xs pr-10 font-sans"
                     dir="ltr"
                   />
                   <Phone className="w-4 h-4 text-muted-foreground absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -486,7 +486,7 @@ export default function AccountSettingsPage() {
                     value={currentPassword}
                     onChange={(e) => setCurrentPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="h-10 rounded-xl text-xs pr-10 pl-10 font-mono text-left"
+                    className="h-10 rounded-xl text-xs pr-10 pl-10 font-sans text-left"
                     dir="ltr"
                   />
                   <Lock className="w-4 h-4 text-muted-foreground absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -514,7 +514,7 @@ export default function AccountSettingsPage() {
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       placeholder="حداقل 6 نویسه"
-                      className="h-10 rounded-xl text-xs pr-10 pl-10 font-mono text-left"
+                      className="h-10 rounded-xl text-xs pr-10 pl-10 font-sans text-left"
                       dir="ltr"
                     />
                     <KeyRound className="w-4 h-4 text-muted-foreground absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -541,7 +541,7 @@ export default function AccountSettingsPage() {
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="تکرار همان گذرواژه"
-                      className="h-10 rounded-xl text-xs pr-10 pl-10 font-mono text-left"
+                      className="h-10 rounded-xl text-xs pr-10 pl-10 font-sans text-left"
                       dir="ltr"
                     />
                     <KeyRound className="w-4 h-4 text-muted-foreground absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -585,7 +585,7 @@ export default function AccountSettingsPage() {
           <Card className="p-5 rounded-3xl bg-gradient-to-b from-card to-muted/40 border border-border shadow-sm space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-foreground">نوع اشتراک پلتفرم</span>
-              <Badge variant="cyan" className="font-outfit uppercase text-[10px] font-bold">
+              <Badge variant="cyan" className="font-sans uppercase text-[10px] font-bold">
                 {accountData?.subscriptionPlan || 'PRO'}
               </Badge>
             </div>
@@ -605,14 +605,14 @@ export default function AccountSettingsPage() {
             <div className="space-y-2 text-xs border-t border-border/80 pt-3">
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">نقش دسترسی:</span>
-                <span className="font-bold font-mono text-foreground uppercase">
+                <span className="font-bold font-sans text-foreground uppercase">
                   {accountData?.role || session?.user?.role || 'user'}
                 </span>
               </div>
 
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">تاریخ عضویت:</span>
-                <span className="font-mono text-foreground font-semibold">
+                <span className="font-sans text-foreground font-semibold">
                   {accountData?.createdAt
                     ? new Date(accountData.createdAt).toLocaleDateString('en-US', {
                         year: 'numeric',
@@ -695,7 +695,7 @@ export default function AccountSettingsPage() {
 
             <div className="flex items-center justify-between text-xs pt-1">
               {otpCooldown > 0 ? (
-                <span className="text-muted-foreground text-[11px] font-mono" dir="ltr">
+                <span className="text-muted-foreground text-[11px] font-sans" dir="ltr">
                   Resend code in {otpCooldown}s
                 </span>
               ) : (

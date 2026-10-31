@@ -131,7 +131,7 @@ export default function AdminMediaPage() {
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
               گالری رسانه و فایل‌ها (Media Library)
             </h1>
-            <Badge variant="cyan" className="font-outfit text-xs">
+            <Badge variant="cyan" className="font-sans text-xs">
               CMS Assets
             </Badge>
           </div>
@@ -188,7 +188,7 @@ export default function AdminMediaPage() {
           <Search className="w-4 h-4 text-muted-foreground absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
         </div>
 
-        <span className="text-xs text-muted-foreground font-outfit">
+        <span className="text-xs text-muted-foreground font-sans">
           {filteredFiles.length} فایل ثبت شده
         </span>
       </div>
@@ -257,7 +257,7 @@ export default function AdminMediaPage() {
                     <span className="text-xs font-bold text-foreground truncate block" title={file.name}>
                       {file.name}
                     </span>
-                    <span className="text-[10px] text-muted-foreground font-outfit mt-0.5 block">
+                    <span className="text-[10px] text-muted-foreground font-sans mt-0.5 block">
                       {formatBytes(file.size)}
                     </span>
                   </div>

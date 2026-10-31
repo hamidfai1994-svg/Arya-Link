@@ -197,7 +197,7 @@ export default function AdminCompanyPage() {
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
               درباره شرکت و نمایندگی‌های سه‌زبانه (Multilingual Company CMS)
             </h1>
-            <Badge variant="cyan" className="font-outfit text-xs">
+            <Badge variant="cyan" className="font-sans text-xs">
               CMS 3-LANG
             </Badge>
           </div>
@@ -294,7 +294,7 @@ export default function AdminCompanyPage() {
                 <Input
                   value={supportPhone}
                   onChange={(e) => setSupportPhone(e.target.value)}
-                  className="h-10 rounded-xl text-xs font-outfit"
+                  className="h-10 rounded-xl text-xs font-sans"
                   dir="ltr"
                 />
               </div>
@@ -361,7 +361,7 @@ export default function AdminCompanyPage() {
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-foreground flex items-center gap-2">
-                      <span className="w-6 h-6 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center font-outfit text-xs font-bold">
+                      <span className="w-6 h-6 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center font-sans text-xs font-bold">
                         {idx + 1}
                       </span>
                       <span>{b.name || 'شعبه بدون نام'}</span>
@@ -411,7 +411,7 @@ export default function AdminCompanyPage() {
                       <Input
                         value={b.phone}
                         onChange={(e) => handleUpdateBranch(idx, 'phone', e.target.value)}
-                        className="h-8 rounded-lg text-xs font-outfit"
+                        className="h-8 rounded-lg text-xs font-sans"
                         dir="ltr"
                       />
                     </div>

@@ -267,7 +267,7 @@ export default function UserDashboardPage() {
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
               داشبورد و لینک‌های من
             </h1>
-            <Badge variant="cyan" className="text-xs font-bold font-mono">
+            <Badge variant="cyan" className="text-xs font-bold font-sans">
               {profiles.length} Active Cards
             </Badge>
           </div>
@@ -300,7 +300,7 @@ export default function UserDashboardPage() {
             </div>
           </div>
           <div>
-            <span className="text-2xl sm:text-3xl font-black text-foreground font-mono tracking-tight block">
+            <span className="text-2xl sm:text-3xl font-black text-foreground font-sans tracking-tight block">
               {totalViews.toLocaleString('en-US')}
             </span>
             <span className="text-[10px] text-muted-foreground mt-0.5 block">
@@ -320,7 +320,7 @@ export default function UserDashboardPage() {
             </div>
           </div>
           <div>
-            <span className="text-2xl sm:text-3xl font-black text-foreground font-mono tracking-tight block">
+            <span className="text-2xl sm:text-3xl font-black text-foreground font-sans tracking-tight block">
               {(totalLinks + totalLeads).toLocaleString('en-US')}
             </span>
             <span className="text-[10px] text-muted-foreground mt-0.5 block">
@@ -340,7 +340,7 @@ export default function UserDashboardPage() {
             </div>
           </div>
           <div>
-            <span className="text-2xl sm:text-3xl font-black text-foreground font-mono tracking-tight block">
+            <span className="text-2xl sm:text-3xl font-black text-foreground font-sans tracking-tight block">
               {profiles.length.toLocaleString('en-US')}
             </span>
             <span className="text-[10px] text-muted-foreground mt-0.5 block">
@@ -389,7 +389,7 @@ export default function UserDashboardPage() {
 
         <div className="flex items-center gap-2 self-end sm:self-auto text-xs text-muted-foreground">
           <span>دامنه پیش‌فرض:</span>
-          <span className="font-outfit font-semibold text-cyan-500 dark:text-cyan-400">
+          <span className="font-sans font-semibold text-cyan-500 dark:text-cyan-400">
             {domainHost}
           </span>
         </div>
@@ -482,7 +482,7 @@ export default function UserDashboardPage() {
                       <button
                         type="button"
                         onClick={() => handleCopyLink(profile.alias)}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 text-xs font-semibold font-outfit transition-colors group/link border border-cyan-500/20"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 text-xs font-semibold font-sans transition-colors group/link border border-cyan-500/20"
                         title="برای کپی آدرس کلیک کنید"
                       >
                         <Globe className="w-3.5 h-3.5" />
@@ -492,7 +492,7 @@ export default function UserDashboardPage() {
 
                       <span className="text-xs text-muted-foreground hidden sm:inline">•</span>
 
-                      <div className="hidden sm:flex items-center gap-3 text-[11px] text-muted-foreground font-mono">
+                      <div className="hidden sm:flex items-center gap-3 text-[11px] text-muted-foreground font-sans">
                         <span className="flex items-center gap-1">
                           <Eye className="w-3 h-3 text-cyan-500" />
                           <span>{(profile.viewsCount || 0).toLocaleString('en-US')} Views</span>
@@ -671,14 +671,14 @@ export default function UserDashboardPage() {
                   value={newAlias}
                   onChange={(e) => setNewAlias(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''))}
                   required
-                  className="h-11 rounded-xl font-outfit text-xs pl-3 pr-24 text-left"
+                  className="h-11 rounded-xl font-sans text-xs pl-3 pr-24 text-left"
                 />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-outfit text-muted-foreground pointer-events-none">
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-sans text-muted-foreground pointer-events-none">
                   {domainHost}/
                 </span>
               </div>
               <p className="text-[11px] text-muted-foreground">
-                آدرس صفحه شما: <span className="font-outfit text-cyan-500">{domainHost}/{newAlias || 'your-alias'}</span>
+                آدرس صفحه شما: <span className="font-sans text-cyan-500">{domainHost}/{newAlias || 'your-alias'}</span>
               </p>
             </div>
 

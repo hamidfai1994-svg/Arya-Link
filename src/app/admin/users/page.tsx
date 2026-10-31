@@ -215,7 +215,7 @@ export default function AdminUsersPage() {
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
               مدیریت کاربران و دسترسی‌ها (RBAC Users)
             </h1>
-            <Badge variant="cyan" className="font-outfit text-xs">
+            <Badge variant="cyan" className="font-sans text-xs">
               {users.length} کاربر
             </Badge>
           </div>
@@ -325,11 +325,11 @@ export default function AdminUsersPage() {
                               </span>
                             )}
                           </div>
-                          <div className="text-[11px] text-muted-foreground font-outfit" dir="ltr">
+                          <div className="text-[11px] text-muted-foreground font-sans" dir="ltr">
                             {user.email}
                           </div>
                           {user.phone && (
-                            <div className="text-[10px] text-muted-foreground font-outfit" dir="ltr">
+                            <div className="text-[10px] text-muted-foreground font-sans" dir="ltr">
                               {user.phone}
                             </div>
                           )}
@@ -344,7 +344,7 @@ export default function AdminUsersPage() {
                     <TableCell>
                       <Badge
                         variant={user.subscriptionPlan === 'enterprise' ? 'purple' : user.subscriptionPlan === 'pro' ? 'gold' : 'outline'}
-                        className="text-[10px] uppercase font-outfit"
+                        className="text-[10px] uppercase font-sans"
                       >
                         {user.subscriptionPlan || 'FREE'}
                       </Badge>
@@ -368,7 +368,7 @@ export default function AdminUsersPage() {
                     </TableCell>
 
                     {/* Profiles count */}
-                    <TableCell className="font-outfit text-xs font-bold text-foreground">
+                    <TableCell className="font-sans text-xs font-bold text-foreground">
                       {user.profilesCount} کارت
                     </TableCell>
 

@@ -6,3 +6,5 @@ export { default as BlogPost, type IBlogPostDocument } from './BlogPost.model';
 export { default as ServiceItem, type IServiceItemDocument } from './ServiceItem.model';
 export { default as CompanyInfo, type ICompanyInfoDocument, type IBranchOffice } from './CompanyInfo.model';
 export { default as SiteSettings, type ISiteSettingsDocument } from './SiteSettings.model';
+export { default as AuditLog, type IAuditLogDocument } from './AuditLog.model';
+export { default as LandingCms, type ILandingCmsDocument, INITIAL_LANDING_CMS } from './LandingCms.model';

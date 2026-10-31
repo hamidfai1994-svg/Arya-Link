@@ -290,7 +290,7 @@ export function CardAnalyticsPanel({ cardId }: { cardId?: string }) {
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
               آمار و تحلیل تعاملات
             </h1>
-            <Badge variant="cyan" className="font-outfit text-xs font-bold">
+            <Badge variant="cyan" className="font-sans text-xs font-bold">
               زنده و هوشمند
             </Badge>
           </div>
@@ -343,7 +343,7 @@ export function CardAnalyticsPanel({ cardId }: { cardId?: string }) {
               <span className="text-xs font-bold text-foreground">
                 آمار و تحلیل مختص لینک: {profile?.displayName || activeCard?.displayName || 'کارت هوشمند'}
               </span>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 font-outfit font-bold" dir="ltr">
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 font-sans font-bold" dir="ltr">
                 aryal.ink/{profile?.alias || activeCard?.alias || 'card'}
               </span>
             </div>
@@ -377,11 +377,11 @@ export function CardAnalyticsPanel({ cardId }: { cardId?: string }) {
               <Eye className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-3xl sm:text-4xl font-black font-outfit text-foreground tracking-tight">
+          <div className="text-3xl sm:text-4xl font-black font-sans text-foreground tracking-tight">
             {filteredMetrics.totalViews.toLocaleString('en-US')}
           </div>
           <div className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
-            <span className="text-emerald-500 font-bold font-outfit inline-flex items-center gap-0.5">
+            <span className="text-emerald-500 font-bold font-sans inline-flex items-center gap-0.5">
               <TrendingUp className="w-3.5 h-3.5" />
               {filteredMetrics.viewsGrowth}
             </span>
@@ -398,11 +398,11 @@ export function CardAnalyticsPanel({ cardId }: { cardId?: string }) {
               <MousePointerClick className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-3xl sm:text-4xl font-black font-outfit text-foreground tracking-tight">
+          <div className="text-3xl sm:text-4xl font-black font-sans text-foreground tracking-tight">
             {filteredMetrics.totalClicks.toLocaleString('en-US')}
           </div>
           <div className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
-            <span className="text-emerald-500 font-bold font-outfit inline-flex items-center gap-0.5">
+            <span className="text-emerald-500 font-bold font-sans inline-flex items-center gap-0.5">
               <TrendingUp className="w-3.5 h-3.5" />
               {filteredMetrics.clicksGrowth}
             </span>
@@ -419,7 +419,7 @@ export function CardAnalyticsPanel({ cardId }: { cardId?: string }) {
               <Sparkles className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-3xl sm:text-4xl font-black font-outfit text-foreground tracking-tight">
+          <div className="text-3xl sm:text-4xl font-black font-sans text-foreground tracking-tight">
             <span dir="ltr">{filteredMetrics.ctr}%</span>
           </div>
           <div className="mt-3 text-xs text-muted-foreground">
@@ -668,15 +668,15 @@ export function CardAnalyticsPanel({ cardId }: { cardId?: string }) {
                 dir="rtl"
               >
                 <div className="text-right">
-                  <span className="text-[11px] font-bold text-foreground block font-outfit">
+                  <span className="text-[11px] font-bold text-foreground block font-sans">
                     {chartPoints[hoveredIndex].dayName} ({chartPoints[hoveredIndex].date})
                   </span>
                   <div className="flex items-center gap-3 mt-1 text-xs">
-                    <span className="text-cyan-500 font-bold flex items-center gap-1 font-outfit">
+                    <span className="text-cyan-500 font-bold flex items-center gap-1 font-sans">
                       <span className="w-2 h-2 rounded-full bg-cyan-500" />
                       {chartPoints[hoveredIndex].views} Views
                     </span>
-                    <span className="text-blue-500 font-bold flex items-center gap-1 font-outfit">
+                    <span className="text-blue-500 font-bold flex items-center gap-1 font-sans">
                       <span className="w-2 h-2 rounded-full bg-blue-500" />
                       {chartPoints[hoveredIndex].clicks} Clicks
                     </span>
@@ -700,7 +700,7 @@ export function CardAnalyticsPanel({ cardId }: { cardId?: string }) {
               تفکیک دقیق تعداد کلیک‌های هر پیوند و سهم درصد آن از کل تعاملات مخاطبان
             </p>
           </div>
-          <Badge variant="outline" className="font-outfit text-xs">
+          <Badge variant="outline" className="font-sans text-xs">
             {linksList.length} ماژول فعال
           </Badge>
         </div>
@@ -736,14 +736,14 @@ export function CardAnalyticsPanel({ cardId }: { cardId?: string }) {
                         <span className="text-xs font-bold text-foreground block truncate">
                           {link.title || meta.label}
                         </span>
-                        <span className="text-[11px] text-muted-foreground font-outfit truncate block" dir="ltr">
+                        <span className="text-[11px] text-muted-foreground font-sans truncate block" dir="ltr">
                           {link.url || '#'}
                         </span>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-3 shrink-0">
-                      <div className="text-left font-outfit">
+                      <div className="text-left font-sans">
                         <span className="text-xs font-black text-cyan-600 dark:text-cyan-400 block">
                           {link.clickCount.toLocaleString('en-US')} Clicks
                         </span>

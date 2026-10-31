@@ -114,7 +114,7 @@ export default function AdminBrandingSettingsPage() {
             <div>
               <h1 className="text-xl sm:text-2xl font-black text-foreground tracking-tight flex items-center gap-2">
                 تنظیمات برندینگ و دارایی‌های بصری
-                <Badge className="bg-cyan-500/15 text-cyan-500 border border-cyan-500/30 text-[10px] font-outfit">
+                <Badge className="bg-cyan-500/15 text-cyan-500 border border-cyan-500/30 text-[10px] font-sans">
                   مرحله 24
                 </Badge>
               </h1>
@@ -208,7 +208,7 @@ export default function AdminBrandingSettingsPage() {
               <Globe className="w-3.5 h-3.5 text-cyan-400" />
               <span>پیش‌نمایش تب مرورگر (Browser Tab):</span>
             </span>
-            <span className="text-[10px] text-slate-400 font-mono">Chrome / Edge / Firefox</span>
+            <span className="text-[10px] text-slate-400 font-sans">Chrome / Edge / Firefox</span>
           </div>
 
           <div className="flex items-center gap-2 max-w-sm rounded-t-xl bg-slate-950 px-3 py-2 border-t-2 border-cyan-500 shadow-inner">
@@ -351,12 +351,12 @@ export default function AdminBrandingSettingsPage() {
 
             <div className="grid grid-cols-2 gap-3 pt-1">
               <div className="p-4 rounded-xl bg-white border border-slate-200 flex flex-col items-center justify-center gap-2">
-                <span className="text-[10px] text-slate-500 font-mono">پس‌زمینه روشن</span>
+                <span className="text-[10px] text-slate-500 font-sans">پس‌زمینه روشن</span>
                 <SiteLogo overrideLogo={companyLogo} width={48} height={48} />
               </div>
 
               <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 flex flex-col items-center justify-center gap-2">
-                <span className="text-[10px] text-slate-400 font-mono">پس‌زمینه تیره</span>
+                <span className="text-[10px] text-slate-400 font-sans">پس‌زمینه تیره</span>
                 <SiteLogo overrideLogo={companyLogo} width={48} height={48} />
               </div>
             </div>
@@ -437,7 +437,7 @@ export default function AdminBrandingSettingsPage() {
                     <div className="w-6 h-6 rounded bg-gradient-to-tr from-cyan-500 to-blue-600" />
                   )}
                 </div>
-                <span className="text-[10px] text-muted-foreground font-mono">48×48 px</span>
+                <span className="text-[10px] text-muted-foreground font-sans">48×48 px</span>
               </div>
 
               <div className="flex flex-col items-center gap-1.5">
@@ -449,7 +449,7 @@ export default function AdminBrandingSettingsPage() {
                     <div className="w-4 h-4 rounded-sm bg-gradient-to-tr from-cyan-500 to-blue-600" />
                   )}
                 </div>
-                <span className="text-[10px] text-muted-foreground font-mono">32×32 px</span>
+                <span className="text-[10px] text-muted-foreground font-sans">32×32 px</span>
               </div>
 
               <div className="flex flex-col items-center gap-1.5">
@@ -461,7 +461,7 @@ export default function AdminBrandingSettingsPage() {
                     <div className="w-2.5 h-2.5 rounded-[2px] bg-gradient-to-tr from-cyan-500 to-blue-600" />
                   )}
                 </div>
-                <span className="text-[10px] text-muted-foreground font-mono">16×16 px</span>
+                <span className="text-[10px] text-muted-foreground font-sans">16×16 px</span>
               </div>
             </div>
           </div>

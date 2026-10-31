@@ -24,7 +24,7 @@ export function PublicFooter() {
                 <MapPin className="w-3.5 h-3.5 text-cyan-500" />
                 <span>کابل، افغانستان</span>
               </span>
-              <span className="flex items-center gap-1.5 font-outfit" dir="ltr">
+              <span className="flex items-center gap-1.5 font-sans" dir="ltr">
                 <Phone className="w-3.5 h-3.5 text-cyan-500" />
                 <span>+93 79 123 4567</span>
               </span>

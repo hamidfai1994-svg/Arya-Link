@@ -112,13 +112,13 @@ export const MathCaptcha: React.FC<MathCaptchaProps> = ({
       <div className="flex items-center gap-2">
         {/* Visual Challenge Box - Clean, English Digits */}
         <div
-          className="select-none flex items-center justify-center px-4 py-2 rounded-xl bg-slate-950/80 border border-cyan-500/30 font-outfit text-base font-extrabold tracking-widest text-cyan-400 shadow-[inset_0_1px_3px_rgba(0,0,0,0.5)] relative overflow-hidden"
+          className="select-none flex items-center justify-center px-4 py-2 rounded-xl bg-slate-950/80 border border-cyan-500/30 font-sans text-base font-extrabold tracking-widest text-cyan-400 shadow-[inset_0_1px_3px_rgba(0,0,0,0.5)] relative overflow-hidden"
           style={{
             backgroundImage:
               'radial-gradient(circle at 10% 20%, rgba(6, 182, 212, 0.2) 0%, transparent 50%), radial-gradient(circle at 90% 80%, rgba(37, 99, 235, 0.2) 0%, transparent 50%)',
           }}
         >
-          <span className="relative z-10 font-mono tracking-wider">
+          <span className="relative z-10 font-sans tracking-wider">
             {num1} + {num2} = ?
           </span>
         </div>
@@ -133,7 +133,7 @@ export const MathCaptcha: React.FC<MathCaptchaProps> = ({
             placeholder={t.placeholder}
             maxLength={3}
             dir="ltr"
-            className={`w-full bg-slate-950/60 border rounded-xl px-3 py-2 text-sm text-center font-outfit font-bold text-white placeholder:text-slate-500 focus:outline-none transition-all ${
+            className={`w-full bg-slate-950/60 border rounded-xl px-3 py-2 text-sm text-center font-sans font-bold text-white placeholder:text-slate-500 focus:outline-none transition-all ${
               hasInteracted
                 ? isAnswerCorrect
                   ? 'border-emerald-500 ring-1 ring-emerald-500 text-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.2)]'

@@ -17,6 +17,8 @@ import {
   AlertCircle,
   Building,
   Sparkles,
+  Trash2,
+  ShieldAlert,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -89,6 +91,45 @@ export default function AdminFinancePage() {
   const [referenceId, setReferenceId] = useState('');
   const [adminNote, setAdminNote] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Soft Delete Modal State
+  const [recordToDelete, setRecordToDelete] = useState<{ id: string; type: 'payout' | 'order'; title: string; amount: number } | null>(null);
+  const [deleteReason, setDeleteReason] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleConfirmDelete = async () => {
+    if (!recordToDelete) return;
+    if (!deleteReason.trim()) {
+      toast.error('درج دلیل حذف تراکنش الزامی است.');
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const res = await fetch('/api/admin/finance', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          recordId: recordToDelete.id,
+          recordType: recordToDelete.type,
+          reason: deleteReason.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(data.message);
+        setRecordToDelete(null);
+        setDeleteReason('');
+        fetchFinanceData();
+      } else {
+        toast.error(data.message || 'خطا در حذف رکورد مالی.');
+      }
+    } catch (err) {
+      toast.error('خطای ارتباط با سرور.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   useEffect(() => {
     fetchFinanceData();
@@ -167,7 +208,7 @@ export default function AdminFinancePage() {
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
               مدیریت مالی و حسابداری (Enterprise Finance)
             </h1>
-            <Badge variant="emerald" className="font-outfit text-xs">
+            <Badge variant="emerald" className="font-sans text-xs">
               AFN Cashflow
             </Badge>
           </div>
@@ -198,7 +239,7 @@ export default function AdminFinancePage() {
               <TrendingUp className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl sm:text-3xl font-black font-outfit text-emerald-500 tracking-tight">
+          <div className="text-2xl sm:text-3xl font-black font-sans text-emerald-500 tracking-tight">
             {(metrics?.totalGrossRevenue ?? 0).toLocaleString('en-US')} <span className="text-sm font-normal">افغانی</span>
           </div>
           <p className="text-[11px] text-muted-foreground mt-1">NFC + اشتراک‌ها + فروشگاه</p>
@@ -212,7 +253,7 @@ export default function AdminFinancePage() {
               <CreditCard className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl sm:text-3xl font-black font-outfit text-foreground tracking-tight">
+          <div className="text-2xl sm:text-3xl font-black font-sans text-foreground tracking-tight">
             {(metrics?.nfcCardRevenue ?? 0).toLocaleString('en-US')} <span className="text-sm font-normal">افغانی</span>
           </div>
           <p className="text-[11px] text-muted-foreground mt-1">سفارشات کارت PVC و چوبی</p>
@@ -226,7 +267,7 @@ export default function AdminFinancePage() {
               <Sparkles className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl sm:text-3xl font-black font-outfit text-foreground tracking-tight">
+          <div className="text-2xl sm:text-3xl font-black font-sans text-foreground tracking-tight">
             {(metrics?.subscriptionRevenue ?? 0).toLocaleString('en-US')} <span className="text-sm font-normal">افغانی</span>
           </div>
           <p className="text-[11px] text-muted-foreground mt-1">
@@ -242,7 +283,7 @@ export default function AdminFinancePage() {
               <ArrowDownLeft className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl sm:text-3xl font-black font-outfit text-rose-500 tracking-tight">
+          <div className="text-2xl sm:text-3xl font-black font-sans text-rose-500 tracking-tight">
             {(metrics?.pendingPayoutsTotal ?? 0).toLocaleString('en-US')} <span className="text-sm font-normal">افغانی</span>
           </div>
           <p className="text-[11px] text-muted-foreground mt-1">
@@ -293,7 +334,7 @@ export default function AdminFinancePage() {
               <TableBody>
                 {pendingPayouts.map((p) => (
                   <TableRow key={p._id} className="border-border hover:bg-muted/40 transition-colors">
-                    <TableCell className="font-outfit text-xs font-bold text-emerald-500">
+                    <TableCell className="font-sans text-xs font-bold text-emerald-500">
                       {p.amount.toLocaleString('en-US')} افغانی
                     </TableCell>
 
@@ -305,11 +346,11 @@ export default function AdminFinancePage() {
                       {p.bankName}
                     </TableCell>
 
-                    <TableCell className="font-outfit text-xs text-foreground" dir="ltr">
+                    <TableCell className="font-sans text-xs text-foreground" dir="ltr">
                       {p.accountNumber}
                     </TableCell>
 
-                    <TableCell className="text-[11px] text-muted-foreground font-outfit">
+                    <TableCell className="text-[11px] text-muted-foreground font-sans">
                       {new Date(p.requestedAt).toLocaleDateString('en-US', {
                         year: 'numeric',
                         month: 'short',
@@ -334,6 +375,23 @@ export default function AdminFinancePage() {
                           className="h-8 px-2 rounded-lg text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 text-[11px]"
                         >
                           <span>رد</span>
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            setRecordToDelete({
+                              id: p._id,
+                              type: 'payout',
+                              title: `تسویه حساب ${p.accountHolderName}`,
+                              amount: p.amount,
+                            });
+                            setDeleteReason('');
+                          }}
+                          className="h-8 px-2 rounded-lg text-rose-400 hover:text-rose-300 hover:bg-rose-500/15 text-[11px]"
+                          title="حذف و انتقال به زباله‌دان"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
                         </Button>
                       </div>
                     </TableCell>
@@ -381,23 +439,24 @@ export default function AdminFinancePage() {
                   <TableHead className="text-right font-bold text-xs">مبلغ کل</TableHead>
                   <TableHead className="text-right font-bold text-xs">روش پرداخت</TableHead>
                   <TableHead className="text-right font-bold text-xs">وضعیت پرداخت</TableHead>
+                  <TableHead className="text-center font-bold text-xs">عملیات</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {orders.map((o) => (
                   <TableRow key={o._id} className="border-border hover:bg-muted/40 transition-colors">
-                    <TableCell className="font-outfit text-xs font-bold text-cyan-500" dir="ltr">
+                    <TableCell className="font-sans text-xs font-bold text-cyan-500" dir="ltr">
                       #{o.orderNumber}
                     </TableCell>
 
                     <TableCell>
                       <div className="text-xs font-bold text-foreground">{o.customerName}</div>
-                      <div className="text-[10px] text-muted-foreground font-outfit" dir="ltr">
+                      <div className="text-[10px] text-muted-foreground font-sans" dir="ltr">
                         {o.customerPhone}
                       </div>
                     </TableCell>
 
-                    <TableCell className="font-outfit text-xs font-bold text-emerald-500">
+                    <TableCell className="font-sans text-xs font-bold text-emerald-500">
                       {o.totalPrice.toLocaleString('en-US')} افغانی
                     </TableCell>
 
@@ -422,6 +481,27 @@ export default function AdminFinancePage() {
                           <span>ناموفق</span>
                         </Badge>
                       )}
+                    </TableCell>
+
+                    <TableCell className="text-center">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          setRecordToDelete({
+                            id: o._id,
+                            type: 'order',
+                            title: `تراکنش سفارش #${o.orderNumber} (${o.customerName})`,
+                            amount: o.totalPrice,
+                          });
+                          setDeleteReason('');
+                        }}
+                        className="h-8 px-2 rounded-lg text-rose-400 hover:text-rose-300 hover:bg-rose-500/15 text-xs flex items-center gap-1 mx-auto"
+                        title="حذف تراکنش و ثبت در لاگ حسابرسی"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>حذف</span>
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -456,7 +536,7 @@ export default function AdminFinancePage() {
                     <Input
                       value={referenceId}
                       onChange={(e) => setReferenceId(e.target.value)}
-                      className="h-10 rounded-xl text-xs font-outfit"
+                      className="h-10 rounded-xl text-xs font-sans"
                       dir="ltr"
                     />
                   </div>
@@ -507,6 +587,65 @@ export default function AdminFinancePage() {
               </DialogFooter>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Mandatory Reason Soft Delete Modal */}
+      <Dialog open={!!recordToDelete} onOpenChange={() => setRecordToDelete(null)}>
+        <DialogContent className="sm:max-w-md rounded-3xl" dir="rtl">
+          <DialogHeader className="text-right">
+            <DialogTitle className="text-lg font-bold text-rose-500 flex items-center gap-2">
+              <Trash2 className="w-5 h-5 text-rose-500" />
+              <span>حذف امن رکورد مالی و انتقال به زباله‌دان</span>
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground mt-1">
+              {recordToDelete?.title} به مبلغ {recordToDelete?.amount.toLocaleString('en-US')} افغانی به زباله‌دان سیستم منتقل خواهد شد.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="p-3 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-300 text-xs flex items-start gap-2">
+              <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>
+                مطابق با اصول حسابرسی امنیتی پلتفرم، ثبت <strong>دلیل اجباری حذف</strong> جهت آرشیو در لاگ نظارتی الزامی است.
+              </span>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-foreground block">
+                دلیل حذف این مورد مالی <span className="text-rose-500">*</span>:
+              </label>
+              <Input
+                type="text"
+                value={deleteReason}
+                onChange={(e) => setDeleteReason(e.target.value)}
+                placeholder="مثال: لغو حواله بانکی به درخواست متقاضی، تراکنش تکراری..."
+                className="h-11 rounded-2xl text-xs"
+                autoFocus
+              />
+            </div>
+
+            <DialogFooter className="flex justify-end gap-2.5 pt-3 border-t border-border">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={isDeleting}
+                onClick={() => setRecordToDelete(null)}
+                className="h-10 px-4 rounded-xl text-xs"
+              >
+                انصراف
+              </Button>
+              <Button
+                type="button"
+                disabled={isDeleting || !deleteReason.trim()}
+                onClick={handleConfirmDelete}
+                className="h-10 px-5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs flex items-center gap-1.5 disabled:opacity-50"
+              >
+                {isDeleting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                <span>تایید حذف و ثبت در لاگ امنیتی</span>
+              </Button>
+            </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

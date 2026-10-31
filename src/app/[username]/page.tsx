@@ -207,7 +207,7 @@ function NotFoundCard({ alias }: { alias: string }) {
             <span>کارت ویزیت یافت نشد</span>
           </div>
           <h1 className="text-xl font-bold text-white tracking-tight pt-1">
-            کارت هوشمندی با نام <span className="text-cyan-400 font-outfit" dir="ltr">@{alias}</span> وجود ندارد
+            کارت هوشمندی با نام <span className="text-cyan-400 font-sans" dir="ltr">@{alias}</span> وجود ندارد
           </h1>
           <p className="text-xs text-slate-400 leading-relaxed max-w-sm mx-auto font-sans">
             ممکن است آدرس کارت تغییر کرده باشد، نام کاربری به درستی تایپ نشده باشد، یا صاحب این حساب آن را غیرفعال کرده باشد.
@@ -236,7 +236,7 @@ function NotFoundCard({ alias }: { alias: string }) {
       {/* Footer Branding */}
       <div className="pb-6 text-center select-none text-[11px] text-slate-500">
         <span>طراحی شده با ⚡ </span>
-        <span className="font-outfit font-semibold text-slate-400">Arya Link</span>
+        <span className="font-sans font-semibold text-slate-400">Arya Link</span>
       </div>
     </div>
   );

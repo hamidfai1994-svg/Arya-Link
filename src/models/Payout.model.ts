@@ -12,6 +12,10 @@ export interface IPayoutDocument extends Document {
   adminNote?: string;
   requestedAt: Date;
   processedAt?: Date;
+  isDeleted?: boolean;
+  deletedAt?: Date;
+  deletedBy?: string;
+  deletedReason?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -34,6 +38,10 @@ const PayoutSchema = new Schema<IPayoutDocument>(
     adminNote: { type: String, default: '' },
     requestedAt: { type: Date, default: Date.now },
     processedAt: { type: Date },
+    isDeleted: { type: Boolean, default: false, index: true },
+    deletedAt: { type: Date },
+    deletedBy: { type: String },
+    deletedReason: { type: String },
   },
   { timestamps: true }
 );

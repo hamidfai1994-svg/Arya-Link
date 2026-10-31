@@ -162,7 +162,7 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
                 </div>
 
                 <div className="flex items-center rounded-xl border border-border bg-card overflow-hidden focus-within:border-cyan-500" dir="ltr">
-                  <span className="px-3 py-2 text-xs font-outfit text-muted-foreground border-r border-border bg-muted/50 select-none">
+                  <span className="px-3 py-2 text-xs font-sans text-muted-foreground border-r border-border bg-muted/50 select-none">
                     aryal.ink/
                   </span>
                   <input
@@ -170,7 +170,7 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
                     value={profile.alias}
                     onChange={(e) => updateBasicInfo({ alias: e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, '') })}
                     placeholder="username"
-                    className="w-full bg-transparent border-0 py-2 px-3 text-xs font-outfit text-foreground focus:outline-none"
+                    className="w-full bg-transparent border-0 py-2 px-3 text-xs font-sans text-foreground focus:outline-none"
                   />
                 </div>
               </div>
@@ -285,7 +285,7 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
                       onChange={(e) => toggleDirectMode(true, e.target.value)}
                       placeholder="https://..."
                       dir="ltr"
-                      className="w-full bg-card border border-border rounded-xl px-3 py-2 text-xs font-outfit text-foreground focus:outline-none focus:border-cyan-500 text-left"
+                      className="w-full bg-card border border-border rounded-xl px-3 py-2 text-xs font-sans text-foreground focus:outline-none focus:border-cyan-500 text-left"
                     />
                   </div>
                 )}
@@ -428,7 +428,7 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
                         }}
                         placeholder="یک رمز عبور امن وارد کنید"
                         dir="ltr"
-                        className="w-full bg-card border border-border rounded-xl px-3 py-2 text-xs font-outfit text-foreground focus:outline-none focus:border-cyan-500"
+                        className="w-full bg-card border border-border rounded-xl px-3 py-2 text-xs font-sans text-foreground focus:outline-none focus:border-cyan-500"
                       />
                     </div>
 

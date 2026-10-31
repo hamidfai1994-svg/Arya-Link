@@ -116,7 +116,7 @@ export default function AdminCompaniesPage() {
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
               مدیریت حساب‌های شرکتی (Corporate Accounts)
             </h1>
-            <Badge variant="purple" className="font-outfit text-xs">
+            <Badge variant="purple" className="font-sans text-xs">
               Enterprise Teams
             </Badge>
           </div>
@@ -148,7 +148,7 @@ export default function AdminCompaniesPage() {
           <Search className="w-4 h-4 text-muted-foreground absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
         </div>
 
-        <span className="text-xs text-muted-foreground font-outfit">
+        <span className="text-xs text-muted-foreground font-sans">
           {companies.length} شرکت سازمانی فعال
         </span>
       </div>
@@ -184,22 +184,22 @@ export default function AdminCompaniesPage() {
                     </div>
                   </TableCell>
 
-                  <TableCell className="font-outfit text-xs text-cyan-500 font-bold" dir="ltr">
+                  <TableCell className="font-sans text-xs text-cyan-500 font-bold" dir="ltr">
                     {comp.domain}
                   </TableCell>
 
                   <TableCell>
                     <div className="text-xs font-bold text-foreground">{comp.adminName}</div>
-                    <div className="text-[11px] text-muted-foreground font-outfit" dir="ltr">
+                    <div className="text-[11px] text-muted-foreground font-sans" dir="ltr">
                       {comp.adminEmail}
                     </div>
                   </TableCell>
 
-                  <TableCell className="font-outfit text-xs font-bold text-foreground">
+                  <TableCell className="font-sans text-xs font-bold text-foreground">
                     {comp.seatCount} نفر
                   </TableCell>
 
-                  <TableCell className="font-outfit text-xs font-bold text-emerald-500">
+                  <TableCell className="font-sans text-xs font-bold text-emerald-500">
                     {comp.nfcCardsIssued} کارت
                   </TableCell>
 

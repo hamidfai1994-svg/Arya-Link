@@ -160,7 +160,7 @@ export function PhoneInput({
             aria-label="انتخاب کشور"
           >
             <span className="text-base select-none">{selectedCountry.flag}</span>
-            <span className="text-xs font-bold font-outfit text-foreground">{selectedCountry.dialCode}</span>
+            <span className="text-xs font-bold font-sans text-foreground">{selectedCountry.dialCode}</span>
             <ChevronsUpDown className="w-3.5 h-3.5 text-muted-foreground opacity-60" />
           </Button>
         </DropdownMenuTrigger>
@@ -196,7 +196,7 @@ export function PhoneInput({
                     <span className="font-semibold text-foreground">{country.name}</span>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <span className="font-outfit text-xs font-bold text-muted-foreground">{country.dialCode}</span>
+                    <span className="font-sans text-xs font-bold text-muted-foreground">{country.dialCode}</span>
                     {isSelected && <Check className="w-3.5 h-3.5 text-cyan-500" />}
                   </div>
                 </DropdownMenuItem>
@@ -216,7 +216,7 @@ export function PhoneInput({
         value={phoneNumber}
         onChange={handleNumberChange}
         placeholder={placeholder}
-        className="h-11 border-0 bg-transparent rounded-none px-3 font-outfit text-sm text-foreground focus-visible:ring-0 placeholder:text-muted-foreground/60"
+        className="h-11 border-0 bg-transparent rounded-none px-3 font-sans text-sm text-foreground focus-visible:ring-0 placeholder:text-muted-foreground/60"
       />
     </div>
   );

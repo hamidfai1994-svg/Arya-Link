@@ -124,7 +124,7 @@ export async function POST(req: NextRequest) {
     const numAmount = Number(amount);
     if (!numAmount || numAmount < 100) {
       return NextResponse.json(
-        { success: false, message: 'حداقل مبلغ قابل برداشت ۱۰۰ افغانی است.' },
+        { success: false, message: 'حداقل مبلغ قابل برداشت 100 افغانی است.' },
         { status: 400 }
       );
     }

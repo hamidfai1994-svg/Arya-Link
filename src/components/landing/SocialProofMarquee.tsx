@@ -115,7 +115,7 @@ export function SocialProofMarquee() {
                 <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
               ))}
             </div>
-            <span className="font-bold text-foreground font-outfit">4.9 / 5</span>
+            <span className="font-bold text-foreground font-sans">4.9 / 5</span>
             <span className="text-[11px] text-muted-foreground font-sans">(بیش از 1,200 کاربر راضی)</span>
           </div>
         </div>

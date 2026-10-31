@@ -97,7 +97,7 @@ export const LiveCountdown: React.FC<LiveCountdownProps> = ({
           مهلت این رویداد یا تخفیف به پایان رسیده است
         </div>
       ) : (
-        <div className="flex items-center justify-center gap-2 font-outfit" dir="ltr">
+        <div className="flex items-center justify-center gap-2 font-sans" dir="ltr">
           {[
             { val: padZero(timeLeft.days), label: 'روز', enLabel: 'Days' },
             { val: padZero(timeLeft.hours), label: 'ساعت', enLabel: 'Hours' },
@@ -112,7 +112,7 @@ export const LiveCountdown: React.FC<LiveCountdownProps> = ({
                   : 'bg-white/10 border-white/15 text-white'
               }`}
             >
-              <span className="text-base font-bold font-outfit tracking-wider">
+              <span className="text-base font-bold font-sans tracking-wider">
                 {item.val}
               </span>
               <span

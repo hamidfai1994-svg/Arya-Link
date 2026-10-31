@@ -82,7 +82,7 @@ interface ModuleOption {
 }
 
 const SECTION_3_MODULES: ModuleOption[] = [
-  // ۱. شبکه‌های اجتماعی و پلتفرم‌ها (Social)
+  // 1. شبکه‌های اجتماعی و پلتفرم‌ها (Social)
   {
     type: 'instagram_profile',
     title: 'اینستاگرام',
@@ -198,7 +198,7 @@ const SECTION_3_MODULES: ModuleOption[] = [
     colorClass: 'hover:border-orange-500/50',
   },
 
-  // ۲. پیام‌رسان‌های مستقیم (Messengers)
+  // 2. پیام‌رسان‌های مستقیم (Messengers)
   {
     type: 'whatsapp_direct',
     title: 'واتساپ (WhatsApp)',
@@ -250,7 +250,7 @@ const SECTION_3_MODULES: ModuleOption[] = [
     colorClass: 'hover:border-green-500/50',
   },
 
-  // ۳. پلتفرم‌های صوتی و پادکست (Audio)
+  // 3. پلتفرم‌های صوتی و پادکست (Audio)
   {
     type: 'spotify',
     title: 'اسپاتیفای (Spotify)',
@@ -309,7 +309,7 @@ const SECTION_3_MODULES: ModuleOption[] = [
     colorClass: 'hover:border-purple-500/50',
   },
 
-  // ۴. تماس و ارتباط (Communication)
+  // 4. تماس و ارتباط (Communication)
   {
     type: 'phone_call',
     title: 'دکمه تماس (تلفن)',
@@ -344,7 +344,7 @@ const SECTION_3_MODULES: ModuleOption[] = [
     colorClass: 'hover:border-teal-500/50',
   },
 
-  // ۵. رسانه و فایل (Media)
+  // 5. رسانه و فایل (Media)
   {
     type: 'single_image',
     title: 'تصویر تکی',
@@ -402,7 +402,7 @@ const SECTION_3_MODULES: ModuleOption[] = [
     colorClass: 'hover:border-rose-500/50',
   },
 
-  // ۶. تجاری و فروش (Commerce)
+  // 6. تجاری و فروش (Commerce)
   {
     type: 'standard_link',
     title: 'لینک استاندارد (با دریافت هزینه)',
@@ -455,7 +455,7 @@ const SECTION_3_MODULES: ModuleOption[] = [
     colorClass: 'hover:border-amber-500/50',
   },
 
-  // ۷. موقعیت‌یابی (Location)
+  // 7. موقعیت‌یابی (Location)
   {
     type: 'location_hours',
     title: 'نقشه و آدرس',
@@ -473,7 +473,7 @@ const SECTION_3_MODULES: ModuleOption[] = [
     colorClass: 'hover:border-sky-500/50',
   },
 
-  // ۸. متنی و چیدمان (Text)
+  // 8. متنی و چیدمان (Text)
   {
     type: 'simple_text',
     title: 'متن و توضیحات',

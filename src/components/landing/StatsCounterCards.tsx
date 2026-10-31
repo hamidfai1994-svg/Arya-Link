@@ -60,7 +60,7 @@ function AnimatedCounter({
       : Math.round(current).toLocaleString('en-US');
 
   return (
-    <span ref={ref} className="font-outfit font-black tracking-tight text-foreground">
+    <span ref={ref} className="font-sans font-black tracking-tight text-foreground">
       {prefix}
       {formatted}
       {suffix}

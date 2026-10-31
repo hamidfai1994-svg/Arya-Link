@@ -68,7 +68,7 @@ export default function AboutPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {company.stats.map((s: any, idx: number) => (
               <Card key={idx} className="rounded-2xl border-border bg-card/90 backdrop-blur-xl p-5 text-center shadow-lg">
-                <span className="text-2xl sm:text-3xl font-black font-outfit text-cyan-500 block mb-1">
+                <span className="text-2xl sm:text-3xl font-black font-sans text-cyan-500 block mb-1">
                   {s.value}
                 </span>
                 <span className="text-xs text-muted-foreground font-semibold">{s.label}</span>
@@ -152,7 +152,7 @@ export default function AboutPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Phone className="w-4 h-4 text-emerald-500 shrink-0" />
-                    <span className="font-outfit" dir="ltr">{branch.phone}</span>
+                    <span className="font-sans" dir="ltr">{branch.phone}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Users className="w-4 h-4 text-blue-500 shrink-0" />

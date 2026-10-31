@@ -278,7 +278,7 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
                   style={{ width: `${uploadProgress}%` }}
                 />
               </div>
-              <span className="text-[10px] font-outfit text-muted-foreground">{uploadProgress}%</span>
+              <span className="text-[10px] font-sans text-muted-foreground">{uploadProgress}%</span>
             </div>
           ) : (
             <>
@@ -311,7 +311,7 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
         <span className="font-sans font-medium text-[11px]">
           سایز مناسب: 2 مگابایت برای عکس، 5 مگابایت برای فایل
         </span>
-        <span className="text-[10px] font-outfit">Google Drive برای بیش از 5MB</span>
+        <span className="text-[10px] font-sans">Google Drive برای بیش از 5MB</span>
       </div>
 
       {/* Google Drive Guideline & External Link Box for Large Files */}
@@ -354,7 +354,7 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
               value={manualUrl}
               onChange={(e) => setManualUrl(e.target.value)}
               placeholder="https://drive.google.com/... یا لینک مستقیم"
-              className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-cyan-500 font-outfit text-left"
+              className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-cyan-500 font-sans text-left"
               dir="ltr"
             />
             <button

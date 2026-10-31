@@ -28,19 +28,16 @@ const config: Config = {
         outfit: [
           "var(--font-vazirmatn)",
           "var(--font-inter)",
-          "var(--font-outfit)",
           "sans-serif",
         ],
         mono: [
+          "var(--font-vazirmatn)",
           "var(--font-inter)",
           "ui-monospace",
-          "SFMono-Regular",
-          "Menlo",
-          "Monaco",
-          "Consolas",
           "monospace",
         ],
         inter: [
+          "var(--font-vazirmatn)",
           "var(--font-inter)",
           "sans-serif",
         ],
