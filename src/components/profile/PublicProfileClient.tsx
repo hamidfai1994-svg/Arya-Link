@@ -34,6 +34,7 @@ import {
 } from '@/components/icons';
 import { getSmartLink, formatDisplayValue } from '@/lib/smart-link';
 import { LiveCountdown } from '@/components/ui/live-countdown';
+import { LiveBusinessHours } from '@/components/profile/LiveBusinessHours';
 import {
   Download,
   Phone,
@@ -66,7 +67,16 @@ import {
   Sparkles,
   Timer,
   QrCode,
+  Navigation,
+  Check,
 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import { toast } from 'sonner';
 
 interface PublicProfileClientProps {
@@ -217,6 +227,15 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
   // Search filter
   const [searchFilter, setSearchFilter] = useState('');
 
+  // Location Share Modal State
+  const [locationShareModal, setLocationShareModal] = useState<{
+    isOpen: boolean;
+    url: string;
+    address?: string;
+    title?: string;
+  } | null>(null);
+  const [copiedLocationLink, setCopiedLocationLink] = useState(false);
+
   // 1. Social networks filter (excluding hidden)
   const socialModuleTypes: LinkModuleType[] = [
     'whatsapp_direct',
@@ -327,6 +346,40 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
       navigator.clipboard.writeText(fullUrl);
       toast.success('لینک کارت هوشمند در کلیپ‌بورد کپی شد.');
     }
+  };
+
+  // 3.6. Share Location Link
+  const handleShareLocation = async (
+    e: React.MouseEvent,
+    url: string,
+    address?: string,
+    title?: string
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const shareTitle = title || 'موقعیت مکانی';
+    const shareText = address ? `${shareTitle}: ${address}` : shareTitle;
+
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: shareTitle,
+          text: shareText,
+          url: url,
+        });
+        return;
+      } catch (err: any) {
+        if (err?.name === 'AbortError') return;
+      }
+    }
+
+    setLocationShareModal({
+      isOpen: true,
+      url,
+      address,
+      title: shareTitle,
+    });
   };
 
   // 4. Contact Form Submit
@@ -1116,32 +1169,73 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
       );
     }
 
-    // 8. Location & Working Hours
+    // 8. Location (موقعیت مکانی)
     if (link.moduleType === 'location_hours') {
+      const cardRadius = getBorderRadiusClass(customStyle?.borderRadius);
+      const targetMapUrl =
+        meta.mapLink ||
+        meta.googleMapsLink ||
+        link.url ||
+        (meta.address ? `https://maps.google.com/?q=${encodeURIComponent(meta.address)}` : 'https://maps.google.com');
+
       return (
         <div
           key={link.id}
-          className={`w-full p-4.5 rounded-2xl border shadow-sm space-y-2.5 text-right ${
+          className={`w-full p-4 border shadow-sm space-y-2.5 text-right ${cardRadius} ${
             isLight ? 'bg-white/90 border-slate-200' : 'bg-white/[0.05] backdrop-blur-md border-white/10'
           }`}
           style={customCardStyle}
         >
           <div className="flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-rose-500" />
+            <MapPin className="w-4 h-4 text-violet-500" />
             <span className={`text-xs font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>
-              {link.title || 'آدرس و ساعات کاری'}
+              {link.title || 'موقعیت مکانی'}
             </span>
           </div>
           {meta.address && (
-            <p className="text-xs text-slate-300 leading-relaxed font-sans">{meta.address}</p>
+            <p className={`text-xs leading-relaxed font-sans ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
+              {meta.address}
+            </p>
           )}
-          {meta.workingHours && (
-            <div className="flex items-center gap-1.5 text-[11px] text-slate-400 pt-1 border-t border-white/10 font-sans">
-              <Clock className="w-3.5 h-3.5 text-cyan-400" />
-              <span>{meta.workingHours}</span>
-            </div>
-          )}
+          <div className="pt-2 border-t border-white/10 grid grid-cols-2 gap-2">
+            <a
+              href={targetMapUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`py-2 px-3 rounded-xl bg-violet-500/15 hover:bg-violet-500/25 border border-violet-500/30 text-violet-400 font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95 shadow-xs ${getButtonAnimationClass(adv.buttonAnimation)}`}
+              title="نمایش موقعیت در نقشه گوگل"
+            >
+              <Navigation className="w-3.5 h-3.5" />
+              <span>نمایش روی نقشه</span>
+            </a>
+            <button
+              type="button"
+              onClick={(e) => handleShareLocation(e, targetMapUrl, meta.address, link.title)}
+              className={`py-2 px-3 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/30 text-sky-400 font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95 shadow-xs ${getButtonAnimationClass(adv.buttonAnimation)}`}
+              title="اشتراک‌گذاری آدرس و موقعیت مکانی"
+            >
+              <Share2 className="w-3.5 h-3.5" />
+              <span>اشتراک‌گذاری</span>
+            </button>
+          </div>
         </div>
+      );
+    }
+
+    // 8.1 Smart Business Hours (ساعات کاری هوشمند)
+    if (link.moduleType === 'business_hours') {
+      const cardRadius = getBorderRadiusClass(customStyle?.borderRadius);
+      return (
+        <LiveBusinessHours
+          key={link.id}
+          businessHours={meta.businessHours}
+          title={link.title}
+          profileLanguage={profile.profileLanguage}
+          isLight={isLight}
+          className={`${isLight ? 'bg-white/90 border-slate-200' : 'bg-white/[0.05] backdrop-blur-md border-white/10'} ${cardRadius}`}
+          style={customCardStyle}
+          animClass={getButtonAnimationClass(adv.buttonAnimation)}
+        />
       );
     }
 
@@ -1927,6 +2021,117 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
           </motion.div>
         )}
       </motion.div>
+
+      {/* Location Share Modal Dialog */}
+      <Dialog
+        open={Boolean(locationShareModal?.isOpen)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setLocationShareModal(null);
+            setCopiedLocationLink(false);
+          }
+        }}
+      >
+        <DialogContent className="max-w-sm rounded-2xl bg-card border border-border p-5 text-center">
+          <DialogHeader className="space-y-1 pb-2 border-b border-border text-center">
+            <div className="w-10 h-10 rounded-xl bg-violet-500/15 text-violet-500 flex items-center justify-center mx-auto mb-1">
+              <MapPin className="w-5 h-5" />
+            </div>
+            <DialogTitle className="text-base font-bold text-foreground">
+              اشتراک‌گذاری موقعیت مکانی
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              {locationShareModal?.title || 'آدرس و نقشه گوگل'}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 pt-3 text-right">
+            {locationShareModal?.address && (
+              <div className="p-2.5 rounded-xl bg-muted/40 border border-border/60 text-xs text-foreground leading-relaxed">
+                <span className="font-bold text-muted-foreground block text-[10px] mb-0.5">آدرس ثبت‌شده:</span>
+                {locationShareModal.address}
+              </div>
+            )}
+
+            {/* Direct Link with 1-Click Copy */}
+            <div className="w-full space-y-1.5">
+              <span className="text-[11px] font-bold text-muted-foreground block">
+                لینک موقعیت مکانی (Google Maps):
+              </span>
+              <div className="flex items-center gap-2 p-1.5 rounded-xl border border-border bg-muted/30">
+                <input
+                  type="text"
+                  readOnly
+                  value={locationShareModal?.url || ''}
+                  className="flex-1 bg-transparent border-0 text-xs font-sans text-foreground px-2 focus:outline-none"
+                  dir="ltr"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (typeof navigator !== 'undefined' && navigator.clipboard && locationShareModal?.url) {
+                      navigator.clipboard.writeText(locationShareModal.url);
+                      setCopiedLocationLink(true);
+                      toast.success('لینک موقعیت مکانی با موفقیت کپی شد');
+                      setTimeout(() => setCopiedLocationLink(false), 2000);
+                    }
+                  }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 shrink-0 ${
+                    copiedLocationLink
+                      ? 'bg-emerald-500 text-slate-950 shadow-xs'
+                      : 'bg-violet-600 hover:bg-violet-500 text-white shadow-xs'
+                  }`}
+                >
+                  {copiedLocationLink ? (
+                    <>
+                      <Check className="w-3.5 h-3.5" />
+                      <span>کپی شد</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5" />
+                      <span>کپی لینک</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Quick Share to Social Apps */}
+            <div className="w-full space-y-2 pt-2 border-t border-border">
+              <span className="text-[11px] font-bold text-muted-foreground block">
+                ارسال مستقیم در پیام‌رسان‌ها:
+              </span>
+              <div className="grid grid-cols-2 gap-2">
+                <a
+                  href={`https://wa.me/?text=${encodeURIComponent(
+                    `${locationShareModal?.title || 'موقعیت مکانی'}${locationShareModal?.address ? ` - ${locationShareModal.address}` : ''}\n${locationShareModal?.url || ''}`
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="py-2 px-3 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 border border-emerald-500/30 font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95"
+                >
+                  <WhatsAppIcon className="w-4 h-4 fill-current" />
+                  <span>واتساپ</span>
+                </a>
+                <a
+                  href={`https://t.me/share/url?url=${encodeURIComponent(
+                    locationShareModal?.url || ''
+                  )}&text=${encodeURIComponent(
+                    `${locationShareModal?.title || 'موقعیت مکانی'}${locationShareModal?.address ? ` - ${locationShareModal.address}` : ''}`
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="py-2 px-3 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 text-sky-500 border border-sky-500/30 font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95"
+                >
+                  <TelegramIcon className="w-4 h-4 fill-current" />
+                  <span>تلگرام</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

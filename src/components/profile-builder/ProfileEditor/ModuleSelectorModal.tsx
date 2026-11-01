@@ -58,6 +58,7 @@ import {
   ShoppingBag,
   HeartHandshake,
   Timer,
+  Clock,
   Type,
   Minus,
   Navigation,
@@ -68,6 +69,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ArrowRight,
+  FolderPlus,
   X as CloseIcon,
 } from 'lucide-react';
 
@@ -458,9 +460,9 @@ const SECTION_3_MODULES: ModuleOption[] = [
   // 7. موقعیت‌یابی (Location)
   {
     type: 'location_hours',
-    title: 'نقشه و آدرس',
+    title: 'موقعیت مکانی',
     category: 'location',
-    description: 'نمایش موقعیت مکانی دفتر، کلینیک، رستوران و ساعات کاری',
+    description: 'نمایش موقعیت مکانی دفتر، کلینیک، فروشگاه یا شرکت با دکمه نقشه',
     icon: <MapPin className="w-5 h-5 text-rose-500" />,
     colorClass: 'hover:border-rose-500/50',
   },
@@ -472,8 +474,26 @@ const SECTION_3_MODULES: ModuleOption[] = [
     icon: <Navigation className="w-5 h-5 text-sky-500" />,
     colorClass: 'hover:border-sky-500/50',
   },
+  {
+    type: 'business_hours',
+    title: 'ساعات کاری',
+    category: 'location',
+    description: 'نمایش زنده و هوشمند وضعیت باز/بسته بودن کسب‌وکار با شمارش معکوس',
+    icon: <Clock className="w-5 h-5 text-amber-500" />,
+    badge: 'هوشمند',
+    colorClass: 'hover:border-amber-500/50',
+  },
 
   // 8. متنی و چیدمان (Text)
+  {
+    type: 'container_group',
+    title: 'افزودن گروه / کانتینر (Container)',
+    category: 'text',
+    description: 'ساخت کانتینر سفارشی برای گروه‌بندی ماژول‌ها به صورت افقی (فشرده) یا لیست عمودی',
+    icon: <FolderPlus className="w-5 h-5 text-cyan-400" />,
+    badge: 'جدید',
+    colorClass: 'hover:border-cyan-500/50',
+  },
   {
     type: 'simple_text',
     title: 'متن و توضیحات',

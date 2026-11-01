@@ -164,3 +164,221 @@
 .font-mono {
   font-family: var(--font-vazirmatn), var(--font-inter), sans-serif !important;
 }
+
+/* =========================================================================
+   Stage 57: Button Shapes, Sizes, & Animations
+   ========================================================================= */
+
+/* Button Shapes */
+.btn-shape-sharp {
+  border-radius: 0px !important;
+}
+
+.btn-shape-soft {
+  border-radius: 8px !important;
+}
+
+.btn-shape-pill {
+  border-radius: 9999px !important;
+}
+
+.btn-shape-leaf {
+  border-radius: 24px 6px 24px 6px !important;
+}
+
+/* Polygonal shapes: continuous seamless borders avoiding clip-path border clipping */
+.btn-shape-cut_corners,
+.btn-shape-ticket,
+.btn-shape-hexagon,
+.btn-shape-parallelogram_l,
+.btn-shape-parallelogram_r {
+  position: relative !important;
+  background: transparent !important;
+  border: none !important;
+  isolation: isolate;
+}
+
+.btn-shape-cut_corners {
+  clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 10px, 100% calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 0 calc(100% - 10px), 0 10px);
+}
+
+.btn-shape-ticket {
+  clip-path: polygon(0% 0%, 100% 0%, 100% calc(50% - 7px), calc(100% - 8px) 50%, 100% calc(50% + 7px), 100% 100%, 0% 100%, 0% calc(50% + 7px), 8px 50%, 0% calc(50% - 7px));
+}
+
+.btn-shape-hexagon {
+  clip-path: polygon(14px 0%, calc(100% - 14px) 0%, 100% 50%, calc(100% - 14px) 100%, 14px 100%, 0% 50%);
+}
+
+.btn-shape-parallelogram_l {
+  clip-path: polygon(12px 0%, 100% 0%, calc(100% - 12px) 100%, 0% 100%);
+}
+
+.btn-shape-parallelogram_r {
+  clip-path: polygon(0% 0%, calc(100% - 12px) 0%, 100% 100%, 12px 100%);
+}
+
+/* Seamless pseudo-element border layer (outer, tracing polygon) */
+.btn-shape-cut_corners::before,
+.btn-shape-ticket::before,
+.btn-shape-hexagon::before,
+.btn-shape-parallelogram_l::before,
+.btn-shape-parallelogram_r::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-color: var(--btn-border, rgba(255, 255, 255, 0.25));
+  clip-path: inherit;
+  z-index: -2;
+  pointer-events: none;
+}
+
+/* Seamless pseudo-element background layer (inner, inset by border thickness) */
+.btn-shape-cut_corners::after,
+.btn-shape-ticket::after,
+.btn-shape-hexagon::after,
+.btn-shape-parallelogram_l::after,
+.btn-shape-parallelogram_r::after {
+  content: '';
+  position: absolute;
+  inset: var(--btn-border-width, 1.5px);
+  background-color: var(--btn-bg, rgba(30, 41, 59, 0.9));
+  clip-path: inherit;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.btn-shape-cut_corners > *,
+.btn-shape-ticket > *,
+.btn-shape-hexagon > *,
+.btn-shape-parallelogram_l > *,
+.btn-shape-parallelogram_r > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Button Sizes */
+.btn-size-sm {
+  padding: 0.5rem 0.875rem !important;
+  font-size: 0.8125rem !important;
+  min-height: 40px !important;
+}
+
+.btn-size-md {
+  padding: 0.75rem 1rem !important;
+  font-size: 0.875rem !important;
+  min-height: 50px !important;
+}
+
+.btn-size-lg {
+  padding: 1rem 1.25rem !important;
+  font-size: 1rem !important;
+  min-height: 60px !important;
+}
+
+/* Button Animations Keyframes */
+@keyframes shake-x {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-4px); }
+  40%, 80% { transform: translateX(4px); }
+}
+
+@keyframes shake-y {
+  0%, 100% { transform: translateY(0); }
+  20%, 60% { transform: translateY(-3px); }
+  40%, 80% { transform: translateY(3px); }
+}
+
+@keyframes wobble {
+  0%, 100% { transform: translateX(0%) rotate(0deg); }
+  15% { transform: translateX(-5px) rotate(-3deg); }
+  30% { transform: translateX(4px) rotate(2deg); }
+  45% { transform: translateX(-3px) rotate(-1.5deg); }
+  60% { transform: translateX(2px) rotate(1deg); }
+  75% { transform: translateX(-1px) rotate(-0.5deg); }
+}
+
+@keyframes buzz {
+  0%, 100% { transform: translate(0, 0); }
+  10%, 50%, 90% { transform: translate(-1.5px, 1px); }
+  30%, 70% { transform: translate(1.5px, -1px); }
+}
+
+@keyframes tada {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  10%, 20% { transform: scale(0.96) rotate(-2deg); }
+  30%, 50%, 70% { transform: scale(1.04) rotate(2deg); }
+  40%, 60% { transform: scale(1.04) rotate(-2deg); }
+  80% { transform: scale(1) rotate(0deg); }
+}
+
+@keyframes heart {
+  0%, 100% { transform: scale(1); }
+  14% { transform: scale(1.08); }
+  28% { transform: scale(1); }
+  42% { transform: scale(1.05); }
+  70% { transform: scale(1); }
+}
+
+@keyframes pulse-smooth {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.03); opacity: 0.92; }
+}
+
+/* Animation utility classes (Infinite) */
+.animate-shake_x, .animate-shake-x {
+  animation: shake-x var(--anim-speed, 1.6s) ease-in-out infinite;
+}
+
+.animate-shake_y, .animate-shake-y {
+  animation: shake-y var(--anim-speed, 1.6s) ease-in-out infinite;
+}
+
+.animate-wobble {
+  animation: wobble var(--anim-speed, 1.6s) ease-in-out infinite;
+}
+
+.animate-buzz {
+  animation: buzz var(--anim-speed, 1.6s) ease-in-out infinite;
+}
+
+.animate-tada {
+  animation: tada var(--anim-speed, 1.6s) ease-in-out infinite;
+}
+
+.animate-heart {
+  animation: heart var(--anim-speed, 1.6s) ease-in-out infinite;
+}
+
+.animate-pulse_smooth, .animate-pulse-smooth, .animate-pulse {
+  animation: pulse-smooth var(--anim-speed, 1.6s) ease-in-out infinite;
+}
+
+/* Animation utility classes (Hover Only) */
+.animate-hover-shake_x:hover, .animate-hover-shake-x:hover {
+  animation: shake-x var(--anim-speed, 1.6s) ease-in-out;
+}
+
+.animate-hover-shake_y:hover, .animate-hover-shake-y:hover {
+  animation: shake-y var(--anim-speed, 1.6s) ease-in-out;
+}
+
+.animate-hover-wobble:hover {
+  animation: wobble var(--anim-speed, 1.6s) ease-in-out;
+}
+
+.animate-hover-buzz:hover {
+  animation: buzz var(--anim-speed, 1.6s) ease-in-out;
+}
+
+.animate-hover-tada:hover {
+  animation: tada var(--anim-speed, 1.6s) ease-in-out;
+}
+
+.animate-hover-heart:hover {
+  animation: heart var(--anim-speed, 1.6s) ease-in-out;
+}
+
+.animate-hover-pulse:hover, .animate-hover-pulse-smooth:hover {
+  animation: pulse-smooth var(--anim-speed, 1.6s) ease-in-out;
+}

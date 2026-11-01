@@ -56,7 +56,14 @@ export function getSmartLink(type: string, value: string, options?: { preferDeep
   const val = value.trim();
   if (!val) return '#';
 
-  const cleanHandle = val.replace(/^@/, '').trim();
+  // Extract handle if full URL or prefixed string is passed
+  let cleanHandle = val.trim();
+  cleanHandle = cleanHandle
+    .replace(/^https?:\/\/(www\.)?(t\.me|instagram\.com|x\.com|twitter\.com|linkedin\.com\/in|tiktok\.com\/@|youtube\.com\/@|pinterest\.com|facebook\.com|github\.com|dribbble\.com|behance\.net|twitch\.tv|clubhouse\.com\/@|patreon\.com|aparat\.com)\//i, '')
+    .replace(/^@/, '')
+    .replace(/\/$/, '')
+    .trim();
+
   const digitsOnly = val.replace(/[^0-9+]/g, '').replace(/^\+/, '');
 
   switch (type) {
@@ -67,25 +74,24 @@ export function getSmartLink(type: string, value: string, options?: { preferDeep
     case 'twitter':
     case 'x': {
       if (val.startsWith('twitter://')) return val;
+      if (options?.preferDeepLink && cleanHandle) return `twitter://user?screen_name=${cleanHandle}`;
       if (val.startsWith('http://') || val.startsWith('https://')) return val;
-      if (options?.preferDeepLink) return `twitter://user?screen_name=${cleanHandle}`;
       return `https://x.com/${cleanHandle}`;
     }
 
     case 'pinterest': {
       if (val.startsWith('pinterest://')) return val;
+      if (options?.preferDeepLink && cleanHandle) return `pinterest://user/${cleanHandle}`;
       if (val.startsWith('http://') || val.startsWith('https://')) return val;
-      if (options?.preferDeepLink) return `pinterest://user/${cleanHandle}`;
       return `https://pinterest.com/${cleanHandle}`;
     }
 
     case 'facebook': {
       if (val.startsWith('fb://')) return val;
-      if (val.startsWith('http://') || val.startsWith('https://')) return val;
-      // If purely numeric ID, use fb://profile/[ID]
-      if (/^\d+$/.test(cleanHandle) && options?.preferDeepLink) {
+      if (options?.preferDeepLink && cleanHandle) {
         return `fb://profile/${cleanHandle}`;
       }
+      if (val.startsWith('http://') || val.startsWith('https://')) return val;
       return `https://facebook.com/${cleanHandle}`;
     }
 
@@ -102,15 +108,15 @@ export function getSmartLink(type: string, value: string, options?: { preferDeep
     case 'youtube_channel':
     case 'youtube': {
       if (val.startsWith('vnd.youtube://')) return val;
+      if (options?.preferDeepLink && cleanHandle) return `vnd.youtube://www.youtube.com/@${cleanHandle}`;
       if (val.startsWith('http://') || val.startsWith('https://')) return val;
-      if (options?.preferDeepLink) return `vnd.youtube://www.youtube.com/@${cleanHandle}`;
       return `https://youtube.com/@${cleanHandle}`;
     }
 
     case 'clubhouse': {
       if (val.startsWith('clubhouse://')) return val;
+      if (options?.preferDeepLink && cleanHandle) return `clubhouse://user/${cleanHandle}`;
       if (val.startsWith('http://') || val.startsWith('https://')) return val;
-      if (options?.preferDeepLink) return `clubhouse://user/${cleanHandle}`;
       return `https://clubhouse.com/@${cleanHandle}`;
     }
 
@@ -122,15 +128,15 @@ export function getSmartLink(type: string, value: string, options?: { preferDeep
     case 'linkedin':
     case 'linkedin_profile': {
       if (val.startsWith('linkedin://')) return val;
+      if (options?.preferDeepLink && cleanHandle) return `linkedin://profile/${cleanHandle}`;
       if (val.startsWith('http://') || val.startsWith('https://')) return val;
-      if (options?.preferDeepLink) return `linkedin://profile/${cleanHandle}`;
       return `https://linkedin.com/in/${cleanHandle}`;
     }
 
     case 'twitch': {
       if (val.startsWith('twitch://')) return val;
+      if (options?.preferDeepLink && cleanHandle) return `twitch://stream/${cleanHandle}`;
       if (val.startsWith('http://') || val.startsWith('https://')) return val;
-      if (options?.preferDeepLink) return `twitch://stream/${cleanHandle}`;
       return `https://twitch.tv/${cleanHandle}`;
     }
 
@@ -142,8 +148,8 @@ export function getSmartLink(type: string, value: string, options?: { preferDeep
     case 'instagram':
     case 'instagram_profile': {
       if (val.startsWith('instagram://')) return val;
+      if (options?.preferDeepLink && cleanHandle) return `instagram://user?username=${cleanHandle}`;
       if (val.startsWith('http://') || val.startsWith('https://')) return val;
-      if (options?.preferDeepLink) return `instagram://user?username=${cleanHandle}`;
       return `https://instagram.com/${cleanHandle}`;
     }
 
@@ -155,8 +161,8 @@ export function getSmartLink(type: string, value: string, options?: { preferDeep
 
     case 'tiktok': {
       if (val.startsWith('snssdk1233://')) return val;
+      if (options?.preferDeepLink && cleanHandle) return `snssdk1233://user/profile/${cleanHandle}`;
       if (val.startsWith('http://') || val.startsWith('https://')) return val;
-      if (options?.preferDeepLink) return `snssdk1233://user/profile/${cleanHandle}`;
       return `https://tiktok.com/@${cleanHandle}`;
     }
 
@@ -216,8 +222,8 @@ export function getSmartLink(type: string, value: string, options?: { preferDeep
     case 'telegram':
     case 'telegram_channel': {
       if (val.startsWith('tg://')) return val;
+      if (options?.preferDeepLink && cleanHandle) return `tg://resolve?domain=${cleanHandle}`;
       if (val.startsWith('http://') || val.startsWith('https://')) return val;
-      if (options?.preferDeepLink) return `tg://resolve?domain=${cleanHandle}`;
       return `https://t.me/${cleanHandle}`;
     }
 
@@ -233,23 +239,23 @@ export function getSmartLink(type: string, value: string, options?: { preferDeep
 
     case 'messenger': {
       if (val.startsWith('fb-messenger://')) return val;
+      if (options?.preferDeepLink && cleanHandle) return `fb-messenger://user-thread/${cleanHandle}`;
       if (val.startsWith('http://') || val.startsWith('https://')) return val;
-      if (options?.preferDeepLink) return `fb-messenger://user-thread/${cleanHandle}`;
       return `https://m.me/${cleanHandle}`;
     }
 
     case 'whatsapp':
     case 'whatsapp_direct': {
       if (val.startsWith('whatsapp://')) return val;
+      if (options?.preferDeepLink && digitsOnly) return `whatsapp://send?phone=${digitsOnly}`;
       if (val.startsWith('http://') || val.startsWith('https://')) return val;
-      if (options?.preferDeepLink) return `whatsapp://send?phone=${digitsOnly}`;
       return `https://wa.me/${digitsOnly}`;
     }
 
     case 'signal': {
       if (val.startsWith('sgnl://')) return val;
+      if (options?.preferDeepLink && digitsOnly) return `sgnl://signal.me/#p/${digitsOnly}`;
       if (val.startsWith('http://') || val.startsWith('https://')) return val;
-      if (options?.preferDeepLink) return `sgnl://signal.me/#p/${digitsOnly}`;
       return `https://signal.me/#p/${digitsOnly}`;
     }
 

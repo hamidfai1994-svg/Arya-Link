@@ -10,6 +10,7 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { FileUploader } from '@/components/ui/file-uploader';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import { Switch } from '@/components/ui/switch';
+import { PhoneInput } from '@/components/ui/phone-input';
 import { ProfileSettingsModal } from './ProfileSettingsModal';
 import { toast } from 'sonner';
 import { useSession, signOut } from 'next-auth/react';
@@ -42,6 +43,8 @@ import {
   Settings,
   X,
   Type,
+  FolderPlus,
+  ChevronDown,
 } from 'lucide-react';
 
 export const ProfileEditor: React.FC = () => {
@@ -68,10 +71,19 @@ export const ProfileEditor: React.FC = () => {
     updateVerificationData,
     submitVerification,
     toggleVerifiedBadge,
+    addModule,
     unconfirmedModuleId,
+    activeModuleId,
   } = useEditorStore();
 
   const [activeTab, setActiveTab] = useState<'content' | 'appearance' | 'fonts' | 'settings' | 'crm'>('content');
+
+  // Auto-switch to 'content' tab when a module is activated from Live Preview
+  useEffect(() => {
+    if (activeModuleId && activeTab !== 'content') {
+      setActiveTab('content');
+    }
+  }, [activeModuleId, activeTab]);
   const [isModuleModalOpen, setIsModuleModalOpen] = useState(false);
   const [isProfileSettingsOpen, setIsProfileSettingsOpen] = useState(false);
   const [copiedAlias, setCopiedAlias] = useState(false);
@@ -89,20 +101,10 @@ export const ProfileEditor: React.FC = () => {
   // Snapshot for Profile Basic Info form so "انصراف" can revert
   const basicInfoSnapshotRef = useRef<any>(null);
 
-  // Live Auto-Save Effect (Debounces 1.8s whenever isDirty is true)
-  useEffect(() => {
-    if (!isDirty || isSaving) return;
-
-    const timer = setTimeout(async () => {
-      try {
-        await saveProfileData();
-      } catch (err) {
-        console.warn('Auto-save error:', err);
-      }
-    }, 1800);
-
-    return () => clearTimeout(timer);
-  }, [isDirty, isSaving, profile, saveProfileData]);
+  // Stage 59 Auto-save Optimization:
+  // Aggressive debounced onChange auto-save is removed to prevent race conditions and sluggishness.
+  // Changes in forms are saved strictly when user clicks "تایید" on that module.
+  // Drag & Drop operations auto-save immediately on onDragEnd.
 
   // Smart Language Detection Warning (warns once per session)
   const hasWarnedRef = useRef(false);
@@ -201,10 +203,10 @@ export const ProfileEditor: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full bg-card text-foreground border-l border-border w-full max-w-2xl mx-auto shadow-2xl overflow-hidden font-sans transition-colors duration-200" dir="rtl">
-      {/* Editor Header (Isolated Single-Card Context — No Card Selector Dropdown) */}
-      <header className="p-4 border-b border-border flex items-center justify-between bg-card/80 backdrop-blur-md sticky top-0 z-20 gap-3">
+      {/* Editor Header (Cleaned up, single source of truth for URL in sidebar, no auto-save badge) */}
+      <header className="px-5 py-3.5 border-b border-border flex items-center justify-between bg-card/80 backdrop-blur-md sticky top-0 z-20 gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center font-bold text-white shadow-lg shadow-cyan-500/20 font-sans shrink-0 overflow-hidden">
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center font-bold text-white shadow-md shadow-cyan-500/20 font-sans shrink-0 overflow-hidden">
             {profile.avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={profile.avatarUrl} alt="" className="w-full h-full object-cover" />
@@ -214,30 +216,19 @@ export const ProfileEditor: React.FC = () => {
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-extrabold text-foreground truncate">
+              <span className="text-sm font-extrabold text-foreground truncate">
                 {profile.displayName || 'کارت هوشمند'}
               </span>
-              {isSaving ? (
-                <span className="text-[10px] text-cyan-500 flex items-center gap-1 font-medium">
+              {isSaving && (
+                <span className="text-[10px] text-cyan-500 flex items-center gap-1 font-medium animate-pulse">
                   <Loader2 className="w-3 h-3 animate-spin" />
                   <span>در حال ذخیره...</span>
                 </span>
-              ) : (
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 font-bold">
-                  ذخیره خودکار فعال
-                </span>
               )}
             </div>
-            <button
-              type="button"
-              onClick={handleCopyLink}
-              className="text-[11px] font-sans text-cyan-600 dark:text-cyan-400 hover:underline flex items-center gap-1 mt-0.5"
-              dir="ltr"
-              title="کپی آدرس لینک"
-            >
-              <span>aryal.ink/{profile.alias || 'card'}</span>
-              <Copy className="w-3 h-3 opacity-70" />
-            </button>
+            <p className="text-[11px] text-muted-foreground truncate">
+              {profile.headline || 'ویرایشگر کارت دیجیتال و مینی‌سایت'}
+            </p>
           </div>
         </div>
 
@@ -379,13 +370,11 @@ export const ProfileEditor: React.FC = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-medium text-muted-foreground mb-1.5">شماره تماس مستقیم</label>
-                      <input
-                        type="tel"
+                      <PhoneInput
                         value={profile.phone || ''}
-                        onChange={(e) => updateBasicInfo({ phone: e.target.value })}
-                        placeholder="+93 79 123 4567"
-                        dir="ltr"
-                        className="w-full bg-background border border-border rounded-xl px-3 py-2 text-sm text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-colors font-sans text-left"
+                        onChange={(val) => updateBasicInfo({ phone: val })}
+                        placeholder="799 123 456"
+                        defaultCountry="AF"
                       />
                     </div>
 
@@ -576,14 +565,33 @@ export const ProfileEditor: React.FC = () => {
                   </p>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={handleOpenAddModule}
-                  className="px-3.5 py-1.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold rounded-xl text-xs flex items-center gap-1.5 transition-all shadow-md shadow-cyan-500/20 active:scale-95"
-                >
-                  <Plus className="w-4 h-4" />
-                  افزودن ماژول هوشمند
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (unconfirmedModuleId) {
+                        toast.error('این بخش هنوز تایید نشده است. لطفاً ابتدا تغییرات را تایید یا لغو کنید.');
+                        return;
+                      }
+                      addModule('container_group');
+                      toast.success('گروه / کانتینر جدید افزوده شد.');
+                    }}
+                    className="px-3.5 py-1.5 bg-muted hover:bg-muted/80 text-foreground border border-border hover:border-cyan-500/40 font-bold rounded-xl text-xs flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-xs"
+                    title="افزودن کانتینر برای گروه‌بندی ماژول‌ها"
+                  >
+                    <FolderPlus className="w-4 h-4 text-cyan-500" />
+                    <span>افزودن گروه / کانتینر</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleOpenAddModule}
+                    className="px-3.5 py-1.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold rounded-xl text-xs flex items-center gap-1.5 transition-all shadow-md shadow-cyan-500/20 active:scale-95 cursor-pointer"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>افزودن ماژول هوشمند</span>
+                  </button>
+                </div>
               </div>
 
               {/* Dynamic Section Modules List */}
@@ -719,38 +727,211 @@ export const ProfileEditor: React.FC = () => {
                     </div>
                     <div className="text-right">
                       <span className="text-xs font-bold text-foreground block">دکمه‌ها و عناصر تعاملی (Buttons)</span>
-                      <span className="text-[10px] text-muted-foreground block">تنظیم نوع حاشیه، گوشه‌ها و سایه‌ها</span>
+                      <span className="text-[10px] text-muted-foreground block">تنظیم شکل حاشیه، اندازه، رنگ‌ها و ضخامت دکمه‌ها</span>
                     </div>
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="px-5 pb-5 pt-1 space-y-4">
-                  {/* Border Style */}
+                  {/* 1. شکل حاشیه دکمه (8 انواع مختلف انحنا و شکل) */}
                   <div>
-                    <label className="block text-xs font-medium text-foreground mb-1.5">
-                      نوع حاشیه دکمه‌ها (Border Style)
+                    <label className="block text-xs font-bold text-foreground mb-2 flex items-center justify-between">
+                      <span>شکل حاشیه دکمه</span>
+                      <span className="text-[10px] text-muted-foreground font-sans">8 Shapes</span>
+                    </label>
+                    <div className="grid grid-cols-4 gap-2">
+                      {[
+                        {
+                          id: 'sharp',
+                          label: 'تیز',
+                          renderIcon: () => <div className="w-7 h-4 border-2 border-current rounded-none" />,
+                        },
+                        {
+                          id: 'soft',
+                          label: 'لبه‌گرد',
+                          renderIcon: () => <div className="w-7 h-4 border-2 border-current rounded-[3px]" />,
+                        },
+                        {
+                          id: 'pill',
+                          label: 'کپسولی',
+                          renderIcon: () => <div className="w-7 h-4 border-2 border-current rounded-full" />,
+                        },
+                        {
+                          id: 'leaf',
+                          label: 'برگ',
+                          renderIcon: () => <div className="w-7 h-4 border-2 border-current rounded-tr-lg rounded-bl-lg rounded-tl-none rounded-br-none" />,
+                        },
+                        {
+                          id: 'cut_corners',
+                          label: 'پخ‌خورده',
+                          renderIcon: () => <div className="w-7 h-4 border border-current btn-shape-cut_corners bg-current/25" />,
+                        },
+                        {
+                          id: 'ticket',
+                          label: 'تیکت',
+                          renderIcon: () => <div className="w-7 h-4 border border-current btn-shape-ticket bg-current/25" />,
+                        },
+                        {
+                          id: 'hexagon',
+                          label: 'شش‌ضلعی',
+                          renderIcon: () => <div className="w-7 h-4 border border-current btn-shape-hexagon bg-current/25" />,
+                        },
+                        {
+                          id: 'parallelogram_l',
+                          label: 'متوازی',
+                          renderIcon: () => <div className="w-7 h-4 border border-current btn-shape-parallelogram_l bg-current/25" />,
+                        },
+                      ].map((item) => {
+                        const isSelected = (profile.themeConfig.buttonShape || 'soft') === item.id;
+                        return (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => updateTheme({ buttonShape: item.id as any })}
+                            className={`p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all ${
+                              isSelected
+                                ? 'bg-cyan-500/15 border-cyan-500 text-cyan-500 ring-2 ring-cyan-500/30 font-bold shadow-sm'
+                                : 'bg-muted/40 border-border text-muted-foreground hover:text-foreground hover:bg-muted/70'
+                            }`}
+                          >
+                            <div className="h-5 flex items-center justify-center">{item.renderIcon()}</div>
+                            <span className="text-[10px] leading-tight block truncate w-full text-center">
+                              {item.label}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* 2. اندازه دکمه (کوچک، متوسط، بزرگ) */}
+                  <div>
+                    <label className="block text-xs font-bold text-foreground mb-1.5">
+                      اندازه دکمه
                     </label>
                     <div className="grid grid-cols-3 gap-2">
                       {[
-                        { id: 'solid', label: 'پیوسته (Solid)' },
-                        { id: 'dashed', label: 'خط‌چین (Dashed)' },
-                        { id: 'none', label: 'بدون حاشیه' },
-                      ].map((b) => (
+                        { id: 'sm', label: 'کوچک' },
+                        { id: 'md', label: 'متوسط' },
+                        { id: 'lg', label: 'بزرگ' },
+                      ].map((s) => (
                         <button
-                          key={b.id}
+                          key={s.id}
                           type="button"
-                          onClick={() => updateTheme({ buttonBorderStyle: b.id as any })}
-                          className={`py-2 px-2.5 rounded-xl text-xs font-semibold border transition-all ${(profile.themeConfig.buttonBorderStyle || 'solid') === b.id
+                          onClick={() => updateTheme({ buttonSize: s.id as any })}
+                          className={`py-2 px-2.5 rounded-xl text-xs font-semibold border transition-all text-center ${(profile.themeConfig.buttonSize || 'md') === s.id
                             ? 'bg-cyan-500 text-slate-950 font-bold border-cyan-400 shadow-md shadow-cyan-500/20'
                             : 'bg-muted/40 border-border text-foreground hover:bg-muted'
                             }`}
                         >
-                          {b.label}
+                          {s.label}
                         </button>
                       ))}
                     </div>
                   </div>
 
-                  {/* Shadow Style */}
+                  {/* 3. رنگ متن دکمه (Color Swatch + Hex Input) */}
+                  <div className="p-3 rounded-xl border border-border bg-muted/20 space-y-2">
+                    <label className="block text-xs font-bold text-foreground">
+                      رنگ متن دکمه
+                    </label>
+                    <div className="flex items-center gap-2.5">
+                      <div className="relative w-9 h-9 rounded-xl overflow-hidden border border-border shadow-xs shrink-0">
+                        <input
+                          type="color"
+                          value={profile.themeConfig.buttonTextColor || '#ffffff'}
+                          onChange={(e) => updateTheme({ buttonTextColor: e.target.value })}
+                          className="absolute -top-2 -left-2 w-14 h-14 cursor-pointer border-0 p-0"
+                        />
+                      </div>
+                      <input
+                        type="text"
+                        value={profile.themeConfig.buttonTextColor || '#ffffff'}
+                        onChange={(e) => updateTheme({ buttonTextColor: e.target.value })}
+                        placeholder="#ffffff"
+                        dir="ltr"
+                        className="flex-1 bg-background border border-border rounded-xl px-3 py-1.5 text-xs font-sans text-foreground focus:outline-none focus:border-cyan-500 uppercase"
+                      />
+                    </div>
+                  </div>
+
+                  {/* 4. رنگ پس‌زمینه دکمه (Color Swatch + Hex Input) */}
+                  <div className="p-3 rounded-xl border border-border bg-muted/20 space-y-2">
+                    <label className="block text-xs font-bold text-foreground">
+                      رنگ پس زمینه دکمه
+                    </label>
+                    <div className="flex items-center gap-2.5">
+                      <div className="relative w-9 h-9 rounded-xl overflow-hidden border border-border shadow-xs shrink-0">
+                        <input
+                          type="color"
+                          value={profile.themeConfig.buttonBgColor || '#0ea5e9'}
+                          onChange={(e) => updateTheme({ buttonBgColor: e.target.value })}
+                          className="absolute -top-2 -left-2 w-14 h-14 cursor-pointer border-0 p-0"
+                        />
+                      </div>
+                      <input
+                        type="text"
+                        value={profile.themeConfig.buttonBgColor || '#0ea5e9'}
+                        onChange={(e) => updateTheme({ buttonBgColor: e.target.value })}
+                        placeholder="#0ea5e9"
+                        dir="ltr"
+                        className="flex-1 bg-background border border-border rounded-xl px-3 py-1.5 text-xs font-sans text-foreground focus:outline-none focus:border-cyan-500 uppercase"
+                      />
+                    </div>
+                  </div>
+
+                  {/* 5. رنگ حاشیه دکمه (Color Swatch + Hex Input) */}
+                  <div className="p-3 rounded-xl border border-border bg-muted/20 space-y-2">
+                    <label className="block text-xs font-bold text-foreground">
+                      رنگ حاشیه دکمه
+                    </label>
+                    <div className="flex items-center gap-2.5">
+                      <div className="relative w-9 h-9 rounded-xl overflow-hidden border border-border shadow-xs shrink-0">
+                        <input
+                          type="color"
+                          value={profile.themeConfig.buttonBorderColor || '#38bdf8'}
+                          onChange={(e) => updateTheme({ buttonBorderColor: e.target.value })}
+                          className="absolute -top-2 -left-2 w-14 h-14 cursor-pointer border-0 p-0"
+                        />
+                      </div>
+                      <input
+                        type="text"
+                        value={profile.themeConfig.buttonBorderColor || '#38bdf8'}
+                        onChange={(e) => updateTheme({ buttonBorderColor: e.target.value })}
+                        placeholder="#38bdf8"
+                        dir="ltr"
+                        className="flex-1 bg-background border border-border rounded-xl px-3 py-1.5 text-xs font-sans text-foreground focus:outline-none focus:border-cyan-500 uppercase"
+                      />
+                    </div>
+                  </div>
+
+                  {/* 6. ضخامت حاشیه دکمه (هیچکدام، نازک، متوسط، ضخیم) */}
+                  <div>
+                    <label className="block text-xs font-bold text-foreground mb-1.5">
+                      ضخامت حاشیه دکمه
+                    </label>
+                    <div className="grid grid-cols-4 gap-2">
+                      {[
+                        { id: 'thick', label: 'ضخیم' },
+                        { id: 'medium', label: 'متوسط' },
+                        { id: 'thin', label: 'نازک' },
+                        { id: 'none', label: 'هیچکدام' },
+                      ].map((w) => (
+                        <button
+                          key={w.id}
+                          type="button"
+                          onClick={() => updateTheme({ buttonBorderWidth: w.id as any })}
+                          className={`py-2 px-1 rounded-xl text-xs font-semibold border transition-all text-center ${(profile.themeConfig.buttonBorderWidth || 'thin') === w.id
+                            ? 'bg-cyan-500 text-slate-950 font-bold border-cyan-400 shadow-md shadow-cyan-500/20'
+                            : 'bg-muted/40 border-border text-foreground hover:bg-muted'
+                            }`}
+                        >
+                          {w.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 7. نوع سایه دکمه‌ها (Button Shadow) */}
                   <div>
                     <label className="block text-xs font-medium text-foreground mb-1.5">
                       نوع سایه دکمه‌ها (Button Shadow)
@@ -774,67 +955,6 @@ export const ProfileEditor: React.FC = () => {
                           {s.label}
                         </button>
                       ))}
-                    </div>
-                  </div>
-
-                  {/* Corner Radius (Visual Graphic Selectors) */}
-                  <div>
-                    <label className="block text-xs font-medium text-foreground mb-1.5">
-                      شکل و گردی گوشه دکمه‌ها (Corner Radius)
-                    </label>
-                    <div className="grid grid-cols-3 gap-2.5">
-                      {[
-                        {
-                          id: 'rounded-none',
-                          label: 'مربع کامل',
-                          sub: 'تیز (Sharp)',
-                          shapeClass: 'rounded-none',
-                        },
-                        {
-                          id: 'rounded-md',
-                          label: 'لبه‌گرد ملایم',
-                          sub: 'نرم (Soft)',
-                          shapeClass: 'rounded-md',
-                          isMatch: (val?: string) => val === 'rounded-md' || val === 'rounded-lg' || val === 'rounded-2xl' || !val,
-                        },
-                        {
-                          id: 'rounded-full',
-                          label: 'کاملاً گرد',
-                          sub: 'کپسولی (Pill)',
-                          shapeClass: 'rounded-full',
-                        },
-                      ].map((r) => {
-                        const isSelected = r.isMatch
-                          ? r.isMatch(profile.themeConfig.borderRadius) && profile.themeConfig.borderRadius !== 'rounded-none' && profile.themeConfig.borderRadius !== 'rounded-full'
-                          : profile.themeConfig.borderRadius === r.id;
-
-                        return (
-                          <button
-                            key={r.id}
-                            type="button"
-                            onClick={() => updateTheme({ borderRadius: r.id })}
-                            className={`p-3 rounded-2xl border flex flex-col items-center gap-2 text-center transition-all ${isSelected
-                              ? 'bg-cyan-500/15 border-cyan-500 text-cyan-500 ring-2 ring-cyan-500/30 shadow-md shadow-cyan-500/10 font-bold'
-                              : 'bg-muted/30 border-border text-muted-foreground hover:text-foreground hover:bg-muted/60'
-                              }`}
-                          >
-                            <div className="w-12 h-6 flex items-center justify-center">
-                              <div
-                                className={`w-10 h-5 border-2 ${isSelected ? 'border-cyan-500 bg-cyan-500/20' : 'border-current bg-foreground/5'
-                                  } ${r.shapeClass} transition-all`}
-                              />
-                            </div>
-                            <div>
-                              <span className={`text-xs font-bold block ${isSelected ? 'text-foreground' : ''}`}>
-                                {r.label}
-                              </span>
-                              <span className="text-[10px] opacity-70 block font-sans mt-0.5" dir="ltr">
-                                {r.id}
-                              </span>
-                            </div>
-                          </button>
-                        );
-                      })}
                     </div>
                   </div>
                 </AccordionContent>
@@ -910,258 +1030,259 @@ export const ProfileEditor: React.FC = () => {
           </section>
         )}
 
-        {/* TAB 3: FONTS & TYPOGRAPHY SETTINGS */}
+        {/* TAB 3: ADVANCED TYPOGRAPHY & FONT SETTINGS (Stage 60 Refactor) */}
         {activeTab === 'fonts' && (
           <div className="space-y-6 animate-in fade-in duration-200">
-            {/* Header intro card */}
-            <section className="bg-muted/30 border border-border rounded-2xl p-5 space-y-4">
+            {/* Header Intro Card */}
+            <section className="bg-muted/30 border border-border rounded-2xl p-5 space-y-2">
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-xs font-bold text-foreground uppercase tracking-wider mb-1 flex items-center gap-2">
                     <Type className="w-4 h-4 text-cyan-500" />
-                    تنظیمات تایپوگرافی و فونت مینی‌سایت
+                    تنظیمات پیشرفته تایپوگرافی و فونت‌ها
                   </h2>
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    فونت‌های گلچین‌شده و اختصاصی کارت و صفحه بیو خود را انتخاب کنید. تغییرات بلافاصله در پیش‌نمایش زنده اعمال می‌شوند.
+                    فونت و اندازه قلم را برای زبان‌های ملی (دری و پشتو) و زبان انگلیسی انتخاب و مقیاس‌بندی کنید.
                   </p>
                 </div>
                 <span className="text-[10px] bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20 px-2.5 py-0.5 rounded-full font-bold">
-                  تایپوگرافی زنده
+                  پیش‌نمایش بلادرنگ
                 </span>
               </div>
             </section>
 
-            {/* 1. Persian / Pashto / Dari Font Selection */}
+            {/* 1. FONT SELECTION DROPDOWNS (Dari/Pashto & English) */}
             <section className="bg-muted/30 border border-border rounded-2xl p-5 space-y-4">
               <div>
                 <h3 className="text-xs font-bold text-foreground flex items-center gap-2 mb-1">
                   <span className="w-2 h-2 rounded-full bg-cyan-500"></span>
-                  فونت زبان‌های فارسی، دری و پشتو
+                  انتخاب قلم و خانواده فونت (Font Families)
                 </h3>
                 <p className="text-xs text-muted-foreground">
-                  این فونت برای متون اصلی، عناوین ماژول‌ها و توضیحات بیو در زبان‌های ملی استفاده می‌شود.
+                  فونت متون کارت خود را از میان فونت‌های استاندارد وب انتخاب نمایید.
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {[
-                  {
-                    id: 'vazirmatn',
-                    title: 'وزیرمتن (Vazirmatn)',
-                    badge: 'پیش‌فرض و استاندارد',
-                    desc: 'طراحی مدرن، خوانایی استثنایی در تمام نمایشگرها و هماهنگی کامل وب.',
-                    sample: 'کارت ویزیت هوشمند و صفحه اختصاصی ارتباطی شما',
-                    fontClass: 'font-vazirmatn',
-                  },
-                  {
-                    id: 'yekan_bakh',
-                    title: 'یکان‌بخ (Yekan Bakh)',
-                    badge: 'شیک و هندسی',
-                    desc: 'خطوط هندسی و مینیمال، ایده‌آل برای برندهای تجاری و فناوری.',
-                    sample: 'کارت ویزیت هوشمند و صفحه اختصاصی ارتباطی شما',
-                    fontClass: 'font-sans',
-                  },
-                  {
-                    id: 'shabnam',
-                    title: 'شبنم (Shabnam)',
-                    badge: 'رسمی و چشم‌نواز',
-                    desc: 'زاویه‌های نرم و دلنشین با حس اعتماد و ارتباط صمیمی با مخاطب.',
-                    sample: 'کارت ویزیت هوشمند و صفحه اختصاصی ارتباطی شما',
-                    fontClass: 'font-sans',
-                  },
-                  {
-                    id: 'sahel',
-                    title: 'ساحل (Sahel)',
-                    badge: 'کلاسیک و آرام',
-                    desc: 'تایپوگرافی لطیف، متوازن و بسیار روان برای متن‌های طولانی و مقالات.',
-                    sample: 'کارت ویزیت هوشمند و صفحه اختصاصی ارتباطی شما',
-                    fontClass: 'font-sans',
-                  },
-                ].map((f) => {
-                  const isSelected = (profile.themeConfig?.fontFa || 'vazirmatn') === f.id;
-                  return (
-                    <button
-                      key={f.id}
-                      type="button"
-                      onClick={() => updateTheme({ fontFa: f.id as any })}
-                      className={`p-4 rounded-2xl border text-right transition-all flex flex-col justify-between cursor-pointer relative overflow-hidden ${
-                        isSelected
-                          ? 'bg-cyan-500/10 border-cyan-500 ring-2 ring-cyan-500/30 shadow-md shadow-cyan-500/10'
-                          : 'bg-card border-border hover:border-cyan-500/40 hover:bg-muted/40'
-                      }`}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Dari & Pashto Dropdown */}
+                <div className="p-4 rounded-2xl border border-border bg-card space-y-2.5">
+                  <label className="block text-xs font-bold text-foreground">
+                    فونت زبان‌های دری و پشتو
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={profile.themeConfig?.fontFa || 'vazirmatn'}
+                      onChange={(e) => updateTheme({ fontFa: e.target.value as any })}
+                      className="w-full bg-background border border-border rounded-xl px-3.5 py-2.5 text-xs text-foreground focus:outline-none focus:border-cyan-500 appearance-none font-sans font-medium cursor-pointer shadow-xs transition-colors"
                     >
-                      <div className="w-full">
-                        <div className="flex items-center justify-between gap-2 mb-1.5">
-                          <span className={`text-xs font-bold ${isSelected ? 'text-cyan-600 dark:text-cyan-400' : 'text-foreground'}`}>
-                            {f.title}
-                          </span>
-                          <span
-                            className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
-                              isSelected
-                                ? 'bg-cyan-500 text-slate-950'
-                                : 'bg-muted text-muted-foreground'
-                            }`}
-                          >
-                            {isSelected ? '✓ فعال' : f.badge}
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-muted-foreground leading-relaxed mb-3">
-                          {f.desc}
-                        </p>
-                      </div>
+                      <option value="vazirmatn">وزیرمتن (Vazirmatn) — استاندارد و پیش‌فرض</option>
+                      <option value="yekan_bakh">یکان‌بخ (Yekan Bakh) — مدرن و هندسی</option>
+                      <option value="shabnam">شبنم (Shabnam) — رسمی و دلنشین</option>
+                      <option value="sahel">ساحل (Sahel) — کلاسیک و آرام</option>
+                      <option value="dana">دانا (Dana) — معاصر و پویا</option>
+                    </select>
+                    <ChevronDown className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
+                  <span className="text-[10px] text-muted-foreground block">
+                    اعمال خودکار بر روی تیترها، بیوگرافی و ماژول‌های دری و پشتو
+                  </span>
+                </div>
 
-                      {/* Live text sample in that exact font */}
-                      <div
-                        className={`w-full p-2.5 rounded-xl border border-border/80 bg-background/80 text-xs font-medium text-foreground ${f.fontClass}`}
-                      >
-                        {f.sample}
-                      </div>
-                    </button>
-                  );
-                })}
+                {/* English Dropdown */}
+                <div className="p-4 rounded-2xl border border-border bg-card space-y-2.5">
+                  <label className="block text-xs font-bold text-foreground">
+                    فونت زبان انگلیسی (English Typography)
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={profile.themeConfig?.fontEn || 'inter'}
+                      onChange={(e) => updateTheme({ fontEn: e.target.value as any })}
+                      className="w-full bg-background border border-border rounded-xl px-3.5 py-2.5 text-xs text-foreground focus:outline-none focus:border-cyan-500 appearance-none font-sans font-medium cursor-pointer shadow-xs transition-colors"
+                      dir="ltr"
+                    >
+                      <option value="inter">Inter — Clean & Ultra-Legible (Default)</option>
+                      <option value="roboto">Roboto — Modern Google Typography</option>
+                      <option value="poppins">Poppins — Geometric & Friendly</option>
+                      <option value="outfit">Outfit — Contemporary Brand Display</option>
+                      <option value="plus_jakarta">Plus Jakarta Sans — Corporate Tech</option>
+                    </select>
+                    <ChevronDown className="w-4 h-4 text-muted-foreground absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
+                  <span className="text-[10px] text-muted-foreground block">
+                    اعمال بر روی نام‌های کاربری، شناسه‌ها و نمای انگلیسی کارت
+                  </span>
+                </div>
               </div>
             </section>
 
-            {/* 2. English Font Selection */}
-            <section className="bg-muted/30 border border-border rounded-2xl p-5 space-y-4">
+            {/* 2. THREE DISTINCT PREVIEW CONTAINERS WITH SLIDERS */}
+            <div className="space-y-4">
               <div>
                 <h3 className="text-xs font-bold text-foreground flex items-center gap-2 mb-1">
                   <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-                  فونت زبان انگلیسی (English Typography)
+                  کانتینرهای پیش‌نمایش مجزا و تنظیم اندازه قلم
                 </h3>
                 <p className="text-xs text-muted-foreground">
-                  این فونت برای واژه‌های انگلیسی، آدرس وب‌سایت، شناسه‌ها و نمای انگلیسی کارت اعمال می‌گردد.
+                  پیش‌نمایش زنده هر زبان به همراه اسلایدر اختصاصی برای تنظیم اندازه فونت:
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {[
-                  {
-                    id: 'inter',
-                    title: 'Inter',
-                    badge: 'Minimal (Default)',
-                    desc: 'Clean, neutral and ultra-legible UI typeface designed by Rasmus Andersson.',
-                    sample: 'Smart Digital Business Card & Bio',
-                    fontClass: 'font-inter',
-                  },
-                  {
-                    id: 'outfit',
-                    title: 'Outfit',
-                    badge: 'Geometric & Trendy',
-                    desc: 'Modern geometric sans inspired by digital brands and lifestyle tech.',
-                    sample: 'Smart Digital Business Card & Bio',
-                    fontClass: 'font-sans',
-                  },
-                  {
-                    id: 'plus_jakarta',
-                    title: 'Plus Jakarta Sans',
-                    badge: 'Corporate Tech',
-                    desc: 'Friendly yet professional contemporary grotesque font family.',
-                    sample: 'Smart Digital Business Card & Bio',
-                    fontClass: 'font-plus_jakarta',
-                  },
-                  {
-                    id: 'playfair',
-                    title: 'Playfair Display',
-                    badge: 'Luxury Serif',
-                    desc: 'High-contrast luxury transitional serif for elite, boutique & VIP cards.',
-                    sample: 'Smart Digital Business Card & Bio',
-                    fontClass: 'font-sans',
-                  },
-                ].map((f) => {
-                  const isSelected = (profile.themeConfig?.fontEn || 'inter') === f.id;
-                  return (
-                    <button
-                      key={f.id}
-                      type="button"
-                      onClick={() => updateTheme({ fontEn: f.id as any })}
-                      className={`p-4 rounded-2xl border text-left transition-all flex flex-col justify-between cursor-pointer relative overflow-hidden ${
-                        isSelected
-                          ? 'bg-blue-500/10 border-blue-500 ring-2 ring-blue-500/30 shadow-md shadow-blue-500/10'
-                          : 'bg-card border-border hover:border-blue-500/40 hover:bg-muted/40'
-                      }`}
-                      dir="ltr"
-                    >
-                      <div className="w-full">
-                        <div className="flex items-center justify-between gap-2 mb-1.5">
-                          <span className={`text-xs font-bold ${isSelected ? 'text-blue-500' : 'text-foreground'}`}>
-                            {f.title}
-                          </span>
-                          <span
-                            className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
-                              isSelected
-                                ? 'bg-blue-500 text-white'
-                                : 'bg-muted text-muted-foreground'
-                            }`}
-                          >
-                            {isSelected ? '✓ Active' : f.badge}
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-muted-foreground leading-relaxed mb-3">
-                          {f.desc}
-                        </p>
-                      </div>
+              {/* Preview Container 1: Dari */}
+              <div className="bg-muted/30 border border-border rounded-2xl p-4 sm:p-5 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base select-none">🇦🇫</span>
+                    <span className="text-xs font-bold text-foreground">۱. کانتینر پیش‌نمایش متن دری</span>
+                  </div>
+                  <span className="text-[10px] font-sans font-bold text-cyan-600 dark:text-cyan-400 bg-cyan-500/10 px-2.5 py-0.5 rounded-full border border-cyan-500/20">
+                    {profile.themeConfig?.fontFa || 'vazirmatn'}
+                  </span>
+                </div>
 
-                      {/* Live English text sample */}
-                      <div
-                        className={`w-full p-2.5 rounded-xl border border-border/80 bg-background/80 text-xs font-medium text-foreground ${f.fontClass}`}
-                      >
-                        {f.sample}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
-
-            {/* 3. Live Typography Pair Preview */}
-            <section className="bg-muted/30 border border-border rounded-2xl p-5 space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xs font-bold text-foreground flex items-center gap-2">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                  نمای زنده ترکیب فونت‌های انتخابی
-                </h3>
-                <span className="text-[10px] text-muted-foreground">
-                  فارسی: {profile.themeConfig?.fontFa || 'vazirmatn'} | انگلیسی: {profile.themeConfig?.fontEn || 'inter'}
-                </span>
-              </div>
-
-              <div
-                className={`p-5 rounded-2xl border border-border bg-card shadow-sm space-y-3 ${
-                  profile.themeConfig?.fontFa ? `font-${profile.themeConfig.fontFa}` : 'font-vazirmatn'
-                }`}
-              >
-                <div>
-                  <h4 className="text-base font-bold text-foreground">
-                    {profile.displayName || 'احمد نیازی'}
+                {/* Real-time Render Box */}
+                <div
+                  className={`p-4 rounded-xl border border-border/80 bg-card shadow-xs space-y-1.5 transition-all font-${profile.themeConfig?.fontFa || 'vazirmatn'}`}
+                  style={{ fontSize: `${profile.themeConfig?.fontSizeDari || 15}px` }}
+                >
+                  <h4 className="font-bold text-foreground leading-snug">
+                    کارت هوشمند و لینک‌بایوی دیجیتال آریا لینک
                   </h4>
-                  <p className="text-xs text-cyan-600 dark:text-cyan-400 font-semibold mt-0.5">
-                    {profile.headline || 'Senior Marketing Director'}
+                  <p className="text-muted-foreground leading-relaxed">
+                    طراحی مدرن، ارتباط مستقیم و انتقال بدون تماس اطلاعات و شبکه‌های اجتماعی با فناوری هوشمند NFC در سراسر افغانستان.
                   </p>
                 </div>
 
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  {profile.bio || 'تیم ما ارائه‌دهنده راه‌کارهای مدرن هویت دیجیتال و ابزارهای ارتباطی هوشمند در افغانستان است.'}
-                </p>
-
-                <div className="pt-2 flex items-center gap-2">
-                  <div
-                    className={`px-4 py-2 rounded-xl text-xs font-bold text-white shadow-sm flex items-center gap-1.5`}
-                    style={{
-                      background: `linear-gradient(135deg, ${profile.themeConfig?.primaryColor || '#0ea5e9'}, ${profile.themeConfig?.accentColor || '#06b6d4'})`,
-                    }}
-                  >
-                    <span>ارتباط مستقیم در واتساپ</span>
-                    <span className="text-[11px] font-sans" dir="ltr">WhatsApp</span>
+                {/* Slider for Dari */}
+                <div className="space-y-1.5 pt-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold text-foreground">اندازه قلم متن دری (Font Size)</span>
+                    <span className="font-sans font-bold text-cyan-500 bg-cyan-500/10 px-2 py-0.5 rounded-md border border-cyan-500/20">
+                      {profile.themeConfig?.fontSizeDari || 15}px
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="12"
+                    max="24"
+                    step="1"
+                    value={profile.themeConfig?.fontSizeDari || 15}
+                    onChange={(e) => updateTheme({ fontSizeDari: Number(e.target.value) })}
+                    className="w-full accent-cyan-500 cursor-pointer"
+                  />
+                  <div className="flex justify-between text-[10px] text-muted-foreground font-sans">
+                    <span>12px</span>
+                    <span>15px (پیش‌فرض)</span>
+                    <span>24px</span>
                   </div>
                 </div>
               </div>
-            </section>
+
+              {/* Preview Container 2: Pashto */}
+              <div className="bg-muted/30 border border-border rounded-2xl p-4 sm:p-5 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base select-none">🇦🇫</span>
+                    <span className="text-xs font-bold text-foreground">۲. کانتینر پیش‌نمایش متن پښتو</span>
+                  </div>
+                  <span className="text-[10px] font-sans font-bold text-cyan-600 dark:text-cyan-400 bg-cyan-500/10 px-2.5 py-0.5 rounded-full border border-cyan-500/20">
+                    {profile.themeConfig?.fontFa || 'vazirmatn'}
+                  </span>
+                </div>
+
+                {/* Real-time Render Box */}
+                <div
+                  className={`p-4 rounded-xl border border-border/80 bg-card shadow-xs space-y-1.5 transition-all font-${profile.themeConfig?.fontFa || 'vazirmatn'}`}
+                  style={{ fontSize: `${profile.themeConfig?.fontSizePashto || 15}px` }}
+                >
+                  <h4 className="font-bold text-foreground leading-snug">
+                    په آریا لینک کې ستاسو سمارټ ډیجیټل سوداګریز کارت
+                  </h4>
+                  <p className="text-muted-foreground leading-relaxed">
+                    له خپلو پیرودونکو او سوداګریزو شریکانو سره د NFC ټیکنالوژۍ او QR کوډ له لارې چټکه او خوندي اړیکه ټینګه کړئ.
+                  </p>
+                </div>
+
+                {/* Slider for Pashto */}
+                <div className="space-y-1.5 pt-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold text-foreground">اندازه قلم متن پښتو (Font Size)</span>
+                    <span className="font-sans font-bold text-cyan-500 bg-cyan-500/10 px-2 py-0.5 rounded-md border border-cyan-500/20">
+                      {profile.themeConfig?.fontSizePashto || 15}px
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="12"
+                    max="24"
+                    step="1"
+                    value={profile.themeConfig?.fontSizePashto || 15}
+                    onChange={(e) => updateTheme({ fontSizePashto: Number(e.target.value) })}
+                    className="w-full accent-cyan-500 cursor-pointer"
+                  />
+                  <div className="flex justify-between text-[10px] text-muted-foreground font-sans">
+                    <span>12px</span>
+                    <span>15px (پیش‌فرض)</span>
+                    <span>24px</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Preview Container 3: English */}
+              <div className="bg-muted/30 border border-border rounded-2xl p-4 sm:p-5 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base select-none">🌐</span>
+                    <span className="text-xs font-bold text-foreground">3. English Sample Text Container</span>
+                  </div>
+                  <span className="text-[10px] font-sans font-bold text-blue-500 bg-blue-500/10 px-2.5 py-0.5 rounded-full border border-blue-500/20">
+                    {profile.themeConfig?.fontEn || 'inter'}
+                  </span>
+                </div>
+
+                {/* Real-time Render Box */}
+                <div
+                  className={`p-4 rounded-xl border border-border/80 bg-card shadow-xs space-y-1.5 transition-all font-${profile.themeConfig?.fontEn || 'inter'}`}
+                  style={{ fontSize: `${profile.themeConfig?.fontSizeEn || 14}px` }}
+                  dir="ltr"
+                >
+                  <h4 className="font-bold text-foreground leading-snug">
+                    AryaLink Smart Digital Business Card & Bio
+                  </h4>
+                  <p className="text-muted-foreground leading-relaxed">
+                    Seamless contactless networking and instant social connectivity powered by high-speed NFC and dynamic QR technology.
+                  </p>
+                </div>
+
+                {/* Slider for English */}
+                <div className="space-y-1.5 pt-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold text-foreground">اندازه قلم انگلیسی (English Size)</span>
+                    <span className="font-sans font-bold text-cyan-500 bg-cyan-500/10 px-2 py-0.5 rounded-md border border-cyan-500/20">
+                      {profile.themeConfig?.fontSizeEn || 14}px
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="12"
+                    max="24"
+                    step="1"
+                    value={profile.themeConfig?.fontSizeEn || 14}
+                    onChange={(e) => updateTheme({ fontSizeEn: Number(e.target.value) })}
+                    className="w-full accent-cyan-500 cursor-pointer"
+                  />
+                  <div className="flex justify-between text-[10px] text-muted-foreground font-sans">
+                    <span>12px</span>
+                    <span>14px (Default)</span>
+                    <span>24px</span>
+                  </div>
+                </div>
+              </div>
+            </div>
 
             {/* Bottom Actions Bar */}
-            <div className="p-4 bg-card border border-border rounded-2xl flex items-center justify-between gap-3 shadow-sm">
+            <div className="p-4 bg-card border border-border rounded-2xl flex items-center justify-between gap-3 shadow-xs">
               <span className="text-xs text-muted-foreground hidden sm:inline">
-                تنظیمات فونت مینی‌سایت
+                تنظیمات تایپوگرافی کارت
               </span>
               <div className="flex items-center gap-2 mr-auto w-full sm:w-auto justify-end">
                 <button
@@ -1181,7 +1302,7 @@ export const ProfileEditor: React.FC = () => {
                   onClick={async () => {
                     const res = await saveProfileData();
                     if (res.success) {
-                      toast.success('تنظیمات فونت با موفقیت ذخیره شد.');
+                      toast.success('تنظیمات فونت و اندازه قلم با موفقیت ذخیره شد.');
                       setActiveTab('content');
                     } else {
                       toast.error(res.message || 'خطا در ذخیره‌سازی.');

@@ -37,6 +37,7 @@ export type LinkModuleType =
   | 'divider_heading'
   | 'spacer_divider'
   | 'faq_accordion'
+  | 'container_group'
   
   // Communication
   | 'phone_call'
@@ -64,6 +65,7 @@ export type LinkModuleType =
   // Location & Navigation
   | 'location_hours'
   | 'map_navigation'
+  | 'business_hours'
   
   // Interactive
   | 'profile_search';
@@ -73,6 +75,40 @@ export interface FAQItem {
   question: string;
   answer: string;
 }
+
+export interface BusinessHourDay {
+  dayIndex: number;  // 0: شنبه, 1: یکشنبه, 2: دوشنبه, 3: سه‌شنبه, 4: چهارشنبه, 5: پنجشنبه, 6: جمعه
+  dayName: string;   // 'شنبه', 'یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنجشنبه', 'جمعه'
+  isOpen: boolean;   // true: روز کاری, false: روز تعطیل
+  openTime: string;  // "08:00"
+  closeTime: string; // "17:00"
+}
+
+export type ButtonAnimationType = 
+  | 'none'
+  | 'shake_x'
+  | 'wobble'
+  | 'buzz'
+  | 'tada'
+  | 'heart'
+  | 'pulse'
+  | 'shake_y';
+
+export type ButtonAnimationTrigger = 'infinite' | 'hover';
+
+export type ButtonShapeType =
+  | 'sharp'          // مربع تیز
+  | 'soft'           // لبه‌گرد ملایم
+  | 'pill'           // کاملاً گرد
+  | 'leaf'           // گوشه‌های نامتقارن (برگ)
+  | 'cut_corners'    // گوشه بریده (چمفر)
+  | 'ticket'         // بلیط / تیکت
+  | 'hexagon'        // شش‌ضلعی
+  | 'parallelogram_l'// متوازی‌الاضلاع چپ
+  | 'parallelogram_r';// متوازی‌الاضلاع راست
+
+export type ButtonSizeType = 'sm' | 'md' | 'lg';
+export type ButtonBorderWidthType = 'none' | 'thin' | 'medium' | 'thick';
 
 export interface ModuleAdvancedSettings {
   scheduling?: {
@@ -92,14 +128,22 @@ export interface ModuleAdvancedSettings {
     customTextColor?: string;
     customBorderColor?: string;
     isHighlighted?: boolean;
-    buttonAnimation?: 'none' | 'pulse' | 'bounce' | 'shake' | 'glow';
+    buttonAnimation?: ButtonAnimationType;
+    animationTrigger?: ButtonAnimationTrigger;
+    animationSpeed?: number; // In seconds, e.g. 1.6
+    buttonShape?: ButtonShapeType | 'inherit';
+    buttonSize?: ButtonSizeType;
+    borderWidth?: ButtonBorderWidthType;
     borderStyle?: 'none' | 'solid' | 'dashed';
     shadowStyle?: 'none' | 'sm' | 'md' | 'glow';
     borderRadius?: string;
   };
   openInNewTab?: boolean;
   isHidden?: boolean;
-  buttonAnimation?: 'none' | 'pulse' | 'bounce' | 'shake' | 'glow';
+  buttonAnimation?: ButtonAnimationType;
+  animationTrigger?: ButtonAnimationTrigger;
+  animationSpeed?: number;
+  isCompactIcon?: boolean; // حالت نمایش فشرده (فقط آیکون) برای شبکه‌های اجتماعی
 }
 
 export interface ModuleMetadata {
@@ -121,6 +165,8 @@ export interface ModuleMetadata {
   dividerPadding?: 'sm' | 'md' | 'lg';
   spacerHeight?: number; // 16, 24, 32, 48
   searchPlaceholder?: string;
+  containerLayout?: 'vertical' | 'horizontal_compact';
+  containerDescription?: string;
   
   // Communication
   emailAddress?: string;
@@ -136,6 +182,7 @@ export interface ModuleMetadata {
   mapEmbedUrl?: string;
   mapLink?: string;
   wazeLink?: string;
+  businessHours?: BusinessHourDay[];
   
   // PDF
   catalogFileUrl?: string;
@@ -190,6 +237,7 @@ export interface ProfileLinkItem {
   isPinned: boolean;
   order: number;
   clickCount?: number;
+  parentId?: string | null; // For nested container/group items
   metadata?: ModuleMetadata;
   advancedSettings?: ModuleAdvancedSettings;
 }
@@ -205,8 +253,19 @@ export interface ProfileThemeConfig {
   backgroundType?: 'solid' | 'gradient' | 'pattern';
   buttonBorderStyle?: 'none' | 'solid' | 'dashed';
   buttonShadowStyle?: 'none' | 'sm' | 'md' | 'glow';
-  fontFa?: 'vazirmatn' | 'yekan_bakh' | 'shabnam' | 'sahel';
-  fontEn?: 'inter' | 'outfit' | 'plus_jakarta' | 'playfair';
+  fontFa?: 'vazirmatn' | 'yekan_bakh' | 'shabnam' | 'sahel' | 'dana';
+  fontEn?: 'inter' | 'roboto' | 'poppins' | 'outfit' | 'plus_jakarta' | 'playfair';
+  fontSizeDari?: number;   // In px, e.g. 15 (range 12 - 24)
+  fontSizePashto?: number; // In px, e.g. 15 (range 12 - 24)
+  fontSizeEn?: number;     // In px, e.g. 14 (range 12 - 24)
+  // Stage 57 Global Button Styling:
+  buttonShape?: ButtonShapeType;
+  buttonSize?: ButtonSizeType;
+  buttonBorderWidth?: ButtonBorderWidthType;
+  buttonBorderColor?: string;
+  buttonBgColor?: string;
+  buttonTextColor?: string;
+  compactSocialIcons?: boolean;
 }
 
 export type HeaderLayoutType = 'curve' | 'gradient_mask' | 'minimal';

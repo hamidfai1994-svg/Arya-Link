@@ -85,6 +85,7 @@ const ProfileLinkSubSchema = new Schema(
     isPinned: { type: Boolean, default: false },
     order: { type: Number, default: 0 },
     clickCount: { type: Number, default: 0 },
+    parentId: { type: String, default: null },
     metadata: { type: Schema.Types.Mixed, default: {} },
     advancedSettings: { type: LinkAdvancedSettingsSchema, default: () => ({}) },
   },
@@ -109,6 +110,9 @@ const ProfileThemeConfigSchema = new Schema(
     buttonShadowStyle: { type: String, enum: ['none', 'sm', 'md', 'glow'], default: 'sm' },
     fontFa: { type: String, default: 'vazirmatn' },
     fontEn: { type: String, default: 'inter' },
+    fontSizeDari: { type: Number, default: 15 },
+    fontSizePashto: { type: Number, default: 15 },
+    fontSizeEn: { type: Number, default: 14 },
   },
   { _id: false }
 );

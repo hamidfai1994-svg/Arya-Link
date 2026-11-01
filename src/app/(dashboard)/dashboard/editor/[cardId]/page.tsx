@@ -77,7 +77,14 @@ function IsolatedCardEditorInner() {
   const [isMobilePreviewOpen, setIsMobilePreviewOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
-  const { profile, isLoading, fetchProfileData } = useEditorStore();
+  const { profile, isLoading, fetchProfileData, activeModuleId } = useEditorStore();
+
+  // If user selects a module while in mobile fullscreen preview, close preview to focus on the module form
+  useEffect(() => {
+    if (activeModuleId && isMobilePreviewOpen) {
+      setIsMobilePreviewOpen(false);
+    }
+  }, [activeModuleId, isMobilePreviewOpen]);
 
   // Load this specific card's data on mount or when cardId changes
   useEffect(() => {

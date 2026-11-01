@@ -49,7 +49,7 @@ export interface EditorState {
   toggleVerifiedBadge: (isVerified?: boolean) => void;
 
   // Link & Module Actions
-  addModule: (moduleType: LinkModuleType) => void;
+  addModule: (moduleType: LinkModuleType, parentId?: string) => void;
   addLink: (newLink?: Partial<Omit<ProfileLinkItem, 'id' | 'order'>>) => void;
   updateLink: (id: string, updates: Partial<ProfileLinkItem>) => void;
   updateLinkMetadata: (id: string, metadata: Partial<ModuleMetadata>) => void;
@@ -58,6 +58,7 @@ export interface EditorState {
   reorderLinks: (reorderedList: ProfileLinkItem[]) => void;
   moveLinkUp: (index: number) => void;
   moveLinkDown: (index: number) => void;
+  moveLink: (fromIndex: number, toIndex: number) => void;
 
   // Async API Actions
   fetchProfileData: (aliasOrId?: string) => Promise<boolean>;
@@ -68,9 +69,11 @@ export interface EditorState {
   setIsSaving: (isSaving: boolean) => void;
   resetState: (initialData?: ProfileData) => void;
 
-  // Module Accordion & Dirty Tracking
+  // Module Accordion & Two-Way Sync
   expandedModuleId: string | null;
   setExpandedModuleId: (id: string | null) => void;
+  activeModuleId: string | null;
+  setActiveModuleId: (id: string | null) => void;
   unconfirmedModuleId: string | null;
   setUnconfirmedModuleId: (id: string | null) => void;
 }
@@ -83,6 +86,29 @@ const defaultTheme: ProfileThemeConfig = {
   cardBlur: 'backdrop-blur-md bg-white/10 border-white/20',
   textColor: '#ffffff',
   borderRadius: 'rounded-2xl',
+  fontFa: 'vazirmatn',
+  fontEn: 'inter',
+  fontSizeDari: 15,
+  fontSizePashto: 15,
+  fontSizeEn: 14,
+};
+
+const defaultEmailModule: ProfileLinkItem = {
+  id: 'module_email_default',
+  title: 'ارسال ایمیل مستقیم',
+  url: 'mailto:info@aryal.ink',
+  moduleType: 'email_direct',
+  isActive: true,
+  isPinned: false,
+  order: 0,
+  clickCount: 0,
+  metadata: {
+    emailAddress: 'info@aryal.ink',
+    emailSubject: 'پیام از طریق کارت هوشمند آریا لینک',
+  },
+  advancedSettings: {
+    isCompactIcon: true,
+  },
 };
 
 const emptyProfile: ProfileData = {
@@ -101,7 +127,7 @@ const emptyProfile: ProfileData = {
   directModeEnabled: false,
   directModeUrl: '',
   themeConfig: defaultTheme,
-  links: [],
+  links: [defaultEmailModule],
   profileType: 'personal',
   isVerified: false,
   verificationStatus: 'unverified',
@@ -119,7 +145,7 @@ const emptyProfile: ProfileData = {
   hideBranding: false,
 };
 
-function getDefaultModuleConfig(moduleType: LinkModuleType): { title: string; url: string; metadata: ModuleMetadata } {
+export function getDefaultModuleConfig(moduleType: LinkModuleType): { title: string; url: string; metadata: ModuleMetadata } {
   switch (moduleType) {
     // Social & Platforms
     case 'whatsapp_direct':
@@ -449,11 +475,10 @@ function getDefaultModuleConfig(moduleType: LinkModuleType): { title: string; ur
     // Location & Navigation
     case 'location_hours':
       return {
-        title: 'موقعیت مکانی و ساعات کاری',
+        title: 'موقعیت مکانی',
         url: '#location',
         metadata: {
           address: 'کابل، شهر نو، جاده شهید مزاری',
-          workingHours: 'شنبه تا چهارشنبه: 8:00 الی 16:30',
           mapLink: '',
         },
       };
@@ -464,6 +489,22 @@ function getDefaultModuleConfig(moduleType: LinkModuleType): { title: string; ur
         metadata: {
           googleMapsLink: 'https://maps.google.com',
           wazeLink: '',
+        },
+      };
+    case 'business_hours':
+      return {
+        title: 'ساعات کاری',
+        url: '#business-hours',
+        metadata: {
+          businessHours: [
+            { dayIndex: 0, dayName: 'شنبه', isOpen: true, openTime: '08:00', closeTime: '17:00' },
+            { dayIndex: 1, dayName: 'یکشنبه', isOpen: true, openTime: '08:00', closeTime: '17:00' },
+            { dayIndex: 2, dayName: 'دوشنبه', isOpen: true, openTime: '08:00', closeTime: '17:00' },
+            { dayIndex: 3, dayName: 'سه‌شنبه', isOpen: true, openTime: '08:00', closeTime: '17:00' },
+            { dayIndex: 4, dayName: 'چهارشنبه', isOpen: true, openTime: '08:00', closeTime: '17:00' },
+            { dayIndex: 5, dayName: 'پنجشنبه', isOpen: true, openTime: '08:00', closeTime: '13:00' },
+            { dayIndex: 6, dayName: 'جمعه', isOpen: false, openTime: '08:00', closeTime: '17:00' },
+          ],
         },
       };
 
@@ -571,6 +612,15 @@ function getDefaultModuleConfig(moduleType: LinkModuleType): { title: string; ur
         metadata: {},
       };
 
+    case 'container_group':
+      return {
+        title: 'کانتینر ماژول‌ها',
+        url: '#container',
+        metadata: {
+          containerLayout: 'vertical',
+        },
+      };
+
     case 'standard_link':
     default:
       return {
@@ -590,9 +640,15 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   lastSavedAt: null,
   saveError: null,
 
-  // Module Accordion & Dirty Tracking
+  // Module Accordion & Two-Way Sync
   expandedModuleId: null,
   setExpandedModuleId: (id) => set({ expandedModuleId: id }),
+  activeModuleId: null,
+  setActiveModuleId: (id) =>
+    set((state) => ({
+      activeModuleId: id,
+      expandedModuleId: id ? id : state.expandedModuleId,
+    })),
   unconfirmedModuleId: null,
   setUnconfirmedModuleId: (id) => set({ unconfirmedModuleId: id }),
 
@@ -877,7 +933,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       isDirty: true,
     })),
 
-  addModule: (moduleType) => {
+  addModule: (moduleType, parentId) => {
     const defaults = getDefaultModuleConfig(moduleType);
     const newId = `module_${Date.now()}`;
     const newLink: ProfileLinkItem = {
@@ -885,6 +941,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       title: defaults.title,
       url: defaults.url,
       moduleType,
+      parentId: parentId || null,
       isActive: true,
       isPinned: false,
       order: get().profile.links.length,
@@ -1008,14 +1065,12 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     set((state) => ({
       profile: {
         ...state.profile,
-        links: state.profile.links.filter((link) => link.id !== id),
+        links: state.profile.links
+          .filter((link) => link.id !== id)
+          .map((link) => (link.parentId === id ? { ...link, parentId: null } : link)),
       },
       isDirty: true,
     }));
-    // Live Auto-Save to database
-    setTimeout(() => {
-      get().saveProfileData();
-    }, 150);
   },
 
   reorderLinks: (reorderedList) =>
@@ -1059,6 +1114,29 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       };
     }),
 
+  moveLink: (fromIndex, toIndex) =>
+    set((state) => {
+      if (
+        fromIndex === toIndex ||
+        fromIndex < 0 ||
+        toIndex < 0 ||
+        fromIndex >= state.profile.links.length ||
+        toIndex >= state.profile.links.length
+      ) {
+        return state;
+      }
+      const newLinks = [...state.profile.links];
+      const [movedItem] = newLinks.splice(fromIndex, 1);
+      newLinks.splice(toIndex, 0, movedItem);
+      return {
+        profile: {
+          ...state.profile,
+          links: newLinks.map((item, idx) => ({ ...item, order: idx })),
+        },
+        isDirty: true,
+      };
+    }),
+
   // Async API Actions
   fetchProfileData: async (aliasOrId?: string) => {
     set({ isLoading: true, saveError: null });
@@ -1080,6 +1158,28 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       const json = await res.json();
       if (json.success && json.data) {
         const dbData = json.data;
+        let resolvedLinks = Array.isArray(dbData.links) ? [...dbData.links] : [];
+        if (!resolvedLinks.some((l: any) => l.moduleType === 'email_direct')) {
+          const emailVal = dbData.email || 'info@aryal.ink';
+          resolvedLinks.push({
+            id: `email_${Date.now()}`,
+            title: 'ارسال ایمیل مستقیم',
+            url: `mailto:${emailVal}`,
+            moduleType: 'email_direct',
+            isActive: true,
+            isPinned: false,
+            order: resolvedLinks.length,
+            clickCount: 0,
+            metadata: {
+              emailAddress: emailVal,
+              emailSubject: 'پیام از طریق کارت هوشمند آریا لینک',
+            },
+            advancedSettings: {
+              isCompactIcon: true,
+            },
+          });
+        }
+
         const normalizedProfile: ProfileData = {
           id: dbData.id || dbData._id,
           alias: dbData.alias,
@@ -1096,7 +1196,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
           directModeEnabled: !!dbData.directModeEnabled,
           directModeUrl: dbData.directModeUrl || '',
           themeConfig: dbData.themeConfig || defaultTheme,
-          links: Array.isArray(dbData.links) ? dbData.links : [],
+          links: resolvedLinks,
           seoTitle: dbData.seoTitle || '',
           seoDescription: dbData.seoDescription || '',
           hideBranding: !!dbData.hideBranding,

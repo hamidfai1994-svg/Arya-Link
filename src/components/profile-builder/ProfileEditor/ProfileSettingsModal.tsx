@@ -6,6 +6,7 @@ import { ProfileLanguage, ProfileType, ProfileData } from '@/types/profile.types
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
+import { PhoneInput } from '@/components/ui/phone-input';
 import { toast } from 'sonner';
 import {
   Settings,
@@ -191,13 +192,11 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
                     <label className="block text-[11px] font-semibold text-foreground mb-1">
                       شماره تماس مستقیم (موبایل یا واتساپ)
                     </label>
-                    <input
-                      type="tel"
+                    <PhoneInput
                       value={profile.phone || ''}
-                      onChange={(e) => updateBasicInfo({ phone: e.target.value })}
-                      placeholder="+93 79 123 4567"
-                      dir="ltr"
-                      className="w-full bg-card border border-border rounded-xl px-3 py-2 text-xs font-sans text-foreground focus:outline-none focus:border-cyan-500 text-left"
+                      onChange={(val) => updateBasicInfo({ phone: val })}
+                      placeholder="799 123 456"
+                      defaultCountry="AF"
                     />
                   </div>
 
