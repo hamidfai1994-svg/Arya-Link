@@ -120,6 +120,24 @@ export const ProfileEditor: React.FC = () => {
   const [copiedAlias, setCopiedAlias] = useState(false);
   const [isSubmittingKYC, setIsSubmittingKYC] = useState(false);
   const [isProfileInfoExpanded, setIsProfileInfoExpanded] = useState(false);
+  const [isSavingTheme, setIsSavingTheme] = useState(false);
+
+  const handleSaveTheme = async () => {
+    setIsSavingTheme(true);
+    const toastId = toast.loading('در حال ذخیره تغییرات تم...');
+    try {
+      const res = await saveProfileData();
+      if (res.success) {
+        toast.success('تغییرات طراحی و تم با موفقیت ذخیره شد.', { id: toastId });
+      } else {
+        toast.error(res.message || 'خطا در ذخیره‌سازی تم.', { id: toastId });
+      }
+    } catch (err) {
+      toast.error('خطای ارتباط با سرور هنگام ذخیره تم.', { id: toastId });
+    } finally {
+      setIsSavingTheme(false);
+    }
+  };
 
   // Local state for Typography Tab (Fonts & Font Sizes) to decouple from immediate auto-save
   const [localTypography, setLocalTypography] = useState({
@@ -689,6 +707,38 @@ export const ProfileEditor: React.FC = () => {
         {/* TAB 2: APPEARANCE & CUSTOMIZATION (ACCORDION) */}
         {activeTab === 'appearance' && (
           <section className="space-y-4">
+            {/* Header Action Bar with Manual Save Button */}
+            <div className="bg-muted/30 border border-border rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+              <div>
+                <h2 className="text-xs font-bold text-foreground uppercase tracking-wider mb-1 flex items-center gap-2">
+                  <Palette className="w-4 h-4 text-cyan-500" />
+                  طراحی، رنگ‌ها و تم اختصاصی
+                </h2>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  قالب، نوع پس‌زمینه، استایل دکمه‌ها و پالت رنگی کارت خود را تنظیم نمایید.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleSaveTheme}
+                disabled={isSavingTheme}
+                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold text-xs shadow-md shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer shrink-0 disabled:opacity-60"
+              >
+                {isSavingTheme ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>در حال ذخیره...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCheck className="w-3.5 h-3.5" />
+                    <span>ذخیره تغییرات تم</span>
+                  </>
+                )}
+              </button>
+            </div>
+
             <Accordion type="single" collapsible defaultValue="templates" className="space-y-3">
               {/* 1. قالب‌ها (Templates) */}
               <AccordionItem value="templates" className="border border-border rounded-2xl bg-card overflow-hidden">
@@ -1099,6 +1149,31 @@ export const ProfileEditor: React.FC = () => {
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
+
+            {/* Bottom Actions Bar */}
+            <div className="p-4 bg-card border border-border rounded-2xl flex items-center justify-between gap-3 shadow-xs">
+              <span className="text-xs text-muted-foreground hidden sm:inline">
+                اعمال و ثبت تنظیمات تم و طراحی در دیتابیس
+              </span>
+              <button
+                type="button"
+                onClick={handleSaveTheme}
+                disabled={isSavingTheme}
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white text-xs font-bold shadow-md shadow-emerald-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-60"
+              >
+                {isSavingTheme ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>در حال ذخیره...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCheck className="w-3.5 h-3.5" />
+                    <span>ذخیره تغییرات تم</span>
+                  </>
+                )}
+              </button>
+            </div>
           </section>
         )}
 

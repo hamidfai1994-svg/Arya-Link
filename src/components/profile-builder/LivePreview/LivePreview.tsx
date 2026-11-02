@@ -2311,7 +2311,7 @@ export const LivePreview: React.FC = () => {
           }
         }}
       >
-        <DialogContent className="max-w-md w-[92vw] sm:w-full rounded-3xl bg-slate-900/95 border border-white/10 backdrop-blur-2xl p-6 text-center text-white shadow-2xl overflow-hidden relative">
+        <DialogContent className="max-w-md w-[90%] sm:w-full max-h-[85dvh] overflow-y-auto rounded-3xl bg-slate-900/95 border border-white/10 backdrop-blur-2xl p-5 sm:p-6 text-center text-white shadow-2xl relative my-auto overscroll-contain">
           {/* Ambient Lighting Accents */}
           <div className="absolute -top-16 -right-16 w-36 h-36 bg-cyan-500/20 rounded-full blur-2xl pointer-events-none" />
           <div className="absolute -bottom-16 -left-16 w-36 h-36 bg-emerald-500/20 rounded-full blur-2xl pointer-events-none" />
