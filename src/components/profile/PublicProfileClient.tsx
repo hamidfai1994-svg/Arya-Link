@@ -33,6 +33,7 @@ import {
   SignalIcon,
 } from '@/components/icons';
 import { getSmartLink, formatDisplayValue } from '@/lib/smart-link';
+import { downloadVCard, convertToEnglishDigits } from '@/lib/generateVCard';
 import { LiveCountdown } from '@/components/ui/live-countdown';
 import { LiveBusinessHours } from '@/components/profile/LiveBusinessHours';
 import {
@@ -236,6 +237,16 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
   } | null>(null);
   const [copiedLocationLink, setCopiedLocationLink] = useState(false);
 
+  // Profile Share Modal State (Desktop & Fallback)
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [copiedShareLink, setCopiedShareLink] = useState(false);
+
+  // Contact Exchange Lead Modal State (Frictionless vCard Lead Capture - Stage 72)
+  const [isLeadModalOpen, setIsLeadModalOpen] = useState(false);
+  const [leadName, setLeadName] = useState('');
+  const [leadPhone, setLeadPhone] = useState('');
+  const [isSubmittingLead, setIsSubmittingLead] = useState(false);
+
   // 1. Social networks filter (excluding hidden)
   const socialModuleTypes: LinkModuleType[] = [
     'whatsapp_direct',
@@ -265,78 +276,129 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
     'wechat',
     'messenger',
     'signal',
+    'email_direct',
   ];
 
-  const socialLinks = (profile.links || []).filter(
-    (l) => l.isActive && !l.advancedSettings?.isHidden && socialModuleTypes.includes(l.moduleType)
+  // Compact social icons rendered horizontally in top matrix (only standalone ones without parentId)
+  const compactSocialLinks = (profile.links || []).filter(
+    (l) =>
+      l.isActive &&
+      !l.advancedSettings?.isHidden &&
+      !l.parentId &&
+      socialModuleTypes.includes(l.moduleType) &&
+      l.advancedSettings?.isCompactIcon !== false
   );
 
-  const nonSocialLinks = (profile.links || []).filter(
-    (l) => l.isActive && !l.advancedSettings?.isHidden && !socialModuleTypes.includes(l.moduleType)
-  );
+  // Top-level vertical modules (includes containers and standalone non-compact modules)
+  const topLevelNonSocialLinks = (profile.links || []).filter((l) => {
+    if (!l.isActive || l.advancedSettings?.isHidden) return false;
+    if (l.parentId) return false;
+    if (socialModuleTypes.includes(l.moduleType) && l.advancedSettings?.isCompactIcon !== false) {
+      return false;
+    }
+    return true;
+  });
 
-  const filteredNonSocialLinks = nonSocialLinks.filter((l) => {
+  const filteredNonSocialLinks = topLevelNonSocialLinks.filter((l) => {
     return searchFilter ? l.title.toLowerCase().includes(searchFilter.toLowerCase()) : true;
   });
 
-  const hasWhatsAppLink = socialLinks.some((l) => l.moduleType === 'whatsapp_direct');
+  const hasWhatsAppLink = compactSocialLinks.some((l) => l.moduleType === 'whatsapp_direct');
   const hasPhoneLink = (profile.links || []).some((l) => l.moduleType === 'phone_call');
   const hasAnySocial =
-    socialLinks.length > 0 ||
+    compactSocialLinks.length > 0 ||
     Boolean(profile.whatsapp) ||
-    Boolean(profile.email) ||
     Boolean(profile.phone);
 
-  // 2. vCard Generator (.vcf)
-  const handleDownloadVCard = () => {
-    const vCardLines = [
-      'BEGIN:VCARD',
-      'VERSION:3.0',
-      `FN;CHARSET=UTF-8:${profile.displayName || ''}`,
-      `N;CHARSET=UTF-8:${profile.displayName || ''};;;;`,
-      profile.headline ? `TITLE;CHARSET=UTF-8:${profile.headline}` : '',
-      profile.bio ? `NOTE;CHARSET=UTF-8:${profile.bio.replace(/\n/g, '\\n')}` : '',
-      profile.phone ? `TEL;TYPE=CELL,VOICE:${profile.phone}` : '',
-      profile.whatsapp && profile.whatsapp !== profile.phone
-        ? `TEL;TYPE=WORK,VOICE:${profile.whatsapp}`
-        : '',
-      profile.email ? `EMAIL;TYPE=INTERNET,WORK:${profile.email}` : '',
-      `URL;TYPE=WORK:https://aryal.ink/${profile.alias}`,
-      'END:VCARD',
-    ]
-      .filter(Boolean)
-      .join('\r\n');
-
-    const blob = new Blob([vCardLines], { type: 'text/vcard;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `${profile.alias || 'contact'}.vcf`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-
-    toast.success('مخاطب آماده ذخیره در گوشی شما است.');
+  // 2. vCard Generator (.vcf) & Frictionless Lead Capture (Stage 72)
+  const handleSaveContact = () => {
+    try {
+      const filename = downloadVCard(profile as any);
+      toast.success(
+        isLtr
+          ? `Contact card saved (${filename})`
+          : isPashto
+            ? `د اړیکې کارت ډاونلوډ شو (${filename})`
+            : `فایل مخاطب با موفقیت ذخیره شد (${filename})`
+      );
+      // Simultaneously open Contact Exchange Lead Modal
+      setIsLeadModalOpen(true);
+    } catch (err) {
+      console.error('Failed to export vCard:', err);
+      toast.error(
+        isLtr
+          ? 'Failed to generate contact card'
+          : 'خطا در ایجاد و دانلود فایل مخاطب'
+      );
+    }
   };
+
+  const handleSubmitLead = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!leadPhone.trim() && !leadName.trim()) {
+      toast.error(
+        isLtr
+          ? 'Please enter your name or phone number.'
+          : 'لطفاً حداقل شماره تماس یا نام خود را وارد کنید.'
+      );
+      return;
+    }
+
+    setIsSubmittingLead(true);
+    try {
+      const cleanPhone = convertToEnglishDigits(leadPhone.trim());
+      const cleanName = leadName.trim();
+
+      // Log Lead & simulate API recording
+      console.log('Public Profile Lead captured:', {
+        name: cleanName,
+        phone: cleanPhone,
+        profileAlias: profile.alias,
+        profileId: profile.id,
+        createdAt: new Date().toISOString(),
+      });
+
+      // Simulate subtle network latency
+      await new Promise((resolve) => setTimeout(resolve, 350));
+
+      toast.success(
+        isLtr
+          ? 'Your information was submitted successfully!'
+          : isPashto
+            ? 'ستاسو معلومات په بریالیتوب سره ثبت شول!'
+            : 'اطلاعات شما با موفقیت ثبت شد'
+      );
+
+      setLeadName('');
+      setLeadPhone('');
+      setIsLeadModalOpen(false);
+    } catch (err) {
+      console.error('Failed to submit public lead:', err);
+      toast.error('خطا در ثبت اطلاعات.');
+    } finally {
+      setIsSubmittingLead(false);
+    }
+  };
+
+  const handleDownloadVCard = handleSaveContact;
 
   // 3. Share Card Link
   const handleShare = async () => {
-    const fullUrl = typeof window !== 'undefined' ? window.location.href : `https://aryal.ink/${profile.alias}`;
-    if (navigator.share) {
+    const fullUrl = `https://aryal.ink/${profile.alias}`;
+    if (typeof navigator !== 'undefined' && navigator.share) {
       try {
         await navigator.share({
-          title: profile.displayName,
-          text: profile.headline || profile.bio,
+          title: profile.displayName || 'کارت هوشمند آریا لینک',
+          text: `کارت دیجیتال ${profile.displayName || ''} در آریا لینک:`,
           url: fullUrl,
         });
-      } catch (err) {
-        // user cancelled
+        return;
+      } catch (err: any) {
+        if (err?.name === 'AbortError') return;
       }
-    } else {
-      navigator.clipboard.writeText(fullUrl);
-      toast.success('لینک کارت هوشمند در کلیپ‌بورد کپی شد.');
     }
+    // Desktop or Web Share fallback: open interactive share modal
+    setIsShareModalOpen(true);
   };
 
   // 3.5. Copy Link
@@ -1304,7 +1366,7 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
         <a
           key={link.id}
           href={smartHref}
-          className={`w-full p-3 flex items-center justify-between gap-3 shadow-sm border transition-all duration-300 md:hover:scale-[1.02] md:hover:shadow-[0_0_20px_rgba(245,158,11,0.3)] active:scale-[0.98] cursor-pointer group ${cardRadius} ${getButtonAnimationClass(adv.buttonAnimation)} ${
+          className={`w-full p-3 flex items-center justify-between gap-3 shadow-sm border overflow-hidden transition-all duration-300 md:hover:scale-[1.02] md:hover:shadow-[0_0_20px_rgba(245,158,11,0.3)] active:scale-[0.98] cursor-pointer group ${cardRadius} ${getButtonAnimationClass(adv.buttonAnimation)} ${
             isLight
               ? 'bg-white/95 border-slate-200 hover:border-slate-300'
               : 'bg-white/5 hover:bg-white/10 border-white/10 backdrop-blur-md'
@@ -1343,7 +1405,7 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
       return (
         <div
           key={link.id}
-          className={`w-full p-4 border shadow-md flex items-center justify-between gap-3 text-right transition-all duration-300 md:hover:shadow-[0_0_20px_rgba(6,182,212,0.25)] ${cardRadius} ${
+          className={`w-full p-4 border shadow-md flex items-center justify-between gap-3 text-right overflow-hidden transition-all duration-300 md:hover:shadow-[0_0_20px_rgba(6,182,212,0.25)] ${cardRadius} ${
             isLight ? 'bg-white/90 border-slate-200' : 'bg-white/[0.05] backdrop-blur-md border-white/10'
           }`}
           style={customCardStyle}
@@ -1408,7 +1470,7 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
         href={smartUrl}
         target={adv.openInNewTab === false || link.url?.startsWith('tel:') || link.url?.startsWith('mailto:') || link.url?.startsWith('#') ? '_self' : '_blank'}
         rel="noopener noreferrer"
-        className={`w-full p-4 font-bold text-xs flex items-center justify-between gap-3 shadow-md border transition-all duration-300 md:hover:scale-[1.02] md:hover:shadow-[0_0_22px_rgba(14,165,233,0.35)] active:scale-[0.98] cursor-pointer group ${cardRadius} ${getButtonAnimationClass(adv.buttonAnimation)}`}
+        className={`w-full p-4 font-bold text-xs flex items-center justify-between gap-3 shadow-md border overflow-hidden transition-all duration-300 md:hover:scale-[1.02] md:hover:shadow-[0_0_22px_rgba(14,165,233,0.35)] active:scale-[0.98] cursor-pointer group ${cardRadius} ${getButtonAnimationClass(adv.buttonAnimation)}`}
         style={{
           background: isLight
             ? 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)'
@@ -1475,18 +1537,6 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
 
             {/* Subtle Gradient Overlay */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/25 pointer-events-none" />
-
-            {/* Fixed Glass Share Button in top corner */}
-            <motion.button
-              whileHover={{ scale: 1.08 }}
-              whileTap={{ scale: 0.92 }}
-              type="button"
-              onClick={handleShare}
-              className={`absolute top-3.5 ${isLtr ? 'right-3.5' : 'left-3.5'} z-20 w-10 h-10 rounded-full bg-black/40 hover:bg-black/65 text-white backdrop-blur-md border border-white/20 flex items-center justify-center transition-all shadow-lg cursor-pointer`}
-              title="اشتراک‌گذاری کارت"
-            >
-              <Share2 className="w-4 h-4" />
-            </motion.button>
           </div>
 
           {/* Overlapping 3D Avatar */}
@@ -1583,18 +1633,6 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
                 }}
               />
             )}
-
-            {/* Fixed Glass Share Button in top corner */}
-            <motion.button
-              whileHover={{ scale: 1.08 }}
-              whileTap={{ scale: 0.92 }}
-              type="button"
-              onClick={handleShare}
-              className={`absolute top-3.5 ${isLtr ? 'right-3.5' : 'left-3.5'} z-20 w-10 h-10 rounded-full bg-black/40 hover:bg-black/65 text-white backdrop-blur-md border border-white/20 flex items-center justify-center transition-all shadow-lg cursor-pointer`}
-              title="اشتراک‌گذاری کارت"
-            >
-              <Share2 className="w-4 h-4" />
-            </motion.button>
           </div>
 
           {/* Overlapping 3D Avatar */}
@@ -1672,18 +1710,6 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
     // 3. MINIMAL LAYOUT
     return (
       <div className="pt-8 pb-3 px-2 md:px-5 flex flex-col items-center text-center relative">
-        {/* Fixed Glass Share Button in top corner */}
-        <motion.button
-          whileHover={{ scale: 1.08 }}
-          whileTap={{ scale: 0.92 }}
-          type="button"
-          onClick={handleShare}
-          className={`absolute top-4 ${isLtr ? 'right-4' : 'left-4'} z-20 w-10 h-10 rounded-full bg-black/20 hover:bg-black/40 text-white backdrop-blur-md border border-white/15 flex items-center justify-center transition-all shadow-md cursor-pointer`}
-          title="اشتراک‌گذاری کارت"
-        >
-          <Share2 className="w-4 h-4" />
-        </motion.button>
-
         <div className="relative mb-3.5 group">
           <div
             className={`w-28 h-28 md:w-32 md:h-32 rounded-full overflow-hidden border-4 shadow-2xl relative bg-slate-800 ring-2 ring-white/10 ${
@@ -1815,6 +1841,7 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
   return (
     <div
       className={`min-h-screen w-full flex flex-col justify-between relative selection:bg-cyan-500 selection:text-white ${activeFontClass} ${getThemeBackground()}`}
+      data-font={isLtr ? (themeConfig.fontEn || 'inter') : (themeConfig.fontFa || 'vazirmatn')}
       dir={isLtr ? 'ltr' : 'rtl'}
     >
       {/* Background Ambience Glows */}
@@ -1843,35 +1870,10 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
               {/* 1. Header Layout: Cover, Avatar, Name, Headline, Bio */}
               {renderHeaderLayout()}
 
-              {/* 2. PRIMARY ACTION: Save Contact (vCard) - DISPLAYED DIRECTLY BELOW NAME/BIO ON MOBILE */}
-              <div className="pt-3 pb-1 md:hidden">
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={handleDownloadVCard}
-                  className="w-full py-3.5 px-4 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 shadow-xl border border-white/25 backdrop-blur-xl transition-all cursor-pointer shadow-cyan-500/15"
-                  style={{
-                    background: isLight
-                      ? 'linear-gradient(135deg, #0284c7 0%, #0ea5e9 100%)'
-                      : `linear-gradient(135deg, ${themeConfig.primaryColor || '#0ea5e9'}, ${themeConfig.accentColor || '#06b6d4'})`,
-                    color: '#ffffff',
-                  }}
-                >
-                  <Download className="w-4 h-4" />
-                  <span>
-                    {isLtr
-                      ? 'Save Contact (vCard)'
-                      : isPashto
-                        ? 'په اړیکو کې ساتل (vCard)'
-                        : 'ذخیره در مخاطبان تلفن (vCard)'}
-                  </span>
-                </motion.button>
-              </div>
-
-              {/* 3. UNIFIED SOCIAL NETWORKS MATRIX - DISPLAYED AFTER vCard ON MOBILE, UNDER BIO ON DESKTOP */}
+              {/* 2. UNIFIED SOCIAL NETWORKS MATRIX */}
               {hasAnySocial && (
-                <div className="pt-2 pb-1 md:px-5 md:pt-4 md:pb-5">
-                  <div className="flex items-center justify-center flex-wrap gap-2.5 p-3 rounded-2xl bg-black/15 dark:bg-white/5 border border-white/10 backdrop-blur-md">
+                <div className="pt-2 pb-1 md:px-5 md:pt-3 md:pb-4">
+                  <div className="flex items-center justify-center flex-wrap gap-2.5 p-2 rounded-2xl bg-black/10 dark:bg-white/5 border border-white/10 backdrop-blur-md">
                     {/* WhatsApp (from profile if no module link exists) */}
                     {profile.whatsapp && !hasWhatsAppLink && (
                       <a
@@ -1879,32 +1881,21 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
                         target="_blank"
                         rel="noopener noreferrer"
                         title="ارسال پیام در واتساپ"
-                        className="w-12 h-12 rounded-2xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm hover:shadow-[0_0_18px_rgba(16,185,129,0.4)]"
+                        className="w-11 h-11 rounded-2xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm"
                       >
                         <WhatsAppIcon className="w-5 h-5 fill-current" />
                       </a>
                     )}
 
                     {/* Social links defined in profile.links */}
-                    {socialLinks.map((link) => renderSocialIcon(link))}
-
-                    {/* Unified Email Icon (seamlessly inside social matrix) */}
-                    {profile.email && (
-                      <a
-                        href={getSmartLink('email', profile.email)}
-                        title={`ارسال ایمیل: ${profile.email}`}
-                        className="w-12 h-12 rounded-2xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm hover:shadow-[0_0_18px_rgba(245,158,11,0.4)]"
-                      >
-                        <Mail className="w-5 h-5" />
-                      </a>
-                    )}
+                    {compactSocialLinks.map((link) => renderSocialIcon(link))}
 
                     {/* Direct phone call in social matrix if phone exists and no dedicated phone module */}
                     {profile.phone && !hasPhoneLink && (
                       <a
                         href={getSmartLink('phone', profile.phone)}
                         title={`تماس تلفنی: ${profile.phone}`}
-                        className="w-12 h-12 rounded-2xl bg-teal-500/15 hover:bg-teal-500/25 border border-teal-500/30 text-teal-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm hover:shadow-[0_0_18px_rgba(20,184,166,0.4)]"
+                        className="w-11 h-11 rounded-2xl bg-teal-500/15 hover:bg-teal-500/25 border border-teal-500/30 text-teal-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm"
                       >
                         <Phone className="w-5 h-5" />
                       </a>
@@ -1955,7 +1946,7 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
                 <button
                   type="button"
                   onClick={handleCopyLink}
-                  className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 border transition-all cursor-pointer active:scale-95 ${
+                  className={`w-full py-2.5 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 border transition-all cursor-pointer active:scale-95 ${
                     isLight
                       ? 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-800'
                       : 'bg-white/10 hover:bg-white/15 border-white/15 text-slate-200'
@@ -1963,15 +1954,6 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
                 >
                   <Copy className="w-3.5 h-3.5 text-cyan-400" />
                   <span>{isLtr ? 'Copy Link' : 'کپی لینک کارت'}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={handleDownloadVCard}
-                  className="py-2.5 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/30 text-cyan-400 transition-all cursor-pointer active:scale-95"
-                  title="دانلود فایل مخاطب"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>vCard</span>
                 </button>
               </div>
             </motion.div>
@@ -2001,6 +1983,62 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
                     : 'هیچ ماژولی برای نمایش وجود ندارد'}
               </motion.div>
             )}
+
+            {/* ACTION BUTTONS (vCard & Share in Equal 2-Column Grid on Mobile, Full Width on Desktop) */}
+            <motion.div variants={itemVariants} className="grid grid-cols-2 md:grid-cols-1 gap-2 mt-4 mb-2">
+              {/* 1. Save Contact (vCard) - Hidden on desktop */}
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.97 }}
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleSaveContact();
+                }}
+                className={`py-2.5 px-3 rounded-2xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-md border border-white/20 transition-all cursor-pointer select-none md:hidden ${
+                  isLight
+                    ? 'bg-slate-900 text-white hover:bg-slate-800'
+                    : 'bg-white/10 hover:bg-white/20 text-white backdrop-blur-md'
+                }`}
+                style={
+                  !isLight && themeConfig.primaryColor
+                    ? { background: `linear-gradient(135deg, ${themeConfig.primaryColor}, ${themeConfig.accentColor})` }
+                    : undefined
+                }
+              >
+                <Download className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">
+                  {isLtr
+                    ? 'Save Contact'
+                    : isPashto
+                      ? 'په اړیکو کې ساتل'
+                      : 'ذخیره در مخاطبان'}
+                </span>
+              </motion.button>
+
+              {/* 2. Share Profile */}
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.97 }}
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleShare();
+                }}
+                className="py-2.5 px-3 rounded-2xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-md border border-cyan-500/40 bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-400 hover:text-cyan-300 transition-all cursor-pointer backdrop-blur-md select-none w-full"
+              >
+                <Share2 className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">
+                  {isLtr
+                    ? 'Share'
+                    : isPashto
+                      ? 'شریکول'
+                      : 'اشتراک‌گذاری'}
+                </span>
+              </motion.button>
+            </motion.div>
           </div>
         </div>
 
@@ -2130,6 +2168,243 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
               </div>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Interactive Share Modal (Web & Desktop Fallback) */}
+      <Dialog open={isShareModalOpen} onOpenChange={setIsShareModalOpen}>
+        <DialogContent className="max-w-md bg-card/95 backdrop-blur-xl border border-border rounded-3xl p-6 text-foreground shadow-2xl" dir={isLtr ? 'ltr' : 'rtl'}>
+          <DialogHeader className="text-center space-y-1 pb-2">
+            <div className="mx-auto w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-500 flex items-center justify-center mb-1">
+              <Share2 className="w-6 h-6" />
+            </div>
+            <DialogTitle className="text-base font-bold text-foreground">
+              {isLtr
+                ? 'Share Digital Smart Card'
+                : isPashto
+                  ? 'د هوښیار ډیجیټل کارت شریکول'
+                  : 'اشتراک‌گذاری کارت هوشمند دیجیتال'}
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground leading-relaxed">
+              {isLtr
+                ? 'Send your QR code or direct card link to friends and clients.'
+                : isPashto
+                  ? 'خپل بارکوډ یا مستقیم لینک ملګرو او پیرودونکو ته واستوئ.'
+                  : 'کد بارکد یا پیوند مستقیم کارت خود را برای دوستان و مشتریان ارسال کنید.'}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex flex-col items-center justify-center gap-4 py-3">
+            {/* Vector QR Code */}
+            <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-lg flex flex-col items-center justify-center">
+              <QRCodeSVG
+                value={`https://aryal.ink/${profile.alias}`}
+                size={180}
+                level="H"
+                includeMargin={true}
+              />
+            </div>
+
+            {/* Direct Link with 1-Click Copy */}
+            <div className="w-full space-y-1.5">
+              <span className={`text-[11px] font-bold text-muted-foreground block ${isLtr ? 'text-left' : 'text-right'}`}>
+                {isLtr
+                  ? 'Exclusive Card Link:'
+                  : isPashto
+                    ? 'د کارت ځانګړی پیوند:'
+                    : 'پیوند اختصاصی کارت:'}
+              </span>
+              <div className="flex items-center gap-2 p-1.5 rounded-xl border border-border bg-muted/30">
+                <input
+                  type="text"
+                  readOnly
+                  value={`https://aryal.ink/${profile.alias}`}
+                  className="flex-1 bg-transparent border-0 text-xs font-sans text-foreground px-2 focus:outline-none"
+                  dir="ltr"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+                      navigator.clipboard.writeText(`https://aryal.ink/${profile.alias}`);
+                      setCopiedShareLink(true);
+                      toast.success(
+                        isLtr
+                          ? 'Card link copied to clipboard'
+                          : isPashto
+                            ? 'د کارت پیوند کلیپ‌بورډ ته کاپي شو'
+                            : 'پیوند کارت با موفقیت در کلیپ‌بورد کپی شد'
+                      );
+                      setTimeout(() => setCopiedShareLink(false), 2000);
+                    }
+                  }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 ${
+                    copiedShareLink
+                      ? 'bg-emerald-500 text-slate-950 shadow-xs'
+                      : 'bg-cyan-500 hover:bg-cyan-400 text-slate-950 shadow-xs'
+                  }`}
+                >
+                  {copiedShareLink ? (
+                    <>
+                      <Check className="w-3.5 h-3.5" />
+                      <span>{isLtr ? 'Copied' : isPashto ? 'کاپي شو' : 'کپی شد'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5" />
+                      <span>{isLtr ? 'Copy Link' : isPashto ? 'لینک کاپي کړئ' : 'کپی لینک'}</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Quick Share to Social Apps */}
+            <div className="w-full space-y-2 pt-2 border-t border-border">
+              <span className={`text-[11px] font-bold text-muted-foreground block ${isLtr ? 'text-left' : 'text-right'}`}>
+                {isLtr
+                  ? 'Direct send in messengers:'
+                  : isPashto
+                    ? 'په پیغام رسوونکو کې مستقیم استول:'
+                    : 'ارسال مستقیم در پیام‌رسان‌ها:'}
+              </span>
+              <div className="grid grid-cols-2 gap-2">
+                <a
+                  href={`https://wa.me/?text=${encodeURIComponent(
+                    `${profile.displayName || 'کارت هوشمند'}: https://aryal.ink/${profile.alias}`
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="py-2 px-3 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 border border-emerald-500/30 font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95"
+                >
+                  <WhatsAppIcon className="w-4 h-4 fill-current" />
+                  <span>واتساپ</span>
+                </a>
+                <a
+                  href={`https://t.me/share/url?url=${encodeURIComponent(
+                    `https://aryal.ink/${profile.alias}`
+                  )}&text=${encodeURIComponent(profile.displayName || 'کارت دیجیتال در آریا لینک')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="py-2 px-3 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 text-sky-500 border border-sky-500/30 font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95"
+                >
+                  <TelegramIcon className="w-4 h-4 fill-current" />
+                  <span>تلگرام</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Contact Exchange Lead Modal (Frictionless vCard Lead Capture - Stage 72) */}
+      <Dialog
+        open={isLeadModalOpen}
+        onOpenChange={(open) => {
+          setIsLeadModalOpen(open);
+          if (!open) {
+            setLeadName('');
+            setLeadPhone('');
+          }
+        }}
+      >
+        <DialogContent className="max-w-md w-[92vw] sm:w-full rounded-3xl bg-slate-900/95 border border-white/10 backdrop-blur-2xl p-6 text-center text-white shadow-2xl overflow-hidden relative">
+          {/* Ambient Lighting Accents */}
+          <div className="absolute -top-16 -right-16 w-36 h-36 bg-cyan-500/20 rounded-full blur-2xl pointer-events-none" />
+          <div className="absolute -bottom-16 -left-16 w-36 h-36 bg-emerald-500/20 rounded-full blur-2xl pointer-events-none" />
+
+          <DialogHeader className="space-y-2 pb-3 border-b border-white/10 text-center relative z-10">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 flex items-center justify-center mx-auto shadow-md">
+              <CheckCircle2 className="w-6 h-6 animate-in zoom-in duration-300" />
+            </div>
+            <DialogTitle className="text-base sm:text-lg font-bold text-white flex items-center justify-center gap-1.5">
+              <span>
+                {isLtr
+                  ? 'Contact card is downloading...'
+                  : isPashto
+                    ? 'د اړیکې کارت د ډاونلوډ کېدو په حال کې دی...'
+                    : 'کارت در حال دانلود است...'}
+              </span>
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-300 leading-relaxed max-w-sm mx-auto">
+              {isLtr
+                ? `For better interaction and faster support, you can also share your contact number with ${profile.displayName || 'the profile owner'} (optional).`
+                : isPashto
+                  ? `د غوره تعامل او چټک ملاتړ لپاره، تاسو کولی شئ خپل د اړیکې شمیره هم له ${profile.displayName || 'د پروفایل مالک'} سره شریکه کړئ (اختیاري).`
+                  : `برای تعامل بهتر و پشتیبانی سریع‌تر، می‌توانید شماره تماس خود را نیز با ${profile.displayName || 'صاحب پروفایل'} به اشتراک بگذارید (اختیاری).`}
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleSubmitLead} className="space-y-4 pt-3 text-right relative z-10 font-sans">
+            {/* Full Name Field */}
+            <div className="space-y-1.5">
+              <label className={`block text-xs font-medium text-slate-200 ${isLtr ? 'text-left' : 'text-right'}`}>
+                {isLtr ? 'Full Name' : isPashto ? 'نوم او تخلص' : 'نام و نام خانوادگی'}
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={leadName}
+                  onChange={(e) => setLeadName(e.target.value)}
+                  placeholder={isLtr ? 'e.g. John Doe' : 'مثال: احمد رحیمی'}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-cyan-400 focus:bg-white/10 transition-all font-sans"
+                />
+                <User className={`w-4 h-4 text-slate-400 absolute ${isLtr ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 pointer-events-none`} />
+              </div>
+            </div>
+
+            {/* Phone Number Field (Strict English Digits via convertToEnglishDigits) */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-medium text-slate-200">
+                  {isLtr ? 'Phone Number' : isPashto ? 'د اړیکې شمیره' : 'شماره تماس'}
+                </label>
+                <span className="text-[10px] text-cyan-400 font-sans">
+                  {isLtr ? '(English digits)' : '(ارقام انگلیسی)'}
+                </span>
+              </div>
+              <div className="relative">
+                <input
+                  type="tel"
+                  value={leadPhone}
+                  onChange={(e) => {
+                    const converted = convertToEnglishDigits(e.target.value);
+                    setLeadPhone(converted);
+                  }}
+                  placeholder="0700 000 000"
+                  dir="ltr"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-left font-sans text-white placeholder-slate-400 focus:outline-none focus:border-cyan-400 focus:bg-white/10 tracking-wider transition-all"
+                />
+                <Phone className={`w-4 h-4 text-slate-400 absolute ${isLtr ? 'right-3' : 'right-3'} top-1/2 -translate-y-1/2 pointer-events-none`} />
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row items-center gap-2 pt-2">
+              <button
+                type="submit"
+                disabled={isSubmittingLead}
+                className="w-full sm:flex-1 py-2.5 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold text-xs shadow-lg shadow-cyan-500/25 flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer disabled:opacity-60"
+              >
+                {isSubmittingLead ? (
+                  <span>{isLtr ? 'Submitting...' : 'در حال ارسال...'}</span>
+                ) : (
+                  <>
+                    <Send className="w-3.5 h-3.5" />
+                    <span>{isLtr ? 'Submit Information' : isPashto ? 'معلومات واستوئ' : 'ثبت و ارسال اطلاعات'}</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsLeadModalOpen(false)}
+                className="w-full sm:w-auto py-2.5 px-4 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/10 text-xs font-semibold transition-all active:scale-95 cursor-pointer"
+              >
+                {isLtr ? 'Close' : isPashto ? 'بندول' : 'بستن'}
+              </button>
+            </div>
+          </form>
         </DialogContent>
       </Dialog>
     </div>

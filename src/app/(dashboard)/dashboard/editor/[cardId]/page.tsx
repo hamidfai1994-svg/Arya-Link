@@ -77,7 +77,8 @@ function IsolatedCardEditorInner() {
   const [isMobilePreviewOpen, setIsMobilePreviewOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
-  const { profile, isLoading, fetchProfileData, activeModuleId } = useEditorStore();
+  const { profile, isLoading, fetchProfileData, activeModuleId, activeSubTab, unreadLeadsCount } = useEditorStore();
+  const isCrmActive = activeTab === 'modules' && activeSubTab === 'crm';
 
   // If user selects a module while in mobile fullscreen preview, close preview to focus on the module form
   useEffect(() => {
@@ -221,7 +222,12 @@ function IsolatedCardEditorInner() {
                   )}
                 />
                 <div className="text-right truncate">
-                  <span className="block truncate">{item.title}</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="block truncate">{item.title}</span>
+                    {item.id === 'modules' && unreadLeadsCount > 0 && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse shrink-0" />
+                    )}
+                  </div>
                   <span
                     className={cn(
                       'text-[10px] block font-normal truncate opacity-85 mt-0.5',
@@ -339,25 +345,34 @@ function IsolatedCardEditorInner() {
             {activeTab === 'modules' && (
               <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
                 {/* Right/Center Column: Module & Appearance Editor */}
-                <div className="w-full lg:w-1/2 xl:w-7/12 h-full overflow-hidden border-b lg:border-b-0 lg:border-l border-border">
+                <div
+                  className={cn(
+                    'h-full overflow-hidden border-b lg:border-b-0 lg:border-l border-border transition-all duration-300',
+                    isCrmActive ? 'w-full' : 'w-full lg:w-1/2 xl:w-7/12'
+                  )}
+                >
                   <ProfileEditor />
                 </div>
 
-                {/* Left Column: Real-time Live Phone Simulator (Taklink Inspired Layout) */}
-                <div className="w-full lg:w-1/2 xl:w-5/12 h-full overflow-hidden hidden lg:block">
-                  <LivePreview />
-                </div>
+                {/* Left Column: Real-time Live Phone Simulator (Hidden when CRM Messages tab is active) */}
+                {!isCrmActive && (
+                  <div className="w-full lg:w-1/2 xl:w-5/12 h-full overflow-hidden hidden lg:block">
+                    <LivePreview />
+                  </div>
+                )}
 
                 {/* Mobile Floating Action Button (FAB) for preview */}
-                <button
-                  type="button"
-                  onClick={() => setIsMobilePreviewOpen(true)}
-                  className="fixed bottom-5 left-1/2 -translate-x-1/2 z-40 lg:hidden px-5 py-3 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold text-xs shadow-2xl shadow-cyan-500/50 flex items-center gap-2 border border-white/20 active:scale-95 transition-all hover:brightness-110"
-                  title="مشاهده پیش‌نمایش کارت"
-                >
-                  <Smartphone className="w-4 h-4" />
-                  <span>پیش‌نمایش زنده کارت</span>
-                </button>
+                {!isCrmActive && (
+                  <button
+                    type="button"
+                    onClick={() => setIsMobilePreviewOpen(true)}
+                    className="fixed bottom-5 left-1/2 -translate-x-1/2 z-40 lg:hidden px-5 py-3 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold text-xs shadow-2xl shadow-cyan-500/50 flex items-center gap-2 border border-white/20 active:scale-95 transition-all hover:brightness-110"
+                    title="مشاهده پیش‌نمایش کارت"
+                  >
+                    <Smartphone className="w-4 h-4" />
+                    <span>پیش‌نمایش زنده کارت</span>
+                  </button>
+                )}
 
                 {/* Mobile Fullscreen Live Preview Modal */}
                 {isMobilePreviewOpen && (

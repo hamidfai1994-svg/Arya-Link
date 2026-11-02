@@ -18,6 +18,7 @@ export const LiveCountdown: React.FC<LiveCountdownProps> = ({
   className = '',
   style,
 }) => {
+  const [isMounted, setIsMounted] = useState<boolean>(false);
   const [timeLeft, setTimeLeft] = useState<{
     days: number;
     hours: number;
@@ -33,6 +34,7 @@ export const LiveCountdown: React.FC<LiveCountdownProps> = ({
   });
 
   useEffect(() => {
+    setIsMounted(true);
     const calculateTime = () => {
       if (!targetDate) {
         // Default fallback: 7 days from now
@@ -92,12 +94,55 @@ export const LiveCountdown: React.FC<LiveCountdownProps> = ({
         <span className="truncate">{title || 'شمارش معکوس رویداد'}</span>
       </div>
 
-      {timeLeft.isEnded ? (
-        <div className="py-2 px-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-xs font-bold inline-block">
+      {!isMounted ? (
+        <div
+          suppressHydrationWarning={true}
+          className="flex items-center justify-center gap-2 font-sans"
+          dir="ltr"
+        >
+          {[
+            { label: 'روز', enLabel: 'Days' },
+            { label: 'ساعت', enLabel: 'Hours' },
+            { label: 'دقیقه', enLabel: 'Mins' },
+            { label: 'ثانیه', enLabel: 'Secs' },
+          ].map((item, idx) => (
+            <div
+              key={idx}
+              className={`flex flex-col items-center px-2.5 py-1.5 rounded-xl min-w-[50px] shadow-sm border ${
+                isLight
+                  ? 'bg-slate-100/90 border-slate-200 text-slate-800'
+                  : 'bg-white/10 border-white/15 text-white'
+              }`}
+            >
+              <span
+                suppressHydrationWarning={true}
+                className="text-base font-bold font-sans tracking-wider"
+              >
+                00
+              </span>
+              <span
+                className={`text-[9px] font-sans mt-0.5 ${
+                  isLight ? 'text-slate-500' : 'text-slate-300'
+                }`}
+              >
+                {item.label}
+              </span>
+            </div>
+          ))}
+        </div>
+      ) : timeLeft.isEnded ? (
+        <div
+          suppressHydrationWarning={true}
+          className="py-2 px-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-xs font-bold inline-block"
+        >
           مهلت این رویداد یا تخفیف به پایان رسیده است
         </div>
       ) : (
-        <div className="flex items-center justify-center gap-2 font-sans" dir="ltr">
+        <div
+          suppressHydrationWarning={true}
+          className="flex items-center justify-center gap-2 font-sans"
+          dir="ltr"
+        >
           {[
             { val: padZero(timeLeft.days), label: 'روز', enLabel: 'Days' },
             { val: padZero(timeLeft.hours), label: 'ساعت', enLabel: 'Hours' },
@@ -112,7 +157,10 @@ export const LiveCountdown: React.FC<LiveCountdownProps> = ({
                   : 'bg-white/10 border-white/15 text-white'
               }`}
             >
-              <span className="text-base font-bold font-sans tracking-wider">
+              <span
+                suppressHydrationWarning={true}
+                className="text-base font-bold font-sans tracking-wider"
+              >
                 {item.val}
               </span>
               <span

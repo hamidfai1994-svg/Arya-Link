@@ -47,6 +47,33 @@ import {
   ChevronDown,
 } from 'lucide-react';
 
+const getFontFamilyStyle = (fontKey?: string) => {
+  switch (fontKey) {
+    case 'vazirmatn':
+      return "'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+    case 'yekan_bakh':
+      return "'Yekan Bakh', 'Vazirmatn', -apple-system, BlinkMacSystemFont, sans-serif";
+    case 'shabnam':
+      return "'Shabnam', 'Vazirmatn', -apple-system, BlinkMacSystemFont, sans-serif";
+    case 'sahel':
+      return "'Sahel', 'Vazirmatn', -apple-system, BlinkMacSystemFont, sans-serif";
+    case 'dana':
+      return "'Dana', 'Vazirmatn', -apple-system, BlinkMacSystemFont, sans-serif";
+    case 'inter':
+      return "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+    case 'roboto':
+      return "'Roboto', -apple-system, BlinkMacSystemFont, sans-serif";
+    case 'poppins':
+      return "'Poppins', -apple-system, BlinkMacSystemFont, sans-serif";
+    case 'outfit':
+      return "'Outfit', -apple-system, BlinkMacSystemFont, sans-serif";
+    case 'plus_jakarta':
+      return "'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif";
+    default:
+      return fontKey ? `'${fontKey}', sans-serif` : 'inherit';
+  }
+};
+
 export const ProfileEditor: React.FC = () => {
   const { data: session } = useSession();
   const {
@@ -55,6 +82,9 @@ export const ProfileEditor: React.FC = () => {
     isSaving,
     isLoading,
     lastSavedAt,
+    activeSubTab,
+    setActiveSubTab,
+    unreadLeadsCount,
     updateBasicInfo,
     setHeaderLayout,
     setProfileLanguage,
@@ -76,19 +106,54 @@ export const ProfileEditor: React.FC = () => {
     activeModuleId,
   } = useEditorStore();
 
-  const [activeTab, setActiveTab] = useState<'content' | 'appearance' | 'fonts' | 'settings' | 'crm'>('content');
+  const activeTab = activeSubTab;
+  const setActiveTab = setActiveSubTab;
 
   // Auto-switch to 'content' tab when a module is activated from Live Preview
   useEffect(() => {
     if (activeModuleId && activeTab !== 'content') {
       setActiveTab('content');
     }
-  }, [activeModuleId, activeTab]);
+  }, [activeModuleId, activeTab, setActiveTab]);
   const [isModuleModalOpen, setIsModuleModalOpen] = useState(false);
   const [isProfileSettingsOpen, setIsProfileSettingsOpen] = useState(false);
   const [copiedAlias, setCopiedAlias] = useState(false);
   const [isSubmittingKYC, setIsSubmittingKYC] = useState(false);
   const [isProfileInfoExpanded, setIsProfileInfoExpanded] = useState(false);
+
+  // Local state for Typography Tab (Fonts & Font Sizes) to decouple from immediate auto-save
+  const [localTypography, setLocalTypography] = useState({
+    fontFa: profile.themeConfig?.fontFa || 'vazirmatn',
+    fontEn: profile.themeConfig?.fontEn || 'inter',
+    fontSizeDari: profile.themeConfig?.fontSizeDari || 15,
+    fontSizePashto: profile.themeConfig?.fontSizePashto || 15,
+    fontSizeEn: profile.themeConfig?.fontSizeEn || 14,
+  });
+
+  const typographySnapshotRef = useRef<typeof localTypography | null>(null);
+
+  useEffect(() => {
+    if (activeTab === 'fonts') {
+      const current = {
+        fontFa: profile.themeConfig?.fontFa || 'vazirmatn',
+        fontEn: profile.themeConfig?.fontEn || 'inter',
+        fontSizeDari: profile.themeConfig?.fontSizeDari || 15,
+        fontSizePashto: profile.themeConfig?.fontSizePashto || 15,
+        fontSizeEn: profile.themeConfig?.fontSizeEn || 14,
+      };
+      setLocalTypography(current);
+      typographySnapshotRef.current = current;
+    }
+  }, [activeTab, profile.themeConfig]);
+
+  const handleUpdateTypography = (fields: Partial<typeof localTypography>) => {
+    setLocalTypography((prev) => {
+      const next = { ...prev, ...fields };
+      // Real-time UI live preview without triggering auto-save or "در حال ذخیره..." badge
+      updateTheme(next, true);
+      return next;
+    });
+  };
 
   const handleOpenAddModule = () => {
     if (unconfirmedModuleId) {
@@ -202,7 +267,12 @@ export const ProfileEditor: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-card text-foreground border-l border-border w-full max-w-2xl mx-auto shadow-2xl overflow-hidden font-sans transition-colors duration-200" dir="rtl">
+    <div
+      className={`flex flex-col h-full bg-card text-foreground border-l border-border w-full shadow-2xl overflow-hidden font-sans transition-all duration-200 ${
+        activeTab === 'crm' ? 'max-w-none' : 'max-w-2xl mx-auto'
+      }`}
+      dir="rtl"
+    >
       {/* Editor Header (Cleaned up, single source of truth for URL in sidebar, no auto-save badge) */}
       <header className="px-5 py-3.5 border-b border-border flex items-center justify-between bg-card/80 backdrop-blur-md sticky top-0 z-20 gap-3">
         <div className="flex items-center gap-3 min-w-0">
@@ -288,7 +358,9 @@ export const ProfileEditor: React.FC = () => {
         >
           <Mail className="w-3.5 h-3.5" />
           <span className="truncate">{t.crmTab}</span>
-          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse shrink-0"></span>
+          {unreadLeadsCount > 0 && (
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse shrink-0"></span>
+          )}
         </button>
       </div>
 
@@ -1071,8 +1143,8 @@ export const ProfileEditor: React.FC = () => {
                   </label>
                   <div className="relative">
                     <select
-                      value={profile.themeConfig?.fontFa || 'vazirmatn'}
-                      onChange={(e) => updateTheme({ fontFa: e.target.value as any })}
+                      value={localTypography.fontFa}
+                      onChange={(e) => handleUpdateTypography({ fontFa: e.target.value as any })}
                       className="w-full bg-background border border-border rounded-xl px-3.5 py-2.5 text-xs text-foreground focus:outline-none focus:border-cyan-500 appearance-none font-sans font-medium cursor-pointer shadow-xs transition-colors"
                     >
                       <option value="vazirmatn">وزیرمتن (Vazirmatn) — استاندارد و پیش‌فرض</option>
@@ -1095,8 +1167,8 @@ export const ProfileEditor: React.FC = () => {
                   </label>
                   <div className="relative">
                     <select
-                      value={profile.themeConfig?.fontEn || 'inter'}
-                      onChange={(e) => updateTheme({ fontEn: e.target.value as any })}
+                      value={localTypography.fontEn}
+                      onChange={(e) => handleUpdateTypography({ fontEn: e.target.value as any })}
                       className="w-full bg-background border border-border rounded-xl px-3.5 py-2.5 text-xs text-foreground focus:outline-none focus:border-cyan-500 appearance-none font-sans font-medium cursor-pointer shadow-xs transition-colors"
                       dir="ltr"
                     >
@@ -1135,19 +1207,35 @@ export const ProfileEditor: React.FC = () => {
                     <span className="text-xs font-bold text-foreground">۱. کانتینر پیش‌نمایش متن دری</span>
                   </div>
                   <span className="text-[10px] font-sans font-bold text-cyan-600 dark:text-cyan-400 bg-cyan-500/10 px-2.5 py-0.5 rounded-full border border-cyan-500/20">
-                    {profile.themeConfig?.fontFa || 'vazirmatn'}
+                    {localTypography.fontFa}
                   </span>
                 </div>
 
                 {/* Real-time Render Box */}
                 <div
-                  className={`p-4 rounded-xl border border-border/80 bg-card shadow-xs space-y-1.5 transition-all font-${profile.themeConfig?.fontFa || 'vazirmatn'}`}
-                  style={{ fontSize: `${profile.themeConfig?.fontSizeDari || 15}px` }}
+                  className={`p-4 rounded-xl border border-border/80 bg-card shadow-xs space-y-1.5 transition-all font-${localTypography.fontFa}`}
+                  data-font={localTypography.fontFa}
+                  style={{
+                    fontFamily: getFontFamilyStyle(localTypography.fontFa),
+                    fontSize: `${localTypography.fontSizeDari}px`,
+                  }}
                 >
-                  <h4 className="font-bold text-foreground leading-snug">
+                  <h4
+                    className="font-bold text-foreground leading-snug"
+                    style={{
+                      fontFamily: getFontFamilyStyle(localTypography.fontFa),
+                      fontSize: `${Math.round(localTypography.fontSizeDari * 1.05)}px`,
+                    }}
+                  >
                     کارت هوشمند و لینک‌بایوی دیجیتال آریا لینک
                   </h4>
-                  <p className="text-muted-foreground leading-relaxed">
+                  <p
+                    className="text-muted-foreground leading-relaxed"
+                    style={{
+                      fontFamily: getFontFamilyStyle(localTypography.fontFa),
+                      fontSize: `${localTypography.fontSizeDari}px`,
+                    }}
+                  >
                     طراحی مدرن، ارتباط مستقیم و انتقال بدون تماس اطلاعات و شبکه‌های اجتماعی با فناوری هوشمند NFC در سراسر افغانستان.
                   </p>
                 </div>
@@ -1157,7 +1245,7 @@ export const ProfileEditor: React.FC = () => {
                   <div className="flex items-center justify-between text-xs">
                     <span className="font-semibold text-foreground">اندازه قلم متن دری (Font Size)</span>
                     <span className="font-sans font-bold text-cyan-500 bg-cyan-500/10 px-2 py-0.5 rounded-md border border-cyan-500/20">
-                      {profile.themeConfig?.fontSizeDari || 15}px
+                      {localTypography.fontSizeDari}px
                     </span>
                   </div>
                   <input
@@ -1165,8 +1253,8 @@ export const ProfileEditor: React.FC = () => {
                     min="12"
                     max="24"
                     step="1"
-                    value={profile.themeConfig?.fontSizeDari || 15}
-                    onChange={(e) => updateTheme({ fontSizeDari: Number(e.target.value) })}
+                    value={localTypography.fontSizeDari}
+                    onChange={(e) => handleUpdateTypography({ fontSizeDari: Number(e.target.value) })}
                     className="w-full accent-cyan-500 cursor-pointer"
                   />
                   <div className="flex justify-between text-[10px] text-muted-foreground font-sans">
@@ -1185,20 +1273,36 @@ export const ProfileEditor: React.FC = () => {
                     <span className="text-xs font-bold text-foreground">۲. کانتینر پیش‌نمایش متن پښتو</span>
                   </div>
                   <span className="text-[10px] font-sans font-bold text-cyan-600 dark:text-cyan-400 bg-cyan-500/10 px-2.5 py-0.5 rounded-full border border-cyan-500/20">
-                    {profile.themeConfig?.fontFa || 'vazirmatn'}
+                    {localTypography.fontFa}
                   </span>
                 </div>
 
                 {/* Real-time Render Box */}
                 <div
-                  className={`p-4 rounded-xl border border-border/80 bg-card shadow-xs space-y-1.5 transition-all font-${profile.themeConfig?.fontFa || 'vazirmatn'}`}
-                  style={{ fontSize: `${profile.themeConfig?.fontSizePashto || 15}px` }}
+                  className={`p-4 rounded-xl border border-border/80 bg-card shadow-xs space-y-1.5 transition-all font-${localTypography.fontFa}`}
+                  data-font={localTypography.fontFa}
+                  style={{
+                    fontFamily: getFontFamilyStyle(localTypography.fontFa),
+                    fontSize: `${localTypography.fontSizePashto}px`,
+                  }}
                 >
-                  <h4 className="font-bold text-foreground leading-snug">
+                  <h4
+                    className="font-bold text-foreground leading-snug"
+                    style={{
+                      fontFamily: getFontFamilyStyle(localTypography.fontFa),
+                      fontSize: `${Math.round(localTypography.fontSizePashto * 1.05)}px`,
+                    }}
+                  >
                     په آریا لینک کې ستاسو سمارټ ډیجیټل سوداګریز کارت
                   </h4>
-                  <p className="text-muted-foreground leading-relaxed">
-                    له خپلو پیرودونکو او سوداګریزو شریکانو سره د NFC ټیکنالوژۍ او QR کوډ له لارې چټکه او خوندي اړیکه ټینګه کړئ.
+                  <p
+                    className="text-muted-foreground leading-relaxed"
+                    style={{
+                      fontFamily: getFontFamilyStyle(localTypography.fontFa),
+                      fontSize: `${localTypography.fontSizePashto}px`,
+                    }}
+                  >
+                    له خپلو پیرودونکو او سوداګریزو شریکانو سره د NFC ټیکنالوژۍ او QR کوډ له لارې چټکه او خوندی اړیکه ټینګه کړئ.
                   </p>
                 </div>
 
@@ -1207,7 +1311,7 @@ export const ProfileEditor: React.FC = () => {
                   <div className="flex items-center justify-between text-xs">
                     <span className="font-semibold text-foreground">اندازه قلم متن پښتو (Font Size)</span>
                     <span className="font-sans font-bold text-cyan-500 bg-cyan-500/10 px-2 py-0.5 rounded-md border border-cyan-500/20">
-                      {profile.themeConfig?.fontSizePashto || 15}px
+                      {localTypography.fontSizePashto}px
                     </span>
                   </div>
                   <input
@@ -1215,8 +1319,8 @@ export const ProfileEditor: React.FC = () => {
                     min="12"
                     max="24"
                     step="1"
-                    value={profile.themeConfig?.fontSizePashto || 15}
-                    onChange={(e) => updateTheme({ fontSizePashto: Number(e.target.value) })}
+                    value={localTypography.fontSizePashto}
+                    onChange={(e) => handleUpdateTypography({ fontSizePashto: Number(e.target.value) })}
                     className="w-full accent-cyan-500 cursor-pointer"
                   />
                   <div className="flex justify-between text-[10px] text-muted-foreground font-sans">
@@ -1235,20 +1339,36 @@ export const ProfileEditor: React.FC = () => {
                     <span className="text-xs font-bold text-foreground">3. English Sample Text Container</span>
                   </div>
                   <span className="text-[10px] font-sans font-bold text-blue-500 bg-blue-500/10 px-2.5 py-0.5 rounded-full border border-blue-500/20">
-                    {profile.themeConfig?.fontEn || 'inter'}
+                    {localTypography.fontEn}
                   </span>
                 </div>
 
                 {/* Real-time Render Box */}
                 <div
-                  className={`p-4 rounded-xl border border-border/80 bg-card shadow-xs space-y-1.5 transition-all font-${profile.themeConfig?.fontEn || 'inter'}`}
-                  style={{ fontSize: `${profile.themeConfig?.fontSizeEn || 14}px` }}
+                  className={`p-4 rounded-xl border border-border/80 bg-card shadow-xs space-y-1.5 transition-all font-${localTypography.fontEn}`}
+                  data-font={localTypography.fontEn}
+                  style={{
+                    fontFamily: getFontFamilyStyle(localTypography.fontEn),
+                    fontSize: `${localTypography.fontSizeEn}px`,
+                  }}
                   dir="ltr"
                 >
-                  <h4 className="font-bold text-foreground leading-snug">
+                  <h4
+                    className="font-bold text-foreground leading-snug"
+                    style={{
+                      fontFamily: getFontFamilyStyle(localTypography.fontEn),
+                      fontSize: `${Math.round(localTypography.fontSizeEn * 1.05)}px`,
+                    }}
+                  >
                     AryaLink Smart Digital Business Card & Bio
                   </h4>
-                  <p className="text-muted-foreground leading-relaxed">
+                  <p
+                    className="text-muted-foreground leading-relaxed"
+                    style={{
+                      fontFamily: getFontFamilyStyle(localTypography.fontEn),
+                      fontSize: `${localTypography.fontSizeEn}px`,
+                    }}
+                  >
                     Seamless contactless networking and instant social connectivity powered by high-speed NFC and dynamic QR technology.
                   </p>
                 </div>
@@ -1258,7 +1378,7 @@ export const ProfileEditor: React.FC = () => {
                   <div className="flex items-center justify-between text-xs">
                     <span className="font-semibold text-foreground">اندازه قلم انگلیسی (English Size)</span>
                     <span className="font-sans font-bold text-cyan-500 bg-cyan-500/10 px-2 py-0.5 rounded-md border border-cyan-500/20">
-                      {profile.themeConfig?.fontSizeEn || 14}px
+                      {localTypography.fontSizeEn}px
                     </span>
                   </div>
                   <input
@@ -1266,8 +1386,8 @@ export const ProfileEditor: React.FC = () => {
                     min="12"
                     max="24"
                     step="1"
-                    value={profile.themeConfig?.fontSizeEn || 14}
-                    onChange={(e) => updateTheme({ fontSizeEn: Number(e.target.value) })}
+                    value={localTypography.fontSizeEn}
+                    onChange={(e) => handleUpdateTypography({ fontSizeEn: Number(e.target.value) })}
                     className="w-full accent-cyan-500 cursor-pointer"
                   />
                   <div className="flex justify-between text-[10px] text-muted-foreground font-sans">
@@ -1288,8 +1408,12 @@ export const ProfileEditor: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => {
+                    if (typographySnapshotRef.current) {
+                      setLocalTypography(typographySnapshotRef.current);
+                      updateTheme(typographySnapshotRef.current, true);
+                    }
                     setActiveTab('content');
-                    toast.info('به تب محتوا بازگشتید.');
+                    toast.info('تغییرات فونت لغو شد و به تب محتوا بازگشتید.');
                   }}
                   className="px-4 py-2 rounded-xl bg-muted hover:bg-rose-500/10 text-muted-foreground hover:text-rose-500 border border-border text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
                 >
@@ -1300,8 +1424,10 @@ export const ProfileEditor: React.FC = () => {
                 <button
                   type="button"
                   onClick={async () => {
+                    updateTheme(localTypography, true);
                     const res = await saveProfileData();
                     if (res.success) {
+                      typographySnapshotRef.current = { ...localTypography };
                       toast.success('تنظیمات فونت و اندازه قلم با موفقیت ذخیره شد.');
                       setActiveTab('content');
                     } else {

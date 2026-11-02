@@ -70,10 +70,12 @@ export const LiveBusinessHours: React.FC<LiveBusinessHoursProps> = ({
   style,
   animClass = '',
 }) => {
+  const [isMounted, setIsMounted] = useState<boolean>(false);
   const [now, setNow] = useState<Date>(() => new Date());
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
 
   useEffect(() => {
+    setIsMounted(true);
     const timer = setInterval(() => {
       setNow(new Date());
     }, 1000);
@@ -161,102 +163,160 @@ export const LiveBusinessHours: React.FC<LiveBusinessHoursProps> = ({
             <span className={`text-xs font-bold block ${isLight ? 'text-slate-900' : 'text-white'}`}>
               {title || 'ساعات کاری'}
             </span>
-            <span className={`text-[10px] text-muted-foreground block font-sans ${profileLanguage === 'en' ? 'text-left' : 'text-right'}`}>
-              {formatDisplayDate(now, profileLanguage)}
+            <span
+              suppressHydrationWarning={true}
+              className={`text-[10px] text-muted-foreground block font-sans ${profileLanguage === 'en' ? 'text-left' : 'text-right'}`}
+            >
+              {isMounted ? formatDisplayDate(now, profileLanguage) : (profileLanguage === 'en' ? 'Today' : 'امروز')}
             </span>
           </div>
         </div>
 
         {/* Dynamic Status Badge */}
-        {isCurrentlyOpen && (
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[11px] font-bold shadow-xs">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-            </span>
-            <span>اکنون باز است</span>
+        {!isMounted ? (
+          <div
+            suppressHydrationWarning={true}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-muted/40 text-muted-foreground text-[11px] font-bold"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50" />
+            <span>ساعات کاری</span>
           </div>
-        )}
+        ) : (
+          <>
+            {isCurrentlyOpen && (
+              <div
+                suppressHydrationWarning={true}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[11px] font-bold shadow-xs"
+              >
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                </span>
+                <span>اکنون باز است</span>
+              </div>
+            )}
 
-        {isAfterHoursToday && (
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30 text-[11px] font-bold shadow-xs">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-            <span>اکنون بسته است</span>
-          </div>
-        )}
+            {isAfterHoursToday && (
+              <div
+                suppressHydrationWarning={true}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30 text-[11px] font-bold shadow-xs"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                <span>اکنون بسته است</span>
+              </div>
+            )}
 
-        {isClosedFullDay && (
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-500/15 text-rose-400 border border-rose-500/30 text-[11px] font-bold shadow-xs">
-            <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
-            <span>امروز تعطیل است</span>
-          </div>
-        )}
+            {isClosedFullDay && (
+              <div
+                suppressHydrationWarning={true}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-500/15 text-rose-400 border border-rose-500/30 text-[11px] font-bold shadow-xs"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
+                <span>امروز تعطیل است</span>
+              </div>
+            )}
 
-        {isBeforeOpenToday && (
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-sky-500/15 text-sky-400 border border-sky-500/30 text-[11px] font-bold shadow-xs">
-            <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />
-            <span>شروع کار: {formatTime12Hour(todaySchedule.openTime, profileLanguage)}</span>
-          </div>
+            {isBeforeOpenToday && (
+              <div
+                suppressHydrationWarning={true}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-sky-500/15 text-sky-400 border border-sky-500/30 text-[11px] font-bold shadow-xs"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />
+                <span>شروع کار: {formatTime12Hour(todaySchedule.openTime, profileLanguage)}</span>
+              </div>
+            )}
+          </>
         )}
       </div>
 
       {/* Main Status Display Area */}
-      {isCurrentlyOpen && (
-        <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-center space-y-1.5">
-          <div className="text-base font-bold font-mono tracking-wider text-emerald-400 drop-shadow-sm flex items-center justify-center gap-1.5" dir="ltr">
-            <span>{countdownText}</span>
-          </div>
-          <p className="text-xs font-medium text-emerald-300 dark:text-emerald-300">
-            {profileLanguage === 'en'
-              ? `We look forward to seeing you from ${formatTime12Hour(todaySchedule.openTime, 'en')} to ${formatTime12Hour(todaySchedule.closeTime, 'en')}.`
-              : `ما از ساعت ${formatTime12Hour(todaySchedule.openTime, profileLanguage)} تا ${formatTime12Hour(todaySchedule.closeTime, profileLanguage)} منتظر شما هستیم.`}
-          </p>
+      {!isMounted ? (
+        <div
+          suppressHydrationWarning={true}
+          className="p-2.5 rounded-xl bg-muted/20 border border-border/40 text-center py-3.5 space-y-1.5"
+        >
+          <div className="h-4 w-36 bg-muted/40 rounded-md mx-auto animate-pulse" />
+          <div className="h-3 w-52 bg-muted/30 rounded-md mx-auto animate-pulse" />
         </div>
-      )}
+      ) : (
+        <>
+          {isCurrentlyOpen && (
+            <div
+              suppressHydrationWarning={true}
+              className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-center space-y-1.5"
+            >
+              <div
+                suppressHydrationWarning={true}
+                className="text-base font-bold font-mono tracking-wider text-emerald-400 drop-shadow-sm flex items-center justify-center gap-1.5"
+                dir="ltr"
+              >
+                <span>{countdownText}</span>
+              </div>
+              <p
+                suppressHydrationWarning={true}
+                className="text-xs font-medium text-emerald-300 dark:text-emerald-300"
+              >
+                {profileLanguage === 'en'
+                  ? `We look forward to seeing you from ${formatTime12Hour(todaySchedule.openTime, 'en')} to ${formatTime12Hour(todaySchedule.closeTime, 'en')}.`
+                  : `ما از ساعت ${formatTime12Hour(todaySchedule.openTime, profileLanguage)} تا ${formatTime12Hour(todaySchedule.closeTime, profileLanguage)} منتظر شما هستیم.`}
+              </p>
+            </div>
+          )}
 
-      {isAfterHoursToday && (
-        <div className="p-2.5 rounded-xl bg-muted/40 border border-border/60 text-center space-y-1">
-          <p className="text-xs font-bold text-foreground">
-            {profileLanguage === 'en'
-              ? 'Our business hours have ended for today.'
-              : 'ساعت کاری‌مان امروز تمام شده است.'}
-          </p>
-          <p className="text-[10px] text-muted-foreground leading-relaxed">
-            {profileLanguage === 'en'
-              ? `We will be back tomorrow at ${formatTime12Hour(nextOpenInfo.openTime, 'en')}, but if you have an urgent inquiry, please leave a message or call us.`
-              : `ما ${nextOpenInfo.dayName} ساعت ${formatTime12Hour(nextOpenInfo.openTime, profileLanguage)} منتظر شما هستیم، اما اگر کار فوری دارید لطفاً برای ما پیام بگذارید یا تماس بگیرید.`}
-          </p>
-        </div>
-      )}
+          {isAfterHoursToday && (
+            <div
+              suppressHydrationWarning={true}
+              className="p-2.5 rounded-xl bg-muted/40 border border-border/60 text-center space-y-1"
+            >
+              <p className="text-xs font-bold text-foreground">
+                {profileLanguage === 'en'
+                  ? 'Our business hours have ended for today.'
+                  : 'ساعت کاری‌مان امروز تمام شده است.'}
+              </p>
+              <p className="text-[10px] text-muted-foreground leading-relaxed">
+                {profileLanguage === 'en'
+                  ? `We will be back tomorrow at ${formatTime12Hour(nextOpenInfo.openTime, 'en')}, but if you have an urgent inquiry, please leave a message or call us.`
+                  : `ما ${nextOpenInfo.dayName} ساعت ${formatTime12Hour(nextOpenInfo.openTime, profileLanguage)} منتظر شما هستیم، اما اگر کار فوری دارید لطفاً برای ما پیام بگذارید یا تماس بگیرید.`}
+              </p>
+            </div>
+          )}
 
-      {isClosedFullDay && (
-        <div className="p-2.5 rounded-xl bg-muted/40 border border-border/60 text-center space-y-1">
-          <p className="text-xs font-bold text-foreground">
-            {profileLanguage === 'en'
-              ? `We are closed today (${todaySchedule.dayName}).`
-              : `امروز ${todaySchedule.dayName} تعطیل هستیم.`}
-          </p>
-          <p className="text-[10px] text-muted-foreground leading-relaxed">
-            {profileLanguage === 'en'
-              ? `We will be back ${nextOpenInfo.dayName === 'فردا' ? 'tomorrow' : `on ${nextOpenInfo.dayName}`} at ${formatTime12Hour(nextOpenInfo.openTime, 'en')}, but if you have an urgent inquiry, please leave a message or call us.`
-              : `ما ${nextOpenInfo.dayName} ساعت ${formatTime12Hour(nextOpenInfo.openTime, profileLanguage)} منتظر شما هستیم، اما اگر کار فوری دارید لطفاً برای ما پیام بگذارید یا تماس بگیرید.`}
-          </p>
-        </div>
-      )}
+          {isClosedFullDay && (
+            <div
+              suppressHydrationWarning={true}
+              className="p-2.5 rounded-xl bg-muted/40 border border-border/60 text-center space-y-1"
+            >
+              <p className="text-xs font-bold text-foreground">
+                {profileLanguage === 'en'
+                  ? `We are closed today (${todaySchedule.dayName}).`
+                  : `امروز ${todaySchedule.dayName} تعطیل هستیم.`}
+              </p>
+              <p className="text-[10px] text-muted-foreground leading-relaxed">
+                {profileLanguage === 'en'
+                  ? `We will be back ${nextOpenInfo.dayName === 'فردا' ? 'tomorrow' : `on ${nextOpenInfo.dayName}`} at ${formatTime12Hour(nextOpenInfo.openTime, 'en')}, but if you have an urgent inquiry, please leave a message or call us.`
+                  : `ما ${nextOpenInfo.dayName} ساعت ${formatTime12Hour(nextOpenInfo.openTime, profileLanguage)} منتظر شما هستیم، اما اگر کار فوری دارید لطفاً برای ما پیام بگذارید یا تماس بگیرید.`}
+              </p>
+            </div>
+          )}
 
-      {isBeforeOpenToday && (
-        <div className="p-2.5 rounded-xl bg-sky-500/10 border border-sky-500/20 text-center space-y-1">
-          <p className="text-xs font-bold text-foreground">
-            {profileLanguage === 'en'
-              ? `We start today at ${formatTime12Hour(todaySchedule.openTime, 'en')}.`
-              : `ما امروز ساعت ${formatTime12Hour(todaySchedule.openTime, profileLanguage)} شروع به کار می‌کنیم.`}
-          </p>
-          <p className="text-[10px] text-muted-foreground">
-            {profileLanguage === 'en'
-              ? `We look forward to seeing you from ${formatTime12Hour(todaySchedule.openTime, 'en')} to ${formatTime12Hour(todaySchedule.closeTime, 'en')}.`
-              : `ما از ساعت ${formatTime12Hour(todaySchedule.openTime, profileLanguage)} تا ${formatTime12Hour(todaySchedule.closeTime, profileLanguage)} منتظر شما هستیم.`}
-          </p>
-        </div>
+          {isBeforeOpenToday && (
+            <div
+              suppressHydrationWarning={true}
+              className="p-2.5 rounded-xl bg-sky-500/10 border border-sky-500/20 text-center space-y-1"
+            >
+              <p className="text-xs font-bold text-foreground">
+                {profileLanguage === 'en'
+                  ? `We start today at ${formatTime12Hour(todaySchedule.openTime, 'en')}.`
+                  : `ما امروز ساعت ${formatTime12Hour(todaySchedule.openTime, profileLanguage)} شروع به کار می‌کنیم.`}
+              </p>
+              <p className="text-[10px] text-muted-foreground">
+                {profileLanguage === 'en'
+                  ? `We look forward to seeing you from ${formatTime12Hour(todaySchedule.openTime, 'en')} to ${formatTime12Hour(todaySchedule.closeTime, 'en')}.`
+                  : `ما از ساعت ${formatTime12Hour(todaySchedule.openTime, profileLanguage)} تا ${formatTime12Hour(todaySchedule.closeTime, profileLanguage)} منتظر شما هستیم.`}
+              </p>
+            </div>
+          )}
+        </>
       )}
 
       {/* Accordion Toggle for Weekly Schedule Table */}
@@ -283,7 +343,7 @@ export const LiveBusinessHours: React.FC<LiveBusinessHoursProps> = ({
       {isExpanded && (
         <div className="space-y-1.5 pt-1 border-t border-border/30 animate-in fade-in slide-in-from-top-1 duration-200">
           {week.map((d) => {
-            const isToday = d.dayIndex === currentDayIndex;
+            const isToday = isMounted && d.dayIndex === currentDayIndex;
             return (
               <div
                 key={d.dayIndex}
@@ -303,7 +363,10 @@ export const LiveBusinessHours: React.FC<LiveBusinessHoursProps> = ({
 
                 <div className="font-sans text-[11px]" dir="ltr">
                   {d.isOpen ? (
-                    <span className={isToday ? 'text-cyan-400 font-bold' : 'text-foreground'}>
+                    <span
+                      suppressHydrationWarning={true}
+                      className={isToday ? 'text-cyan-400 font-bold' : 'text-foreground'}
+                    >
                       {formatTime12Hour(d.openTime, profileLanguage)} - {formatTime12Hour(d.closeTime, profileLanguage)}
                     </span>
                   ) : (

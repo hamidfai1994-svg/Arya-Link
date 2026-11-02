@@ -37,10 +37,16 @@ export interface EditorState {
   updateBasicInfo: (fields: Partial<Pick<ProfileData, 'displayName' | 'headline' | 'bio' | 'avatarUrl' | 'coverUrl' | 'headerLayout' | 'alias' | 'phone' | 'whatsapp' | 'email' | 'location'>>) => void;
   setHeaderLayout: (layout: HeaderLayoutType) => void;
   setProfileLanguage: (lang: ProfileLanguage) => void;
-  updateTheme: (fields: Partial<ProfileThemeConfig>) => void;
+  updateTheme: (fields: Partial<ProfileThemeConfig>, skipAutoSave?: boolean) => void;
   setThemePreset: (preset: ProfileThemeConfig['preset']) => void;
   toggleDirectMode: (enabled?: boolean, url?: string) => void;
   updateProSettings: (fields: Partial<Pick<ProfileData, 'seoTitle' | 'seoDescription' | 'hideBranding' | 'selectedTemplateId'>>) => void;
+
+  // Sub-tabs & CRM
+  activeSubTab: 'content' | 'appearance' | 'fonts' | 'settings' | 'crm';
+  setActiveSubTab: (tab: 'content' | 'appearance' | 'fonts' | 'settings' | 'crm') => void;
+  unreadLeadsCount: number;
+  setUnreadLeadsCount: (count: number) => void;
 
   // KYC Verification Actions
   setProfileType: (type: ProfileType) => void;
@@ -631,6 +637,18 @@ export function getDefaultModuleConfig(moduleType: LinkModuleType): { title: str
   }
 }
 
+// Theme & Styling Auto-Save debouncer to persist changes automatically to database
+let themeAutoSaveTimeout: ReturnType<typeof setTimeout> | null = null;
+const triggerThemeAutoSave = (saveFn: () => Promise<any>, delay = 400) => {
+  if (typeof window === 'undefined') return;
+  if (themeAutoSaveTimeout) {
+    clearTimeout(themeAutoSaveTimeout);
+  }
+  themeAutoSaveTimeout = setTimeout(() => {
+    saveFn().catch((err) => console.error('Auto-save theme error:', err));
+  }, delay);
+};
+
 export const useEditorStore = create<EditorState>((set, get) => ({
   profile: emptyProfile,
   selectedDeviceId: 'iphone',
@@ -651,6 +669,12 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     })),
   unconfirmedModuleId: null,
   setUnconfirmedModuleId: (id) => set({ unconfirmedModuleId: id }),
+
+  // Sub-tabs & CRM
+  activeSubTab: 'content',
+  setActiveSubTab: (tab) => set({ activeSubTab: tab }),
+  unreadLeadsCount: 0,
+  setUnreadLeadsCount: (count) => set({ unreadLeadsCount: count }),
 
   // Multi-Profile State (Dynamic from MongoDB)
   profilesList: [],
@@ -833,16 +857,22 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       };
     }),
 
-  setHeaderLayout: (layout) =>
+  setHeaderLayout: (layout) => {
     set((state) => ({
       profile: {
         ...state.profile,
         headerLayout: layout,
       },
       isDirty: true,
-    })),
+    }));
+    triggerThemeAutoSave(get().saveProfileData, 100);
+  },
 
-  updateTheme: (fields) =>
+  updateTheme: (fields, skipAutoSave) => {
+    if (skipAutoSave && themeAutoSaveTimeout) {
+      clearTimeout(themeAutoSaveTimeout);
+      themeAutoSaveTimeout = null;
+    }
     set((state) => ({
       profile: {
         ...state.profile,
@@ -851,10 +881,14 @@ export const useEditorStore = create<EditorState>((set, get) => ({
           ...fields,
         },
       },
-      isDirty: true,
-    })),
+      isDirty: !skipAutoSave ? true : state.isDirty,
+    }));
+    if (!skipAutoSave) {
+      triggerThemeAutoSave(get().saveProfileData, 400);
+    }
+  },
 
-  setThemePreset: (preset) =>
+  setThemePreset: (preset) => {
     set((state) => {
       let updatedTheme = { ...state.profile.themeConfig, preset };
 
@@ -912,7 +946,9 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         },
         isDirty: true,
       };
-    }),
+    });
+    triggerThemeAutoSave(get().saveProfileData, 100);
+  },
 
   toggleDirectMode: (enabled, url) =>
     set((state) => ({
@@ -1225,6 +1261,20 @@ export const useEditorStore = create<EditorState>((set, get) => ({
           isLoading: false,
           saveError: null,
         }));
+
+        // Fetch unread leads count in background to keep notification badge accurate
+        if (normalizedProfile.alias) {
+          fetch(`/api/lead?profileAlias=${encodeURIComponent(normalizedProfile.alias)}`)
+            .then((r) => r.json())
+            .then((j) => {
+              if (j.success && Array.isArray(j.data)) {
+                const unread = j.data.filter((l: any) => l.status === 'new').length;
+                set({ unreadLeadsCount: unread });
+              }
+            })
+            .catch(() => {});
+        }
+
         return true;
       }
 

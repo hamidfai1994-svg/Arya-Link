@@ -24,9 +24,11 @@ import {
   Sparkles,
   Inbox,
   Filter,
+  Loader2,
 } from 'lucide-react';
 import { WhatsAppIcon } from '@/components/icons';
 import { toast } from 'sonner';
+import { useEditorStore } from '@/store/editor-store';
 
 export interface LeadItem {
   id: string;
@@ -38,51 +40,14 @@ export interface LeadItem {
   dateStr: string;
 }
 
-const INITIAL_MOCK_LEADS: LeadItem[] = [
-  {
-    id: 'lead-1',
-    name: 'احمد رفیق کاکر',
-    phone: '0789123456',
-    email: 'ahmad.rafiq@gmail.com',
-    message: 'سلام و احترام. در رابطه با خدمات مشاوره و سفارش 50 عدد کارت هوشمند برای شرکت‌مان می‌خواستم شرایط و پیش‌فاکتور را دریافت کنم.',
-    status: 'new',
-    dateStr: 'امروز - 10:45',
-  },
-  {
-    id: 'lead-2',
-    name: 'مریم حسینی',
-    phone: '0774567890',
-    email: 'm.hossaini@outlook.com',
-    message: 'با سلام، من در همایش کارآفرینی کابل با کارت شما آشنا شدم. مایل به همکاری در بخش دیجیتال مارکتینگ و فروش هستم.',
-    status: 'new',
-    dateStr: 'امروز - 08:20',
-  },
-  {
-    id: 'lead-3',
-    name: 'شرکت خدمات تجارتی کابل نوین',
-    phone: '0701239874',
-    email: 'info@kabul-novin.af',
-    message: 'جهت هماهنگی جلسه حضوری در دفتر کابل برای عقد قرارداد رسمی تامین تجهیزات لطفاً تماس بگیرید.',
-    status: 'contacted',
-    dateStr: 'دیروز - 16:30',
-  },
-  {
-    id: 'lead-4',
-    name: 'فرهاد نوری',
-    phone: '0799887766',
-    email: 'farhad.nouri@yahoo.com',
-    message: 'سلام روزتان بخیر، تعرفه طراحی کارت هوشمند با متریال چوب گردو و حک لوگو به صورت عمده چقدر است؟',
-    status: 'contacted',
-    dateStr: '3 روز قبل',
-  },
-];
-
 interface CrmLeadsTableProps {
   profileAlias?: string;
 }
 
 export const CrmLeadsTable: React.FC<CrmLeadsTableProps> = ({ profileAlias }) => {
-  const [leads, setLeads] = useState<LeadItem[]>(INITIAL_MOCK_LEADS);
+  const { unreadLeadsCount, setUnreadLeadsCount } = useEditorStore();
+  const [leads, setLeads] = useState<LeadItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'new' | 'contacted' | 'archived'>('all');
   const [selectedMessage, setSelectedMessage] = useState<LeadItem | null>(null);
@@ -95,31 +60,61 @@ export const CrmLeadsTable: React.FC<CrmLeadsTableProps> = ({ profileAlias }) =>
   // Load real leads from database on mount or profile change
   React.useEffect(() => {
     async function loadLeads() {
+      setIsLoading(true);
       try {
-        const url = profileAlias ? `/api/lead?profileAlias=${profileAlias}` : '/api/lead';
+        const url = profileAlias ? `/api/lead?profileAlias=${encodeURIComponent(profileAlias)}` : '/api/lead';
         const res = await fetch(url);
         const json = await res.json();
-        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+        if (json.success && Array.isArray(json.data)) {
           setLeads(json.data);
+          const unread = json.data.filter((l: LeadItem) => l.status === 'new').length;
+          setUnreadLeadsCount(unread);
+        } else {
+          setLeads([]);
+          setUnreadLeadsCount(0);
         }
       } catch (err) {
         console.error('Failed to load leads from database:', err);
+        setLeads([]);
+        setUnreadLeadsCount(0);
+      } finally {
+        setIsLoading(false);
       }
     }
     loadLeads();
-  }, [profileAlias]);
+  }, [profileAlias, setUnreadLeadsCount]);
 
   const handleCopyPhone = (phone: string) => {
     navigator.clipboard.writeText(phone);
     toast.success('شماره تماس در کلیپ‌بورد کپی شد', { description: phone });
   };
 
+  const handleOpenMessage = async (lead: LeadItem) => {
+    setSelectedMessage(lead);
+    if (lead.status === 'new') {
+      const updated = leads.map((l) => (l.id === lead.id ? { ...l, status: 'contacted' as const } : l));
+      setLeads(updated);
+      const unread = updated.filter((l) => l.status === 'new').length;
+      setUnreadLeadsCount(unread);
+      try {
+        await fetch('/api/lead', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: lead.id, status: 'contacted' }),
+        });
+      } catch (e) {
+        console.error('Error updating status on server:', e);
+      }
+    }
+  };
+
   const handleToggleStatus = async (id: string) => {
     const target = leads.find((l) => l.id === id);
     const nextStatus = target?.status === 'new' ? 'contacted' : 'new';
-    setLeads((prev) =>
-      prev.map((l) => (l.id === id ? { ...l, status: nextStatus } : l))
-    );
+    const updated = leads.map((l) => (l.id === id ? { ...l, status: nextStatus as const } : l));
+    setLeads(updated);
+    const unread = updated.filter((l) => l.status === 'new').length;
+    setUnreadLeadsCount(unread);
     toast.success(
       nextStatus === 'contacted' ? 'پیام به وضعیت «پاسخ داده شده» تغییر یافت' : 'پیام به وضعیت «جدید» تغییر یافت'
     );
@@ -135,7 +130,10 @@ export const CrmLeadsTable: React.FC<CrmLeadsTableProps> = ({ profileAlias }) =>
   };
 
   const handleDeleteLead = async (id: string) => {
-    setLeads((prev) => prev.filter((l) => l.id !== id));
+    const updated = leads.filter((l) => l.id !== id);
+    setLeads(updated);
+    const unread = updated.filter((l) => l.status === 'new').length;
+    setUnreadLeadsCount(unread);
     toast.success('پیام با موفقیت حذف شد');
     try {
       await fetch(`/api/lead?id=${id}`, { method: 'DELETE' });
@@ -282,7 +280,16 @@ export const CrmLeadsTable: React.FC<CrmLeadsTableProps> = ({ profileAlias }) =>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredLeads.length === 0 ? (
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
+                  <div className="flex flex-col items-center justify-center gap-2">
+                    <Loader2 className="w-6 h-6 text-cyan-500 animate-spin" />
+                    <span className="text-xs">در حال بارگذاری پیام‌ها...</span>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : filteredLeads.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
                   <div className="flex flex-col items-center justify-center gap-2">
@@ -295,7 +302,10 @@ export const CrmLeadsTable: React.FC<CrmLeadsTableProps> = ({ profileAlias }) =>
               filteredLeads.map((lead) => (
                 <TableRow key={lead.id} className="border-border hover:bg-muted/30 transition-colors">
                   {/* Sender Name */}
-                  <TableCell className="py-2.5 px-3 font-medium">
+                  <TableCell
+                    className="py-2.5 px-3 font-medium cursor-pointer"
+                    onClick={() => handleOpenMessage(lead)}
+                  >
                     <div className="flex items-center gap-2">
                       <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-cyan-500/20 to-blue-500/20 border border-cyan-500/30 flex items-center justify-center text-xs font-bold text-cyan-600 dark:text-cyan-400 shrink-0">
                         {lead.name.slice(0, 1)}
@@ -331,7 +341,7 @@ export const CrmLeadsTable: React.FC<CrmLeadsTableProps> = ({ profileAlias }) =>
                   {/* Message Preview */}
                   <TableCell className="py-2.5 px-3 hidden lg:table-cell max-w-[200px]">
                     <p
-                      onClick={() => setSelectedMessage(lead)}
+                      onClick={() => handleOpenMessage(lead)}
                       className="text-xs text-muted-foreground line-clamp-2 leading-relaxed cursor-pointer hover:text-foreground transition-colors whitespace-normal break-words"
                       title="کلیک برای مشاهده متن کامل پیام"
                     >

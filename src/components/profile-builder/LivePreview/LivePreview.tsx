@@ -53,6 +53,7 @@ import {
   SignalIcon,
 } from '@/components/icons';
 import { getSmartLink, formatDisplayValue } from '@/lib/smart-link';
+import { downloadVCard, convertToEnglishDigits } from '@/lib/generateVCard';
 import { LiveCountdown } from '@/components/ui/live-countdown';
 import { LiveBusinessHours } from '@/components/profile/LiveBusinessHours';
 import {
@@ -127,6 +128,10 @@ export const LivePreview: React.FC = () => {
   const [activeSocialDragId, setActiveSocialDragId] = useState<string | null>(null);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [copiedShareLink, setCopiedShareLink] = useState(false);
+  const [isLeadModalOpen, setIsLeadModalOpen] = useState(false);
+  const [leadName, setLeadName] = useState('');
+  const [leadPhone, setLeadPhone] = useState('');
+  const [isSubmittingLead, setIsSubmittingLead] = useState(false);
   const [locationShareModal, setLocationShareModal] = useState<{
     isOpen: boolean;
     url: string;
@@ -385,6 +390,71 @@ export const LivePreview: React.FC = () => {
       address,
       title: shareTitle,
     });
+  };
+
+  const handleSaveContact = () => {
+    try {
+      const filename = downloadVCard(profile);
+      toast.success(
+        isLtr
+          ? `Contact card saved (${filename})`
+          : isPashto
+            ? `د اړیکې کارت ډاونلوډ شو (${filename})`
+            : `فایل مخاطب با موفقیت ذخیره شد (${filename})`
+      );
+      // Simultaneously open Contact Exchange Lead Modal
+      setIsLeadModalOpen(true);
+    } catch (err) {
+      console.error('Failed to export vCard:', err);
+      toast.error(
+        isLtr
+          ? 'Failed to generate contact card'
+          : 'خطا در ایجاد و دانلود فایل مخاطب'
+      );
+    }
+  };
+
+  const handleSubmitLead = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!leadPhone.trim() && !leadName.trim()) {
+      toast.error('لطفاً حداقل شماره تماس یا نام خود را وارد کنید.');
+      return;
+    }
+
+    setIsSubmittingLead(true);
+    try {
+      const cleanPhone = convertToEnglishDigits(leadPhone.trim());
+      const cleanName = leadName.trim();
+
+      // Log Lead & Mock API submission
+      console.log('Lead captured via vCard exchange:', {
+        name: cleanName,
+        phone: cleanPhone,
+        profileAlias: profile.alias,
+        profileId: profile.id,
+        createdAt: new Date().toISOString(),
+      });
+
+      // Simulate network latency
+      await new Promise((resolve) => setTimeout(resolve, 350));
+
+      toast.success(
+        isLtr
+          ? 'Your information was submitted successfully!'
+          : isPashto
+            ? 'ستاسو معلومات په بریالیتوب سره ثبت شول!'
+            : 'اطلاعات شما با موفقیت ثبت شد'
+      );
+
+      setLeadName('');
+      setLeadPhone('');
+      setIsLeadModalOpen(false);
+    } catch (err) {
+      console.error('Failed to submit lead:', err);
+      toast.error('خطا در ثبت اطلاعات.');
+    } finally {
+      setIsSubmittingLead(false);
+    }
   };
 
   const resolveDisplayName =
@@ -650,8 +720,8 @@ export const LivePreview: React.FC = () => {
         <div
           key={link.id}
           className={`w-full rounded-2xl p-3 border transition-all ${isLight
-              ? 'bg-slate-100/90 border-slate-300 shadow-xs'
-              : 'bg-white/5 border-white/10 backdrop-blur-md'
+            ? 'bg-slate-100/90 border-slate-300 shadow-xs'
+            : 'bg-white/5 border-white/10 backdrop-blur-md'
             }`}
           style={customCardStyle}
         >
@@ -679,8 +749,8 @@ export const LivePreview: React.FC = () => {
                     handleModuleClick(child.id);
                   }}
                   className={`cursor-pointer transition-transform hover:scale-105 active:scale-95 ${activeModuleId === child.id
-                      ? 'ring-2 ring-cyan-400 ring-offset-2 ring-offset-slate-900 rounded-2xl shadow-md scale-105'
-                      : ''
+                    ? 'ring-2 ring-cyan-400 ring-offset-2 ring-offset-slate-900 rounded-2xl shadow-md scale-105'
+                    : ''
                     }`}
                   title={`ویرایش ماژول: ${child.title}`}
                 >
@@ -689,8 +759,8 @@ export const LivePreview: React.FC = () => {
                   ) : (
                     <div
                       className={`w-11 h-11 rounded-2xl flex items-center justify-center border shadow-xs ${isLight
-                          ? 'bg-white border-slate-200 text-slate-800'
-                          : 'bg-white/10 border-white/20 text-white'
+                        ? 'bg-white border-slate-200 text-slate-800'
+                        : 'bg-white/10 border-white/20 text-white'
                         }`}
                     >
                       <Link2 className="w-5 h-5 text-cyan-400" />
@@ -716,8 +786,8 @@ export const LivePreview: React.FC = () => {
                     handleModuleClick(child.id);
                   }}
                   className={`cursor-pointer transition-all ${activeModuleId === child.id
-                      ? 'ring-2 ring-cyan-400 ring-offset-2 ring-offset-slate-900 rounded-2xl shadow-md'
-                      : ''
+                    ? 'ring-2 ring-cyan-400 ring-offset-2 ring-offset-slate-900 rounded-2xl shadow-md'
+                    : ''
                     }`}
                 >
                   {renderModuleCard(child)}
@@ -750,8 +820,18 @@ export const LivePreview: React.FC = () => {
             }`}
           style={customCardStyle}
         >
-          {link.title && <h3 className="text-xs font-bold mb-1 opacity-90">{link.title}</h3>}
-          <p className="text-[11px] leading-relaxed opacity-85 whitespace-pre-wrap font-sans">
+          {link.title && (
+            <h3
+              className="font-bold mb-1 opacity-90"
+              style={{ fontSize: 'calc(var(--dynamic-base-size) * 1.05)' }}
+            >
+              {link.title}
+            </h3>
+          )}
+          <p
+            className="leading-relaxed opacity-85 whitespace-pre-wrap font-sans"
+            style={{ fontSize: 'calc(var(--dynamic-base-size) * 0.9)' }}
+          >
             {meta.simpleTextContent || 'متن پیش‌فرض'}
           </p>
         </div>
@@ -985,10 +1065,16 @@ export const LivePreview: React.FC = () => {
               </div>
             )}
             <div className="min-w-0">
-              <span className={`text-xs font-bold block truncate ${isLight ? 'text-slate-900' : 'text-white'}`}>
+              <span
+                className={`font-bold block truncate ${isLight ? 'text-slate-900' : 'text-white'}`}
+                style={{ fontSize: 'calc(var(--dynamic-base-size) * 0.95)' }}
+              >
                 {link.title || meta.productTitle}
               </span>
-              <span className="text-xs font-sans font-bold text-cyan-600 dark:text-cyan-400 mt-0.5 block">
+              <span
+                className="font-sans font-bold text-cyan-600 dark:text-cyan-400 mt-0.5 block"
+                style={{ fontSize: 'calc(var(--dynamic-base-size) * 0.85)' }}
+              >
                 {meta.productPrice?.toLocaleString('en-US') || '0'} {meta.productCurrency || 'AFN'}
               </span>
             </div>
@@ -1022,10 +1108,16 @@ export const LivePreview: React.FC = () => {
               <DollarSign className="w-5 h-5" />
             </div>
             <div className="min-w-0">
-              <span className={`text-xs font-bold block truncate ${isLight ? 'text-slate-900' : 'text-white'}`}>
+              <span
+                className={`font-bold block truncate ${isLight ? 'text-slate-900' : 'text-white'}`}
+                style={{ fontSize: 'calc(var(--dynamic-base-size) * 0.95)' }}
+              >
                 {link.title || meta.checkoutItemName}
               </span>
-              <span className="text-xs font-sans font-bold text-emerald-600 dark:text-emerald-400 mt-0.5 block">
+              <span
+                className="font-sans font-bold text-emerald-600 dark:text-emerald-400 mt-0.5 block"
+                style={{ fontSize: 'calc(var(--dynamic-base-size) * 0.85)' }}
+              >
                 {meta.checkoutAmount?.toLocaleString('en-US') || '500'} {meta.paymentCurrency || 'AFN'}
               </span>
             </div>
@@ -1334,7 +1426,7 @@ export const LivePreview: React.FC = () => {
         }}
         target={adv.openInNewTab === false || link.url.startsWith('tel:') || link.url.startsWith('mailto:') || link.url.startsWith('#') ? '_self' : '_blank'}
         rel="noopener noreferrer"
-        className={`w-full flex items-center justify-between gap-3 text-right shadow-sm cursor-pointer transition-all duration-200 ${cardShape} ${cardSize} ${cardBorderWidth} ${animClass} ${isLight
+        className={`w-full flex items-center justify-between gap-3 text-right shadow-sm cursor-pointer overflow-hidden transition-all duration-200 ${cardShape} ${cardSize} ${cardBorderWidth} ${animClass} ${isLight
           ? 'bg-white/95 border-slate-200 hover:border-slate-300 hover:bg-white shadow-sm'
           : themeConfig.cardBlur
           }`}
@@ -1380,7 +1472,10 @@ export const LivePreview: React.FC = () => {
 
           <div className="truncate">
             <div className="flex items-center gap-1.5">
-              <span className={`text-xs font-bold block truncate ${isLight ? 'text-slate-900' : 'text-white'}`}>
+              <span
+                className={`font-bold block truncate ${isLight ? 'text-slate-900' : 'text-white'}`}
+                style={{ fontSize: 'calc(var(--dynamic-base-size) * 0.95)' }}
+              >
                 {link.title}
               </span>
               {lock?.isLocked && (
@@ -1391,8 +1486,9 @@ export const LivePreview: React.FC = () => {
               )}
             </div>
             <span
-              className={`text-[11px] font-sans font-medium tracking-wide truncate block mt-0.5 ${isLight ? 'text-slate-500' : 'text-slate-300/80'
+              className={`font-sans font-medium tracking-wide truncate block mt-0.5 ${isLight ? 'text-slate-500' : 'text-slate-300/80'
                 }`}
+              style={{ fontSize: 'calc(var(--dynamic-base-size) * 0.8)' }}
               dir="ltr"
             >
               {formatDisplayValue(link.url)}
@@ -1424,8 +1520,8 @@ export const LivePreview: React.FC = () => {
             setDevice('iphone');
           }}
           className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${previewTab === 'iphone'
-              ? 'bg-cyan-500 text-slate-950 font-bold shadow-md shadow-cyan-500/30'
-              : 'text-muted-foreground hover:text-foreground'
+            ? 'bg-cyan-500 text-slate-950 font-bold shadow-md shadow-cyan-500/30'
+            : 'text-muted-foreground hover:text-foreground'
             }`}
         >
           iPhone
@@ -1436,8 +1532,8 @@ export const LivePreview: React.FC = () => {
             setDevice('android');
           }}
           className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${previewTab === 'android'
-              ? 'bg-cyan-500 text-slate-950 font-bold shadow-md shadow-cyan-500/30'
-              : 'text-muted-foreground hover:text-foreground'
+            ? 'bg-cyan-500 text-slate-950 font-bold shadow-md shadow-cyan-500/30'
+            : 'text-muted-foreground hover:text-foreground'
             }`}
         >
           Android
@@ -1445,8 +1541,8 @@ export const LivePreview: React.FC = () => {
         <button
           onClick={() => setPreviewTab('qr')}
           className={`px-3 py-1 rounded-full text-xs font-medium transition-all flex items-center gap-1.5 ${previewTab === 'qr'
-              ? 'bg-cyan-500 text-slate-950 font-bold shadow-md shadow-cyan-500/30'
-              : 'text-muted-foreground hover:text-foreground'
+            ? 'bg-cyan-500 text-slate-950 font-bold shadow-md shadow-cyan-500/30'
+            : 'text-muted-foreground hover:text-foreground'
             }`}
         >
           <QrCode className="w-3.5 h-3.5" />
@@ -1456,7 +1552,7 @@ export const LivePreview: React.FC = () => {
 
       {previewTab === 'qr' ? (
         /* Dedicated QR Code Generator Component */
-        <div className="relative w-[340px] bg-card/95 backdrop-blur-xl border border-border rounded-[34px] p-6 shadow-2xl space-y-4 flex flex-col items-center animate-in zoom-in-95 duration-200 text-center select-text" dir="rtl">
+        <div className="relative w-[340px] bg-card border border-border rounded-[34px] p-6 space-y-4 flex flex-col items-center animate-in zoom-in-95 duration-200 text-center select-text" dir="rtl">
           {/* Header */}
           <div className="space-y-1">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 text-xs font-bold border border-cyan-500/20 mb-1">
@@ -1472,7 +1568,7 @@ export const LivePreview: React.FC = () => {
           </div>
 
           {/* QR Display Container */}
-          <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-md flex flex-col items-center justify-center relative">
+          <div className="p-4 bg-white rounded-2xl border border-slate-200 flex flex-col items-center justify-center relative">
             <QRCodeCanvas
               id="profile-qr-canvas"
               value={`https://aryal.ink/${profile.alias}`}
@@ -1589,9 +1685,11 @@ export const LivePreview: React.FC = () => {
           <div
             className={`w-full h-full overflow-hidden flex flex-col relative transition-all duration-300 ${previewFontClass} ${selectedDeviceId === 'iphone' ? 'rounded-[44px]' : 'rounded-[24px]'
               }`}
+            data-font={isLtr ? (themeConfig.fontEn || 'inter') : (themeConfig.fontFa || 'vazirmatn')}
             style={{
               background: isLight ? 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%)' : themeConfig.backgroundColor,
               fontSize: `${previewFontSize}px`,
+              ['--dynamic-base-size' as any]: `${previewFontSize}px`,
             }}
             dir={isLtr ? 'ltr' : 'rtl'}
           >
@@ -1653,22 +1751,28 @@ export const LivePreview: React.FC = () => {
 
                     {/* Display Name, Headline, Bio */}
                     <div className="px-4 w-full">
-                      <h2 className={`text-base font-bold tracking-tight flex items-center justify-center gap-1.5 ${isLight ? 'text-slate-900' : 'text-white'
-                        }`}>
+                      <h2
+                        className={`font-bold tracking-tight flex items-center justify-center gap-1.5 ${isLight ? 'text-slate-900' : 'text-white'}`}
+                        style={{ fontSize: 'calc(var(--dynamic-base-size) * 1.15)' }}
+                      >
                         <span>{resolveDisplayName || 'نام شما'}</span>
                         {isVerifiedApproved && (
                           <BadgeCheck className="w-4 h-4 text-white fill-sky-500 drop-shadow-sm shrink-0" />
                         )}
                       </h2>
 
-                      <p className={`text-xs font-semibold mt-0.5 ${isLight ? 'text-blue-600' : 'text-cyan-300/90'
-                        }`}>
+                      <p
+                        className={`font-semibold mt-0.5 ${isLight ? 'text-blue-600' : 'text-cyan-300/90'}`}
+                        style={{ fontSize: 'calc(var(--dynamic-base-size) * 0.95)' }}
+                      >
                         {resolveHeadline || (isLtr ? 'Job Title / Profession' : 'عنوان شغلی / تخصص')}
                       </p>
 
                       {resolveBio && (
-                        <p className={`text-[11px] mt-2 leading-relaxed max-w-[260px] mx-auto ${isLight ? 'text-slate-600' : 'text-slate-300/80'
-                          }`}>
+                        <p
+                          className={`mt-2 leading-relaxed max-w-[260px] mx-auto ${isLight ? 'text-slate-600' : 'text-slate-300/80'}`}
+                          style={{ fontSize: 'calc(var(--dynamic-base-size) * 0.85)' }}
+                        >
                           {resolveBio}
                         </p>
                       )}
@@ -1710,20 +1814,26 @@ export const LivePreview: React.FC = () => {
 
                       {/* Name and Bio next to it */}
                       <div className="flex-1 min-w-0">
-                        <h2 className={`text-sm font-bold tracking-tight truncate flex items-center gap-1 ${isLight ? 'text-slate-900' : 'text-white'
-                          }`}>
+                        <h2
+                          className={`font-bold tracking-tight truncate flex items-center gap-1 ${isLight ? 'text-slate-900' : 'text-white'}`}
+                          style={{ fontSize: 'calc(var(--dynamic-base-size) * 1.1)' }}
+                        >
                           <span className="truncate">{resolveDisplayName || 'نام شما'}</span>
                           {isVerifiedApproved && (
                             <BadgeCheck className="w-3.5 h-3.5 text-white fill-sky-500 drop-shadow-sm shrink-0" />
                           )}
                         </h2>
-                        <p className={`text-[11px] font-semibold truncate ${isLight ? 'text-blue-600' : 'text-cyan-300'
-                          }`}>
+                        <p
+                          className={`font-semibold truncate ${isLight ? 'text-blue-600' : 'text-cyan-300'}`}
+                          style={{ fontSize: 'calc(var(--dynamic-base-size) * 0.9)' }}
+                        >
                           {resolveHeadline || (isLtr ? 'Job Title / Profession' : 'عنوان شغلی / تخصص')}
                         </p>
                         {resolveBio && (
-                          <p className={`text-[10px] line-clamp-2 mt-0.5 leading-snug ${isLight ? 'text-slate-600' : 'text-slate-300/80'
-                            }`}>
+                          <p
+                            className={`line-clamp-2 mt-0.5 leading-snug ${isLight ? 'text-slate-600' : 'text-slate-300/80'}`}
+                            style={{ fontSize: 'calc(var(--dynamic-base-size) * 0.8)' }}
+                          >
                             {resolveBio}
                           </p>
                         )}
@@ -1761,8 +1871,10 @@ export const LivePreview: React.FC = () => {
                     </div>
 
                     {/* Display Name */}
-                    <h2 className={`text-base font-bold tracking-tight flex items-center justify-center gap-1.5 ${isLight ? 'text-slate-900' : 'text-white'
-                      }`}>
+                    <h2
+                      className={`font-bold tracking-tight flex items-center justify-center gap-1.5 ${isLight ? 'text-slate-900' : 'text-white'}`}
+                      style={{ fontSize: 'calc(var(--dynamic-base-size) * 1.15)' }}
+                    >
                       <span>{resolveDisplayName || 'نام شما'}</span>
                       {isVerifiedApproved && (
                         <BadgeCheck className="w-4 h-4 text-white fill-sky-500 drop-shadow-sm shrink-0" />
@@ -1770,15 +1882,19 @@ export const LivePreview: React.FC = () => {
                     </h2>
 
                     {/* Headline */}
-                    <p className={`text-xs font-semibold mt-0.5 ${isLight ? 'text-blue-600' : 'text-cyan-300/90'
-                      }`}>
+                    <p
+                      className={`font-semibold mt-0.5 ${isLight ? 'text-blue-600' : 'text-cyan-300/90'}`}
+                      style={{ fontSize: 'calc(var(--dynamic-base-size) * 0.95)' }}
+                    >
                       {resolveHeadline || (isLtr ? 'Job Title / Profession' : 'عنوان شغلی / تخصص')}
                     </p>
 
                     {/* Bio */}
                     {resolveBio && (
-                      <p className={`text-[11px] mt-2 leading-relaxed max-w-[260px] ${isLight ? 'text-slate-600' : 'text-slate-300/80'
-                        }`}>
+                      <p
+                        className={`mt-2 leading-relaxed max-w-[260px] ${isLight ? 'text-slate-600' : 'text-slate-300/80'}`}
+                        style={{ fontSize: 'calc(var(--dynamic-base-size) * 0.85)' }}
+                      >
                         {resolveBio}
                       </p>
                     )}
@@ -1910,11 +2026,11 @@ export const LivePreview: React.FC = () => {
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        toast.info('این دکمه در پیش‌نمایش شبیه‌سازی است. در صفحه زنده، فایل vCard مخاطب دانلود و در تلفن ذخیره می‌شود.');
+                        handleSaveContact();
                       }}
                       className={`py-2.5 px-3 rounded-2xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-md border border-white/20 transition-all cursor-pointer select-none ${isLight
-                          ? 'bg-slate-900 text-white hover:bg-slate-800'
-                          : 'bg-white/10 hover:bg-white/20 text-white backdrop-blur-md'
+                        ? 'bg-slate-900 text-white hover:bg-slate-800'
+                        : 'bg-white/10 hover:bg-white/20 text-white backdrop-blur-md'
                         }`}
                       style={
                         !isLight && themeConfig.primaryColor
@@ -2025,8 +2141,8 @@ export const LivePreview: React.FC = () => {
                     }
                   }}
                   className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 ${copiedShareLink
-                      ? 'bg-emerald-500 text-slate-950 shadow-xs'
-                      : 'bg-cyan-500 hover:bg-cyan-400 text-slate-950 shadow-xs'
+                    ? 'bg-emerald-500 text-slate-950 shadow-xs'
+                    : 'bg-cyan-500 hover:bg-cyan-400 text-slate-950 shadow-xs'
                     }`}
                 >
                   {copiedShareLink ? (
@@ -2129,8 +2245,8 @@ export const LivePreview: React.FC = () => {
                     }
                   }}
                   className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 shrink-0 ${copiedLocationLink
-                      ? 'bg-emerald-500 text-slate-950 shadow-xs'
-                      : 'bg-violet-600 hover:bg-violet-500 text-white shadow-xs'
+                    ? 'bg-emerald-500 text-slate-950 shadow-xs'
+                    : 'bg-violet-600 hover:bg-violet-500 text-white shadow-xs'
                     }`}
                 >
                   {copiedLocationLink ? (
@@ -2181,6 +2297,107 @@ export const LivePreview: React.FC = () => {
               </div>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Contact Exchange Lead Modal (Frictionless vCard Lead Capture - Stage 72) */}
+      <Dialog
+        open={isLeadModalOpen}
+        onOpenChange={(open) => {
+          setIsLeadModalOpen(open);
+          if (!open) {
+            setLeadName('');
+            setLeadPhone('');
+          }
+        }}
+      >
+        <DialogContent className="max-w-md w-[92vw] sm:w-full rounded-3xl bg-slate-900/95 border border-white/10 backdrop-blur-2xl p-6 text-center text-white shadow-2xl overflow-hidden relative">
+          {/* Ambient Lighting Accents */}
+          <div className="absolute -top-16 -right-16 w-36 h-36 bg-cyan-500/20 rounded-full blur-2xl pointer-events-none" />
+          <div className="absolute -bottom-16 -left-16 w-36 h-36 bg-emerald-500/20 rounded-full blur-2xl pointer-events-none" />
+
+          <DialogHeader className="space-y-2 pb-3 border-b border-white/10 text-center relative z-10">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 flex items-center justify-center mx-auto shadow-md">
+              <CheckCircle2 className="w-6 h-6 animate-in zoom-in duration-300" />
+            </div>
+            <DialogTitle className="text-base sm:text-lg font-bold text-white flex items-center justify-center gap-1.5">
+              <span>کارت در حال دانلود است...</span>
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-300 leading-relaxed max-w-sm mx-auto">
+              {`برای تعامل بهتر و پشتیبانی سریع‌تر، می‌توانید شماره تماس خود را نیز با ${resolveDisplayName || profile.displayName || 'صاحب پروفایل'} به اشتراک بگذارید (اختیاری).`}
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleSubmitLead} className="space-y-4 pt-3 text-right relative z-10 font-sans">
+            {/* Full Name Field */}
+            <div className="space-y-1.5">
+              <label className="block text-xs font-medium text-slate-200">
+                نام و نام خانوادگی
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={leadName}
+                  onChange={(e) => setLeadName(e.target.value)}
+                  placeholder="مثال: احمد رحیمی"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-cyan-400 focus:bg-white/10 transition-all font-sans"
+                />
+                <User className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+            </div>
+
+            {/* Phone Number Field (Strict English Digits via convertToEnglishDigits) */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-medium text-slate-200">
+                  شماره تماس
+                </label>
+                <span className="text-[10px] text-cyan-400 font-sans">
+                  (ارقام انگلیسی)
+                </span>
+              </div>
+              <div className="relative">
+                <input
+                  type="tel"
+                  value={leadPhone}
+                  onChange={(e) => {
+                    const converted = convertToEnglishDigits(e.target.value);
+                    setLeadPhone(converted);
+                  }}
+                  placeholder="0700 000 000"
+                  dir="ltr"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-left font-sans text-white placeholder-slate-400 focus:outline-none focus:border-cyan-400 focus:bg-white/10 tracking-wider transition-all"
+                />
+                <Phone className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row items-center gap-2 pt-2">
+              <button
+                type="submit"
+                disabled={isSubmittingLead}
+                className="w-full sm:flex-1 py-2.5 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold text-xs shadow-lg shadow-cyan-500/25 flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer disabled:opacity-60"
+              >
+                {isSubmittingLead ? (
+                  <span>در حال ارسال...</span>
+                ) : (
+                  <>
+                    <Send className="w-3.5 h-3.5" />
+                    <span>ثبت و ارسال اطلاعات</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsLeadModalOpen(false)}
+                className="w-full sm:w-auto py-2.5 px-4 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/10 text-xs font-semibold transition-all active:scale-95 cursor-pointer"
+              >
+                بستن
+              </button>
+            </div>
+          </form>
         </DialogContent>
       </Dialog>
     </div>
