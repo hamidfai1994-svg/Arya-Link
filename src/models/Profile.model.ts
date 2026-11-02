@@ -108,13 +108,20 @@ const ProfileThemeConfigSchema = new Schema(
     backgroundType: { type: String, enum: ['solid', 'gradient', 'pattern'], default: 'gradient' },
     buttonBorderStyle: { type: String, enum: ['none', 'solid', 'dashed'], default: 'solid' },
     buttonShadowStyle: { type: String, enum: ['none', 'sm', 'md', 'glow'], default: 'sm' },
+    buttonShape: { type: String, default: 'soft' },
+    buttonSize: { type: String, default: 'md' },
+    buttonBorderWidth: { type: String, default: 'thin' },
+    buttonBorderColor: { type: String },
+    buttonBgColor: { type: String },
+    buttonTextColor: { type: String },
+    compactSocialIcons: { type: Boolean, default: true },
     fontFa: { type: String, default: 'vazirmatn' },
     fontEn: { type: String, default: 'inter' },
     fontSizeDari: { type: Number, default: 15 },
     fontSizePashto: { type: Number, default: 15 },
     fontSizeEn: { type: Number, default: 14 },
   },
-  { _id: false }
+  { _id: false, strict: false }
 );
 
 const ProfileSchema = new Schema<IProfileDocument>(

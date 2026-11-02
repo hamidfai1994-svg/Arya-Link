@@ -45,7 +45,167 @@ import {
   Type,
   FolderPlus,
   ChevronDown,
+  Undo2,
 } from 'lucide-react';
+
+const DEFAULT_PRESET_COLORS = [
+  '#0ea5e9', '#06b6d4', '#3b82f6', '#6366f1',
+  '#8b5cf6', '#ec4899', '#f43f5e', '#10b981',
+  '#f59e0b', '#ffffff', '#94a3b8', '#090d16',
+];
+
+interface ConfirmableColorPickerProps {
+  label: string;
+  value: string;
+  onChange: (color: string) => void;
+  presetColors?: string[];
+}
+
+const ConfirmableColorPicker: React.FC<ConfirmableColorPickerProps> = ({
+  label,
+  value,
+  onChange,
+  presetColors = DEFAULT_PRESET_COLORS,
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [tempColor, setTempColor] = useState(value || '#0ea5e9');
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setTempColor(value || '#0ea5e9');
+    }
+  }, [value, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setTempColor(value || '#0ea5e9');
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen, value]);
+
+  const handleConfirm = () => {
+    onChange(tempColor);
+    setIsOpen(false);
+  };
+
+  const handleCancel = () => {
+    setTempColor(value || '#0ea5e9');
+    setIsOpen(false);
+  };
+
+  return (
+    <div ref={containerRef} className="relative p-3 rounded-xl border border-border bg-muted/20 space-y-2">
+      <div className="flex items-center justify-between">
+        <label className="block text-xs font-bold text-foreground">
+          {label}
+        </label>
+        <button
+          type="button"
+          onClick={() => {
+            if (!isOpen) {
+              setTempColor(value || '#0ea5e9');
+              setIsOpen(true);
+            } else {
+              handleCancel();
+            }
+          }}
+          className="text-[11px] font-semibold text-cyan-500 hover:text-cyan-400 flex items-center gap-1 transition-colors cursor-pointer"
+        >
+          {isOpen ? 'بستن' : 'تغییر رنگ'}
+        </button>
+      </div>
+
+      <div className="flex items-center gap-2.5">
+        <button
+          type="button"
+          onClick={() => {
+            setTempColor(value || '#0ea5e9');
+            setIsOpen(true);
+          }}
+          className="w-9 h-9 rounded-xl border border-border shadow-xs shrink-0 cursor-pointer flex items-center justify-center transition-transform active:scale-95 overflow-hidden"
+          style={{ backgroundColor: value || '#0ea5e9' }}
+          title="کلیک برای انتخاب رنگ"
+        />
+        <div
+          onClick={() => {
+            setTempColor(value || '#0ea5e9');
+            setIsOpen(true);
+          }}
+          className="flex-1 bg-background border border-border rounded-xl px-3 py-1.5 text-xs font-sans text-foreground flex items-center justify-between cursor-pointer hover:border-cyan-500/50 transition-colors uppercase select-none"
+        >
+          <span>{value || '#0ea5e9'}</span>
+          <span className="w-2.5 h-2.5 rounded-full border border-border/40" style={{ backgroundColor: value || '#0ea5e9' }} />
+        </div>
+      </div>
+
+      {isOpen && (
+        <div className="absolute left-0 right-0 top-full mt-2 z-40 bg-card border border-border rounded-2xl p-3.5 shadow-2xl space-y-3 animate-in fade-in zoom-in-95 duration-150">
+          <div className="flex items-center gap-2.5">
+            <div className="relative w-10 h-10 rounded-xl overflow-hidden border border-border shadow-xs shrink-0">
+              <input
+                type="color"
+                value={tempColor}
+                onChange={(e) => setTempColor(e.target.value)}
+                className="absolute -top-2 -left-2 w-16 h-16 cursor-pointer border-0 p-0"
+              />
+            </div>
+            <input
+              type="text"
+              value={tempColor}
+              onChange={(e) => setTempColor(e.target.value)}
+              placeholder="#000000"
+              dir="ltr"
+              className="flex-1 bg-background border border-border rounded-xl px-3 py-2 text-xs font-sans text-foreground focus:outline-none focus:border-cyan-500 uppercase"
+            />
+          </div>
+
+          <div className="space-y-1">
+            <span className="text-[10px] text-muted-foreground block text-right font-medium">پالت‌های سریع:</span>
+            <div className="flex flex-wrap gap-1.5">
+              {presetColors.map((hex) => (
+                <button
+                  key={hex}
+                  type="button"
+                  onClick={() => setTempColor(hex)}
+                  className={`w-5 h-5 rounded-lg border transition-transform active:scale-90 cursor-pointer ${
+                    tempColor.toLowerCase() === hex.toLowerCase()
+                      ? 'ring-2 ring-cyan-500 scale-110 border-white'
+                      : 'border-border/60 hover:scale-105'
+                  }`}
+                  style={{ backgroundColor: hex }}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 pt-1 border-t border-border">
+            <button
+              type="button"
+              onClick={handleConfirm}
+              className="flex-1 py-1.5 px-3 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-xs flex items-center justify-center gap-1 shadow-xs transition-all active:scale-95 cursor-pointer"
+            >
+              <Check className="w-3.5 h-3.5" />
+              <span>تایید</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleCancel}
+              className="py-1.5 px-3 rounded-lg bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground text-xs font-semibold border border-border transition-all active:scale-95 cursor-pointer"
+            >
+              لغو
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const getFontFamilyStyle = (fontKey?: string) => {
   switch (fontKey) {
@@ -122,12 +282,31 @@ export const ProfileEditor: React.FC = () => {
   const [isProfileInfoExpanded, setIsProfileInfoExpanded] = useState(false);
   const [isSavingTheme, setIsSavingTheme] = useState(false);
 
+  // Theme snapshot for "لغو تغییرات"
+  const themeSnapshotRef = useRef<ProfileThemeConfig | null>(null);
+
+  useEffect(() => {
+    if (activeTab === 'appearance' && !themeSnapshotRef.current && profile.themeConfig) {
+      themeSnapshotRef.current = JSON.parse(JSON.stringify(profile.themeConfig));
+    }
+  }, [activeTab, profile.themeConfig]);
+
+  const handleCancelTheme = () => {
+    if (themeSnapshotRef.current) {
+      updateTheme(themeSnapshotRef.current);
+      toast.info('تغییرات طراحی لغو شد و به حالت ذخیره‌شده بازگشت.');
+    } else {
+      toast.info('تغییری برای لغو وجود ندارد.');
+    }
+  };
+
   const handleSaveTheme = async () => {
     setIsSavingTheme(true);
     const toastId = toast.loading('در حال ذخیره تغییرات تم...');
     try {
       const res = await saveProfileData();
       if (res.success) {
+        themeSnapshotRef.current = JSON.parse(JSON.stringify(profile.themeConfig));
         toast.success('تغییرات طراحی و تم با موفقیت ذخیره شد.', { id: toastId });
       } else {
         toast.error(res.message || 'خطا در ذخیره‌سازی تم.', { id: toastId });
@@ -286,9 +465,8 @@ export const ProfileEditor: React.FC = () => {
 
   return (
     <div
-      className={`flex flex-col h-full bg-card text-foreground border-l border-border w-full shadow-2xl overflow-hidden font-sans transition-all duration-200 ${
-        activeTab === 'crm' ? 'max-w-none' : 'max-w-2xl mx-auto'
-      }`}
+      className={`flex flex-col h-full bg-card text-foreground border-l border-border w-full shadow-2xl overflow-hidden font-sans transition-all duration-200 ${activeTab === 'crm' ? 'max-w-none' : 'max-w-2xl mx-auto'
+        }`}
       dir="rtl"
     >
       {/* Editor Header (Cleaned up, single source of truth for URL in sidebar, no auto-save badge) */}
@@ -417,11 +595,10 @@ export const ProfileEditor: React.FC = () => {
                     }
                     setIsProfileInfoExpanded(!isProfileInfoExpanded);
                   }}
-                  className={`px-3 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm ${
-                    isProfileInfoExpanded
-                      ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-600 dark:text-cyan-400'
-                      : 'bg-card hover:bg-muted border-border text-foreground'
-                  }`}
+                  className={`px-3 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm ${isProfileInfoExpanded
+                    ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-600 dark:text-cyan-400'
+                    : 'bg-card hover:bg-muted border-border text-foreground'
+                    }`}
                 >
                   <Sliders className="w-3.5 h-3.5 text-cyan-500" />
                   <span>{isProfileInfoExpanded ? 'بستن فرم' : 'ویرایش اطلاعات پروفایل'}</span>
@@ -650,9 +827,7 @@ export const ProfileEditor: React.FC = () => {
                     <span className="w-2 h-2 rounded-full bg-cyan-500"></span>
                     ماژول‌ها و دکمه‌های کارت ({profile.links.length})
                   </h2>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">
-                    هر تغییری در لحظه روی موبایل شبیه‌ساز سمت راست نمایش داده می‌شود.
-                  </p>
+
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -719,24 +894,37 @@ export const ProfileEditor: React.FC = () => {
                 </p>
               </div>
 
-              <button
-                type="button"
-                onClick={handleSaveTheme}
-                disabled={isSavingTheme}
-                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold text-xs shadow-md shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer shrink-0 disabled:opacity-60"
-              >
-                {isSavingTheme ? (
-                  <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    <span>در حال ذخیره...</span>
-                  </>
-                ) : (
-                  <>
-                    <CheckCheck className="w-3.5 h-3.5" />
-                    <span>ذخیره تغییرات تم</span>
-                  </>
-                )}
-              </button>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={handleCancelTheme}
+                  disabled={isSavingTheme}
+                  className="px-3.5 py-2.5 rounded-xl bg-background hover:bg-muted border border-border text-muted-foreground hover:text-foreground font-semibold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+                  title="بازگرداندن تغییرات به آخرین وضعیت ذخیره‌شده"
+                >
+                  <Undo2 className="w-3.5 h-3.5" />
+                  <span>لغو تغییرات</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleSaveTheme}
+                  disabled={isSavingTheme}
+                  className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold text-xs shadow-md shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer shrink-0 disabled:opacity-60"
+                >
+                  {isSavingTheme ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>در حال ذخیره...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCheck className="w-3.5 h-3.5" />
+                      <span>تایید و ذخیره</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
 
             <Accordion type="single" collapsible defaultValue="templates" className="space-y-3">
@@ -818,8 +1006,21 @@ export const ProfileEditor: React.FC = () => {
                         <button
                           key={bg.id}
                           type="button"
-                          onClick={() => updateTheme({ backgroundType: bg.id as any })}
-                          className={`py-2 px-2.5 rounded-xl text-xs font-semibold border transition-all ${(profile.themeConfig.backgroundType || 'gradient') === bg.id
+                          onClick={() => {
+                            let newBg = profile.themeConfig.backgroundColor;
+                            const isLgt = profile.themeConfig.preset === 'minimal_light';
+                            if (bg.id === 'solid') {
+                              newBg = isLgt ? '#f8fafc' : '#090d16';
+                            } else if (bg.id === 'gradient') {
+                              newBg = isLgt
+                                ? 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%)'
+                                : 'linear-gradient(135deg, #090d16 0%, #0f172a 50%, #1e1b4b 100%)';
+                            } else if (bg.id === 'pattern') {
+                              newBg = isLgt ? '#f1f5f9' : '#090d16';
+                            }
+                            updateTheme({ backgroundType: bg.id as any, backgroundColor: newBg });
+                          }}
+                          className={`py-2 px-2.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${(profile.themeConfig.backgroundType || 'gradient') === bg.id
                             ? 'bg-cyan-500 text-slate-950 font-bold border-cyan-400 shadow-md shadow-cyan-500/20'
                             : 'bg-muted/40 border-border text-foreground hover:bg-muted'
                             }`}
@@ -909,11 +1110,10 @@ export const ProfileEditor: React.FC = () => {
                             key={item.id}
                             type="button"
                             onClick={() => updateTheme({ buttonShape: item.id as any })}
-                            className={`p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all ${
-                              isSelected
-                                ? 'bg-cyan-500/15 border-cyan-500 text-cyan-500 ring-2 ring-cyan-500/30 font-bold shadow-sm'
-                                : 'bg-muted/40 border-border text-muted-foreground hover:text-foreground hover:bg-muted/70'
-                            }`}
+                            className={`p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all ${isSelected
+                              ? 'bg-cyan-500/15 border-cyan-500 text-cyan-500 ring-2 ring-cyan-500/30 font-bold shadow-sm'
+                              : 'bg-muted/40 border-border text-muted-foreground hover:text-foreground hover:bg-muted/70'
+                              }`}
                           >
                             <div className="h-5 flex items-center justify-center">{item.renderIcon()}</div>
                             <span className="text-[10px] leading-tight block truncate w-full text-center">
@@ -951,80 +1151,26 @@ export const ProfileEditor: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* 3. رنگ متن دکمه (Color Swatch + Hex Input) */}
-                  <div className="p-3 rounded-xl border border-border bg-muted/20 space-y-2">
-                    <label className="block text-xs font-bold text-foreground">
-                      رنگ متن دکمه
-                    </label>
-                    <div className="flex items-center gap-2.5">
-                      <div className="relative w-9 h-9 rounded-xl overflow-hidden border border-border shadow-xs shrink-0">
-                        <input
-                          type="color"
-                          value={profile.themeConfig.buttonTextColor || '#ffffff'}
-                          onChange={(e) => updateTheme({ buttonTextColor: e.target.value })}
-                          className="absolute -top-2 -left-2 w-14 h-14 cursor-pointer border-0 p-0"
-                        />
-                      </div>
-                      <input
-                        type="text"
-                        value={profile.themeConfig.buttonTextColor || '#ffffff'}
-                        onChange={(e) => updateTheme({ buttonTextColor: e.target.value })}
-                        placeholder="#ffffff"
-                        dir="ltr"
-                        className="flex-1 bg-background border border-border rounded-xl px-3 py-1.5 text-xs font-sans text-foreground focus:outline-none focus:border-cyan-500 uppercase"
-                      />
-                    </div>
-                  </div>
+                  {/* 3. رنگ متن دکمه (Confirmable Color Picker) */}
+                  <ConfirmableColorPicker
+                    label="رنگ متن دکمه"
+                    value={profile.themeConfig.buttonTextColor || '#ffffff'}
+                    onChange={(color) => updateTheme({ buttonTextColor: color })}
+                  />
 
-                  {/* 4. رنگ پس‌زمینه دکمه (Color Swatch + Hex Input) */}
-                  <div className="p-3 rounded-xl border border-border bg-muted/20 space-y-2">
-                    <label className="block text-xs font-bold text-foreground">
-                      رنگ پس زمینه دکمه
-                    </label>
-                    <div className="flex items-center gap-2.5">
-                      <div className="relative w-9 h-9 rounded-xl overflow-hidden border border-border shadow-xs shrink-0">
-                        <input
-                          type="color"
-                          value={profile.themeConfig.buttonBgColor || '#0ea5e9'}
-                          onChange={(e) => updateTheme({ buttonBgColor: e.target.value })}
-                          className="absolute -top-2 -left-2 w-14 h-14 cursor-pointer border-0 p-0"
-                        />
-                      </div>
-                      <input
-                        type="text"
-                        value={profile.themeConfig.buttonBgColor || '#0ea5e9'}
-                        onChange={(e) => updateTheme({ buttonBgColor: e.target.value })}
-                        placeholder="#0ea5e9"
-                        dir="ltr"
-                        className="flex-1 bg-background border border-border rounded-xl px-3 py-1.5 text-xs font-sans text-foreground focus:outline-none focus:border-cyan-500 uppercase"
-                      />
-                    </div>
-                  </div>
+                  {/* 4. رنگ پس‌زمینه دکمه (Confirmable Color Picker) */}
+                  <ConfirmableColorPicker
+                    label="رنگ پس زمینه دکمه"
+                    value={profile.themeConfig.buttonBgColor || '#0ea5e9'}
+                    onChange={(color) => updateTheme({ buttonBgColor: color })}
+                  />
 
-                  {/* 5. رنگ حاشیه دکمه (Color Swatch + Hex Input) */}
-                  <div className="p-3 rounded-xl border border-border bg-muted/20 space-y-2">
-                    <label className="block text-xs font-bold text-foreground">
-                      رنگ حاشیه دکمه
-                    </label>
-                    <div className="flex items-center gap-2.5">
-                      <div className="relative w-9 h-9 rounded-xl overflow-hidden border border-border shadow-xs shrink-0">
-                        <input
-                          type="color"
-                          value={profile.themeConfig.buttonBorderColor || '#38bdf8'}
-                          onChange={(e) => updateTheme({ buttonBorderColor: e.target.value })}
-                          className="absolute -top-2 -left-2 w-14 h-14 cursor-pointer border-0 p-0"
-                        />
-                      </div>
-                      <input
-                        type="text"
-                        value={profile.themeConfig.buttonBorderColor || '#38bdf8'}
-                        onChange={(e) => updateTheme({ buttonBorderColor: e.target.value })}
-                        placeholder="#38bdf8"
-                        dir="ltr"
-                        className="flex-1 bg-background border border-border rounded-xl px-3 py-1.5 text-xs font-sans text-foreground focus:outline-none focus:border-cyan-500 uppercase"
-                      />
-                    </div>
-                  </div>
+                  {/* 5. رنگ حاشیه دکمه (Confirmable Color Picker) */}
+                  <ConfirmableColorPicker
+                    label="رنگ حاشیه دکمه"
+                    value={profile.themeConfig.buttonBorderColor || '#38bdf8'}
+                    onChange={(color) => updateTheme({ buttonBorderColor: color })}
+                  />
 
                   {/* 6. ضخامت حاشیه دکمه (هیچکدام، نازک، متوسط، ضخیم) */}
                   <div>
@@ -1097,41 +1243,19 @@ export const ProfileEditor: React.FC = () => {
                 </AccordionTrigger>
                 <AccordionContent className="px-5 pb-5 pt-1 space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {/* Primary Color */}
-                    <div className="p-3 rounded-xl border border-border bg-muted/20 flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2.5">
-                        <input
-                          type="color"
-                          value={profile.themeConfig.primaryColor || '#06b6d4'}
-                          onChange={(e) => updateTheme({ primaryColor: e.target.value })}
-                          className="w-9 h-9 rounded-xl cursor-pointer bg-transparent border-0"
-                        />
-                        <div>
-                          <span className="text-xs font-medium text-foreground block">رنگ شروع گرادیانت</span>
-                          <span className="font-sans font-semibold text-[11px] text-muted-foreground uppercase">
-                            {profile.themeConfig.primaryColor || '#06b6d4'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
+                    {/* Primary Color (Confirmable) */}
+                    <ConfirmableColorPicker
+                      label="رنگ شروع گرادیانت"
+                      value={profile.themeConfig.primaryColor || '#06b6d4'}
+                      onChange={(color) => updateTheme({ primaryColor: color })}
+                    />
 
-                    {/* Accent Color */}
-                    <div className="p-3 rounded-xl border border-border bg-muted/20 flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2.5">
-                        <input
-                          type="color"
-                          value={profile.themeConfig.accentColor || '#3b82f6'}
-                          onChange={(e) => updateTheme({ accentColor: e.target.value })}
-                          className="w-9 h-9 rounded-xl cursor-pointer bg-transparent border-0"
-                        />
-                        <div>
-                          <span className="text-xs font-medium text-foreground block">رنگ پایان گرادیانت</span>
-                          <span className="font-sans font-semibold text-[11px] text-muted-foreground uppercase">
-                            {profile.themeConfig.accentColor || '#3b82f6'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
+                    {/* Accent Color (Confirmable) */}
+                    <ConfirmableColorPicker
+                      label="رنگ پایان گرادیانت"
+                      value={profile.themeConfig.accentColor || '#3b82f6'}
+                      onChange={(color) => updateTheme({ accentColor: color })}
+                    />
                   </div>
 
                   {/* Gradient Preview Bar */}
@@ -1150,30 +1274,43 @@ export const ProfileEditor: React.FC = () => {
               </AccordionItem>
             </Accordion>
 
-            {/* Bottom Actions Bar */}
-            <div className="p-4 bg-card border border-border rounded-2xl flex items-center justify-between gap-3 shadow-xs">
-              <span className="text-xs text-muted-foreground hidden sm:inline">
-                اعمال و ثبت تنظیمات تم و طراحی در دیتابیس
+            {/* Bottom Action Bar for Tab 2 */}
+            <div className="bg-card border border-border rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs">
+              <span className="text-xs text-muted-foreground">
+                پس از اعمال تنظیمات طراحی و رنگ‌ها، برای ماندگاری تغییرات کلیک کنید.
               </span>
-              <button
-                type="button"
-                onClick={handleSaveTheme}
-                disabled={isSavingTheme}
-                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white text-xs font-bold shadow-md shadow-emerald-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-60"
-              >
-                {isSavingTheme ? (
-                  <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    <span>در حال ذخیره...</span>
-                  </>
-                ) : (
-                  <>
-                    <CheckCheck className="w-3.5 h-3.5" />
-                    <span>ذخیره تغییرات تم</span>
-                  </>
-                )}
-              </button>
+              <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                <button
+                  type="button"
+                  onClick={handleCancelTheme}
+                  disabled={isSavingTheme}
+                  className="flex-1 sm:flex-initial px-3.5 py-2.5 rounded-xl bg-background hover:bg-muted border border-border text-muted-foreground hover:text-foreground font-semibold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+                >
+                  <Undo2 className="w-3.5 h-3.5" />
+                  <span>لغو تغییرات</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveTheme}
+                  disabled={isSavingTheme}
+                  className="flex-1 sm:flex-initial px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold text-xs shadow-md shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer disabled:opacity-60"
+                >
+                  {isSavingTheme ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>در حال ذخیره...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCheck className="w-3.5 h-3.5" />
+                      <span>تایید و ذخیره</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
+
+
           </section>
         )}
 
@@ -1710,7 +1847,7 @@ export const ProfileEditor: React.FC = () => {
                 />
               </div>
 
-                {profile.directModeEnabled && (
+              {profile.directModeEnabled && (
                 <div className="space-y-2 animate-in fade-in duration-200">
                   <label className="block text-xs font-medium text-cyan-500">نشانی مقصد هدایت مستقیم</label>
                   <input

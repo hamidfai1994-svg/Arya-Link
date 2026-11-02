@@ -872,9 +872,8 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
       return (
         <div
           key={link.id}
-          className={`w-full p-4 border shadow-sm ${alignClass} ${getBorderRadiusClass(customStyle?.borderRadius)} ${
-            isLight ? 'bg-white/90 border-slate-200 text-slate-800' : 'bg-white/[0.05] backdrop-blur-md border-white/10 text-white'
-          }`}
+          className={`w-full p-4 border shadow-sm ${alignClass} ${getBorderRadiusClass(customStyle?.borderRadius)} ${isLight ? 'bg-white/90 border-slate-200 text-slate-800' : 'bg-white/[0.05] backdrop-blur-md border-white/10 text-white'
+            }`}
           style={customCardStyle}
         >
           {link.title && <h3 className="text-xs font-bold mb-1 opacity-90">{link.title}</h3>}
@@ -939,11 +938,10 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
             value={searchFilter}
             onChange={(e) => setSearchFilter(e.target.value)}
             placeholder="جستجو در بین خدمات و لینک‌ها..."
-            className={`w-full rounded-2xl pr-10 pl-3.5 py-3 text-xs border focus:outline-none transition-all shadow-sm ${
-              isLight
+            className={`w-full rounded-2xl pr-10 pl-3.5 py-3 text-xs border focus:outline-none transition-all shadow-sm ${isLight
                 ? 'bg-white/90 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-cyan-500'
                 : 'bg-white/[0.06] backdrop-blur-md border-white/10 text-white placeholder:text-slate-400 focus:border-cyan-400'
-            }`}
+              }`}
           />
         </div>
       );
@@ -1001,9 +999,8 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
           href={meta.pdfUrl || link.url || '#'}
           target="_blank"
           rel="noopener noreferrer"
-          className={`w-full p-4 border shadow-sm flex items-center justify-between gap-3 transition-all duration-300 md:hover:scale-[1.02] md:hover:shadow-[0_0_20px_rgba(244,63,94,0.3)] active:scale-[0.99] text-right ${cardRadius} ${
-            isLight ? 'bg-white/90 border-slate-200' : 'bg-white/[0.05] backdrop-blur-md border-white/10'
-          }`}
+          className={`w-full p-4 border shadow-sm flex items-center justify-between gap-3 transition-all duration-300 md:hover:scale-[1.02] md:hover:shadow-[0_0_20px_rgba(244,63,94,0.3)] active:scale-[0.99] text-right ${cardRadius} ${isLight ? 'bg-white/90 border-slate-200' : 'bg-white/[0.05] backdrop-blur-md border-white/10'
+            }`}
           style={customCardStyle}
         >
           <div className={`w-11 h-11 ${cardRadius} bg-rose-500/20 text-rose-500 flex items-center justify-center shrink-0 border border-rose-500/30`}>
@@ -1028,9 +1025,8 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
       return (
         <div
           key={link.id}
-          className={`w-full p-5 border shadow-lg space-y-4 text-right ${cardRadius} ${
-            isLight ? 'bg-white/95 border-slate-200' : 'bg-white/[0.05] backdrop-blur-md border-white/10'
-          }`}
+          className={`w-full p-5 border shadow-lg space-y-4 text-right ${cardRadius} ${isLight ? 'bg-white/95 border-slate-200' : 'bg-white/[0.05] backdrop-blur-md border-white/10'
+            }`}
           style={customCardStyle}
         >
           <div className="flex items-center gap-2 pb-2.5 border-b border-white/10">
@@ -1074,11 +1070,10 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
                   placeholder="مثال: علی احمدی"
-                  className={`w-full rounded-xl px-3.5 py-2.5 text-xs border focus:outline-none focus:border-cyan-500 transition-all ${
-                    isLight
+                  className={`w-full rounded-xl px-3.5 py-2.5 text-xs border focus:outline-none focus:border-cyan-500 transition-all ${isLight
                       ? 'bg-slate-50 border-slate-200 text-slate-800 placeholder-slate-400'
                       : 'bg-white/5 border-white/10 text-white placeholder-slate-500'
-                  }`}
+                    }`}
                 />
               </div>
 
@@ -1093,11 +1088,10 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
                   onChange={(e) => setFormPhone(e.target.value)}
                   placeholder="0700 000 000"
                   dir="ltr"
-                  className={`w-full rounded-xl px-3.5 py-2.5 text-xs font-sans text-left border focus:outline-none focus:border-cyan-500 transition-all ${
-                    isLight
+                  className={`w-full rounded-xl px-3.5 py-2.5 text-xs font-sans text-left border focus:outline-none focus:border-cyan-500 transition-all ${isLight
                       ? 'bg-slate-50 border-slate-200 text-slate-800 placeholder-slate-400'
                       : 'bg-white/5 border-white/10 text-white placeholder-slate-500'
-                  }`}
+                    }`}
                 />
               </div>
 
@@ -1111,11 +1105,10 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
                   onChange={(e) => setFormEmail(e.target.value)}
                   placeholder="name@example.com"
                   dir="ltr"
-                  className={`w-full rounded-xl px-3.5 py-2.5 text-xs font-sans text-left border focus:outline-none focus:border-cyan-500 transition-all ${
-                    isLight
+                  className={`w-full rounded-xl px-3.5 py-2.5 text-xs font-sans text-left border focus:outline-none focus:border-cyan-500 transition-all ${isLight
                       ? 'bg-slate-50 border-slate-200 text-slate-800 placeholder-slate-400'
                       : 'bg-white/5 border-white/10 text-white placeholder-slate-500'
-                  }`}
+                    }`}
                 />
               </div>
 
@@ -1129,11 +1122,10 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
                   value={formMessage}
                   onChange={(e) => setFormMessage(e.target.value)}
                   placeholder="پیام یا شرح درخواست همکاری خود را اینجا بنویسید..."
-                  className={`w-full rounded-xl px-3.5 py-2.5 text-xs resize-none border focus:outline-none focus:border-cyan-500 font-sans transition-all ${
-                    isLight
+                  className={`w-full rounded-xl px-3.5 py-2.5 text-xs resize-none border focus:outline-none focus:border-cyan-500 font-sans transition-all ${isLight
                       ? 'bg-slate-50 border-slate-200 text-slate-800 placeholder-slate-400'
                       : 'bg-white/5 border-white/10 text-white placeholder-slate-500'
-                  }`}
+                    }`}
                 />
               </div>
 
@@ -1166,11 +1158,10 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
       return (
         <div
           key={link.id}
-          className={`w-full p-4 border shadow-sm space-y-3 text-right ${cardRadius} ${
-            isLight
+          className={`w-full p-4 border shadow-sm space-y-3 text-right ${cardRadius} ${isLight
               ? 'bg-white/95 border-slate-200'
               : 'bg-white/5 border-white/10 backdrop-blur-md'
-          }`}
+            }`}
           style={customCardStyle}
         >
           {/* FAQ Header with Circular HelpCircle Icon */}
@@ -1190,11 +1181,10 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
               return (
                 <div
                   key={idx}
-                  className={`rounded-xl border transition-all overflow-hidden ${
-                    isLight
+                  className={`rounded-xl border transition-all overflow-hidden ${isLight
                       ? 'bg-slate-50/80 border-slate-200'
                       : 'bg-black/20 border-white/10 hover:border-white/20'
-                  }`}
+                    }`}
                 >
                   <button
                     type="button"
@@ -1203,9 +1193,8 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
                   >
                     <span className={isLight ? 'text-slate-800' : 'text-slate-100'}>{item.question}</span>
                     <ChevronDown
-                      className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform duration-200 ${
-                        isOpen ? 'rotate-180 text-cyan-400' : ''
-                      }`}
+                      className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180 text-cyan-400' : ''
+                        }`}
                     />
                   </button>
                   <AnimatePresence>
@@ -1243,9 +1232,8 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
       return (
         <div
           key={link.id}
-          className={`w-full p-4 border shadow-sm space-y-2.5 text-right ${cardRadius} ${
-            isLight ? 'bg-white/90 border-slate-200' : 'bg-white/[0.05] backdrop-blur-md border-white/10'
-          }`}
+          className={`w-full p-4 border shadow-sm space-y-2.5 text-right ${cardRadius} ${isLight ? 'bg-white/90 border-slate-200' : 'bg-white/[0.05] backdrop-blur-md border-white/10'
+            }`}
           style={customCardStyle}
         >
           <div className="flex items-center gap-2">
@@ -1315,11 +1303,10 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
         <a
           key={link.id}
           href={smartHref}
-          className={`w-full p-3 flex items-center justify-between gap-3 shadow-sm border transition-all duration-300 md:hover:scale-[1.02] md:hover:border-emerald-500/40 md:hover:shadow-[0_0_20px_rgba(16,185,129,0.3)] active:scale-[0.98] cursor-pointer group ${cardRadius} ${getButtonAnimationClass(adv.buttonAnimation)} ${
-            isLight
+          className={`w-full p-3 flex items-center justify-between gap-3 shadow-sm border transition-all duration-300 md:hover:scale-[1.02] md:hover:border-emerald-500/40 md:hover:shadow-[0_0_20px_rgba(16,185,129,0.3)] active:scale-[0.98] cursor-pointer group ${cardRadius} ${getButtonAnimationClass(adv.buttonAnimation)} ${isLight
               ? 'bg-white/95 border-slate-200 hover:border-slate-300'
               : 'bg-white/5 hover:bg-white/10 border-white/10 backdrop-blur-md'
-          }`}
+            }`}
           style={customCardStyle}
         >
           <div className="flex items-center gap-3 min-w-0">
@@ -1366,11 +1353,10 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
         <a
           key={link.id}
           href={smartHref}
-          className={`w-full p-3 flex items-center justify-between gap-3 shadow-sm border overflow-hidden transition-all duration-300 md:hover:scale-[1.02] md:hover:shadow-[0_0_20px_rgba(245,158,11,0.3)] active:scale-[0.98] cursor-pointer group ${cardRadius} ${getButtonAnimationClass(adv.buttonAnimation)} ${
-            isLight
+          className={`w-full p-3 flex items-center justify-between gap-3 shadow-sm border overflow-hidden transition-all duration-300 md:hover:scale-[1.02] md:hover:shadow-[0_0_20px_rgba(245,158,11,0.3)] active:scale-[0.98] cursor-pointer group ${cardRadius} ${getButtonAnimationClass(adv.buttonAnimation)} ${isLight
               ? 'bg-white/95 border-slate-200 hover:border-slate-300'
               : 'bg-white/5 hover:bg-white/10 border-white/10 backdrop-blur-md'
-          }`}
+            }`}
           style={customCardStyle}
         >
           <div className="flex items-center gap-3 min-w-0">
@@ -1405,9 +1391,8 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
       return (
         <div
           key={link.id}
-          className={`w-full p-4 border shadow-md flex items-center justify-between gap-3 text-right overflow-hidden transition-all duration-300 md:hover:shadow-[0_0_20px_rgba(6,182,212,0.25)] ${cardRadius} ${
-            isLight ? 'bg-white/90 border-slate-200' : 'bg-white/[0.05] backdrop-blur-md border-white/10'
-          }`}
+          className={`w-full p-4 border shadow-md flex items-center justify-between gap-3 text-right overflow-hidden transition-all duration-300 md:hover:shadow-[0_0_20px_rgba(6,182,212,0.25)] ${cardRadius} ${isLight ? 'bg-white/90 border-slate-200' : 'bg-white/[0.05] backdrop-blur-md border-white/10'
+            }`}
           style={customCardStyle}
         >
           <div className="flex items-center gap-3 overflow-hidden">
@@ -1543,9 +1528,8 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
           <div className="relative -mt-14 md:-mt-16 flex flex-col items-center z-10 px-2 md:px-5">
             <div className="relative group">
               <div
-                className={`w-28 h-28 md:w-32 md:h-32 rounded-full overflow-hidden border-4 shadow-2xl relative bg-slate-800 ring-2 ring-white/10 ${
-                  isLight ? 'border-white' : 'border-slate-950'
-                }`}
+                className={`w-28 h-28 md:w-32 md:h-32 rounded-full overflow-hidden border-4 shadow-2xl relative bg-slate-800 ring-2 ring-white/10 ${isLight ? 'border-white' : 'border-slate-950'
+                  }`}
               >
                 {profile.avatarUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -1574,9 +1558,8 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
             {/* Name, Headline, Location, Bio */}
             <div className="text-center mt-3.5 w-full">
               <h1
-                className={`text-xl md:text-2xl font-black tracking-tight flex items-center justify-center gap-1.5 ${
-                  isLight ? 'text-slate-900' : 'text-white'
-                }`}
+                className={`text-xl md:text-2xl font-black tracking-tight flex items-center justify-center gap-1.5 ${isLight ? 'text-slate-900' : 'text-white'
+                  }`}
               >
                 <span>{profile.displayName}</span>
                 {isVerifiedApproved && (
@@ -1599,9 +1582,8 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
 
               {profile.bio && (
                 <p
-                  className={`text-xs md:text-sm mt-2.5 leading-relaxed max-w-sm mx-auto font-normal ${
-                    isLight ? 'text-slate-600' : 'text-slate-300'
-                  }`}
+                  className={`text-xs md:text-sm mt-2.5 leading-relaxed max-w-sm mx-auto font-normal ${isLight ? 'text-slate-600' : 'text-slate-300'
+                    }`}
                 >
                   {profile.bio}
                 </p>
@@ -1639,9 +1621,8 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
           <div className="relative -mt-14 md:-mt-16 flex flex-col items-center z-10 px-2 md:px-5">
             <div className="relative group">
               <div
-                className={`w-28 h-28 md:w-32 md:h-32 rounded-3xl overflow-hidden border-4 shadow-2xl relative bg-slate-800 ring-2 ring-white/10 ${
-                  isLight ? 'border-white' : 'border-slate-950'
-                }`}
+                className={`w-28 h-28 md:w-32 md:h-32 rounded-3xl overflow-hidden border-4 shadow-2xl relative bg-slate-800 ring-2 ring-white/10 ${isLight ? 'border-white' : 'border-slate-950'
+                  }`}
               >
                 {profile.avatarUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -1669,9 +1650,8 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
 
             <div className="text-center mt-3.5 w-full">
               <h1
-                className={`text-xl md:text-2xl font-black tracking-tight flex items-center justify-center gap-1.5 ${
-                  isLight ? 'text-slate-900' : 'text-white'
-                }`}
+                className={`text-xl md:text-2xl font-black tracking-tight flex items-center justify-center gap-1.5 ${isLight ? 'text-slate-900' : 'text-white'
+                  }`}
               >
                 <span>{profile.displayName}</span>
                 {isVerifiedApproved && (
@@ -1694,9 +1674,8 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
 
               {profile.bio && (
                 <p
-                  className={`text-xs md:text-sm mt-2.5 leading-relaxed max-w-sm mx-auto font-normal ${
-                    isLight ? 'text-slate-600' : 'text-slate-300'
-                  }`}
+                  className={`text-xs md:text-sm mt-2.5 leading-relaxed max-w-sm mx-auto font-normal ${isLight ? 'text-slate-600' : 'text-slate-300'
+                    }`}
                 >
                   {profile.bio}
                 </p>
@@ -1712,9 +1691,8 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
       <div className="pt-8 pb-3 px-2 md:px-5 flex flex-col items-center text-center relative">
         <div className="relative mb-3.5 group">
           <div
-            className={`w-28 h-28 md:w-32 md:h-32 rounded-full overflow-hidden border-4 shadow-2xl relative bg-slate-800 ring-2 ring-white/10 ${
-              isLight ? 'border-white' : 'border-slate-950'
-            }`}
+            className={`w-28 h-28 md:w-32 md:h-32 rounded-full overflow-hidden border-4 shadow-2xl relative bg-slate-800 ring-2 ring-white/10 ${isLight ? 'border-white' : 'border-slate-950'
+              }`}
           >
             {profile.avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -1741,9 +1719,8 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
         </div>
 
         <h1
-          className={`text-xl md:text-2xl font-black tracking-tight flex items-center justify-center gap-1.5 ${
-            isLight ? 'text-slate-900' : 'text-white'
-          }`}
+          className={`text-xl md:text-2xl font-black tracking-tight flex items-center justify-center gap-1.5 ${isLight ? 'text-slate-900' : 'text-white'
+            }`}
         >
           <span>{profile.displayName}</span>
           {isVerifiedApproved && (
@@ -1766,9 +1743,8 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
 
         {profile.bio && (
           <p
-            className={`text-xs md:text-sm mt-2.5 leading-relaxed max-w-sm mx-auto font-normal ${
-              isLight ? 'text-slate-600' : 'text-slate-300'
-            }`}
+            className={`text-xs md:text-sm mt-2.5 leading-relaxed max-w-sm mx-auto font-normal ${isLight ? 'text-slate-600' : 'text-slate-300'
+              }`}
           >
             {profile.bio}
           </p>
@@ -1809,9 +1785,8 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
                   setPasswordError(false);
                 }}
                 placeholder="رمز عبور را وارد نمایید..."
-                className={`w-full bg-background border rounded-xl px-3.5 py-2.5 text-xs text-foreground focus:outline-none text-center ${
-                  passwordError ? 'border-rose-500 ring-2 ring-rose-500/20' : 'border-border focus:border-cyan-500'
-                }`}
+                className={`w-full bg-background border rounded-xl px-3.5 py-2.5 text-xs text-foreground focus:outline-none text-center ${passwordError ? 'border-rose-500 ring-2 ring-rose-500/20' : 'border-border focus:border-cyan-500'
+                  }`}
               />
               {passwordError && (
                 <span className="text-[11px] text-rose-500 mt-1.5 block font-medium">
@@ -1861,11 +1836,10 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
             {/* Identity Card: Unboxed on Mobile (bg-transparent border-0 shadow-none), Boxed Card on Desktop (md:rounded-3xl md:border md:shadow-2xl) */}
             <motion.div
               variants={itemVariants}
-              className={`w-full transition-all bg-transparent border-0 shadow-none md:rounded-3xl md:overflow-hidden md:border md:shadow-2xl md:backdrop-blur-xl ${
-                isLight
+              className={`w-full transition-all bg-transparent border-0 shadow-none md:rounded-3xl md:overflow-hidden md:border md:shadow-2xl md:backdrop-blur-xl ${isLight
                   ? 'md:bg-white/85 md:border-slate-200/90 md:shadow-slate-200/50 text-slate-900'
                   : 'md:bg-white/[0.04] md:border-white/10 md:shadow-black/40 text-white'
-              }`}
+                }`}
             >
               {/* 1. Header Layout: Cover, Avatar, Name, Headline, Bio */}
               {renderHeaderLayout()}
@@ -1908,11 +1882,10 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
             {/* DESKTOP EXCLUSIVE: Dynamic QR Code Card (Replaces vCard button on desktop) */}
             <motion.div
               variants={itemVariants}
-              className={`hidden md:flex flex-col items-center text-center p-6 rounded-3xl border shadow-xl transition-all ${
-                isLight
+              className={`hidden md:flex flex-col items-center text-center p-6 rounded-3xl border shadow-xl transition-all ${isLight
                   ? 'bg-white/85 border-slate-200/90 shadow-slate-200/50'
                   : 'bg-white/[0.04] backdrop-blur-xl border-white/10 shadow-black/30'
-              }`}
+                }`}
             >
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-8 h-8 rounded-xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 flex items-center justify-center">
@@ -1946,11 +1919,10 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
                 <button
                   type="button"
                   onClick={handleCopyLink}
-                  className={`w-full py-2.5 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 border transition-all cursor-pointer active:scale-95 ${
-                    isLight
+                  className={`w-full py-2.5 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 border transition-all cursor-pointer active:scale-95 ${isLight
                       ? 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-800'
                       : 'bg-white/10 hover:bg-white/15 border-white/15 text-slate-200'
-                  }`}
+                    }`}
                 >
                   <Copy className="w-3.5 h-3.5 text-cyan-400" />
                   <span>{isLtr ? 'Copy Link' : 'کپی لینک کارت'}</span>
@@ -1972,9 +1944,8 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
             {profile.links.filter((l) => l.isActive).length === 0 && (
               <motion.div
                 variants={itemVariants}
-                className={`p-8 text-center text-xs border border-dashed rounded-2xl ${
-                  isLight ? 'text-slate-400 border-slate-300' : 'text-white/50 border-white/20'
-                }`}
+                className={`p-8 text-center text-xs border border-dashed rounded-2xl ${isLight ? 'text-slate-400 border-slate-300' : 'text-white/50 border-white/20'
+                  }`}
               >
                 {isLtr
                   ? 'No active modules to display'
@@ -1996,11 +1967,10 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
                   e.stopPropagation();
                   handleSaveContact();
                 }}
-                className={`py-2.5 px-3 rounded-2xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-md border border-white/20 transition-all cursor-pointer select-none md:hidden ${
-                  isLight
+                className={`py-2.5 px-3 rounded-2xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-md border border-white/20 transition-all cursor-pointer select-none md:hidden ${isLight
                     ? 'bg-slate-900 text-white hover:bg-slate-800'
                     : 'bg-white/10 hover:bg-white/20 text-white backdrop-blur-md'
-                }`}
+                  }`}
                 style={
                   !isLight && themeConfig.primaryColor
                     ? { background: `linear-gradient(135deg, ${themeConfig.primaryColor}, ${themeConfig.accentColor})` }
@@ -2049,9 +2019,8 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
               href="https://aryal.ink"
               target="_blank"
               rel="noopener noreferrer"
-              className={`text-xs tracking-wider font-semibold inline-flex items-center gap-1.5 opacity-70 hover:opacity-100 transition-opacity ${
-                isLight ? 'text-slate-600' : 'text-slate-400'
-              }`}
+              className={`text-xs tracking-wider font-semibold inline-flex items-center gap-1.5 opacity-70 hover:opacity-100 transition-opacity ${isLight ? 'text-slate-600' : 'text-slate-400'
+                }`}
             >
               <span>{isLtr ? 'Powered by ⚡' : isPashto ? 'جوړ شوی لخوا ⚡' : 'طراحی شده با ⚡'}</span>
               <span className="text-cyan-400 font-bold font-sans">Arya Link</span>
@@ -2114,11 +2083,10 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
                       setTimeout(() => setCopiedLocationLink(false), 2000);
                     }
                   }}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 shrink-0 ${
-                    copiedLocationLink
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 shrink-0 ${copiedLocationLink
                       ? 'bg-emerald-500 text-slate-950 shadow-xs'
                       : 'bg-violet-600 hover:bg-violet-500 text-white shadow-xs'
-                  }`}
+                    }`}
                 >
                   {copiedLocationLink ? (
                     <>
@@ -2238,11 +2206,10 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
                       setTimeout(() => setCopiedShareLink(false), 2000);
                     }
                   }}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 ${
-                    copiedShareLink
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 ${copiedShareLink
                       ? 'bg-emerald-500 text-slate-950 shadow-xs'
                       : 'bg-cyan-500 hover:bg-cyan-400 text-slate-950 shadow-xs'
-                  }`}
+                    }`}
                 >
                   {copiedShareLink ? (
                     <>
@@ -2308,7 +2275,7 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
           }
         }}
       >
-        <DialogContent className="max-w-md w-[90%] sm:w-full max-h-[85dvh] overflow-y-auto rounded-3xl bg-slate-900/95 border border-white/10 backdrop-blur-2xl p-5 sm:p-6 text-center text-white shadow-2xl relative my-auto overscroll-contain">
+        <DialogContent className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[92%] max-w-sm rounded-2xl max-h-[85dvh] overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden z-50 bg-slate-900/95 border border-white/10 backdrop-blur-2xl p-5 text-center text-white shadow-2xl">
           {/* Ambient Lighting Accents */}
           <div className="absolute -top-16 -right-16 w-36 h-36 bg-cyan-500/20 rounded-full blur-2xl pointer-events-none" />
           <div className="absolute -bottom-16 -left-16 w-36 h-36 bg-emerald-500/20 rounded-full blur-2xl pointer-events-none" />
@@ -2359,9 +2326,7 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
                 <label className="block text-xs font-medium text-slate-200">
                   {isLtr ? 'Phone Number' : isPashto ? 'د اړیکې شمیره' : 'شماره تماس'}
                 </label>
-                <span className="text-[10px] text-cyan-400 font-sans">
-                  {isLtr ? '(English digits)' : '(ارقام انگلیسی)'}
-                </span>
+
               </div>
               <div className="relative">
                 <input
@@ -2391,7 +2356,7 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
                 ) : (
                   <>
                     <Send className="w-3.5 h-3.5" />
-                    <span>{isLtr ? 'Submit Information' : isPashto ? 'معلومات واستوئ' : 'ثبت و ارسال اطلاعات'}</span>
+                    <span>{isLtr ? 'Submit Information' : isPashto ? 'معلومات واستوئ' : 'ثبت اطلاعات'}</span>
                   </>
                 )}
               </button>

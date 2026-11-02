@@ -2311,7 +2311,7 @@ export const LivePreview: React.FC = () => {
           }
         }}
       >
-        <DialogContent className="max-w-md w-[90%] sm:w-full max-h-[85dvh] overflow-y-auto rounded-3xl bg-slate-900/95 border border-white/10 backdrop-blur-2xl p-5 sm:p-6 text-center text-white shadow-2xl relative my-auto overscroll-contain">
+        <DialogContent className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[92%] max-w-sm rounded-2xl max-h-[85dvh] overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden z-50 bg-slate-900/95 border border-white/10 backdrop-blur-2xl p-5 text-center text-white shadow-2xl">
           {/* Ambient Lighting Accents */}
           <div className="absolute -top-16 -right-16 w-36 h-36 bg-cyan-500/20 rounded-full blur-2xl pointer-events-none" />
           <div className="absolute -bottom-16 -left-16 w-36 h-36 bg-emerald-500/20 rounded-full blur-2xl pointer-events-none" />
@@ -2352,9 +2352,7 @@ export const LivePreview: React.FC = () => {
                 <label className="block text-xs font-medium text-slate-200">
                   شماره تماس
                 </label>
-                <span className="text-[10px] text-cyan-400 font-sans">
-                  (ارقام انگلیسی)
-                </span>
+
               </div>
               <div className="relative">
                 <input
@@ -2384,7 +2382,7 @@ export const LivePreview: React.FC = () => {
                 ) : (
                   <>
                     <Send className="w-3.5 h-3.5" />
-                    <span>ثبت و ارسال اطلاعات</span>
+                    <span>ثبت اطلاعات</span>
                   </>
                 )}
               </button>

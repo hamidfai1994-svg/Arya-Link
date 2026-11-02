@@ -637,17 +637,8 @@ export function getDefaultModuleConfig(moduleType: LinkModuleType): { title: str
   }
 }
 
-// Theme & Styling Auto-Save debouncer to persist changes automatically to database
-let themeAutoSaveTimeout: ReturnType<typeof setTimeout> | null = null;
-const triggerThemeAutoSave = (saveFn: () => Promise<any>, delay = 400) => {
-  if (typeof window === 'undefined') return;
-  if (themeAutoSaveTimeout) {
-    clearTimeout(themeAutoSaveTimeout);
-  }
-  themeAutoSaveTimeout = setTimeout(() => {
-    saveFn().catch((err) => console.error('Auto-save theme error:', err));
-  }, delay);
-};
+// Theme & Styling changes update local state and live preview without background auto-save.
+// Changes are committed to the database explicitly when the user clicks "تایید و ذخیره".
 
 export const useEditorStore = create<EditorState>((set, get) => ({
   profile: emptyProfile,
@@ -865,14 +856,9 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       },
       isDirty: true,
     }));
-    triggerThemeAutoSave(get().saveProfileData, 100);
   },
 
-  updateTheme: (fields, skipAutoSave) => {
-    if (skipAutoSave && themeAutoSaveTimeout) {
-      clearTimeout(themeAutoSaveTimeout);
-      themeAutoSaveTimeout = null;
-    }
+  updateTheme: (fields, _skipAutoSave) => {
     set((state) => ({
       profile: {
         ...state.profile,
@@ -881,11 +867,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
           ...fields,
         },
       },
-      isDirty: !skipAutoSave ? true : state.isDirty,
+      isDirty: true,
     }));
-    if (!skipAutoSave) {
-      triggerThemeAutoSave(get().saveProfileData, 400);
-    }
   },
 
   setThemePreset: (preset) => {
@@ -947,7 +930,6 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         isDirty: true,
       };
     });
-    triggerThemeAutoSave(get().saveProfileData, 100);
   },
 
   toggleDirectMode: (enabled, url) =>
