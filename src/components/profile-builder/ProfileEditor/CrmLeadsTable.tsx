@@ -110,8 +110,8 @@ export const CrmLeadsTable: React.FC<CrmLeadsTableProps> = ({ profileAlias }) =>
 
   const handleToggleStatus = async (id: string) => {
     const target = leads.find((l) => l.id === id);
-    const nextStatus = target?.status === 'new' ? 'contacted' : 'new';
-    const updated = leads.map((l) => (l.id === id ? { ...l, status: nextStatus as const } : l));
+    const nextStatus: LeadItem['status'] = target?.status === 'new' ? 'contacted' : 'new';
+    const updated: LeadItem[] = leads.map((l) => (l.id === id ? { ...l, status: nextStatus } : l));
     setLeads(updated);
     const unread = updated.filter((l) => l.status === 'new').length;
     setUnreadLeadsCount(unread);
