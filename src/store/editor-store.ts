@@ -879,7 +879,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
 
   updateTheme: (fields, _skipAutoSave) => {
     set((state) => {
-      const current = state.profile?.themeConfig || {};
+      const current = state.profile?.themeConfig || defaultTheme;
       let hasChange = false;
       for (const key of Object.keys(fields) as (keyof ProfileThemeConfig)[]) {
         if (current[key] !== fields[key]) {
@@ -889,13 +889,17 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       }
       if (!hasChange) return state;
 
+      const updatedThemeConfig: ProfileThemeConfig = {
+        ...defaultTheme,
+        ...current,
+        ...fields,
+        preset: fields.preset || current.preset || defaultTheme.preset,
+      };
+
       return {
         profile: {
           ...state.profile,
-          themeConfig: {
-            ...current,
-            ...fields,
-          },
+          themeConfig: updatedThemeConfig,
         },
         isDirty: true,
       };
@@ -904,7 +908,12 @@ export const useEditorStore = create<EditorState>((set, get) => ({
 
   setThemePreset: (preset) => {
     set((state) => {
-      let updatedTheme = { ...state.profile.themeConfig, preset };
+      const current = state.profile?.themeConfig || defaultTheme;
+      let updatedTheme: ProfileThemeConfig = {
+        ...defaultTheme,
+        ...current,
+        preset,
+      };
 
       if (preset === 'dark_neon') {
         updatedTheme = {
@@ -1241,7 +1250,11 @@ export const useEditorStore = create<EditorState>((set, get) => ({
           location: dbData.location || '',
           directModeEnabled: !!dbData.directModeEnabled,
           directModeUrl: dbData.directModeUrl || '',
-          themeConfig: { ...defaultTheme, ...(dbData.themeConfig || {}) },
+          themeConfig: {
+            ...defaultTheme,
+            ...(dbData.themeConfig || {}),
+            preset: dbData.themeConfig?.preset || defaultTheme.preset,
+          },
           links: resolvedLinks,
           seoTitle: dbData.seoTitle || '',
           seoDescription: dbData.seoDescription || '',

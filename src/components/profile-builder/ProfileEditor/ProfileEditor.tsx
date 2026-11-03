@@ -13,6 +13,7 @@ import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/
 import { Switch } from '@/components/ui/switch';
 import { PhoneInput } from '@/components/ui/phone-input';
 import { ProfileSettingsModal } from './ProfileSettingsModal';
+import { PRESET_PATTERNS, PRESET_IMAGES } from '@/lib/backgrounds';
 import { toast } from 'sonner';
 import { useSession, signOut } from 'next-auth/react';
 import {
@@ -314,6 +315,7 @@ export const ProfileEditor: React.FC = () => {
 
   const activeTab = activeSubTab;
   const setActiveTab = setActiveSubTab;
+  const isLight = profile.themeConfig?.preset === 'minimal_light';
 
   // Auto-switch to 'content' tab when a module is activated from Live Preview
   useEffect(() => {
@@ -1198,30 +1200,34 @@ export const ProfileEditor: React.FC = () => {
                   {/* 3. PATTERN MODE CONTROLS */}
                   {(profile.themeConfig.backgroundType === 'pattern') && (
                     <div className="p-3.5 bg-muted/20 border border-border rounded-xl space-y-4">
-                      {/* Grid of 3 Preset Patterns */}
+                      {/* Grid of Preset Patterns */}
                       <div className="space-y-2">
-                        <label className="text-xs font-bold text-foreground block">انتخاب الگوی پترن</label>
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                          {[
-                            { id: 'dots', label: 'نقطه‌ای', desc: 'الگوی مدرن و مینیمال' },
-                            { id: 'grid', label: 'شبکه‌ای', desc: 'خطوط ظریف شطرنجی' },
-                            { id: 'diagonal', label: 'خطوط مورب', desc: 'خطوط ۴۵ درجه شیک' },
-                            { id: 'stripes', label: 'راه‌راه', desc: 'خطوط موازی و ساده' },
-                          ].map((p) => {
-                            const isSelected = (profile.themeConfig.bgPatternId || 'dots') === p.id;
+                        <div className="flex items-center justify-between">
+                          <label className="text-xs font-bold text-foreground block">انتخاب الگوی پترن</label>
+                          <span className="text-[10px] text-muted-foreground font-sans">
+                            {PRESET_PATTERNS.length} الگوی متنوع
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-4 sm:grid-cols-6 gap-2.5 max-h-60 overflow-y-auto custom-scrollbar p-1">
+                          {PRESET_PATTERNS.map((pattern) => {
+                            const isSelected = (profile.themeConfig.bgPatternId || 'dots') === pattern.id;
                             return (
                               <button
-                                key={p.id}
+                                key={pattern.id}
                                 type="button"
-                                onClick={() => updateTheme({ bgPatternId: p.id })}
-                                className={`p-3 rounded-xl border text-center transition-all cursor-pointer ${isSelected
-                                  ? 'bg-cyan-500/15 border-cyan-500 text-cyan-500 ring-2 ring-cyan-500/30 font-bold shadow-sm'
-                                  : 'bg-card border-border text-foreground hover:bg-muted'
-                                  }`}
-                              >
-                                <span className="text-xs font-bold block mb-0.5">{p.label}</span>
-                                <span className="text-[10px] text-muted-foreground block">{p.desc}</span>
-                              </button>
+                                title={pattern.name}
+                                onClick={() => updateTheme({ bgPatternId: pattern.id })}
+                                className={`w-full aspect-square rounded-xl border-2 transition-all overflow-hidden cursor-pointer ${
+                                  isSelected
+                                    ? 'border-cyan-500 ring-4 ring-cyan-500/20 shadow-md shadow-cyan-500/30 scale-105'
+                                    : 'border-border/60 hover:border-cyan-500/50 hover:scale-105'
+                                }`}
+                                style={{
+                                  backgroundImage: pattern.cssFunc(isLight ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.15)', 16),
+                                  backgroundSize: '16px 16px',
+                                  backgroundColor: isLight ? '#f1f5f9' : '#0f172a',
+                                }}
+                              />
                             );
                           })}
                         </div>
@@ -1289,29 +1295,39 @@ export const ProfileEditor: React.FC = () => {
                         aspectRatio="free"
                       />
 
-                      {/* Ready-made Background Images */}
+                      {/* Ready-made Industry Themed Images */}
                       <div className="space-y-2 pt-1 border-t border-border">
-                        <span className="text-xs font-bold text-foreground block">تصاویر آماده پیشنهادی:</span>
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                          {[
-                            { id: 'tech', label: 'تکنولوژی', url: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1200&auto=format&fit=crop&q=80' },
-                            { id: 'neon', label: 'امواج نئونی', url: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=1200&auto=format&fit=crop&q=80' },
-                            { id: 'quantum', label: 'شبکه کوانتومی', url: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=1200&auto=format&fit=crop&q=80' },
-                            { id: 'dark_flow', label: 'امواج تاریک', url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200&auto=format&fit=crop&q=80' },
-                          ].map((item) => (
-                            <button
-                              key={item.id}
-                              type="button"
-                              onClick={() => updateTheme({ bgImageUrl: item.url })}
-                              className={`relative h-16 rounded-xl overflow-hidden border transition-all hover:scale-105 active:scale-95 shadow-sm group cursor-pointer ${profile.themeConfig.bgImageUrl === item.url ? 'ring-2 ring-cyan-500 border-white' : 'border-border'
-                                }`}
-                            >
-                              <img src={item.url} alt={item.label} className="w-full h-full object-cover" />
-                              <div className="absolute inset-0 bg-black/50 group-hover:bg-black/30 flex items-center justify-center transition-colors">
-                                <span className="text-[10px] font-bold text-white text-center px-1 drop-shadow-md">{item.label}</span>
-                              </div>
-                            </button>
-                          ))}
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-foreground block">تصاویر حرفه‌ای مشاغل:</span>
+                          <span className="text-[10px] text-muted-foreground font-sans">
+                            {PRESET_IMAGES.length} تصویر باکیفیت
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-60 overflow-y-auto custom-scrollbar p-1">
+                          {PRESET_IMAGES.map((item) => {
+                            const isSelected = profile.themeConfig.bgImageUrl === item.url;
+                            return (
+                              <button
+                                key={item.id}
+                                type="button"
+                                onClick={() => updateTheme({ bgImageUrl: item.url })}
+                                className={`relative h-20 rounded-xl overflow-hidden border transition-all hover:scale-105 active:scale-95 shadow-sm group cursor-pointer ${isSelected ? 'ring-2 ring-cyan-500 border-white' : 'border-border'
+                                  }`}
+                              >
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={item.url} alt={item.title} className="w-full h-full object-cover" />
+                                <div className={`absolute inset-0 transition-colors flex flex-col justify-end p-1.5 ${isSelected ? 'bg-cyan-950/60' : 'bg-black/50 group-hover:bg-black/30'}`}>
+                                  <span className="text-[10px] font-bold text-white text-right truncate drop-shadow-md">{item.title}</span>
+                                  <span className="text-[8px] text-cyan-300 font-medium text-right truncate drop-shadow-xs">{item.category}</span>
+                                </div>
+                                {isSelected && (
+                                  <div className="absolute top-1 left-1 w-4 h-4 rounded-full bg-cyan-500 text-slate-950 flex items-center justify-center shadow-xs">
+                                    <Check className="w-2.5 h-2.5 stroke-[3]" />
+                                  </div>
+                                )}
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
 

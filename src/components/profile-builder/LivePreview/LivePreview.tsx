@@ -108,13 +108,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-
-// Pattern SVG Presets for background rendering (Stage 6)
-const PATTERN_PRESETS: Record<string, string> = {
-  circuit: "data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0v10M0 30h10M30 50v10M50 30h10M20 20h20v20H20z' stroke='%2306b6d4' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round' opacity='0.7'/%3E%3Ccircle cx='30' cy='30' r='3' fill='%2306b6d4'/%3E%3C/svg%3E",
-  dots: "data:image/svg+xml,%3Csvg width='24' height='24' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='12' cy='12' r='2' fill='%23ffffff' opacity='0.6'/%3E%3C/svg%3E",
-  grid: "data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M 40 0 L 0 0 0 40' fill='none' stroke='%23ffffff' stroke-width='1' opacity='0.3'/%3E%3C/svg%3E",
-};
+import { PRESET_PATTERNS } from '@/lib/backgrounds';
 
 export const LivePreview: React.FC = () => {
   const {
@@ -219,23 +213,10 @@ export const LivePreview: React.FC = () => {
         ? (themeConfig.bgPatternOpacity > 1 ? themeConfig.bgPatternOpacity / 100 : themeConfig.bgPatternOpacity)
         : 0.15;
 
-      let bgImg = '';
-      let bgRepeat = 'repeat';
-      let bgSize = `${size}px ${size}px`;
-
-      if (pid === 'grid') {
-        bgImg = `linear-gradient(to right, ${pColor} 1px, transparent 1px), linear-gradient(to bottom, ${pColor} 1px, transparent 1px)`;
-      } else if (pid === 'diagonal') {
-        bgImg = `repeating-linear-gradient(45deg, ${pColor}, ${pColor} 1px, transparent 1px, transparent ${size}px)`;
-        bgSize = 'auto';
-      } else if (pid === 'stripes') {
-        bgImg = `repeating-linear-gradient(0deg, ${pColor}, ${pColor} 1px, transparent 1px, transparent ${size}px)`;
-        bgSize = 'auto';
-      } else if (pid === 'circuit') {
-        bgImg = `url("${PATTERN_PRESETS.circuit}")`;
-      } else {
-        bgImg = `radial-gradient(circle, ${pColor} 1.5px, transparent 1.5px)`;
-      }
+      const pattern = PRESET_PATTERNS.find((p) => p.id === pid) || PRESET_PATTERNS.find((p) => p.id === 'dots') || PRESET_PATTERNS[0];
+      const bgImg = pattern ? pattern.cssFunc(pColor, size) : `radial-gradient(circle, ${pColor} 1.5px, transparent 1.5px)`;
+      const bgSize = pattern?.backgroundSize ? pattern.backgroundSize(size) : `${size}px ${size}px`;
+      const bgRepeat = pattern?.backgroundRepeat || 'repeat';
 
       return {
         backgroundImage: bgImg,
