@@ -15,8 +15,9 @@ import {
   ShieldAlert,
   ChevronDown,
 } from 'lucide-react';
-import { WhatsAppIcon } from '@/components/icons';
+import { WhatsAppIcon, TelegramIcon } from '@/components/icons';
 import { formatSmartDate } from '@/lib/utils/date';
+import { getTelegramLink } from '@/lib/utils/phone';
 
 interface UserProfileSummary {
   displayName: string;
@@ -337,11 +338,11 @@ export default function UserTWA() {
                     </div>
                   )}
 
-                  {/* 3-Column Action Buttons Grid (Call, WhatsApp, Email) */}
+                  {/* Action Buttons Grid (Call, WhatsApp, Telegram, Email) */}
                   {(hasPhone || hasEmail) && (
-                    <div className="pt-2 border-t grid grid-cols-3 gap-2" style={{ borderColor: 'rgba(255, 255, 255, 0.06)' }}>
+                    <div className="pt-2 border-t grid grid-cols-2 sm:grid-cols-4 gap-2" style={{ borderColor: 'rgba(255, 255, 255, 0.06)' }}>
                       {/* 1. Phone Call Button */}
-                      {hasPhone ? (
+                      {hasPhone && (
                         <a
                           href={`tel:${msg.phone}`}
                           className="py-2 px-2.5 rounded-xl border flex items-center justify-center gap-1.5 text-xs font-bold transition-all active:scale-95 text-center"
@@ -354,12 +355,10 @@ export default function UserTWA() {
                           <Phone className="w-3.5 h-3.5 shrink-0" />
                           <span>تماس</span>
                         </a>
-                      ) : (
-                        <div />
                       )}
 
                       {/* 2. WhatsApp Button */}
-                      {hasPhone ? (
+                      {hasPhone && (
                         <a
                           href={`https://wa.me/${waNumber}`}
                           target="_blank"
@@ -374,12 +373,28 @@ export default function UserTWA() {
                           <WhatsAppIcon className="w-3.5 h-3.5 shrink-0 fill-current" />
                           <span>واتساپ</span>
                         </a>
-                      ) : (
-                        <div />
                       )}
 
-                      {/* 3. Email Button */}
-                      {hasEmail ? (
+                      {/* 3. Telegram Button */}
+                      {hasPhone && (
+                        <a
+                          href={getTelegramLink(msg.phone)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="py-2 px-2.5 rounded-xl border flex items-center justify-center gap-1.5 text-xs font-bold transition-all active:scale-95 text-center"
+                          style={{
+                            backgroundColor: 'var(--tg-theme-button-color, #0ea5e9)',
+                            borderColor: 'transparent',
+                            color: 'var(--tg-theme-button-text-color, #ffffff)',
+                          }}
+                        >
+                          <TelegramIcon className="w-3.5 h-3.5 shrink-0 fill-current" />
+                          <span>تلگرام</span>
+                        </a>
+                      )}
+
+                      {/* 4. Email Button */}
+                      {hasEmail && (
                         <a
                           href={`mailto:${msg.email}`}
                           className="py-2 px-2.5 rounded-xl border flex items-center justify-center gap-1.5 text-xs font-bold transition-all active:scale-95 text-center"
@@ -392,8 +407,6 @@ export default function UserTWA() {
                           <Mail className="w-3.5 h-3.5 shrink-0" />
                           <span>ایمیل</span>
                         </a>
-                      ) : (
-                        <div />
                       )}
                     </div>
                   )}

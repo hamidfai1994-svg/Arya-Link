@@ -1313,14 +1313,25 @@ export const LivePreview: React.FC = () => {
               <label className={`block text-[10px] font-medium mb-1 ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>
                 شماره تماس
               </label>
-              <input
-                type="tel"
-                placeholder="0700 000 000"
-                readOnly
-                dir="ltr"
-                className={`w-full ${cardRadius} px-3 py-1.5 text-xs font-sans text-left border focus:outline-none ${isLight ? 'bg-slate-50 border-slate-200 text-slate-800 placeholder-slate-400' : 'bg-white/5 border-white/10 text-white placeholder-slate-500'
-                  }`}
-              />
+              <div className="flex gap-2 w-full" dir="ltr">
+                <select
+                  disabled
+                  defaultValue="+93"
+                  className={`p-1.5 border rounded-xl text-xs font-mono bg-transparent ${isLight ? 'border-slate-200 text-slate-800' : 'border-white/10 text-white'}`}
+                >
+                  <option value="+93">🇦🇫 +93</option>
+                  <option value="+98">🇮🇷 +98</option>
+                  <option value="+971">🇦🇪 +971</option>
+                  <option value="+1">🇺🇸 +1</option>
+                </select>
+                <input
+                  type="tel"
+                  placeholder="782698484"
+                  readOnly
+                  dir="ltr"
+                  className={`flex-1 ${cardRadius} px-3 py-1.5 text-xs font-sans text-left border focus:outline-none ${isLight ? 'bg-slate-50 border-slate-200 text-slate-800 placeholder-slate-400' : 'bg-white/5 border-white/10 text-white placeholder-slate-500'}`}
+                />
+              </div>
             </div>
             <div>
               <label className={`block text-[10px] font-medium mb-1 ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>

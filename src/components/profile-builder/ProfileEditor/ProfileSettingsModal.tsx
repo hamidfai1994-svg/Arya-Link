@@ -39,6 +39,7 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
 }) => {
   const {
     profile,
+    isDirty,
     updateBasicInfo,
     setProfileLanguage,
     toggleDirectMode,
@@ -94,6 +95,15 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
     setCopiedLink(true);
     toast.success('لینک پروفایل در کلیپ‌بورد کپی شد!');
     setTimeout(() => setCopiedLink(false), 2000);
+  };
+
+  const handleOpenBot = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (isDirty) {
+      toast.error('لطفاً ابتدا تغییرات خود را با زدن دکمه ذخیره، ثبت کنید.');
+      return;
+    }
+    window.open('https://t.me/AryaLinkBot', '_blank', 'noopener,noreferrer');
   };
 
   return (
@@ -518,6 +528,24 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
                       کافیست در تلگرام به ربات رسمی <strong dir="ltr" className="text-foreground">@userinfobot</strong> یا بات پیام‌رسان سایت پیام بفرستید تا عدد <strong dir="ltr" className="text-foreground">Id</strong> شما نمایش داده شود. آن عدد را در کادر بالا وارد کنید.
                     </p>
                   </div>
+
+                  {/* Warning Notice: Must start bot */}
+                  <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-2.5 text-xs text-amber-600 dark:text-amber-400 mt-2">
+                    <span className="text-base leading-none">⚠️</span>
+                    <p className="font-semibold leading-relaxed">
+                      بسیار مهم: برای دریافت پیام‌ها، باید ربات را استارت بزنید.
+                    </p>
+                  </div>
+
+                  {/* Open Bot & Start Button */}
+                  <button
+                    type="button"
+                    onClick={handleOpenBot}
+                    className="w-full mt-3 p-2 bg-blue-500 hover:bg-blue-600 text-white font-bold text-xs rounded-xl shadow-md shadow-blue-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                    <span>باز کردن ربات و Start</span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -527,7 +555,7 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
         {/* Modal Footer */}
         <div className="p-4 border-t border-border bg-muted/40 flex items-center justify-between gap-3">
           <span className="text-xs text-muted-foreground hidden sm:inline">
-            تغییرات شما پس از تایید به صورت زنده ذخیره می‌شوند.
+            {isDirty ? 'تغییرات ذخیره‌نشده دارید.' : 'تنظیمات با سرور هماهنگ است.'}
           </span>
           <div className="flex items-center gap-2 mr-auto w-full sm:w-auto justify-end">
             {/* Cancel Button */}
@@ -545,8 +573,12 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
             <button
               type="button"
               onClick={handleSaveAndConfirm}
-              disabled={isSavingSettings}
-              className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold text-xs shadow-md shadow-emerald-500/25 transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 disabled:opacity-50"
+              disabled={!isDirty || isSavingSettings}
+              className={`px-5 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 ${
+                isDirty && !isSavingSettings
+                  ? 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white shadow-md shadow-emerald-500/25 cursor-pointer active:scale-95'
+                  : 'bg-muted text-muted-foreground border border-border cursor-not-allowed opacity-50'
+              }`}
             >
               {isSavingSettings ? (
                 <>

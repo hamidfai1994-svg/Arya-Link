@@ -50,6 +50,7 @@ export function SuperAdminApiSettings() {
   const [settings, setSettings] = useState<SystemSettingsState>(defaultSettings);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
 
   useEffect(() => {
     fetchSettings();
@@ -71,6 +72,7 @@ export function SuperAdminApiSettings() {
           notifySystemAlerts: json.data.notifySystemAlerts ?? false,
           appPushEnabled: false,
         });
+        setIsDirty(false);
       }
     } catch (err) {
       console.error('Error loading system settings:', err);
@@ -92,6 +94,7 @@ export function SuperAdminApiSettings() {
 
       const json = await res.json();
       if (json.success) {
+        setIsDirty(false);
         toast.success(json.message || 'تنظیمات کلان API و تلگرام با موفقیت ذخیره شد.', {
           id: toastId,
         });
@@ -108,6 +111,7 @@ export function SuperAdminApiSettings() {
 
   const updateField = <K extends keyof SystemSettingsState>(key: K, value: SystemSettingsState[K]) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
+    setIsDirty(true);
   };
 
   if (isLoading) {
@@ -145,8 +149,12 @@ export function SuperAdminApiSettings() {
 
           <Button
             onClick={handleSave}
-            disabled={isSaving}
-            className="h-10 px-5 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs shadow-md shadow-cyan-500/20 flex items-center gap-2 shrink-0 self-start sm:self-auto cursor-pointer active:scale-95 transition-all"
+            disabled={!isDirty || isSaving}
+            className={`h-10 px-5 rounded-2xl font-bold text-xs shadow-md transition-all flex items-center gap-2 shrink-0 self-start sm:self-auto ${
+              isDirty && !isSaving
+                ? 'bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-cyan-500/20 cursor-pointer active:scale-95'
+                : 'bg-muted text-muted-foreground border border-border cursor-not-allowed opacity-50 shadow-none'
+            }`}
           >
             {isSaving ? (
               <>

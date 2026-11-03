@@ -25,12 +25,24 @@ export const formatSmartDate = (dateString: string | Date | undefined): string =
     } else if (diffDays === 1) {
       return `دیروز، ساعت ${timeFormatter.format(date)}`;
     } else {
-      return new Intl.DateTimeFormat('fa-IR', {
+      // تولید تاریخ استاندارد جلالی
+      let fullDate = new Intl.DateTimeFormat('fa-IR', {
         weekday: 'long',
         year: 'numeric',
         month: 'long',
         day: 'numeric',
       }).format(date);
+
+      // آرایه‌های جایگزینی ماه‌های ایرانی با ماه‌های دری
+      const iranianMonths = ['فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور', 'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند'];
+      const dariMonths = ['حمل', 'ثور', 'جوزا', 'سرطان', 'اسد', 'سنبله', 'میزان', 'عقرب', 'قوس', 'جدی', 'دلو', 'حوت'];
+
+      // اعمال جایگزینی در متن تاریخ
+      for (let i = 0; i < 12; i++) {
+        fullDate = fullDate.replace(iranianMonths[i], dariMonths[i]);
+      }
+
+      return fullDate;
     }
   } catch {
     return String(dateString);

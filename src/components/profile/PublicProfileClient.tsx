@@ -245,6 +245,7 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
 
   // Contact Form State
   const [formName, setFormName] = useState('');
+  const [formCountryCode, setFormCountryCode] = useState('+93');
   const [formPhone, setFormPhone] = useState('');
   const [formEmail, setFormEmail] = useState('');
   const [formMessage, setFormMessage] = useState('');
@@ -487,6 +488,9 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
       return;
     }
 
+    const cleanRawPhone = convertToEnglishDigits(formPhone.trim()).replace(/^0+/, '');
+    const finalPhone = formCountryCode + cleanRawPhone;
+
     setIsSubmittingForm(true);
     try {
       const response = await fetch('/api/messages', {
@@ -496,7 +500,7 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
           profileAlias: profile.alias,
           name: formName.trim(),
           email: formEmail.trim(),
-          phone: formPhone.trim(),
+          phone: finalPhone,
           message: formMessage.trim(),
         }),
       });
@@ -937,18 +941,33 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
                 <label className={`block text-[11px] font-medium mb-1 ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
                   شماره تماس <span className="text-rose-500">*</span>
                 </label>
-                <input
-                  type="tel"
-                  required
-                  value={formPhone}
-                  onChange={(e) => setFormPhone(e.target.value)}
-                  placeholder="0700 000 000"
-                  dir="ltr"
-                  className={`w-full rounded-xl px-3.5 py-2.5 text-xs font-sans text-left border focus:outline-none focus:border-cyan-500 transition-all ${isLight
-                      ? 'bg-slate-50 border-slate-200 text-slate-800 placeholder-slate-400'
-                      : 'bg-white/5 border-white/10 text-white placeholder-slate-500'
-                    }`}
-                />
+                <div className="flex gap-2 w-full" dir="ltr">
+                  <select
+                    value={formCountryCode}
+                    onChange={(e) => setFormCountryCode(e.target.value)}
+                    className={`p-2 border rounded-xl text-xs font-mono focus:outline-none focus:border-cyan-500 transition-all cursor-pointer ${isLight
+                        ? 'bg-slate-50 border-slate-200 text-slate-800'
+                        : 'bg-white/5 border-white/10 text-white'
+                      }`}
+                  >
+                    <option value="+93" className="bg-slate-900 text-white">🇦🇫 +93</option>
+                    <option value="+98" className="bg-slate-900 text-white">🇮🇷 +98</option>
+                    <option value="+971" className="bg-slate-900 text-white">🇦🇪 +971</option>
+                    <option value="+1" className="bg-slate-900 text-white">🇺🇸 +1</option>
+                  </select>
+                  <input
+                    type="tel"
+                    required
+                    name="phone"
+                    value={formPhone}
+                    onChange={(e) => setFormPhone(convertToEnglishDigits(e.target.value))}
+                    placeholder="782698484"
+                    className={`p-2 border rounded-xl flex-1 text-xs font-sans text-left focus:outline-none focus:border-cyan-500 transition-all ${isLight
+                        ? 'bg-slate-50 border-slate-200 text-slate-800 placeholder-slate-400'
+                        : 'bg-white/5 border-white/10 text-white placeholder-slate-500'
+                      }`}
+                  />
+                </div>
               </div>
 
               <div>
