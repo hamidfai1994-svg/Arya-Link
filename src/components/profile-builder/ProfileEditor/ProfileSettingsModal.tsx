@@ -103,7 +103,7 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
       toast.error('لطفاً ابتدا تغییرات خود را با زدن دکمه ذخیره، ثبت کنید.');
       return;
     }
-    window.open('https://t.me/AryaLinkBot', '_blank', 'noopener,noreferrer');
+    window.open('https://t.me/AryaLinkBot?start=crm', '_blank', 'noopener,noreferrer');
   };
 
   return (
@@ -522,6 +522,14 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
                     dir="ltr"
                     className="w-full bg-card border border-border rounded-xl px-3 py-2 text-xs font-mono text-foreground focus:outline-none focus:border-cyan-500 text-left"
                   />
+                  <a
+                    href="https://t.me/userinfobot?start=getid"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-blue-500 hover:underline mt-1 inline-block"
+                  >
+                    شناسه (Chat ID) من چیست؟ برای دریافت کلیک کنید
+                  </a>
                   <div className="p-2.5 rounded-xl bg-card/60 border border-border/60 text-[11px] text-muted-foreground space-y-1">
                     <span className="font-bold text-cyan-500 block">💡 چگونه Chat ID تلگرام خود را پیدا کنم؟</span>
                     <p className="leading-relaxed">
