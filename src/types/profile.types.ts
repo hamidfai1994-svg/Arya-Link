@@ -250,7 +250,16 @@ export interface ProfileThemeConfig {
   cardBlur: string;
   textColor: string;
   borderRadius: string;
-  backgroundType?: 'solid' | 'gradient' | 'pattern';
+  backgroundType?: 'solid' | 'gradient' | 'pattern' | 'image';
+  bgSolidColor?: string;
+  bgGradientColors?: string[];
+  bgGradientType?: 'linear' | 'radial';
+  bgPatternId?: string;
+  bgPatternOpacity?: number;
+  bgImageUrl?: string;
+  bgImageOpacity?: number;
+  bgGradientPosition?: number; // 0 to 100%
+  bgPatternSize?: number;      // 10 to 100px
   buttonBorderStyle?: 'none' | 'solid' | 'dashed';
   buttonShadowStyle?: 'none' | 'sm' | 'md' | 'glow';
   fontFa?: 'vazirmatn' | 'yekan_bakh' | 'shabnam' | 'sahel' | 'dana';

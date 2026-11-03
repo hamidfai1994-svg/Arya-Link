@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEditorStore } from '@/store/editor-store';
 import { LinkModuleType, ProfileLinkItem, BusinessHourDay } from '@/types/profile.types';
@@ -109,6 +109,13 @@ import {
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 
+// Pattern SVG Presets for background rendering (Stage 6)
+const PATTERN_PRESETS: Record<string, string> = {
+  circuit: "data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0v10M0 30h10M30 50v10M50 30h10M20 20h20v20H20z' stroke='%2306b6d4' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round' opacity='0.7'/%3E%3Ccircle cx='30' cy='30' r='3' fill='%2306b6d4'/%3E%3C/svg%3E",
+  dots: "data:image/svg+xml,%3Csvg width='24' height='24' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='12' cy='12' r='2' fill='%23ffffff' opacity='0.6'/%3E%3C/svg%3E",
+  grid: "data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M 40 0 L 0 0 0 40' fill='none' stroke='%23ffffff' stroke-width='1' opacity='0.3'/%3E%3C/svg%3E",
+};
+
 export const LivePreview: React.FC = () => {
   const {
     profile,
@@ -126,6 +133,21 @@ export const LivePreview: React.FC = () => {
 
   const [activeVerticalDragId, setActiveVerticalDragId] = useState<string | null>(null);
   const [activeSocialDragId, setActiveSocialDragId] = useState<string | null>(null);
+
+  // Debounced auto-save for drag & drop operations to prevent race conditions
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const debouncedSave = () => {
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    saveTimeoutRef.current = setTimeout(() => {
+      saveProfileData();
+    }, 1000);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    };
+  }, []);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [copiedShareLink, setCopiedShareLink] = useState(false);
   const [isLeadModalOpen, setIsLeadModalOpen] = useState(false);
@@ -139,6 +161,93 @@ export const LivePreview: React.FC = () => {
     title?: string;
   } | null>(null);
   const [copiedLocationLink, setCopiedLocationLink] = useState(false);
+
+  // Dynamic background style based directly on themeConfig.backgroundType (Stage 6)
+  const getThemeBackgroundStyle = (): React.CSSProperties => {
+    const bgType = themeConfig.backgroundType || 'gradient';
+    if (bgType === 'solid') {
+      return {
+        backgroundColor: themeConfig.bgSolidColor || (isLight ? '#f8fafc' : '#090d16'),
+      };
+    }
+    if (bgType === 'gradient') {
+      const colors = (themeConfig.bgGradientColors && themeConfig.bgGradientColors.length >= 2)
+        ? themeConfig.bgGradientColors
+        : (isLight ? ['#f8fafc', '#f1f5f9', '#e2e8f0'] : ['#090d16', '#0f172a', '#1e1b4b']);
+      const gradType = themeConfig.bgGradientType || 'linear';
+      const stopPos = typeof themeConfig.bgGradientPosition === 'number' ? themeConfig.bgGradientPosition : 50;
+
+      let colorStops = '';
+      if (colors.length === 2) {
+        colorStops = `${colors[0]} 0%, ${colors[1]} ${stopPos}%`;
+      } else if (colors.length === 3) {
+        colorStops = `${colors[0]} 0%, ${colors[1]} ${stopPos}%, ${colors[2]} 100%`;
+      } else {
+        colorStops = colors.join(', ');
+      }
+
+      return {
+        background: gradType === 'radial'
+          ? `radial-gradient(circle at center, ${colorStops})`
+          : `linear-gradient(135deg, ${colorStops})`,
+      };
+    }
+    return {
+      backgroundColor: themeConfig.bgSolidColor || (isLight ? '#f8fafc' : '#090d16'),
+    };
+  };
+
+  const getOverlayStyle = (): React.CSSProperties => {
+    if (themeConfig.backgroundType === 'image' && themeConfig.bgImageUrl) {
+      const imgOpacity = typeof themeConfig.bgImageOpacity === 'number'
+        ? (themeConfig.bgImageOpacity > 1 ? themeConfig.bgImageOpacity / 100 : themeConfig.bgImageOpacity)
+        : 0.25;
+      return {
+        backgroundImage: `url(${themeConfig.bgImageUrl})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        opacity: imgOpacity,
+      };
+    }
+
+    if (themeConfig.backgroundType === 'pattern') {
+      const pid = themeConfig.bgPatternId || 'dots';
+      const size = themeConfig.bgPatternSize || 24;
+      const pColor = isLight ? 'rgba(0, 0, 0, 0.22)' : 'rgba(255, 255, 255, 0.22)';
+      const pOpacity = typeof themeConfig.bgPatternOpacity === 'number'
+        ? (themeConfig.bgPatternOpacity > 1 ? themeConfig.bgPatternOpacity / 100 : themeConfig.bgPatternOpacity)
+        : 0.15;
+
+      let bgImg = '';
+      let bgRepeat = 'repeat';
+      let bgSize = `${size}px ${size}px`;
+
+      if (pid === 'grid') {
+        bgImg = `linear-gradient(to right, ${pColor} 1px, transparent 1px), linear-gradient(to bottom, ${pColor} 1px, transparent 1px)`;
+      } else if (pid === 'diagonal') {
+        bgImg = `repeating-linear-gradient(45deg, ${pColor}, ${pColor} 1px, transparent 1px, transparent ${size}px)`;
+        bgSize = 'auto';
+      } else if (pid === 'stripes') {
+        bgImg = `repeating-linear-gradient(0deg, ${pColor}, ${pColor} 1px, transparent 1px, transparent ${size}px)`;
+        bgSize = 'auto';
+      } else if (pid === 'circuit') {
+        bgImg = `url("${PATTERN_PRESETS.circuit}")`;
+      } else {
+        bgImg = `radial-gradient(circle, ${pColor} 1.5px, transparent 1.5px)`;
+      }
+
+      return {
+        backgroundImage: bgImg,
+        backgroundSize: bgSize,
+        backgroundRepeat: bgRepeat,
+        backgroundPosition: 'center',
+        opacity: pOpacity,
+      };
+    }
+
+    return {};
+  };
 
   const handleTreeReorder = (
     links: ProfileLinkItem[],
@@ -218,7 +327,7 @@ export const LivePreview: React.FC = () => {
         String(over.id)
       );
       reorderLinks(reordered);
-      saveProfileData(); // Auto-save for D&D
+      debouncedSave(); // Auto-save for D&D with 1000ms debounce
       toast.success('ترتیب آیکون‌های شبکه اجتماعی به‌روزرسانی و ذخیره شد');
     }
     setActiveSocialDragId(null);
@@ -245,7 +354,7 @@ export const LivePreview: React.FC = () => {
         String(over.id)
       );
       reorderLinks(reordered);
-      saveProfileData(); // Auto-save for D&D
+      debouncedSave(); // Auto-save for D&D with 1000ms debounce
       toast.success('ترتیب ماژول‌ها در پیش‌نمایش به‌روزرسانی و ذخیره شد');
     }
     setActiveVerticalDragId(null);
@@ -673,14 +782,6 @@ export const LivePreview: React.FC = () => {
     const customStyle = adv.customStyling;
 
     // Custom overrides if defined
-    const bColor =
-      customStyle?.customBorderColor ||
-      themeConfig.buttonBorderColor ||
-      (isLight ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.2)');
-    const bgColor =
-      customStyle?.customBgColor ||
-      themeConfig.buttonBgColor ||
-      (isLight ? '#ffffff' : 'rgba(30,41,59,0.85)');
     const bWidthVal =
       (customStyle?.borderWidth || themeConfig.buttonBorderWidth) === 'none'
         ? '0px'
@@ -692,18 +793,38 @@ export const LivePreview: React.FC = () => {
 
     const customCardStyle: React.CSSProperties = {
       ...(adv.animationSpeed ? { ['--anim-speed' as any]: `${adv.animationSpeed}s` } : {}),
-      ['--btn-border' as any]: bColor,
-      ['--btn-bg' as any]: bgColor,
       ['--btn-border-width' as any]: bWidthVal,
     };
-    if (customStyle?.customBgColor || themeConfig.buttonBgColor) {
-      customCardStyle.backgroundColor = customStyle?.customBgColor || themeConfig.buttonBgColor;
+
+    // Background color: Only apply inline if user chose a custom color and not the default cyan (#0ea5e9 / #38bdf8)
+    const rawBgColor = customStyle?.customBgColor || themeConfig.buttonBgColor;
+    const isDefaultBg =
+      !rawBgColor ||
+      rawBgColor.trim() === '' ||
+      rawBgColor.toLowerCase() === '#0ea5e9' ||
+      rawBgColor.toLowerCase() === '#38bdf8';
+    if (!isDefaultBg) {
+      customCardStyle.backgroundColor = rawBgColor;
+      customCardStyle['--btn-bg' as any] = rawBgColor;
     }
-    if (customStyle?.customTextColor || themeConfig.buttonTextColor) {
-      customCardStyle.color = customStyle?.customTextColor || themeConfig.buttonTextColor;
+
+    // Text color
+    const rawTextColor = customStyle?.customTextColor || themeConfig.buttonTextColor;
+    if (rawTextColor && rawTextColor.trim() !== '') {
+      customCardStyle.color = rawTextColor;
+      customCardStyle['--btn-text' as any] = rawTextColor;
     }
-    if (customStyle?.customBorderColor || themeConfig.buttonBorderColor) {
-      customCardStyle.borderColor = customStyle?.customBorderColor || themeConfig.buttonBorderColor;
+
+    // Border color: Only apply inline if user chose a custom color and not the default cyan border (#38bdf8 / #0ea5e9)
+    const rawBorderColor = customStyle?.customBorderColor || themeConfig.buttonBorderColor;
+    const isDefaultBorder =
+      !rawBorderColor ||
+      rawBorderColor.trim() === '' ||
+      rawBorderColor.toLowerCase() === '#38bdf8' ||
+      rawBorderColor.toLowerCase() === '#0ea5e9';
+    if (!isDefaultBorder) {
+      customCardStyle.borderColor = rawBorderColor;
+      customCardStyle['--btn-border' as any] = rawBorderColor;
     }
 
     const cardShape = getButtonShapeClass(customStyle?.buttonShape, customStyle?.borderRadius);
@@ -1411,6 +1532,24 @@ export const LivePreview: React.FC = () => {
     }
 
     // 8. Standard / General Link Buttons (Call, Email, Waze, Donation, PDF, Custom, or Social in vertical mode)
+    const rawVal =
+      link.url ||
+      (link.metadata?.phoneNumber as string) ||
+      (link.metadata?.channelUsername as string) ||
+      (link.metadata?.instagramUsername as string) ||
+      (link.metadata?.linkedinUsername as string) ||
+      (link.metadata?.emailAddress as string) ||
+      (link.metadata?.email as string) ||
+      (link.metadata?.targetId as string) ||
+      '';
+
+    let displaySubtitle = rawVal || link.url || '';
+    if (link.moduleType === 'email_direct') {
+      const emailVal = (link.metadata?.emailAddress as string) || link.url || '';
+      const displayEmail = emailVal.replace(/^mailto:/, '').split('?')[0];
+      displaySubtitle = displayEmail;
+    }
+
     return (
       <motion.a
         key={link.id}
@@ -1485,14 +1624,16 @@ export const LivePreview: React.FC = () => {
                 </span>
               )}
             </div>
-            <span
-              className={`font-sans font-medium tracking-wide truncate block mt-0.5 ${isLight ? 'text-slate-500' : 'text-slate-300/80'
-                }`}
-              style={{ fontSize: 'calc(var(--dynamic-base-size) * 0.8)' }}
-              dir="ltr"
-            >
-              {formatDisplayValue(link.url)}
-            </span>
+            {displaySubtitle && (
+              <span
+                className={`font-sans font-medium tracking-wide truncate block mt-0.5 ${isLight ? 'text-slate-500' : 'text-slate-300/80'
+                  }`}
+                style={{ fontSize: 'calc(var(--dynamic-base-size) * 0.8)' }}
+                dir="ltr"
+              >
+                {formatDisplayValue(displaySubtitle)}
+              </span>
+            )}
           </div>
         </div>
 
@@ -1687,12 +1828,19 @@ export const LivePreview: React.FC = () => {
               }`}
             data-font={isLtr ? (themeConfig.fontEn || 'inter') : (themeConfig.fontFa || 'vazirmatn')}
             style={{
-              background: isLight ? 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%)' : themeConfig.backgroundColor,
+              ...getThemeBackgroundStyle(),
               fontSize: `${previewFontSize}px`,
               ['--dynamic-base-size' as any]: `${previewFontSize}px`,
             }}
             dir={isLtr ? 'ltr' : 'rtl'}
           >
+            {/* Pattern or Image Overlay Layer (Stage 6) */}
+            {(themeConfig.backgroundType === 'pattern' || themeConfig.backgroundType === 'image') && (
+              <div
+                className="absolute inset-0 pointer-events-none -z-0"
+                style={getOverlayStyle()}
+              />
+            )}
             {/* Direct Mode Alert */}
             {profile.directModeEnabled && (
               <div className="z-20 bg-emerald-500 text-slate-950 text-[10px] font-bold py-1 px-3 text-center flex items-center justify-center gap-1.5 shadow-md shrink-0">
@@ -1907,6 +2055,7 @@ export const LivePreview: React.FC = () => {
                   {(compactSocialLinks.length > 0 || profile.whatsapp || profile.phone) && (
                     <div className="mb-4 pt-1">
                       <DndContext
+                        id="social-dnd-context"
                         sensors={sensors}
                         collisionDetection={closestCenter}
                         onDragStart={handleSocialDragStart}
@@ -1971,6 +2120,7 @@ export const LivePreview: React.FC = () => {
                   {/* NON-SOCIAL MODULES LIST (With Vertical Dnd) */}
                   <div className="space-y-2.5 flex-1">
                     <DndContext
+                      id="vertical-dnd-context"
                       sensors={sensors}
                       collisionDetection={closestCenter}
                       onDragStart={handleVerticalDragStart}
@@ -2311,7 +2461,7 @@ export const LivePreview: React.FC = () => {
           }
         }}
       >
-        <DialogContent className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[92%] max-w-sm rounded-2xl max-h-[85dvh] overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden z-50 bg-slate-900/95 border border-white/10 backdrop-blur-2xl p-5 text-center text-white shadow-2xl">
+        <DialogContent className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[92%] max-w-sm rounded-2xl h-auto z-50 bg-slate-900/95 border border-white/10 backdrop-blur-2xl p-5 text-center text-white shadow-2xl">
           {/* Ambient Lighting Accents */}
           <div className="absolute -top-16 -right-16 w-36 h-36 bg-cyan-500/20 rounded-full blur-2xl pointer-events-none" />
           <div className="absolute -bottom-16 -left-16 w-36 h-36 bg-emerald-500/20 rounded-full blur-2xl pointer-events-none" />

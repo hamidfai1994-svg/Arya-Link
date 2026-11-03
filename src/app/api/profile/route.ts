@@ -5,6 +5,7 @@ import { connectToDatabase } from '@/lib/db/mongodb';
 import { Profile } from '@/models/Profile.model';
 import { buildUserIsolationQuery, isValidUserSession } from '@/lib/db/data-isolation';
 import mongoose from 'mongoose';
+import { revalidatePath } from 'next/cache';
 
 export const dynamic = 'force-dynamic';
 
@@ -93,6 +94,24 @@ export async function GET(req: NextRequest) {
             cardBlur: 'backdrop-blur-md bg-white/10 border-white/20',
             textColor: '#ffffff',
             borderRadius: 'rounded-2xl',
+            backgroundType: 'gradient',
+            bgSolidColor: '#090d16',
+            bgGradientColors: ['#090d16', '#0f172a', '#1e1b4b'],
+            bgGradientType: 'linear',
+            bgPatternId: 'circuit',
+            bgPatternOpacity: 0.15,
+            bgImageUrl: '',
+            bgImageOpacity: 0.25,
+            bgGradientPosition: 50,
+            bgPatternSize: 24,
+            buttonShape: 'soft',
+            buttonSize: 'md',
+            buttonBorderWidth: 'thin',
+            buttonBorderStyle: 'solid',
+            buttonShadowStyle: 'sm',
+            buttonBgColor: '#0ea5e9',
+            buttonTextColor: '#ffffff',
+            buttonBorderColor: '#38bdf8',
           },
           links: [],
           isActive: true,
@@ -218,42 +237,117 @@ export async function POST(req: NextRequest) {
     // 3. Update existing user's profile or Create New (strictly isolated to current user)
     let savedProfile = null;
 
+    const updateSet: Record<string, any> = {
+      alias: cleanAlias,
+      displayName: displayName.trim(),
+      headline: headline || '',
+      bio: bio || '',
+      avatarUrl: avatarUrl || '',
+      coverUrl: coverUrl || '',
+      headerLayout: headerLayout || 'curve',
+      phone: phone || '',
+      whatsapp: whatsapp || '',
+      email: email || currentUserEmail,
+      userEmail: currentUserEmail,
+      location: location || '',
+      directModeEnabled: !!directModeEnabled,
+      directModeUrl: directModeUrl || '',
+      ...(seoTitle !== undefined && { seoTitle }),
+      ...(seoDescription !== undefined && { seoDescription }),
+      ...(hideBranding !== undefined && { hideBranding }),
+      ...(Array.isArray(links) && { links }),
+      ...(profileType && { profileType }),
+      ...(isVerified !== undefined && { isVerified }),
+      ...(verificationStatus && { verificationStatus }),
+      ...(verificationData && { verificationData }),
+      ...(profileLanguage && { profileLanguage }),
+    };
+
+    if (themeConfig && typeof themeConfig === 'object') {
+      updateSet.themeConfig = themeConfig;
+      console.log('Incoming themeConfig in /api/profile:', themeConfig);
+    }
+
     if (isObjectId) {
       savedProfile = await Profile.findOneAndUpdate(
         { _id: new mongoose.Types.ObjectId(id), ...userCondition },
-        {
-          $set: {
-            alias: cleanAlias,
-            displayName: displayName.trim(),
-            headline: headline || '',
-            bio: bio || '',
-            avatarUrl: avatarUrl || '',
-            coverUrl: coverUrl || '',
-            headerLayout: headerLayout || 'curve',
-            phone: phone || '',
-            whatsapp: whatsapp || '',
-            email: email || currentUserEmail,
-            userEmail: currentUserEmail,
-            location: location || '',
-            directModeEnabled: !!directModeEnabled,
-            directModeUrl: directModeUrl || '',
-            ...(themeConfig && { themeConfig }),
-            ...(seoTitle !== undefined && { seoTitle }),
-            ...(seoDescription !== undefined && { seoDescription }),
-            ...(hideBranding !== undefined && { hideBranding }),
-            ...(Array.isArray(links) && { links }),
-            ...(profileType && { profileType }),
-            ...(isVerified !== undefined && { isVerified }),
-            ...(verificationStatus && { verificationStatus }),
-            ...(verificationData && { verificationData }),
-            ...(profileLanguage && { profileLanguage }),
-          },
-        },
-        { new: true, runValidators: true }
+        { $set: updateSet },
+        { new: true, runValidators: false, strict: false }
       ).lean();
     }
 
+    // Fallback 1: match by alias for current user if not matched by ObjectId
+    if (!savedProfile && cleanAlias) {
+      savedProfile = await Profile.findOneAndUpdate(
+        { alias: cleanAlias, ...userCondition },
+        { $set: updateSet },
+        { new: true, runValidators: false, strict: false }
+      ).lean();
+    }
+
+    // Fallback 2: Direct ownership verification if strict userCondition had format mismatch
+    if (!savedProfile && isObjectId) {
+      const existingDoc = await Profile.findById(id).lean();
+      if (existingDoc) {
+        const docUserId = String(existingDoc.userId || '');
+        const docEmail = String(existingDoc.email || existingDoc.userEmail || '').toLowerCase();
+        const sessUserId = String(currentUserId || '');
+        const sessEmail = String(currentUserEmail || '').toLowerCase();
+
+        const isOwner =
+          (sessUserId && docUserId === sessUserId) ||
+          (sessEmail && docEmail === sessEmail);
+
+        if (isOwner) {
+          savedProfile = await Profile.findByIdAndUpdate(
+            id,
+            { $set: updateSet },
+            { new: true, runValidators: false, strict: false }
+          ).lean();
+        }
+      }
+    }
+
+    // Fallback 3: Alias ownership verification
+    if (!savedProfile && cleanAlias) {
+      const existingDoc = await Profile.findOne({ alias: cleanAlias }).lean();
+      if (existingDoc) {
+        const docUserId = String(existingDoc.userId || '');
+        const docEmail = String(existingDoc.email || existingDoc.userEmail || '').toLowerCase();
+        const sessUserId = String(currentUserId || '');
+        const sessEmail = String(currentUserEmail || '').toLowerCase();
+
+        const isOwner =
+          (sessUserId && docUserId === sessUserId) ||
+          (sessEmail && docEmail === sessEmail);
+
+        if (isOwner) {
+          savedProfile = await Profile.findByIdAndUpdate(
+            existingDoc._id,
+            { $set: updateSet },
+            { new: true, runValidators: false, strict: false }
+          ).lean();
+        }
+      }
+    }
+
+    if (savedProfile) {
+      console.log('Successfully saved profile themeConfig in DB:', savedProfile.themeConfig);
+    }
+
     if (!savedProfile) {
+      // Check if alias already exists to prevent duplicate key crashes
+      const aliasExists = await Profile.findOne({ alias: cleanAlias }).lean();
+      if (aliasExists) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: 'این نام کاربری (لینک پروفایل) قبلاً ثبت شده و متعلق به حساب شما نیست.',
+          },
+          { status: 409 }
+        );
+      }
+
       const newDoc = await Profile.create({
         userId: currentUserId,
         email: email || currentUserEmail,
@@ -283,6 +377,24 @@ export async function POST(req: NextRequest) {
           cardBlur: 'backdrop-blur-md bg-white/10 border-white/20',
           textColor: '#ffffff',
           borderRadius: 'rounded-2xl',
+          backgroundType: 'gradient',
+          bgSolidColor: '#090d16',
+          bgGradientColors: ['#090d16', '#0f172a', '#1e1b4b'],
+          bgGradientType: 'linear',
+          bgPatternId: 'circuit',
+          bgPatternOpacity: 0.15,
+          bgImageUrl: '',
+          bgImageOpacity: 0.25,
+          bgGradientPosition: 50,
+          bgPatternSize: 24,
+          buttonShape: 'soft',
+          buttonSize: 'md',
+          buttonBorderWidth: 'thin',
+          buttonBorderStyle: 'solid',
+          buttonShadowStyle: 'sm',
+          buttonBgColor: '#0ea5e9',
+          buttonTextColor: '#ffffff',
+          buttonBorderColor: '#38bdf8',
         },
         links: Array.isArray(links) ? links : [],
         seoTitle: seoTitle || '',
@@ -294,21 +406,38 @@ export async function POST(req: NextRequest) {
       savedProfile = newDoc.toObject();
     }
 
+    // Cache Invalidation for Public Profile (Mini-site)
+    const targetAlias = savedProfile?.alias || cleanAlias;
+    if (targetAlias) {
+      try {
+        revalidatePath(`/${targetAlias}`);
+        revalidatePath(`/${targetAlias}`, 'page');
+      } catch (e) {
+        console.error('Cache revalidation failed:', e);
+      }
+    }
+
+    const returnId = (savedProfile as any)?._id?.toString() || (savedProfile as any)?.id || id || '';
+
     return NextResponse.json({
       success: true,
       message: 'تغییرات پروفایل با موفقیت در پایگاه داده ذخیره و منتشر شد.',
       data: {
-        ...savedProfile,
-        id: (savedProfile as any)._id.toString(),
+        ...(savedProfile || {}),
+        id: returnId,
       },
     });
   } catch (error: any) {
-    console.error('Error saving profile:', error);
+    console.error('Error saving profile in /api/profile:', error);
+    const detailedMessage =
+      error?.message ||
+      (typeof error === 'string' ? error : JSON.stringify(error)) ||
+      'خطا در ذخیره‌سازی اطلاعات پروفایل در دیتابیس.';
     return NextResponse.json(
       {
         success: false,
-        message: 'خطا در ذخیره‌سازی اطلاعات پروفایل در دیتابیس.',
-        error: error?.message || 'Internal Server Error',
+        message: detailedMessage,
+        error: detailedMessage,
       },
       { status: 500 }
     );

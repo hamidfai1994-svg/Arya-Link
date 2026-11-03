@@ -128,6 +128,20 @@ export const SectionModulesList: React.FC = () => {
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const snapshotsRef = React.useRef<Record<string, ProfileLinkItem>>({});
 
+  const dragSaveTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+  const debouncedDragSave = () => {
+    if (dragSaveTimeoutRef.current) clearTimeout(dragSaveTimeoutRef.current);
+    dragSaveTimeoutRef.current = setTimeout(() => {
+      saveProfileData();
+    }, 1000);
+  };
+
+  React.useEffect(() => {
+    return () => {
+      if (dragSaveTimeoutRef.current) clearTimeout(dragSaveTimeoutRef.current);
+    };
+  }, []);
+
   React.useEffect(() => {
     if (expandedModuleId) {
       const currentLink = profile.links.find((l) => l.id === expandedModuleId);
@@ -2728,7 +2742,7 @@ export const SectionModulesList: React.FC = () => {
         String(over.id)
       );
       reorderLinks(reordered);
-      saveProfileData(); // Auto-save on drag end
+      debouncedDragSave(); // Auto-save on drag end with debounce
       toast.success('چیدمان ماژول‌ها به‌روزرسانی و ذخیره شد');
     }
     setActiveDragId(null);
@@ -2749,6 +2763,7 @@ export const SectionModulesList: React.FC = () => {
 
   return (
     <DndContext
+      id="sidebar-modules-dnd-context"
       sensors={sensors}
       collisionDetection={closestCenter}
       onDragStart={handleDragStart}

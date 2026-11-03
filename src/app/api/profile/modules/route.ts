@@ -5,6 +5,7 @@ import { connectToDatabase } from '@/lib/db/mongodb';
 import { Profile } from '@/models/Profile.model';
 import { buildUserIsolationQuery, isValidUserSession } from '@/lib/db/data-isolation';
 import mongoose from 'mongoose';
+import { revalidatePath } from 'next/cache';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,7 +51,7 @@ export async function PUT(req: NextRequest) {
     }
 
     // 3. Find and update profile links in database
-    const updatedProfile = await Profile.findOneAndUpdate(
+    let updatedProfile = await Profile.findOneAndUpdate(
       query,
       {
         $set: {
@@ -60,8 +61,38 @@ export async function PUT(req: NextRequest) {
           })),
         },
       },
-      { new: true, runValidators: true }
+      { new: true, runValidators: false, strict: false }
     ).lean();
+
+    // Fallback: match by _id or alias directly if strict query had isolation key mismatch
+    if (!updatedProfile && isObjectId) {
+      const existingDoc = await Profile.findById(targetId).lean();
+      if (existingDoc) {
+        const docUserId = String(existingDoc.userId || '');
+        const docEmail = String(existingDoc.email || existingDoc.userEmail || '').toLowerCase();
+        const sessUserId = String(session.user.id || '');
+        const sessEmail = String(session.user.email || '').toLowerCase();
+
+        const isOwner =
+          (sessUserId && docUserId === sessUserId) ||
+          (sessEmail && docEmail === sessEmail);
+
+        if (isOwner) {
+          updatedProfile = await Profile.findByIdAndUpdate(
+            targetId,
+            {
+              $set: {
+                links: modulesArray.map((mod: any, index: number) => ({
+                  ...mod,
+                  order: typeof mod.order === 'number' ? mod.order : index,
+                })),
+              },
+            },
+            { new: true, runValidators: false, strict: false }
+          ).lean();
+        }
+      }
+    }
 
     if (!updatedProfile) {
       return NextResponse.json(
@@ -71,6 +102,17 @@ export async function PUT(req: NextRequest) {
         },
         { status: 404 }
       );
+    }
+
+    // Cache Invalidation for Public Profile (Mini-site)
+    const targetAlias = updatedProfile?.alias || alias;
+    if (targetAlias) {
+      try {
+        revalidatePath(`/${targetAlias}`);
+        revalidatePath(`/${targetAlias}`, 'page');
+      } catch (e) {
+        console.error('Cache revalidation failed:', e);
+      }
     }
 
     return NextResponse.json(

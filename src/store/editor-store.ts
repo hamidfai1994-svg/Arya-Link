@@ -92,6 +92,25 @@ const defaultTheme: ProfileThemeConfig = {
   cardBlur: 'backdrop-blur-md bg-white/10 border-white/20',
   textColor: '#ffffff',
   borderRadius: 'rounded-2xl',
+  backgroundType: 'gradient',
+  bgSolidColor: '#090d16',
+  bgGradientColors: ['#090d16', '#0f172a', '#1e1b4b'],
+  bgGradientType: 'linear',
+  bgPatternId: 'circuit',
+  bgPatternOpacity: 0.15,
+  bgImageUrl: '',
+  bgImageOpacity: 0.25,
+  bgGradientPosition: 50,
+  bgPatternSize: 24,
+  buttonShape: 'soft',
+  buttonSize: 'md',
+  buttonBorderWidth: 'thin',
+  buttonBorderStyle: 'solid',
+  buttonShadowStyle: 'sm',
+  buttonBgColor: '#0ea5e9',
+  buttonTextColor: '#ffffff',
+  buttonBorderColor: '#38bdf8',
+  compactSocialIcons: true,
   fontFa: 'vazirmatn',
   fontEn: 'inter',
   fontSizeDari: 15,
@@ -859,16 +878,28 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   },
 
   updateTheme: (fields, _skipAutoSave) => {
-    set((state) => ({
-      profile: {
-        ...state.profile,
-        themeConfig: {
-          ...state.profile.themeConfig,
-          ...fields,
+    set((state) => {
+      const current = state.profile?.themeConfig || {};
+      let hasChange = false;
+      for (const key of Object.keys(fields) as (keyof ProfileThemeConfig)[]) {
+        if (current[key] !== fields[key]) {
+          hasChange = true;
+          break;
+        }
+      }
+      if (!hasChange) return state;
+
+      return {
+        profile: {
+          ...state.profile,
+          themeConfig: {
+            ...current,
+            ...fields,
+          },
         },
-      },
-      isDirty: true,
-    }));
+        isDirty: true,
+      };
+    });
   },
 
   setThemePreset: (preset) => {
@@ -1052,29 +1083,26 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     set((state) => ({
       profile: {
         ...state.profile,
-        links: state.profile.links.map((link) =>
-          link.id === id
-            ? {
-              ...link,
-              advancedSettings: {
-                ...link.advancedSettings,
-                ...settings,
-                scheduling: {
-                  ...link.advancedSettings?.scheduling,
-                  ...settings.scheduling,
-                },
-                monetization: {
-                  ...link.advancedSettings?.monetization,
-                  ...settings.monetization,
-                },
-                customStyling: {
-                  ...link.advancedSettings?.customStyling,
-                  ...settings.customStyling,
-                },
-              },
-            }
-            : link
-        ),
+        links: state.profile.links.map((link) => {
+          if (link.id !== id) return link;
+          const prevAdv = link.advancedSettings || {};
+          return {
+            ...link,
+            advancedSettings: {
+              ...prevAdv,
+              ...settings,
+              ...(settings.scheduling || prevAdv.scheduling
+                ? { scheduling: { ...prevAdv.scheduling, ...settings.scheduling } }
+                : {}),
+              ...(settings.monetization || prevAdv.monetization
+                ? { monetization: { ...prevAdv.monetization, ...settings.monetization } }
+                : {}),
+              ...(settings.customStyling || prevAdv.customStyling
+                ? { customStyling: { ...prevAdv.customStyling, ...settings.customStyling } }
+                : {}),
+            },
+          };
+        }),
       },
       isDirty: true,
     })),
@@ -1213,7 +1241,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
           location: dbData.location || '',
           directModeEnabled: !!dbData.directModeEnabled,
           directModeUrl: dbData.directModeUrl || '',
-          themeConfig: dbData.themeConfig || defaultTheme,
+          themeConfig: { ...defaultTheme, ...(dbData.themeConfig || {}) },
           links: resolvedLinks,
           seoTitle: dbData.seoTitle || '',
           seoDescription: dbData.seoDescription || '',
@@ -1272,6 +1300,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   saveProfileData: async () => {
     set({ isSaving: true, saveError: null });
     const currentProfile = get().profile;
+    console.log("Saving Theme Config:", currentProfile.themeConfig);
 
     try {
       // 1. Save base profile and settings via /api/profile
@@ -1284,7 +1313,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       const result = await response.json();
 
       if (!response.ok || !result.success) {
-        const errorMsg = result.message || 'خطا در ذخیره‌سازی پروفایل در سرور.';
+        const errorMsg = result.error || result.message || 'خطا در ذخیره‌سازی پروفایل در سرور.';
         set({ isSaving: false, saveError: errorMsg });
         return { success: false, message: errorMsg };
       }

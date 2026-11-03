@@ -52,7 +52,7 @@ const LinkAdvancedSettingsSchema = new Schema(
     monetization: {
       isLocked: { type: Boolean, default: false },
       price: { type: Number, default: 0 },
-      currency: { type: String, enum: ['AFN', 'USD'], default: 'AFN' },
+      currency: { type: String, default: 'AFN' },
       unlockNote: { type: String, default: '' },
     },
     customStyling: {
@@ -63,40 +63,48 @@ const LinkAdvancedSettingsSchema = new Schema(
       buttonAnimation: { type: String, default: 'none' },
       borderStyle: { type: String, default: 'solid' },
       shadowStyle: { type: String, default: 'sm' },
+      buttonShape: { type: String },
+      buttonSize: { type: String },
+      borderWidth: { type: String },
+      borderRadius: { type: String },
+      animationTrigger: { type: String },
+      animationSpeed: { type: Number },
     },
     openInNewTab: { type: Boolean, default: true },
     isHidden: { type: Boolean, default: false },
     buttonAnimation: { type: String, default: 'none' },
+    animationTrigger: { type: String, default: 'infinite' },
+    animationSpeed: { type: Number, default: 1.6 },
+    isCompactIcon: { type: Boolean, default: true },
   },
-  { _id: false }
+  { _id: false, strict: false }
 );
 
 const ProfileLinkSubSchema = new Schema(
   {
-    id: { type: String, required: true },
-    title: { type: String, required: true },
+    id: { type: String, default: () => `link_${Date.now()}` },
+    title: { type: String, default: '' },
     url: { type: String, default: '' },
     icon: { type: String },
     moduleType: {
       type: String,
-      required: true,
+      default: 'standard_link',
     },
     isActive: { type: Boolean, default: true },
     isPinned: { type: Boolean, default: false },
     order: { type: Number, default: 0 },
     clickCount: { type: Number, default: 0 },
     parentId: { type: String, default: null },
-    metadata: { type: Schema.Types.Mixed, default: {} },
-    advancedSettings: { type: LinkAdvancedSettingsSchema, default: () => ({}) },
+    metadata: { type: Schema.Types.Mixed, default: () => ({}) },
+    advancedSettings: { type: Schema.Types.Mixed, default: () => ({}) },
   },
-  { _id: false, timestamps: true }
+  { _id: false, timestamps: true, strict: false }
 );
 
 const ProfileThemeConfigSchema = new Schema(
   {
     preset: {
       type: String,
-      enum: ['dark_neon', 'glass_morphism', 'emerald_luxury', 'royal_gold', 'minimal_light'],
       default: 'dark_neon',
     },
     primaryColor: { type: String, default: '#0ea5e9' },
@@ -105,21 +113,33 @@ const ProfileThemeConfigSchema = new Schema(
     cardBlur: { type: String, default: 'backdrop-blur-md bg-white/10 border-white/20' },
     textColor: { type: String, default: '#ffffff' },
     borderRadius: { type: String, default: 'rounded-2xl' },
-    backgroundType: { type: String, enum: ['solid', 'gradient', 'pattern'], default: 'gradient' },
-    buttonBorderStyle: { type: String, enum: ['none', 'solid', 'dashed'], default: 'solid' },
-    buttonShadowStyle: { type: String, enum: ['none', 'sm', 'md', 'glow'], default: 'sm' },
-    buttonShape: { type: String, default: 'soft' },
+    backgroundType: { type: String, default: 'gradient' },
+    bgSolidColor: { type: String, default: '#090d16' },
+    bgGradientColors: { type: [String], default: ['#090d16', '#0f172a', '#1e1b4b'] },
+    bgGradientType: { type: String, default: 'linear' },
+    bgPatternId: { type: String, default: 'circuit' },
+    bgPatternOpacity: { type: Schema.Types.Mixed, default: 0.15 },
+    bgImageUrl: { type: String, default: '' },
+    bgImageOpacity: { type: Schema.Types.Mixed, default: 0.25 },
+    bgGradientPosition: { type: Schema.Types.Mixed, default: 50 },
+    bgPatternSize: { type: Schema.Types.Mixed, default: 24 },
+    buttonBorderStyle: { type: String, default: 'solid' },
+    buttonShadowStyle: { type: String, default: 'sm' },
+    buttonShape: {
+      type: String,
+      default: 'soft',
+    },
     buttonSize: { type: String, default: 'md' },
     buttonBorderWidth: { type: String, default: 'thin' },
-    buttonBorderColor: { type: String },
-    buttonBgColor: { type: String },
-    buttonTextColor: { type: String },
+    buttonBorderColor: { type: String, default: '#38bdf8' },
+    buttonBgColor: { type: String, default: '#0ea5e9' },
+    buttonTextColor: { type: String, default: '#ffffff' },
     compactSocialIcons: { type: Boolean, default: true },
     fontFa: { type: String, default: 'vazirmatn' },
     fontEn: { type: String, default: 'inter' },
-    fontSizeDari: { type: Number, default: 15 },
-    fontSizePashto: { type: Number, default: 15 },
-    fontSizeEn: { type: Number, default: 14 },
+    fontSizeDari: { type: Schema.Types.Mixed, default: 15 },
+    fontSizePashto: { type: Schema.Types.Mixed, default: 15 },
+    fontSizeEn: { type: Schema.Types.Mixed, default: 14 },
   },
   { _id: false, strict: false }
 );
@@ -143,7 +163,6 @@ const ProfileSchema = new Schema<IProfileDocument>(
     coverUrl: { type: String, default: '' },
     headerLayout: {
       type: String,
-      enum: ['curve', 'gradient_mask', 'minimal'],
       default: 'curve',
     },
     phone: { type: String, default: '' },
@@ -153,17 +172,15 @@ const ProfileSchema = new Schema<IProfileDocument>(
     location: { type: String, default: '' },
     directModeEnabled: { type: Boolean, default: false },
     directModeUrl: { type: String, default: '' },
-    themeConfig: { type: ProfileThemeConfigSchema, default: () => ({}) },
+    themeConfig: { type: Schema.Types.Mixed, default: () => ({}) },
     links: { type: [ProfileLinkSubSchema], default: [] },
     profileType: {
       type: String,
-      enum: ['personal', 'business'],
       default: 'personal',
     },
     isVerified: { type: Boolean, default: false, index: true },
     verificationStatus: {
       type: String,
-      enum: ['unverified', 'pending', 'verified', 'rejected'],
       default: 'unverified',
     },
     verificationData: {
@@ -172,7 +189,6 @@ const ProfileSchema = new Schema<IProfileDocument>(
     },
     profileLanguage: {
       type: String,
-      enum: ['dari', 'pashto', 'en', 'fa', 'ps'],
       default: 'dari',
     },
     seoTitle: { type: String, default: '' },
@@ -190,10 +206,13 @@ const ProfileSchema = new Schema<IProfileDocument>(
   },
   {
     timestamps: true,
+    strict: false,
   }
 );
 
 export const Profile: Model<IProfileDocument> =
-  mongoose.models.Profile || mongoose.model<IProfileDocument>('Profile', ProfileSchema);
+  (mongoose.models && mongoose.models.Profile)
+    ? (mongoose.models.Profile as Model<IProfileDocument>)
+    : mongoose.model<IProfileDocument>('Profile', ProfileSchema);
 
 export default Profile;

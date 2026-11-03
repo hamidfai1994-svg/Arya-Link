@@ -22,6 +22,7 @@ export function formatDisplayValue(value: string): string {
   // Strip common protocols and deep-link schemes
   const cleaned = trimmed
     .replace(/^tel:/i, '')
+    .replace(/^mailto:([^?]+)(\?.*)?$/i, '$1')
     .replace(/^mailto:/i, '')
     .replace(/^whatsapp:\/\/send\?phone=/i, '')
     .replace(/^sgnl:\/\/signal\.me\/#p\//i, '')

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useEditorStore } from '@/store/editor-store';
 import { ProfileThemeConfig, HeaderLayoutType, ProfileLanguage, ProfileType, VerificationData } from '@/types/profile.types';
 import { ModuleSelectorModal } from './ModuleSelectorModal';
@@ -58,6 +59,7 @@ interface ConfirmableColorPickerProps {
   label: string;
   value: string;
   onChange: (color: string) => void;
+  onLiveChange?: (color: string) => void;
   presetColors?: string[];
 }
 
@@ -65,42 +67,67 @@ const ConfirmableColorPicker: React.FC<ConfirmableColorPickerProps> = ({
   label,
   value,
   onChange,
+  onLiveChange,
   presetColors = DEFAULT_PRESET_COLORS,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [tempColor, setTempColor] = useState(value || '#0ea5e9');
+  const initialColorRef = useRef<string>(value || '#0ea5e9');
+  const prevIsOpenRef = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!isOpen) {
+    setMounted(true);
+  }, []);
+
+  // When popup opens (false -> true), snapshot the original saved value
+  useEffect(() => {
+    if (!prevIsOpenRef.current && isOpen) {
+      initialColorRef.current = value || '#0ea5e9';
       setTempColor(value || '#0ea5e9');
     }
-  }, [value, isOpen]);
+    prevIsOpenRef.current = isOpen;
+  }, [isOpen]);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setTempColor(value || '#0ea5e9');
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isOpen, value]);
+  const handleOpen = () => {
+    initialColorRef.current = value || '#0ea5e9';
+    setTempColor(value || '#0ea5e9');
+    setIsOpen(true);
+  };
 
   const handleConfirm = () => {
     onChange(tempColor);
+    initialColorRef.current = tempColor;
     setIsOpen(false);
   };
 
   const handleCancel = () => {
-    setTempColor(value || '#0ea5e9');
+    const original = initialColorRef.current;
+    setTempColor(original);
+    onLiveChange?.(original);
     setIsOpen(false);
   };
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handlePointerDown = (e: MouseEvent) => {
+      if (
+        modalRef.current &&
+        !modalRef.current.contains(e.target as Node) &&
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node)
+      ) {
+        handleCancel();
+      }
+    };
+    document.addEventListener('mousedown', handlePointerDown);
+    return () => document.removeEventListener('mousedown', handlePointerDown);
+  }, [isOpen]);
+
   return (
-    <div ref={containerRef} className="relative p-3 rounded-xl border border-border bg-muted/20 space-y-2">
+    <div ref={containerRef} className={`relative p-3 rounded-xl border border-border bg-muted/20 space-y-2 ${isOpen ? 'z-20 ring-1 ring-cyan-500/40 shadow-md' : 'z-10'}`}>
       <div className="flex items-center justify-between">
         <label className="block text-xs font-bold text-foreground">
           {label}
@@ -109,8 +136,7 @@ const ConfirmableColorPicker: React.FC<ConfirmableColorPickerProps> = ({
           type="button"
           onClick={() => {
             if (!isOpen) {
-              setTempColor(value || '#0ea5e9');
-              setIsOpen(true);
+              handleOpen();
             } else {
               handleCancel();
             }
@@ -124,19 +150,13 @@ const ConfirmableColorPicker: React.FC<ConfirmableColorPickerProps> = ({
       <div className="flex items-center gap-2.5">
         <button
           type="button"
-          onClick={() => {
-            setTempColor(value || '#0ea5e9');
-            setIsOpen(true);
-          }}
+          onClick={handleOpen}
           className="w-9 h-9 rounded-xl border border-border shadow-xs shrink-0 cursor-pointer flex items-center justify-center transition-transform active:scale-95 overflow-hidden"
           style={{ backgroundColor: value || '#0ea5e9' }}
           title="کلیک برای انتخاب رنگ"
         />
         <div
-          onClick={() => {
-            setTempColor(value || '#0ea5e9');
-            setIsOpen(true);
-          }}
+          onClick={handleOpen}
           className="flex-1 bg-background border border-border rounded-xl px-3 py-1.5 text-xs font-sans text-foreground flex items-center justify-between cursor-pointer hover:border-cyan-500/50 transition-colors uppercase select-none"
         >
           <span>{value || '#0ea5e9'}</span>
@@ -144,64 +164,90 @@ const ConfirmableColorPicker: React.FC<ConfirmableColorPickerProps> = ({
         </div>
       </div>
 
-      {isOpen && (
-        <div className="absolute left-0 right-0 top-full mt-2 z-40 bg-card border border-border rounded-2xl p-3.5 shadow-2xl space-y-3 animate-in fade-in zoom-in-95 duration-150">
+      {isOpen && mounted && createPortal(
+        <div
+          ref={modalRef}
+          className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[9999] bg-card border border-border rounded-2xl p-4 shadow-2xl w-[90%] max-w-xs ring-1 ring-white/10 animate-in fade-in zoom-in-95 duration-150 space-y-3.5 text-right"
+          dir="rtl"
+        >
+          <div className="flex items-center justify-between pb-2 border-b border-border">
+            <span className="text-xs font-bold text-foreground">انتخاب {label}</span>
+            <button
+              type="button"
+              onClick={handleCancel}
+              className="w-6 h-6 rounded-lg hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
           <div className="flex items-center gap-2.5">
-            <div className="relative w-10 h-10 rounded-xl overflow-hidden border border-border shadow-xs shrink-0">
+            <div className="relative w-11 h-11 rounded-xl overflow-hidden border border-border shadow-xs shrink-0">
               <input
                 type="color"
                 value={tempColor}
-                onChange={(e) => setTempColor(e.target.value)}
+                onChange={(e) => {
+                  const newColor = e.target.value;
+                  setTempColor(newColor);
+                  onLiveChange?.(newColor);
+                }}
                 className="absolute -top-2 -left-2 w-16 h-16 cursor-pointer border-0 p-0"
               />
             </div>
             <input
               type="text"
               value={tempColor}
-              onChange={(e) => setTempColor(e.target.value)}
+              onChange={(e) => {
+                const newColor = e.target.value;
+                setTempColor(newColor);
+                onLiveChange?.(newColor);
+              }}
               placeholder="#000000"
               dir="ltr"
-              className="flex-1 bg-background border border-border rounded-xl px-3 py-2 text-xs font-sans text-foreground focus:outline-none focus:border-cyan-500 uppercase"
+              className="flex-1 bg-background border border-border rounded-xl px-3 py-2 text-xs font-sans text-foreground focus:outline-none focus:border-cyan-500 uppercase font-semibold"
             />
           </div>
 
-          <div className="space-y-1">
-            <span className="text-[10px] text-muted-foreground block text-right font-medium">پالت‌های سریع:</span>
+          <div className="space-y-1.5">
+            <span className="text-[10px] text-muted-foreground block font-medium">پالت‌های سریع:</span>
             <div className="flex flex-wrap gap-1.5">
               {presetColors.map((hex) => (
                 <button
                   key={hex}
                   type="button"
-                  onClick={() => setTempColor(hex)}
-                  className={`w-5 h-5 rounded-lg border transition-transform active:scale-90 cursor-pointer ${
-                    tempColor.toLowerCase() === hex.toLowerCase()
-                      ? 'ring-2 ring-cyan-500 scale-110 border-white'
-                      : 'border-border/60 hover:scale-105'
-                  }`}
+                  onClick={() => {
+                    setTempColor(hex);
+                    onLiveChange?.(hex);
+                  }}
+                  className={`w-6 h-6 rounded-lg border transition-transform active:scale-90 cursor-pointer ${tempColor.toLowerCase() === hex.toLowerCase()
+                    ? 'ring-2 ring-cyan-500 scale-110 border-white'
+                    : 'border-border/60 hover:scale-105'
+                    }`}
                   style={{ backgroundColor: hex }}
                 />
               ))}
             </div>
           </div>
 
-          <div className="flex items-center gap-2 pt-1 border-t border-border">
+          <div className="flex items-center gap-2 pt-2 border-t border-border">
             <button
               type="button"
               onClick={handleConfirm}
-              className="flex-1 py-1.5 px-3 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-xs flex items-center justify-center gap-1 shadow-xs transition-all active:scale-95 cursor-pointer"
+              className="flex-1 py-2 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all active:scale-95 cursor-pointer"
             >
               <Check className="w-3.5 h-3.5" />
-              <span>تایید</span>
+              <span>تایید رنگ</span>
             </button>
             <button
               type="button"
               onClick={handleCancel}
-              className="py-1.5 px-3 rounded-lg bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground text-xs font-semibold border border-border transition-all active:scale-95 cursor-pointer"
+              className="py-2 px-3.5 rounded-xl bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground text-xs font-semibold border border-border transition-all active:scale-95 cursor-pointer"
             >
               لغو
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
@@ -286,10 +332,14 @@ export const ProfileEditor: React.FC = () => {
   const themeSnapshotRef = useRef<ProfileThemeConfig | null>(null);
 
   useEffect(() => {
-    if (activeTab === 'appearance' && !themeSnapshotRef.current && profile.themeConfig) {
-      themeSnapshotRef.current = JSON.parse(JSON.stringify(profile.themeConfig));
+    if (activeTab === 'appearance') {
+      if (!themeSnapshotRef.current && profile.themeConfig) {
+        themeSnapshotRef.current = JSON.parse(JSON.stringify(profile.themeConfig));
+      }
+    } else {
+      themeSnapshotRef.current = null;
     }
-  }, [activeTab, profile.themeConfig]);
+  }, [activeTab]);
 
   const handleCancelTheme = () => {
     if (themeSnapshotRef.current) {
@@ -331,25 +381,29 @@ export const ProfileEditor: React.FC = () => {
 
   useEffect(() => {
     if (activeTab === 'fonts') {
-      const current = {
-        fontFa: profile.themeConfig?.fontFa || 'vazirmatn',
-        fontEn: profile.themeConfig?.fontEn || 'inter',
-        fontSizeDari: profile.themeConfig?.fontSizeDari || 15,
-        fontSizePashto: profile.themeConfig?.fontSizePashto || 15,
-        fontSizeEn: profile.themeConfig?.fontSizeEn || 14,
-      };
-      setLocalTypography(current);
-      typographySnapshotRef.current = current;
+      if (!typographySnapshotRef.current) {
+        const current = {
+          fontFa: profile.themeConfig?.fontFa || 'vazirmatn',
+          fontEn: profile.themeConfig?.fontEn || 'inter',
+          fontSizeDari: profile.themeConfig?.fontSizeDari || 15,
+          fontSizePashto: profile.themeConfig?.fontSizePashto || 15,
+          fontSizeEn: profile.themeConfig?.fontSizeEn || 14,
+        };
+        setLocalTypography(current);
+        typographySnapshotRef.current = current;
+      }
+    } else {
+      typographySnapshotRef.current = null;
     }
-  }, [activeTab, profile.themeConfig]);
+  }, [activeTab]);
 
   const handleUpdateTypography = (fields: Partial<typeof localTypography>) => {
     setLocalTypography((prev) => {
       const next = { ...prev, ...fields };
-      // Real-time UI live preview without triggering auto-save or "در حال ذخیره..." badge
-      updateTheme(next, true);
       return next;
     });
+    // Real-time UI live preview without triggering auto-save or "در حال ذخیره..." badge
+    updateTheme(fields, true);
   };
 
   const handleOpenAddModule = () => {
@@ -894,42 +948,12 @@ export const ProfileEditor: React.FC = () => {
                 </p>
               </div>
 
-              <div className="flex items-center gap-2 shrink-0">
-                <button
-                  type="button"
-                  onClick={handleCancelTheme}
-                  disabled={isSavingTheme}
-                  className="px-3.5 py-2.5 rounded-xl bg-background hover:bg-muted border border-border text-muted-foreground hover:text-foreground font-semibold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer disabled:opacity-50"
-                  title="بازگرداندن تغییرات به آخرین وضعیت ذخیره‌شده"
-                >
-                  <Undo2 className="w-3.5 h-3.5" />
-                  <span>لغو تغییرات</span>
-                </button>
 
-                <button
-                  type="button"
-                  onClick={handleSaveTheme}
-                  disabled={isSavingTheme}
-                  className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold text-xs shadow-md shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer shrink-0 disabled:opacity-60"
-                >
-                  {isSavingTheme ? (
-                    <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      <span>در حال ذخیره...</span>
-                    </>
-                  ) : (
-                    <>
-                      <CheckCheck className="w-3.5 h-3.5" />
-                      <span>تایید و ذخیره</span>
-                    </>
-                  )}
-                </button>
-              </div>
             </div>
 
             <Accordion type="single" collapsible defaultValue="templates" className="space-y-3">
               {/* 1. قالب‌ها (Templates) */}
-              <AccordionItem value="templates" className="border border-border rounded-2xl bg-card overflow-hidden">
+              <AccordionItem value="templates" className="border border-border rounded-2xl bg-card">
                 <AccordionTrigger className="px-5 py-4 hover:no-underline hover:bg-muted/30">
                   <div className="flex items-center gap-2.5">
                     <div className="w-7 h-7 rounded-lg bg-purple-500/15 border border-purple-500/20 text-purple-600 dark:text-purple-400 flex items-center justify-center">
@@ -979,29 +1003,30 @@ export const ProfileEditor: React.FC = () => {
                 </AccordionContent>
               </AccordionItem>
 
-              {/* 2. پس‌زمینه (Background) */}
-              <AccordionItem value="background" className="border border-border rounded-2xl bg-card overflow-hidden">
-                <AccordionTrigger className="px-5 py-4 hover:no-underline hover:bg-muted/30">
+              {/* 2. پس‌زمینه (Background - Stage 4) */}
+              <AccordionItem value="background" className="border border-border rounded-2xl bg-card">
+                <AccordionTrigger className="px-5 py-4 hover:no-underline hover:bg-muted/30 rounded-2xl">
                   <div className="flex items-center gap-2.5">
                     <div className="w-7 h-7 rounded-lg bg-cyan-500/15 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400 flex items-center justify-center">
                       <Layers className="w-4 h-4" />
                     </div>
                     <div className="text-right">
                       <span className="text-xs font-bold text-foreground block">پس‌زمینه کارت (Background)</span>
-                      <span className="text-[10px] text-muted-foreground block">نوع پس‌زمینه (توپر، گرادیانت، پترن)</span>
+                      <span className="text-[10px] text-muted-foreground block">نوع پس‌زمینه (تک‌رنگ، گرادیانت، پترن، تصویر)</span>
                     </div>
                   </div>
                 </AccordionTrigger>
-                <AccordionContent className="px-5 pb-5 pt-1 space-y-4">
+                <AccordionContent className="px-5 pb-5 pt-1 space-y-4 overflow-visible">
                   <div>
-                    <label className="block text-xs font-medium text-foreground mb-1.5">
+                    <label className="block text-xs font-bold text-foreground mb-1.5">
                       حالت پس‌زمینه
                     </label>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       {[
-                        { id: 'solid', label: 'توپر (Solid)' },
+                        { id: 'solid', label: 'تک‌رنگ (Solid)' },
                         { id: 'gradient', label: 'گرادیانت (Gradient)' },
                         { id: 'pattern', label: 'پترن (Pattern)' },
+                        { id: 'image', label: 'تصویر (Image)' },
                       ].map((bg) => (
                         <button
                           key={bg.id}
@@ -1010,17 +1035,16 @@ export const ProfileEditor: React.FC = () => {
                             let newBg = profile.themeConfig.backgroundColor;
                             const isLgt = profile.themeConfig.preset === 'minimal_light';
                             if (bg.id === 'solid') {
-                              newBg = isLgt ? '#f8fafc' : '#090d16';
+                              newBg = profile.themeConfig.bgSolidColor || (isLgt ? '#f8fafc' : '#090d16');
                             } else if (bg.id === 'gradient') {
-                              newBg = isLgt
-                                ? 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%)'
-                                : 'linear-gradient(135deg, #090d16 0%, #0f172a 50%, #1e1b4b 100%)';
-                            } else if (bg.id === 'pattern') {
-                              newBg = isLgt ? '#f1f5f9' : '#090d16';
+                              const cols = profile.themeConfig.bgGradientColors || (isLgt ? ['#f8fafc', '#f1f5f9', '#e2e8f0'] : ['#090d16', '#0f172a', '#1e1b4b']);
+                              newBg = `linear-gradient(135deg, ${cols.join(', ')})`;
+                            } else if (bg.id === 'pattern' || bg.id === 'image') {
+                              newBg = profile.themeConfig.bgSolidColor || (isLgt ? '#f1f5f9' : '#090d16');
                             }
                             updateTheme({ backgroundType: bg.id as any, backgroundColor: newBg });
                           }}
-                          className={`py-2 px-2.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${(profile.themeConfig.backgroundType || 'gradient') === bg.id
+                          className={`py-2 px-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${(profile.themeConfig.backgroundType || 'gradient') === bg.id
                             ? 'bg-cyan-500 text-slate-950 font-bold border-cyan-400 shadow-md shadow-cyan-500/20'
                             : 'bg-muted/40 border-border text-foreground hover:bg-muted'
                             }`}
@@ -1031,19 +1055,300 @@ export const ProfileEditor: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="p-3 bg-muted/30 border border-border rounded-xl space-y-2">
-                    <span className="text-[11px] text-muted-foreground block">
-                      {(profile.themeConfig.backgroundType || 'gradient') === 'solid' && 'رنگ یکدست پس‌زمینه برای داشتن ظاهری مینیمال و تمیز.'}
-                      {(profile.themeConfig.backgroundType || 'gradient') === 'gradient' && 'ترکیب نرم چند طیف رنگی بر اساس تم فعال شده.'}
-                      {(profile.themeConfig.backgroundType || 'gradient') === 'pattern' && 'طرح نئونی شبکه مویرگی مدرن در پس‌زمینه کارت.'}
-                    </span>
-                  </div>
+                  {/* 1. SOLID MODE CONTROLS */}
+                  {(profile.themeConfig.backgroundType === 'solid') && (
+                    <div className="p-3.5 bg-muted/20 border border-border rounded-xl space-y-3">
+                      <ConfirmableColorPicker
+                        label="رنگ پس‌زمینه یکدست"
+                        value={profile.themeConfig.bgSolidColor || (profile.themeConfig.preset === 'minimal_light' ? '#f8fafc' : '#090d16')}
+                        onChange={(col) => updateTheme({ bgSolidColor: col, backgroundColor: col })}
+                        onLiveChange={(col) => updateTheme({ bgSolidColor: col, backgroundColor: col })}
+                      />
+                      <span className="text-[11px] text-muted-foreground block">
+                        رنگ یکدست و مینیمال برای ایجاد ظاهری ساده و خوانا در تمام دستگاه‌ها.
+                      </span>
+                    </div>
+                  )}
+
+                  {/* 2. GRADIENT MODE CONTROLS */}
+                  {((profile.themeConfig.backgroundType || 'gradient') === 'gradient') && (
+                    <div className="p-3.5 bg-muted/20 border border-border rounded-xl space-y-4">
+                      {/* Linear / Radial Mode Toggle */}
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-foreground">نوع گرادیانت</label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const nextType = (profile.themeConfig.bgGradientType || 'linear') === 'radial' ? 'linear' : 'radial';
+                            const cols = profile.themeConfig.bgGradientColors || ['#090d16', '#0f172a', '#1e1b4b'];
+                            const newBg = nextType === 'radial'
+                              ? `radial-gradient(circle at center, ${cols.join(', ')})`
+                              : `linear-gradient(135deg, ${cols.join(', ')})`;
+                            updateTheme({ bgGradientType: nextType, backgroundColor: newBg });
+                          }}
+                          className="px-3 py-1.5 rounded-xl border border-border bg-card hover:bg-muted text-xs font-semibold text-foreground flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                        >
+                          <Sparkles className="w-3.5 h-3.5 text-cyan-500" />
+                          <span>
+                            {(profile.themeConfig.bgGradientType || 'linear') === 'radial' ? 'شعاعی (Radial)' : 'خطی (Linear)'}
+                          </span>
+                        </button>
+                      </div>
+
+                      {/* 2 Color Pickers for Gradient */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <ConfirmableColorPicker
+                          label="رنگ اول گرادیانت"
+                          value={profile.themeConfig.bgGradientColors?.[0] || '#090d16'}
+                          onChange={(col) => {
+                            const cur = [...(profile.themeConfig.bgGradientColors || ['#090d16', '#0f172a', '#1e1b4b'])];
+                            cur[0] = col;
+                            const gradType = profile.themeConfig.bgGradientType || 'linear';
+                            const newBg = gradType === 'radial'
+                              ? `radial-gradient(circle at center, ${cur.join(', ')})`
+                              : `linear-gradient(135deg, ${cur.join(', ')})`;
+                            updateTheme({ bgGradientColors: cur, backgroundColor: newBg });
+                          }}
+                          onLiveChange={(col) => {
+                            const cur = [...(profile.themeConfig.bgGradientColors || ['#090d16', '#0f172a', '#1e1b4b'])];
+                            cur[0] = col;
+                            const gradType = profile.themeConfig.bgGradientType || 'linear';
+                            const newBg = gradType === 'radial'
+                              ? `radial-gradient(circle at center, ${cur.join(', ')})`
+                              : `linear-gradient(135deg, ${cur.join(', ')})`;
+                            updateTheme({ bgGradientColors: cur, backgroundColor: newBg });
+                          }}
+                        />
+                        <ConfirmableColorPicker
+                          label="رنگ دوم گرادیانت"
+                          value={profile.themeConfig.bgGradientColors?.[1] || '#1e1b4b'}
+                          onChange={(col) => {
+                            const cur = [...(profile.themeConfig.bgGradientColors || ['#090d16', '#0f172a', '#1e1b4b'])];
+                            cur[1] = col;
+                            const gradType = profile.themeConfig.bgGradientType || 'linear';
+                            const newBg = gradType === 'radial'
+                              ? `radial-gradient(circle at center, ${cur.join(', ')})`
+                              : `linear-gradient(135deg, ${cur.join(', ')})`;
+                            updateTheme({ bgGradientColors: cur, backgroundColor: newBg });
+                          }}
+                          onLiveChange={(col) => {
+                            const cur = [...(profile.themeConfig.bgGradientColors || ['#090d16', '#0f172a', '#1e1b4b'])];
+                            cur[1] = col;
+                            const gradType = profile.themeConfig.bgGradientType || 'linear';
+                            const newBg = gradType === 'radial'
+                              ? `radial-gradient(circle at center, ${cur.join(', ')})`
+                              : `linear-gradient(135deg, ${cur.join(', ')})`;
+                            updateTheme({ bgGradientColors: cur, backgroundColor: newBg });
+                          }}
+                        />
+                      </div>
+
+                      {/* 4 Quick Ready-Made Multi-Color Gradient Presets */}
+                      <div className="space-y-2 pt-1 border-t border-border">
+                        <span className="text-xs font-bold text-foreground block">گرادیانت‌های آماده پیشنهادی:</span>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                          {[
+                            { id: 'deep_neon', label: 'شب نئونی', colors: ['#090d16', '#0f172a', '#1e1b4b'] },
+                            { id: 'cyber_emerald', label: 'زمرد سایبر', colors: ['#022c22', '#064e3b', '#0891b2'] },
+                            { id: 'luxury_purple', label: 'بنفش لوکس', colors: ['#1e1b4b', '#312e81', '#4c1d95'] },
+                            { id: 'golden_sunset', label: 'طلایی گرم', colors: ['#451a03', '#78350f', '#b45309'] },
+                          ].map((item) => (
+                            <button
+                              key={item.id}
+                              type="button"
+                              onClick={() => {
+                                const gradType = profile.themeConfig.bgGradientType || 'linear';
+                                const newBg = gradType === 'radial'
+                                  ? `radial-gradient(circle at center, ${item.colors.join(', ')})`
+                                  : `linear-gradient(135deg, ${item.colors.join(', ')})`;
+                                updateTheme({ bgGradientColors: item.colors, backgroundColor: newBg });
+                              }}
+                              className="p-2.5 rounded-xl border border-border text-center transition-all hover:scale-105 active:scale-95 shadow-sm text-white flex flex-col items-center gap-1.5 cursor-pointer"
+                              style={{
+                                background: `linear-gradient(135deg, ${item.colors.join(', ')})`,
+                              }}
+                            >
+                              <span className="text-[11px] font-bold drop-shadow-sm">{item.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Gradient Stop / Dominance Slider */}
+                      <div className="space-y-1.5 pt-1 border-t border-border">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-bold text-foreground">میزان رنگ غالب (Gradient Stop):</span>
+                          <span className="font-sans font-bold text-cyan-500">
+                            {profile.themeConfig.bgGradientPosition ?? 50}%
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          step="1"
+                          value={profile.themeConfig.bgGradientPosition ?? 50}
+                          onChange={(e) => updateTheme({ bgGradientPosition: parseInt(e.target.value, 10) })}
+                          className="w-full accent-cyan-500 cursor-pointer"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 3. PATTERN MODE CONTROLS */}
+                  {(profile.themeConfig.backgroundType === 'pattern') && (
+                    <div className="p-3.5 bg-muted/20 border border-border rounded-xl space-y-4">
+                      {/* Grid of 3 Preset Patterns */}
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-foreground block">انتخاب الگوی پترن</label>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                          {[
+                            { id: 'dots', label: 'نقطه‌ای', desc: 'الگوی مدرن و مینیمال' },
+                            { id: 'grid', label: 'شبکه‌ای', desc: 'خطوط ظریف شطرنجی' },
+                            { id: 'diagonal', label: 'خطوط مورب', desc: 'خطوط ۴۵ درجه شیک' },
+                            { id: 'stripes', label: 'راه‌راه', desc: 'خطوط موازی و ساده' },
+                          ].map((p) => {
+                            const isSelected = (profile.themeConfig.bgPatternId || 'dots') === p.id;
+                            return (
+                              <button
+                                key={p.id}
+                                type="button"
+                                onClick={() => updateTheme({ bgPatternId: p.id })}
+                                className={`p-3 rounded-xl border text-center transition-all cursor-pointer ${isSelected
+                                  ? 'bg-cyan-500/15 border-cyan-500 text-cyan-500 ring-2 ring-cyan-500/30 font-bold shadow-sm'
+                                  : 'bg-card border-border text-foreground hover:bg-muted'
+                                  }`}
+                              >
+                                <span className="text-xs font-bold block mb-0.5">{p.label}</span>
+                                <span className="text-[10px] text-muted-foreground block">{p.desc}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Pattern Opacity Slider */}
+                      <div className="space-y-1.5 pt-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-bold text-foreground">شفافیت پترن (Opacity):</span>
+                          <span className="font-sans font-bold text-cyan-500">
+                            {Math.round((profile.themeConfig.bgPatternOpacity ?? 0.15) * 100)}%
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0.05"
+                          max="1"
+                          step="0.05"
+                          value={profile.themeConfig.bgPatternOpacity ?? 0.15}
+                          onChange={(e) => updateTheme({ bgPatternOpacity: parseFloat(e.target.value) })}
+                          className="w-full accent-cyan-500 cursor-pointer"
+                        />
+                      </div>
+
+                      {/* Pattern Size Slider */}
+                      <div className="space-y-1.5 pt-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-bold text-foreground">اندازه پترن (Pattern Size):</span>
+                          <span className="font-sans font-bold text-cyan-500">
+                            {profile.themeConfig.bgPatternSize ?? 24}px
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min="10"
+                          max="100"
+                          step="2"
+                          value={profile.themeConfig.bgPatternSize ?? 24}
+                          onChange={(e) => updateTheme({ bgPatternSize: parseInt(e.target.value, 10) })}
+                          className="w-full accent-cyan-500 cursor-pointer"
+                        />
+                      </div>
+
+                      {/* Base Background Color for Pattern */}
+                      <ConfirmableColorPicker
+                        label="رنگ پس‌زمینه زیرین پترن"
+                        value={profile.themeConfig.bgSolidColor || '#090d16'}
+                        onChange={(col) => updateTheme({ bgSolidColor: col, backgroundColor: col })}
+                        onLiveChange={(col) => updateTheme({ bgSolidColor: col, backgroundColor: col })}
+                      />
+                    </div>
+                  )}
+
+                  {/* 4. IMAGE MODE CONTROLS */}
+                  {(profile.themeConfig.backgroundType === 'image') && (
+                    <div className="p-3.5 bg-muted/20 border border-border rounded-xl space-y-4">
+                      {/* FileUploader Component */}
+                      <FileUploader
+                        value={profile.themeConfig.bgImageUrl || ''}
+                        onChange={(url) => updateTheme({ bgImageUrl: url })}
+                        fileType="image"
+                        folder="branding"
+                        label="تصویر اختصاصی پس‌زمینه کارت"
+                        description="تصویر دلخواه خود را آپلود کنید یا آدرس آن را وارد نمایید (حداکثر 2MB)."
+                        aspectRatio="free"
+                      />
+
+                      {/* Ready-made Background Images */}
+                      <div className="space-y-2 pt-1 border-t border-border">
+                        <span className="text-xs font-bold text-foreground block">تصاویر آماده پیشنهادی:</span>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                          {[
+                            { id: 'tech', label: 'تکنولوژی', url: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1200&auto=format&fit=crop&q=80' },
+                            { id: 'neon', label: 'امواج نئونی', url: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=1200&auto=format&fit=crop&q=80' },
+                            { id: 'quantum', label: 'شبکه کوانتومی', url: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=1200&auto=format&fit=crop&q=80' },
+                            { id: 'dark_flow', label: 'امواج تاریک', url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200&auto=format&fit=crop&q=80' },
+                          ].map((item) => (
+                            <button
+                              key={item.id}
+                              type="button"
+                              onClick={() => updateTheme({ bgImageUrl: item.url })}
+                              className={`relative h-16 rounded-xl overflow-hidden border transition-all hover:scale-105 active:scale-95 shadow-sm group cursor-pointer ${profile.themeConfig.bgImageUrl === item.url ? 'ring-2 ring-cyan-500 border-white' : 'border-border'
+                                }`}
+                            >
+                              <img src={item.url} alt={item.label} className="w-full h-full object-cover" />
+                              <div className="absolute inset-0 bg-black/50 group-hover:bg-black/30 flex items-center justify-center transition-colors">
+                                <span className="text-[10px] font-bold text-white text-center px-1 drop-shadow-md">{item.label}</span>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Image Opacity Slider */}
+                      <div className="space-y-1.5 pt-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-bold text-foreground">شفافیت تصویر پس‌زمینه (Opacity):</span>
+                          <span className="font-sans font-bold text-cyan-500">
+                            {Math.round((profile.themeConfig.bgImageOpacity ?? 0.25) * 100)}%
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0.05"
+                          max="1"
+                          step="0.05"
+                          value={profile.themeConfig.bgImageOpacity ?? 0.25}
+                          onChange={(e) => updateTheme({ bgImageOpacity: parseFloat(e.target.value) })}
+                          className="w-full accent-cyan-500 cursor-pointer"
+                        />
+                      </div>
+
+                      {/* Base Solid Color under Image */}
+                      <ConfirmableColorPicker
+                        label="رنگ پس‌زمینه زیرین تصویر"
+                        value={profile.themeConfig.bgSolidColor || '#090d16'}
+                        onChange={(col) => updateTheme({ bgSolidColor: col, backgroundColor: col })}
+                        onLiveChange={(col) => updateTheme({ bgSolidColor: col, backgroundColor: col })}
+                      />
+                    </div>
+                  )}
                 </AccordionContent>
               </AccordionItem>
 
               {/* 3. دکمه‌ها (Buttons) */}
-              <AccordionItem value="buttons" className="border border-border rounded-2xl bg-card overflow-hidden">
-                <AccordionTrigger className="px-5 py-4 hover:no-underline hover:bg-muted/30">
+              <AccordionItem value="buttons" className="border border-border rounded-2xl bg-card">
+                <AccordionTrigger className="px-5 py-4 hover:no-underline hover:bg-muted/30 rounded-2xl">
                   <div className="flex items-center gap-2.5">
                     <div className="w-7 h-7 rounded-lg bg-amber-500/15 border border-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center">
                       <Sliders className="w-4 h-4" />
@@ -1054,7 +1359,7 @@ export const ProfileEditor: React.FC = () => {
                     </div>
                   </div>
                 </AccordionTrigger>
-                <AccordionContent className="px-5 pb-5 pt-1 space-y-4">
+                <AccordionContent className="px-5 pb-5 pt-1 space-y-4 overflow-visible">
                   {/* 1. شکل حاشیه دکمه (8 انواع مختلف انحنا و شکل) */}
                   <div>
                     <label className="block text-xs font-bold text-foreground mb-2 flex items-center justify-between">
@@ -1156,6 +1461,7 @@ export const ProfileEditor: React.FC = () => {
                     label="رنگ متن دکمه"
                     value={profile.themeConfig.buttonTextColor || '#ffffff'}
                     onChange={(color) => updateTheme({ buttonTextColor: color })}
+                    onLiveChange={(color) => updateTheme({ buttonTextColor: color })}
                   />
 
                   {/* 4. رنگ پس‌زمینه دکمه (Confirmable Color Picker) */}
@@ -1163,6 +1469,7 @@ export const ProfileEditor: React.FC = () => {
                     label="رنگ پس زمینه دکمه"
                     value={profile.themeConfig.buttonBgColor || '#0ea5e9'}
                     onChange={(color) => updateTheme({ buttonBgColor: color })}
+                    onLiveChange={(color) => updateTheme({ buttonBgColor: color })}
                   />
 
                   {/* 5. رنگ حاشیه دکمه (Confirmable Color Picker) */}
@@ -1170,6 +1477,7 @@ export const ProfileEditor: React.FC = () => {
                     label="رنگ حاشیه دکمه"
                     value={profile.themeConfig.buttonBorderColor || '#38bdf8'}
                     onChange={(color) => updateTheme({ buttonBorderColor: color })}
+                    onLiveChange={(color) => updateTheme({ buttonBorderColor: color })}
                   />
 
                   {/* 6. ضخامت حاشیه دکمه (هیچکدام، نازک، متوسط، ضخیم) */}
@@ -1229,8 +1537,8 @@ export const ProfileEditor: React.FC = () => {
               </AccordionItem>
 
               {/* 4. رنگ‌ها (Color Pickers) */}
-              <AccordionItem value="colors" className="border border-border rounded-2xl bg-card overflow-hidden">
-                <AccordionTrigger className="px-5 py-4 hover:no-underline hover:bg-muted/30">
+              <AccordionItem value="colors" className="border border-border rounded-2xl bg-card">
+                <AccordionTrigger className="px-5 py-4 hover:no-underline hover:bg-muted/30 rounded-2xl">
                   <div className="flex items-center gap-2.5">
                     <div className="w-7 h-7 rounded-lg bg-pink-500/15 border border-pink-500/20 text-pink-600 dark:text-pink-400 flex items-center justify-center">
                       <Palette className="w-4 h-4" />
@@ -1241,13 +1549,14 @@ export const ProfileEditor: React.FC = () => {
                     </div>
                   </div>
                 </AccordionTrigger>
-                <AccordionContent className="px-5 pb-5 pt-1 space-y-4">
+                <AccordionContent className="px-5 pb-5 pt-1 space-y-4 overflow-visible">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {/* Primary Color (Confirmable) */}
                     <ConfirmableColorPicker
                       label="رنگ شروع گرادیانت"
                       value={profile.themeConfig.primaryColor || '#06b6d4'}
                       onChange={(color) => updateTheme({ primaryColor: color })}
+                      onLiveChange={(color) => updateTheme({ primaryColor: color })}
                     />
 
                     {/* Accent Color (Confirmable) */}
@@ -1255,6 +1564,7 @@ export const ProfileEditor: React.FC = () => {
                       label="رنگ پایان گرادیانت"
                       value={profile.themeConfig.accentColor || '#3b82f6'}
                       onChange={(color) => updateTheme({ accentColor: color })}
+                      onLiveChange={(color) => updateTheme({ accentColor: color })}
                     />
                   </div>
 

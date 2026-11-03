@@ -70,6 +70,10 @@ import {
   QrCode,
   Navigation,
   Check,
+  Folder,
+  Link2,
+  HeartHandshake,
+  Music,
 } from 'lucide-react';
 import {
   Dialog,
@@ -154,6 +158,11 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
   const activeFontClass = isLtr
     ? (themeConfig.fontEn ? `font-${themeConfig.fontEn}` : 'font-inter')
     : (themeConfig.fontFa ? `font-${themeConfig.fontFa}` : 'font-vazirmatn');
+  const activeFontSize = isLtr
+    ? (themeConfig.fontSizeEn || 14)
+    : isPashto
+      ? (themeConfig.fontSizePashto || 15)
+      : (themeConfig.fontSizeDari || 15);
 
   // Live URL for QR Code and sharing
   const [currentUrl, setCurrentUrl] = useState(`https://aryal.ink/${profile.alias}`);
@@ -181,20 +190,13 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
     }
   };
 
-  // Button Animation Class Generator
-  const getButtonAnimationClass = (anim?: string) => {
-    switch (anim) {
-      case 'pulse':
-        return 'animate-pulse';
-      case 'bounce':
-        return 'animate-bounce';
-      case 'shake':
-        return 'animate-shake';
-      case 'glow':
-        return 'shadow-[0_0_18px_rgba(6,182,212,0.65)] ring-2 ring-cyan-400/60 animate-pulse';
-      default:
-        return '';
+  // Button Animation Class Generator (Synced with LivePreview)
+  const getButtonAnimationClass = (anim?: string, trigger?: string) => {
+    if (!anim || anim === 'none') return '';
+    if (trigger === 'hover') {
+      return `animate-hover-${anim}`;
     }
+    return `animate-${anim}`;
   };
 
   // Uniform rounded border styling (defaults to rounded-2xl)
@@ -211,6 +213,32 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
         return 'rounded-full';
       default:
         return 'rounded-2xl';
+    }
+  };
+
+  const getButtonShapeClass = (customShape?: string, customRadius?: string) => {
+    if (customShape && customShape !== 'inherit') return `btn-shape-${customShape}`;
+    if (themeConfig.buttonShape) return `btn-shape-${themeConfig.buttonShape}`;
+    return 'btn-shape-soft';
+  };
+
+  const getButtonSizeClass = (customSize?: string) => {
+    const s = customSize || themeConfig.buttonSize || 'md';
+    return `btn-size-${s}`;
+  };
+
+  const getButtonBorderWidthClass = (customWidth?: string) => {
+    const w = customWidth || themeConfig.buttonBorderWidth || 'thin';
+    switch (w) {
+      case 'none':
+        return 'border-0';
+      case 'medium':
+        return 'border-2';
+      case 'thick':
+        return 'border-4';
+      case 'thin':
+      default:
+        return 'border';
     }
   };
 
@@ -302,6 +330,9 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
   const filteredNonSocialLinks = topLevelNonSocialLinks.filter((l) => {
     return searchFilter ? l.title.toLowerCase().includes(searchFilter.toLowerCase()) : true;
   });
+
+  const getContainerChildren = (containerId: string) =>
+    (profile.links || []).filter((l) => l.isActive && !l.advancedSettings?.isHidden && l.parentId === containerId);
 
   const hasWhatsAppLink = compactSocialLinks.some((l) => l.moduleType === 'whatsapp_direct');
   const hasPhoneLink = (profile.links || []).some((l) => l.moduleType === 'phone_call');
@@ -480,7 +511,7 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
     }
   };
 
-  // 5. Render Social Icon (Unified 12x12 rounded-2xl with hover glow)
+  // 5. Render Social Icon (Synced with LivePreview Dynamic Shapes & Colors)
   const renderSocialIcon = (link: ProfileLinkItem) => {
     const rawVal =
       link.url ||
@@ -488,377 +519,211 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
       (link.metadata?.channelUsername as string) ||
       (link.metadata?.instagramUsername as string) ||
       (link.metadata?.linkedinUsername as string) ||
+      (link.metadata?.emailAddress as string) ||
+      (link.metadata?.email as string) ||
       (link.metadata?.targetId as string) ||
       '';
-    const smartUrl = getSmartLink(link.moduleType, rawVal);
-    const animClass = getButtonAnimationClass(link.advancedSettings?.buttonAnimation);
+    const smartUrl =
+      link.moduleType === 'email_direct'
+        ? (rawVal.startsWith('mailto:') ? rawVal : `mailto:${rawVal}`)
+        : getSmartLink(link.moduleType, rawVal, { preferDeepLink: true });
+    const cardShape = getButtonShapeClass(
+      link.advancedSettings?.customStyling?.buttonShape,
+      link.advancedSettings?.customStyling?.borderRadius
+    );
+    const animClass = getButtonAnimationClass(
+      link.advancedSettings?.buttonAnimation,
+      link.advancedSettings?.animationTrigger
+    );
+    const animDuration = link.advancedSettings?.animationSpeed
+      ? { ['--anim-speed' as any]: `${link.advancedSettings.animationSpeed}s` }
+      : {};
 
-    switch (link.moduleType) {
-      case 'whatsapp_direct':
-        return (
-          <a
-            key={link.id}
-            href={smartUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            title={link.title || 'واتساپ'}
-            className={`w-12 h-12 rounded-2xl ${animClass} bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm hover:shadow-[0_0_18px_rgba(16,185,129,0.4)]`}
-          >
-            <WhatsAppIcon className="w-5 h-5 fill-current" />
-          </a>
-        );
-      case 'telegram_channel':
-        return (
-          <a
-            key={link.id}
-            href={smartUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            title={link.title || 'کانال یا حساب تلگرام'}
-            className={`w-12 h-12 rounded-2xl ${animClass} bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/30 text-sky-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm hover:shadow-[0_0_18px_rgba(14,165,233,0.4)]`}
-          >
-            <TelegramIcon className="w-5 h-5 fill-current" />
-          </a>
-        );
-      case 'instagram_profile':
-        return (
-          <a
-            key={link.id}
-            href={smartUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            title={link.title || 'صفحه اینستاگرام'}
-            className={`w-12 h-12 rounded-2xl ${animClass} bg-pink-500/15 hover:bg-pink-500/25 border border-pink-500/30 text-pink-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm hover:shadow-[0_0_18px_rgba(236,72,153,0.4)]`}
-          >
-            <InstagramIcon className="w-5 h-5 fill-current" />
-          </a>
-        );
-      case 'linkedin_profile':
-        return (
-          <a
-            key={link.id}
-            href={smartUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            title={link.title || 'پروفایل لینکدین'}
-            className={`w-12 h-12 rounded-2xl ${animClass} bg-blue-600/15 hover:bg-blue-600/25 border border-blue-600/30 text-blue-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm hover:shadow-[0_0_18px_rgba(59,130,246,0.4)]`}
-          >
-            <LinkedInIcon className="w-5 h-5 fill-current" />
-          </a>
-        );
-      case 'twitter_x':
-        return (
-          <a
-            key={link.id}
-            href={smartUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            title={link.title || 'X (توییتر)'}
-            className={`w-12 h-12 rounded-2xl ${animClass} bg-zinc-800/40 hover:bg-zinc-800/60 border border-zinc-700/50 text-zinc-100 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm hover:shadow-[0_0_18px_rgba(255,255,255,0.2)]`}
-          >
-            <XTwitterIcon className="w-5 h-5 fill-current" />
-          </a>
-        );
-      case 'pinterest':
-        return (
-          <a
-            key={link.id}
-            href={smartUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            title={link.title || 'پینترست'}
-            className={`w-12 h-12 rounded-2xl ${animClass} bg-red-600/15 hover:bg-red-600/25 border border-red-600/30 text-red-500 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm hover:shadow-[0_0_18px_rgba(239,68,68,0.4)]`}
-          >
-            <PinterestIcon className="w-5 h-5 fill-current" />
-          </a>
-        );
-      case 'facebook':
-        return (
-          <a
-            key={link.id}
-            href={smartUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            title={link.title || 'فیس‌بوک'}
-            className={`w-12 h-12 rounded-2xl ${animClass} bg-blue-600/15 hover:bg-blue-600/25 border border-blue-600/30 text-blue-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm hover:shadow-[0_0_18px_rgba(59,130,246,0.4)]`}
-          >
-            <FacebookIcon className="w-5 h-5 fill-current" />
-          </a>
-        );
-      case 'dribbble':
-        return (
-          <a
-            key={link.id}
-            href={smartUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            title={link.title || 'دریبل'}
-            className={`w-12 h-12 rounded-2xl ${animClass} bg-pink-500/15 hover:bg-pink-500/25 border border-pink-500/30 text-pink-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm hover:shadow-[0_0_18px_rgba(236,72,153,0.4)]`}
-          >
-            <DribbbleIcon className="w-5 h-5 fill-current" />
-          </a>
-        );
-      case 'behance':
-        return (
-          <a
-            key={link.id}
-            href={smartUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            title={link.title || 'بیهنس'}
-            className={`w-12 h-12 rounded-2xl ${animClass} bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/30 text-blue-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm hover:shadow-[0_0_18px_rgba(59,130,246,0.4)]`}
-          >
-            <BehanceIcon className="w-5 h-5 fill-current" />
-          </a>
-        );
-      case 'youtube_channel':
-        return (
-          <a
-            key={link.id}
-            href={smartUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            title={link.title || 'یوتیوب'}
-            className={`w-12 h-12 rounded-2xl ${animClass} bg-red-600/15 hover:bg-red-600/25 border border-red-600/30 text-red-500 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm hover:shadow-[0_0_18px_rgba(239,68,68,0.4)]`}
-          >
-            <YouTubeIcon className="w-5 h-5 fill-current" />
-          </a>
-        );
-      case 'clubhouse':
-        return (
-          <a
-            key={link.id}
-            href={smartUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            title={link.title || 'کلاب‌هاوس'}
-            className={`w-12 h-12 rounded-2xl ${animClass} bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm hover:shadow-[0_0_18px_rgba(245,158,11,0.4)]`}
-          >
-            <ClubhouseIcon className="w-5 h-5 fill-current" />
-          </a>
-        );
-      case 'patreon':
-        return (
-          <a
-            key={link.id}
-            href={smartUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            title={link.title || 'پاترئون'}
-            className={`w-12 h-12 rounded-2xl ${animClass} bg-orange-500/15 hover:bg-orange-500/25 border border-orange-500/30 text-orange-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm hover:shadow-[0_0_18px_rgba(249,115,22,0.4)]`}
-          >
-            <PatreonIcon className="w-5 h-5 fill-current" />
-          </a>
-        );
-      case 'twitch':
-        return (
-          <a
-            key={link.id}
-            href={smartUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            title={link.title || 'توییچ'}
-            className={`w-12 h-12 rounded-2xl ${animClass} bg-purple-600/15 hover:bg-purple-600/25 border border-purple-600/30 text-purple-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm hover:shadow-[0_0_18px_rgba(168,85,247,0.4)]`}
-          >
-            <TwitchIcon className="w-5 h-5 fill-current" />
-          </a>
-        );
-      case 'github':
-        return (
-          <a
-            key={link.id}
-            href={smartUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            title={link.title || 'گیت‌هاب'}
-            className={`w-12 h-12 rounded-2xl ${animClass} bg-zinc-700/20 hover:bg-zinc-700/30 border border-zinc-700/40 text-slate-100 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm hover:shadow-[0_0_18px_rgba(255,255,255,0.2)]`}
-          >
-            <GitHubIcon className="w-5 h-5 fill-current" />
-          </a>
-        );
-      case 'aparat_channel':
-        return (
-          <a
-            key={link.id}
-            href={smartUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            title={link.title || 'آپارات'}
-            className={`w-12 h-12 rounded-2xl ${animClass} bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm hover:shadow-[0_0_18px_rgba(244,63,94,0.4)]`}
-          >
-            <AparatIcon className="w-5 h-5 fill-current" />
-          </a>
-        );
-      case 'tiktok':
-        return (
-          <a
-            key={link.id}
-            href={smartUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            title={link.title || 'تیک‌تاک'}
-            className={`w-12 h-12 rounded-2xl ${animClass} bg-pink-500/15 hover:bg-pink-500/25 border border-pink-500/30 text-pink-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm hover:shadow-[0_0_18px_rgba(236,72,153,0.4)]`}
-          >
-            <TikTokIcon className="w-5 h-5 fill-current" />
-          </a>
-        );
-      case 'apple_music':
-        return (
-          <a
-            key={link.id}
-            href={smartUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            title={link.title || 'اپل موزیک'}
-            className={`w-12 h-12 rounded-2xl ${animClass} bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-500 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm hover:shadow-[0_0_18px_rgba(244,63,94,0.4)]`}
-          >
-            <AppleMusicIcon className="w-5 h-5 fill-current" />
-          </a>
-        );
-      case 'youtube_music':
-        return (
-          <a
-            key={link.id}
-            href={smartUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            title={link.title || 'یوتیوب موزیک'}
-            className={`w-12 h-12 rounded-2xl ${animClass} bg-red-600/15 hover:bg-red-600/25 border border-red-600/30 text-red-500 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm hover:shadow-[0_0_18px_rgba(239,68,68,0.4)]`}
-          >
-            <YouTubeMusicIcon className="w-5 h-5 fill-current" />
-          </a>
-        );
-      case 'castbox':
-        return (
-          <a
-            key={link.id}
-            href={smartUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            title={link.title || 'کست‌باکس'}
-            className={`w-12 h-12 rounded-2xl ${animClass} bg-orange-500/15 hover:bg-orange-500/25 border border-orange-500/30 text-orange-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm hover:shadow-[0_0_18px_rgba(249,115,22,0.4)]`}
-          >
-            <CastboxIcon className="w-5 h-5 fill-current" />
-          </a>
-        );
-      case 'radio_javan':
-        return (
-          <a
-            key={link.id}
-            href={smartUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            title={link.title || 'رادیو جوان'}
-            className={`w-12 h-12 rounded-2xl ${animClass} bg-amber-400/15 hover:bg-amber-400/25 border border-amber-400/30 text-amber-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm hover:shadow-[0_0_18px_rgba(251,191,36,0.4)]`}
-          >
-            <RadioJavanIcon className="w-5 h-5 fill-current" />
-          </a>
-        );
-      case 'spotify_podcaster':
-        return (
-          <a
-            key={link.id}
-            href={smartUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            title={link.title || 'اسپاتیفای پادکستر'}
-            className={`w-12 h-12 rounded-2xl ${animClass} bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 text-purple-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm hover:shadow-[0_0_18px_rgba(168,85,247,0.4)]`}
-          >
-            <SpotifyIcon className="w-5 h-5 fill-current" />
-          </a>
-        );
-      case 'spotify':
-        return (
-          <a
-            key={link.id}
-            href={smartUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            title={link.title || 'اسپاتیفای'}
-            className={`w-12 h-12 rounded-2xl ${animClass} bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm hover:shadow-[0_0_18px_rgba(16,185,129,0.4)]`}
-          >
-            <SpotifyIcon className="w-5 h-5 fill-current" />
-          </a>
-        );
-      case 'soundcloud':
-        return (
-          <a
-            key={link.id}
-            href={smartUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            title={link.title || 'ساوندکلاود'}
-            className={`w-12 h-12 rounded-2xl ${animClass} bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm hover:shadow-[0_0_18px_rgba(245,158,11,0.4)]`}
-          >
-            <SoundCloudIcon className="w-5 h-5 fill-current" />
-          </a>
-        );
-      case 'skype':
-        return (
-          <a
-            key={link.id}
-            href={smartUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            title={link.title || 'اسکایپ'}
-            className={`w-12 h-12 rounded-2xl ${animClass} bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/30 text-sky-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm hover:shadow-[0_0_18px_rgba(14,165,233,0.4)]`}
-          >
-            <SkypeIcon className="w-5 h-5 fill-current" />
-          </a>
-        );
-      case 'wechat':
-        return (
-          <a
-            key={link.id}
-            href={smartUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            title={link.title || 'وی‌چت'}
-            className={`w-12 h-12 rounded-2xl ${animClass} bg-emerald-600/15 hover:bg-emerald-600/25 border border-emerald-600/30 text-emerald-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm hover:shadow-[0_0_18px_rgba(16,185,129,0.4)]`}
-          >
-            <WeChatIcon className="w-5 h-5 fill-current" />
-          </a>
-        );
-      case 'messenger':
-        return (
-          <a
-            key={link.id}
-            href={smartUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            title={link.title || 'فیس‌بوک مسنجر'}
-            className={`w-12 h-12 rounded-2xl ${animClass} bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/30 text-blue-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm hover:shadow-[0_0_18px_rgba(59,130,246,0.4)]`}
-          >
-            <MessengerIcon className="w-5 h-5 fill-current" />
-          </a>
-        );
-      case 'signal':
-        return (
-          <a
-            key={link.id}
-            href={smartUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            title={link.title || 'سیگنال'}
-            className={`w-12 h-12 rounded-2xl ${animClass} bg-blue-600/15 hover:bg-blue-600/25 border border-blue-600/30 text-blue-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm hover:shadow-[0_0_18px_rgba(59,130,246,0.4)]`}
-          >
-            <SignalIcon className="w-5 h-5 fill-current" />
-          </a>
-        );
-      default:
-        return null;
-    }
+    const getSocialColors = (type: LinkModuleType) => {
+      switch (type) {
+        case 'whatsapp_direct': return { border: 'rgba(16, 185, 129, 0.4)', bg: 'rgba(16, 185, 129, 0.15)', classes: 'bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400', icon: <WhatsAppIcon className="w-5 h-5 fill-current" /> };
+        case 'telegram_channel': return { border: 'rgba(14, 165, 233, 0.4)', bg: 'rgba(14, 165, 233, 0.15)', classes: 'bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/30 text-sky-400', icon: <TelegramIcon className="w-5 h-5 fill-current" /> };
+        case 'instagram_profile': return { border: 'rgba(236, 72, 153, 0.4)', bg: 'rgba(236, 72, 153, 0.15)', classes: 'bg-pink-500/15 hover:bg-pink-500/25 border border-pink-500/30 text-pink-400', icon: <InstagramIcon className="w-5 h-5 fill-current" /> };
+        case 'linkedin_profile': return { border: 'rgba(37, 99, 235, 0.4)', bg: 'rgba(37, 99, 235, 0.15)', classes: 'bg-blue-600/15 hover:bg-blue-600/25 border border-blue-600/30 text-blue-400', icon: <LinkedInIcon className="w-5 h-5 fill-current" /> };
+        case 'twitter_x': return { border: 'rgba(161, 161, 170, 0.4)', bg: 'rgba(39, 39, 42, 0.5)', classes: 'bg-zinc-800/40 hover:bg-zinc-800/60 border border-zinc-700/50 text-zinc-100', icon: <XTwitterIcon className="w-5 h-5 fill-current" /> };
+        case 'pinterest': return { border: 'rgba(244, 63, 94, 0.4)', bg: 'rgba(244, 63, 94, 0.15)', classes: 'bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-500', icon: <PinterestIcon className="w-5 h-5 fill-current" /> };
+        case 'facebook': return { border: 'rgba(37, 99, 235, 0.4)', bg: 'rgba(37, 99, 235, 0.15)', classes: 'bg-blue-600/15 hover:bg-blue-600/25 border border-blue-600/30 text-blue-400', icon: <FacebookIcon className="w-5 h-5 fill-current" /> };
+        case 'dribbble': return { border: 'rgba(236, 72, 153, 0.4)', bg: 'rgba(236, 72, 153, 0.15)', classes: 'bg-pink-500/15 hover:bg-pink-500/25 border border-pink-500/30 text-pink-400', icon: <DribbbleIcon className="w-5 h-5 fill-current" /> };
+        case 'behance': return { border: 'rgba(59, 130, 246, 0.4)', bg: 'rgba(59, 130, 246, 0.15)', classes: 'bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/30 text-blue-400', icon: <BehanceIcon className="w-5 h-5 fill-current" /> };
+        case 'youtube_channel': return { border: 'rgba(239, 68, 68, 0.4)', bg: 'rgba(239, 68, 68, 0.15)', classes: 'bg-red-600/15 hover:bg-red-600/25 border border-red-600/30 text-red-500', icon: <YouTubeIcon className="w-5 h-5 fill-current" /> };
+        case 'clubhouse': return { border: 'rgba(245, 158, 11, 0.4)', bg: 'rgba(245, 158, 11, 0.15)', classes: 'bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-500', icon: <ClubhouseIcon className="w-5 h-5 fill-current" /> };
+        case 'patreon': return { border: 'rgba(244, 63, 94, 0.4)', bg: 'rgba(244, 63, 94, 0.15)', classes: 'bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-500', icon: <PatreonIcon className="w-5 h-5 fill-current" /> };
+        case 'twitch': return { border: 'rgba(168, 85, 247, 0.4)', bg: 'rgba(168, 85, 247, 0.15)', classes: 'bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 text-purple-400', icon: <TwitchIcon className="w-5 h-5 fill-current" /> };
+        case 'github': return { border: 'rgba(161, 161, 170, 0.4)', bg: 'rgba(39, 39, 42, 0.5)', classes: 'bg-zinc-800/40 hover:bg-zinc-800/60 border border-zinc-700/50 text-zinc-100', icon: <GitHubIcon className="w-5 h-5 fill-current" /> };
+        case 'aparat_channel': return { border: 'rgba(244, 63, 94, 0.4)', bg: 'rgba(244, 63, 94, 0.15)', classes: 'bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-500', icon: <AparatIcon className="w-5 h-5 fill-current" /> };
+        case 'tiktok': return { border: 'rgba(161, 161, 170, 0.4)', bg: 'rgba(24, 24, 27, 0.5)', classes: 'bg-zinc-800/40 hover:bg-zinc-800/60 border border-zinc-700/50 text-zinc-100', icon: <TikTokIcon className="w-5 h-5 fill-current" /> };
+        case 'apple_music': return { border: 'rgba(244, 63, 94, 0.4)', bg: 'rgba(244, 63, 94, 0.15)', classes: 'bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-500', icon: <AppleMusicIcon className="w-5 h-5 fill-current" /> };
+        case 'youtube_music': return { border: 'rgba(239, 68, 68, 0.4)', bg: 'rgba(239, 68, 68, 0.15)', classes: 'bg-red-500/15 hover:bg-red-500/25 border border-red-500/30 text-red-500', icon: <YouTubeMusicIcon className="w-5 h-5 fill-current" /> };
+        case 'castbox': return { border: 'rgba(245, 158, 11, 0.4)', bg: 'rgba(245, 158, 11, 0.15)', classes: 'bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-500', icon: <CastboxIcon className="w-5 h-5 fill-current" /> };
+        case 'radio_javan': return { border: 'rgba(99, 102, 241, 0.4)', bg: 'rgba(99, 102, 241, 0.15)', classes: 'bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/30 text-indigo-400', icon: <RadioJavanIcon className="w-5 h-5 fill-current" /> };
+        case 'spotify_podcaster':
+        case 'spotify': return { border: 'rgba(16, 185, 129, 0.4)', bg: 'rgba(16, 185, 129, 0.15)', classes: 'bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400', icon: <SpotifyIcon className="w-5 h-5 fill-current" /> };
+        case 'soundcloud': return { border: 'rgba(249, 115, 22, 0.4)', bg: 'rgba(249, 115, 22, 0.15)', classes: 'bg-orange-500/15 hover:bg-orange-500/25 border border-orange-500/30 text-orange-400', icon: <SoundCloudIcon className="w-5 h-5 fill-current" /> };
+        case 'skype': return { border: 'rgba(14, 165, 233, 0.4)', bg: 'rgba(14, 165, 233, 0.15)', classes: 'bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/30 text-sky-400', icon: <SkypeIcon className="w-5 h-5 fill-current" /> };
+        case 'wechat': return { border: 'rgba(16, 185, 129, 0.4)', bg: 'rgba(16, 185, 129, 0.15)', classes: 'bg-emerald-600/15 hover:bg-emerald-600/25 border border-emerald-600/30 text-emerald-400', icon: <WeChatIcon className="w-5 h-5 fill-current" /> };
+        case 'messenger': return { border: 'rgba(59, 130, 246, 0.4)', bg: 'rgba(59, 130, 246, 0.15)', classes: 'bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/30 text-blue-400', icon: <MessengerIcon className="w-5 h-5 fill-current" /> };
+        case 'signal': return { border: 'rgba(37, 99, 235, 0.4)', bg: 'rgba(37, 99, 235, 0.15)', classes: 'bg-blue-600/15 hover:bg-blue-600/25 border border-blue-600/30 text-blue-400', icon: <SignalIcon className="w-5 h-5 fill-current" /> };
+        case 'email_direct': return { border: 'rgba(245, 158, 11, 0.4)', bg: 'rgba(245, 158, 11, 0.15)', classes: 'bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-400', icon: <Mail className="w-5 h-5" /> };
+        default: return null;
+      }
+    };
+    const sInfo = getSocialColors(link.moduleType);
+    if (!sInfo) return null;
+
+    const sStyle = link.advancedSettings?.customStyling;
+    const iconStyle: React.CSSProperties = {
+      ...animDuration,
+      ['--btn-border' as any]: sStyle?.customBorderColor || sInfo.border,
+      ['--btn-bg' as any]: sStyle?.customBgColor || sInfo.bg,
+      ['--btn-border-width' as any]: '1.5px',
+    };
+
+    return (
+      <a
+        key={link.id}
+        href={smartUrl}
+        target="_blank"
+        rel="noreferrer"
+        title={link.title}
+        className={`w-11 h-11 ${cardShape} ${animClass} ${sInfo.classes} flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm`}
+        style={iconStyle}
+      >
+        {sInfo.icon}
+      </a>
+    );
   };
 
   // 6. Render Module Card
   const renderModuleCard = (link: ProfileLinkItem) => {
     const meta = link.metadata || {};
     const adv = link.advancedSettings || {};
+    const lock = adv.monetization;
     const customStyle = adv.customStyling;
 
-    const customCardStyle: React.CSSProperties = {};
-    if (customStyle?.customBgColor) customCardStyle.backgroundColor = customStyle.customBgColor;
-    if (customStyle?.customTextColor) customCardStyle.color = customStyle.customTextColor;
+    const bWidthVal =
+      (customStyle?.borderWidth || themeConfig.buttonBorderWidth) === 'none'
+        ? '0px'
+        : (customStyle?.borderWidth || themeConfig.buttonBorderWidth) === 'medium'
+          ? '2px'
+          : (customStyle?.borderWidth || themeConfig.buttonBorderWidth) === 'thick'
+            ? '3px'
+            : '1.5px';
+
+    const customCardStyle: React.CSSProperties = {
+      ...(adv.animationSpeed ? { ['--anim-speed' as any]: `${adv.animationSpeed}s` } : {}),
+      ['--btn-border-width' as any]: bWidthVal,
+    };
+
+    // Background color: Only apply inline if user chose a custom color and not the default cyan (#0ea5e9 / #38bdf8)
+    const rawBgColor = customStyle?.customBgColor || themeConfig.buttonBgColor;
+    const isDefaultBg =
+      !rawBgColor ||
+      rawBgColor.trim() === '' ||
+      rawBgColor.toLowerCase() === '#0ea5e9' ||
+      rawBgColor.toLowerCase() === '#38bdf8';
+    if (!isDefaultBg) {
+      customCardStyle.backgroundColor = rawBgColor;
+      customCardStyle['--btn-bg' as any] = rawBgColor;
+    }
+
+    // Text color
+    const rawTextColor = customStyle?.customTextColor || themeConfig.buttonTextColor;
+    if (rawTextColor && rawTextColor.trim() !== '') {
+      customCardStyle.color = rawTextColor;
+      customCardStyle['--btn-text' as any] = rawTextColor;
+    }
+
+    // Border color: Only apply inline if user chose a custom color and not the default cyan border (#38bdf8 / #0ea5e9)
+    const rawBorderColor = customStyle?.customBorderColor || themeConfig.buttonBorderColor;
+    const isDefaultBorder =
+      !rawBorderColor ||
+      rawBorderColor.trim() === '' ||
+      rawBorderColor.toLowerCase() === '#38bdf8' ||
+      rawBorderColor.toLowerCase() === '#0ea5e9';
+    if (!isDefaultBorder) {
+      customCardStyle.borderColor = rawBorderColor;
+      customCardStyle['--btn-border' as any] = rawBorderColor;
+    }
+
+    const cardShape = getButtonShapeClass(customStyle?.buttonShape, customStyle?.borderRadius);
+    const cardSize = getButtonSizeClass(customStyle?.buttonSize);
+    const cardBorderWidth = getButtonBorderWidthClass(customStyle?.borderWidth);
+    const animClass = getButtonAnimationClass(adv.buttonAnimation, adv.animationTrigger);
+
+    // 0. Container / Group Module
+    if (link.moduleType === 'container_group') {
+      const childLinks = getContainerChildren(link.id);
+      const isCompact = meta.containerLayout === 'horizontal_compact';
+
+      return (
+        <div
+          key={link.id}
+          className={`w-full rounded-2xl p-3 border transition-all ${isLight
+            ? 'bg-slate-100/90 border-slate-300 shadow-xs'
+            : 'bg-white/5 border-white/10 backdrop-blur-md'
+            }`}
+          style={customCardStyle}
+        >
+          {link.title && (
+            <div className="flex items-center justify-between mb-2.5 pb-1.5 border-b border-border/40">
+              <span className="text-xs font-bold flex items-center gap-1.5 text-foreground">
+                <Folder className="w-3.5 h-3.5 text-cyan-400" />
+                <span>{link.title}</span>
+              </span>
+              <span className="text-[10px] text-muted-foreground font-sans bg-muted/60 px-1.5 py-0.5 rounded-md">
+                {childLinks.length} {childLinks.length === 1 ? 'item' : 'items'}
+              </span>
+            </div>
+          )}
+
+          {isCompact ? (
+            /* Horizontal Matrix / Compact Icons Row */
+            <div className="flex items-center justify-center flex-wrap gap-2 pt-0.5">
+              {childLinks.map((child) => (
+                <div key={child.id}>
+                  {socialModuleTypes.includes(child.moduleType) ? (
+                    renderSocialIcon(child)
+                  ) : (
+                    <div
+                      className={`w-11 h-11 rounded-2xl flex items-center justify-center border shadow-xs ${isLight
+                        ? 'bg-white border-slate-200 text-slate-800'
+                        : 'bg-white/10 border-white/20 text-white'
+                        }`}
+                    >
+                      <Link2 className="w-5 h-5 text-cyan-400" />
+                    </div>
+                  )}
+                </div>
+              ))}
+              {childLinks.length === 0 && (
+                <p className="text-[10px] text-center text-muted-foreground py-2 w-full">
+                  این گروه در حال حاضر خالی است.
+                </p>
+              )}
+            </div>
+          ) : (
+            /* Vertical List of Child Cards */
+            <div className="space-y-2 pt-0.5">
+              {childLinks.map((child) => (
+                <div key={child.id}>
+                  {renderModuleCard(child)}
+                </div>
+              ))}
+              {childLinks.length === 0 && (
+                <p className="text-[10px] text-center text-muted-foreground py-2 w-full">
+                  این گروه در حال حاضر خالی است.
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      );
+    }
 
     // 1. Text & Layout modules
     if (link.moduleType === 'simple_text') {
@@ -872,7 +737,7 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
       return (
         <div
           key={link.id}
-          className={`w-full p-4 border shadow-sm ${alignClass} ${getBorderRadiusClass(customStyle?.borderRadius)} ${isLight ? 'bg-white/90 border-slate-200 text-slate-800' : 'bg-white/[0.05] backdrop-blur-md border-white/10 text-white'
+          className={`w-full p-3.5 border shadow-sm ${alignClass} ${getBorderRadiusClass(customStyle?.borderRadius)} ${isLight ? 'bg-white/95 border-slate-200 text-slate-800' : `${themeConfig.cardBlur} text-white`
             }`}
           style={customCardStyle}
         >
@@ -987,35 +852,6 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
             </div>
           )}
         </div>
-      );
-    }
-
-    // 5. PDF Catalog
-    if (link.moduleType === 'pdf_catalog') {
-      const cardRadius = getBorderRadiusClass(customStyle?.borderRadius);
-      return (
-        <a
-          key={link.id}
-          href={meta.pdfUrl || link.url || '#'}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={`w-full p-4 border shadow-sm flex items-center justify-between gap-3 transition-all duration-300 md:hover:scale-[1.02] md:hover:shadow-[0_0_20px_rgba(244,63,94,0.3)] active:scale-[0.99] text-right ${cardRadius} ${isLight ? 'bg-white/90 border-slate-200' : 'bg-white/[0.05] backdrop-blur-md border-white/10'
-            }`}
-          style={customCardStyle}
-        >
-          <div className={`w-11 h-11 ${cardRadius} bg-rose-500/20 text-rose-500 flex items-center justify-center shrink-0 border border-rose-500/30`}>
-            <FileText className="w-5 h-5" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <span className={`text-xs font-bold block truncate ${isLight ? 'text-slate-900' : 'text-white'}`}>
-              {link.title}
-            </span>
-            <span className="text-[11px] text-slate-400 mt-0.5 block truncate font-sans">
-              {meta.pdfDescription || 'مشاهده و دانلود فایل کاتالوگ PDF'}
-            </span>
-          </div>
-          <Download className="w-4 h-4 text-slate-400 shrink-0" />
-        </a>
       );
     }
 
@@ -1160,7 +996,7 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
           key={link.id}
           className={`w-full p-4 border shadow-sm space-y-3 text-right ${cardRadius} ${isLight
               ? 'bg-white/95 border-slate-200'
-              : 'bg-white/5 border-white/10 backdrop-blur-md'
+              : themeConfig.cardBlur
             }`}
           style={customCardStyle}
         >
@@ -1232,7 +1068,7 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
       return (
         <div
           key={link.id}
-          className={`w-full p-4 border shadow-sm space-y-2.5 text-right ${cardRadius} ${isLight ? 'bg-white/90 border-slate-200' : 'bg-white/[0.05] backdrop-blur-md border-white/10'
+          className={`w-full p-4 border shadow-sm space-y-2.5 text-right ${cardRadius} ${isLight ? 'bg-white border-slate-200' : themeConfig.cardBlur
             }`}
           style={customCardStyle}
         >
@@ -1282,106 +1118,10 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
           title={link.title}
           profileLanguage={profile.profileLanguage}
           isLight={isLight}
-          className={`${isLight ? 'bg-white/90 border-slate-200' : 'bg-white/[0.05] backdrop-blur-md border-white/10'} ${cardRadius}`}
+          className={`${isLight ? 'bg-white border-slate-200' : themeConfig.cardBlur} ${cardRadius}`}
           style={customCardStyle}
-          animClass={getButtonAnimationClass(adv.buttonAnimation)}
+          animClass={getButtonAnimationClass(adv.buttonAnimation, adv.animationTrigger)}
         />
-      );
-    }
-
-    // 8.5. Phone Call Module (Redesigned to Match Admin Preview)
-    if (link.moduleType === 'phone_call') {
-      const phoneVal =
-        (link.metadata?.phoneNumber as string) ||
-        link.url?.replace(/^tel:/, '') ||
-        profile.phone ||
-        '';
-      const smartHref = getSmartLink('phone_call', phoneVal);
-      const cardRadius = getBorderRadiusClass(customStyle?.borderRadius);
-
-      return (
-        <a
-          key={link.id}
-          href={smartHref}
-          className={`w-full p-3 flex items-center justify-between gap-3 shadow-sm border transition-all duration-300 md:hover:scale-[1.02] md:hover:border-emerald-500/40 md:hover:shadow-[0_0_20px_rgba(16,185,129,0.3)] active:scale-[0.98] cursor-pointer group ${cardRadius} ${getButtonAnimationClass(adv.buttonAnimation)} ${isLight
-              ? 'bg-white/95 border-slate-200 hover:border-slate-300'
-              : 'bg-white/5 hover:bg-white/10 border-white/10 backdrop-blur-md'
-            }`}
-          style={customCardStyle}
-        >
-          <div className="flex items-center gap-3 min-w-0">
-            {/* Phone icon inside dark green circle */}
-            <div className="w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center shrink-0 shadow-sm">
-              <Phone className="w-4 h-4 fill-current" />
-            </div>
-
-            {/* Text: Title on top, Phone number below */}
-            <div className="text-right truncate">
-              <span className={`text-xs font-bold block truncate ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                {link.title || 'تماس تلفنی مستقیم'}
-              </span>
-              {phoneVal && (
-                <span className="text-[11px] font-sans text-slate-400 block mt-0.5 tracking-wider truncate" dir="ltr">
-                  {formatDisplayValue(phoneVal)}
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* Left Arrow Icon (<) */}
-          <div className="shrink-0 text-slate-400 group-hover:text-white transition-colors">
-            {isLtr ? (
-              <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            ) : (
-              <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-            )}
-          </div>
-        </a>
-      );
-    }
-
-    // 8.6. Email Direct Module (Redesigned to Match Glass Look)
-    if (link.moduleType === 'email_direct') {
-      const emailVal =
-        (link.metadata?.email as string) ||
-        link.url?.replace(/^mailto:/, '') ||
-        profile.email ||
-        '';
-      const smartHref = getSmartLink('email_direct', emailVal);
-      const cardRadius = getBorderRadiusClass(customStyle?.borderRadius);
-      return (
-        <a
-          key={link.id}
-          href={smartHref}
-          className={`w-full p-3 flex items-center justify-between gap-3 shadow-sm border overflow-hidden transition-all duration-300 md:hover:scale-[1.02] md:hover:shadow-[0_0_20px_rgba(245,158,11,0.3)] active:scale-[0.98] cursor-pointer group ${cardRadius} ${getButtonAnimationClass(adv.buttonAnimation)} ${isLight
-              ? 'bg-white/95 border-slate-200 hover:border-slate-300'
-              : 'bg-white/5 hover:bg-white/10 border-white/10 backdrop-blur-md'
-            }`}
-          style={customCardStyle}
-        >
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center shrink-0 shadow-sm">
-              <Mail className="w-4 h-4" />
-            </div>
-            <div className="text-right truncate">
-              <span className={`text-xs font-bold block truncate ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                {link.title || 'ارسال ایمیل مستقیم'}
-              </span>
-              {emailVal && (
-                <span className="text-[11px] font-sans text-slate-400 block mt-0.5 tracking-wider truncate" dir="ltr">
-                  {formatDisplayValue(emailVal)}
-                </span>
-              )}
-            </div>
-          </div>
-          <div className="shrink-0 text-slate-400 group-hover:text-white transition-colors">
-            {isLtr ? (
-              <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            ) : (
-              <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-            )}
-          </div>
-        </a>
       );
     }
 
@@ -1446,51 +1186,211 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
       );
     }
 
-    // 9. Standard Clickable Link / Button (Default)
-    const smartUrl = getSmartLink(link.moduleType, link.url || '#');
-    const cardRadius = getBorderRadiusClass(customStyle?.borderRadius);
+    // 8. Standard Clickable Link / Button (Default - Call, Email, Waze, Donation, PDF, Custom, or Social in vertical mode)
+    const rawVal =
+      link.url ||
+      (link.metadata?.phoneNumber as string) ||
+      (link.metadata?.channelUsername as string) ||
+      (link.metadata?.instagramUsername as string) ||
+      (link.metadata?.linkedinUsername as string) ||
+      (link.metadata?.emailAddress as string) ||
+      (link.metadata?.email as string) ||
+      (link.metadata?.targetId as string) ||
+      '';
+    const smartUrl =
+      link.moduleType === 'email_direct'
+        ? (rawVal.startsWith('mailto:') ? rawVal : `mailto:${rawVal}`)
+        : link.moduleType === 'phone_call'
+          ? (rawVal.startsWith('tel:') ? rawVal : `tel:${rawVal}`)
+          : getSmartLink(link.moduleType, rawVal || link.url || '#', { preferDeepLink: true });
+
+    let displaySubtitle = rawVal || link.url || '';
+    if (link.moduleType === 'email_direct') {
+      const emailVal = (link.metadata?.emailAddress as string) || link.url || '';
+      const displayEmail = emailVal.replace(/^mailto:/, '').split('?')[0];
+      displaySubtitle = displayEmail;
+    }
+
     return (
-      <a
+      <motion.a
         key={link.id}
+        layout
+        initial={{ opacity: 0, y: 15, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.15 } }}
+        whileHover={{ scale: 1.02, x: -2 }}
+        whileTap={{ scale: 0.98 }}
         href={smartUrl}
-        target={adv.openInNewTab === false || link.url?.startsWith('tel:') || link.url?.startsWith('mailto:') || link.url?.startsWith('#') ? '_self' : '_blank'}
+        target={adv.openInNewTab === false || smartUrl.startsWith('tel:') || smartUrl.startsWith('mailto:') || smartUrl.startsWith('#') ? '_self' : '_blank'}
         rel="noopener noreferrer"
-        className={`w-full p-4 font-bold text-xs flex items-center justify-between gap-3 shadow-md border overflow-hidden transition-all duration-300 md:hover:scale-[1.02] md:hover:shadow-[0_0_22px_rgba(14,165,233,0.35)] active:scale-[0.98] cursor-pointer group ${cardRadius} ${getButtonAnimationClass(adv.buttonAnimation)}`}
-        style={{
-          background: isLight
-            ? 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)'
-            : `linear-gradient(135deg, ${themeConfig.primaryColor || '#0ea5e9'}, ${themeConfig.accentColor || '#06b6d4'})`,
-          color: isLight ? '#0f172a' : '#ffffff',
-          borderColor: isLight ? '#e2e8f0' : 'rgba(255,255,255,0.2)',
-          ...customCardStyle,
-        }}
+        className={`w-full flex items-center justify-between gap-3 text-right shadow-sm cursor-pointer overflow-hidden transition-all duration-200 ${cardShape} ${cardSize} ${cardBorderWidth} ${animClass} ${isLight
+          ? 'bg-white/95 border-slate-200 hover:border-slate-300 hover:bg-white shadow-sm'
+          : themeConfig.cardBlur
+          }`}
+        style={customCardStyle}
       >
-        <span className="truncate flex-1 text-right">{link.title}</span>
+        <div className="flex items-center gap-2.5 overflow-hidden">
+          {/* Module Icon */}
+          <div className="w-8 h-8 rounded-xl bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 flex items-center justify-center shrink-0 shadow-sm border border-cyan-500/20">
+            {link.moduleType === 'phone_call' && <Phone className="w-4 h-4 text-green-500" />}
+            {link.moduleType === 'email_direct' && <Mail className="w-4 h-4 text-amber-500" />}
+            {link.moduleType === 'pdf_catalog' && <FileText className="w-4 h-4 text-rose-500" />}
+            {link.moduleType === 'music_player' && <Music className="w-4 h-4 text-emerald-500" />}
+            {link.moduleType === 'donation_hesabpay' && <HeartHandshake className="w-4 h-4 text-rose-500" />}
+            {link.moduleType === 'whatsapp_direct' && <WhatsAppIcon className="w-4 h-4 fill-current text-emerald-400" />}
+            {link.moduleType === 'telegram_channel' && <TelegramIcon className="w-4 h-4 fill-current text-sky-400" />}
+            {link.moduleType === 'instagram_profile' && <InstagramIcon className="w-4 h-4 fill-current text-pink-400" />}
+            {link.moduleType === 'linkedin_profile' && <LinkedInIcon className="w-4 h-4 fill-current text-blue-400" />}
+            {link.moduleType === 'twitter_x' && <XTwitterIcon className="w-4 h-4 fill-current text-foreground" />}
+            {link.moduleType === 'pinterest' && <PinterestIcon className="w-4 h-4 fill-current text-rose-500" />}
+            {link.moduleType === 'facebook' && <FacebookIcon className="w-4 h-4 fill-current text-blue-500" />}
+            {link.moduleType === 'dribbble' && <DribbbleIcon className="w-4 h-4 fill-current text-pink-500" />}
+            {link.moduleType === 'behance' && <BehanceIcon className="w-4 h-4 fill-current text-blue-500" />}
+            {link.moduleType === 'youtube_channel' && <YouTubeIcon className="w-4 h-4 fill-current text-red-500" />}
+            {link.moduleType === 'clubhouse' && <ClubhouseIcon className="w-4 h-4 fill-current text-amber-500" />}
+            {link.moduleType === 'patreon' && <PatreonIcon className="w-4 h-4 fill-current text-rose-500" />}
+            {link.moduleType === 'twitch' && <TwitchIcon className="w-4 h-4 fill-current text-purple-400" />}
+            {link.moduleType === 'github' && <GitHubIcon className="w-4 h-4 fill-current text-foreground" />}
+            {link.moduleType === 'aparat_channel' && <AparatIcon className="w-4 h-4 fill-current text-rose-500" />}
+            {link.moduleType === 'tiktok' && <TikTokIcon className="w-4 h-4 fill-current text-foreground" />}
+            {link.moduleType === 'apple_music' && <AppleMusicIcon className="w-4 h-4 fill-current text-rose-500" />}
+            {link.moduleType === 'youtube_music' && <YouTubeMusicIcon className="w-4 h-4 fill-current text-red-500" />}
+            {link.moduleType === 'castbox' && <CastboxIcon className="w-4 h-4 fill-current text-amber-500" />}
+            {link.moduleType === 'radio_javan' && <RadioJavanIcon className="w-4 h-4 fill-current text-indigo-400" />}
+            {link.moduleType === 'spotify_podcaster' && <SpotifyIcon className="w-4 h-4 fill-current text-purple-400" />}
+            {link.moduleType === 'spotify' && <SpotifyIcon className="w-4 h-4 fill-current text-emerald-400" />}
+            {link.moduleType === 'soundcloud' && <SoundCloudIcon className="w-4 h-4 fill-current text-amber-400" />}
+            {link.moduleType === 'skype' && <SkypeIcon className="w-4 h-4 fill-current text-sky-400" />}
+            {link.moduleType === 'wechat' && <WeChatIcon className="w-4 h-4 fill-current text-emerald-400" />}
+            {link.moduleType === 'messenger' && <MessengerIcon className="w-4 h-4 fill-current text-blue-400" />}
+            {link.moduleType === 'signal' && <SignalIcon className="w-4 h-4 fill-current text-blue-500" />}
+            {link.moduleType === 'standard_link' && <Link2 className="w-4 h-4 text-cyan-500" />}
+          </div>
+
+          <div className="truncate">
+            <div className="flex items-center gap-1.5">
+              <span
+                className={`font-bold block truncate ${isLight ? 'text-slate-900' : 'text-white'}`}
+                style={{ fontSize: 'calc(var(--dynamic-base-size) * 0.95)' }}
+              >
+                {link.title}
+              </span>
+              {lock?.isLocked && (
+                <span className="text-[9px] bg-amber-500/20 text-amber-600 dark:text-amber-400 font-bold px-1.5 py-0.2 rounded-full flex items-center gap-0.5 border border-amber-500/30 shrink-0 font-sans">
+                  <Lock className="w-2.5 h-2.5" />
+                  {lock.price} {lock.currency}
+                </span>
+              )}
+            </div>
+            {formatDisplayValue(displaySubtitle) && (
+              <span
+                className={`font-sans font-medium tracking-wide truncate block mt-0.5 ${isLight ? 'text-slate-500' : 'text-slate-300/80'
+                  }`}
+                style={{ fontSize: 'calc(var(--dynamic-base-size) * 0.8)' }}
+                dir="ltr"
+              >
+                {formatDisplayValue(displaySubtitle)}
+              </span>
+            )}
+          </div>
+        </div>
+
         {isLtr ? (
-          <ChevronRight className="w-4 h-4 shrink-0 opacity-70 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+          <ChevronRight className="w-4 h-4 shrink-0 text-slate-400" />
         ) : (
-          <ChevronLeft className="w-4 h-4 shrink-0 opacity-70 group-hover:opacity-100 group-hover:-translate-x-1 transition-all" />
+          <ChevronLeft className="w-4 h-4 shrink-0 text-slate-400" />
         )}
-      </a>
+      </motion.a>
     );
   };
 
-  // Background gradient class based on preset
-  const getThemeBackground = () => {
-    switch (themeConfig.preset) {
-      case 'dark_neon':
-        return 'bg-gradient-to-b from-slate-950 via-slate-900 to-indigo-950 text-white';
-      case 'glass_morphism':
-        return 'bg-gradient-to-b from-purple-950 via-violet-900 to-slate-950 text-white';
-      case 'emerald_luxury':
-        return 'bg-gradient-to-b from-emerald-950 via-teal-900 to-slate-950 text-white';
-      case 'royal_gold':
-        return 'bg-gradient-to-b from-amber-950 via-stone-900 to-black text-white';
-      case 'minimal_light':
-        return 'bg-gradient-to-b from-slate-100 via-white to-slate-200 text-slate-900';
-      default:
-        return 'bg-gradient-to-b from-slate-950 via-slate-900 to-indigo-950 text-white';
+  // Pattern SVG Presets for background rendering (Stage 6)
+  const PATTERN_PRESETS: Record<string, string> = {
+    circuit: "data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0v10M0 30h10M30 50v10M50 30h10M20 20h20v20H20z' stroke='%2306b6d4' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round' opacity='0.7'/%3E%3Ccircle cx='30' cy='30' r='3' fill='%2306b6d4'/%3E%3C/svg%3E",
+    dots: "data:image/svg+xml,%3Csvg width='24' height='24' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='12' cy='12' r='2' fill='%23ffffff' opacity='0.6'/%3E%3C/svg%3E",
+    grid: "data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M 40 0 L 0 0 0 40' fill='none' stroke='%23ffffff' stroke-width='1' opacity='0.3'/%3E%3C/svg%3E",
+  };
+
+  // Dynamic overlay style (Gradient, Image, or Pattern) for Stage 2
+  const getDynamicOverlayStyle = (): React.CSSProperties => {
+    const bgType = themeConfig.backgroundType || 'gradient';
+    if (bgType === 'gradient') {
+      const colors = (themeConfig.bgGradientColors && themeConfig.bgGradientColors.length >= 2)
+        ? themeConfig.bgGradientColors
+        : (isLight ? ['#f8fafc', '#f1f5f9', '#e2e8f0'] : ['#090d16', '#0f172a', '#1e1b4b']);
+      const gradType = themeConfig.bgGradientType || 'linear';
+      const stopPos = typeof themeConfig.bgGradientPosition === 'number' ? themeConfig.bgGradientPosition : 50;
+
+      let colorStops = '';
+      if (colors.length === 2) {
+        colorStops = `${colors[0]} 0%, ${colors[1]} ${stopPos}%`;
+      } else if (colors.length === 3) {
+        colorStops = `${colors[0]} 0%, ${colors[1]} ${stopPos}%, ${colors[2]} 100%`;
+      } else {
+        colorStops = colors.join(', ');
+      }
+
+      return {
+        background: gradType === 'radial'
+          ? `radial-gradient(circle at center, ${colorStops})`
+          : `linear-gradient(135deg, ${colorStops})`,
+      };
     }
+
+    if (bgType === 'image' && themeConfig.bgImageUrl) {
+      const imgOpacity = typeof themeConfig.bgImageOpacity === 'number'
+        ? (themeConfig.bgImageOpacity > 1 ? themeConfig.bgImageOpacity / 100 : themeConfig.bgImageOpacity)
+        : 0.25;
+      return {
+        backgroundImage: `url(${themeConfig.bgImageUrl})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        opacity: imgOpacity,
+      };
+    }
+
+    if (bgType === 'pattern') {
+      const pid = themeConfig.bgPatternId || 'dots';
+      const size = themeConfig.bgPatternSize || 24;
+      const pColor = isLight ? 'rgba(0, 0, 0, 0.22)' : 'rgba(255, 255, 255, 0.22)';
+      const pOpacity = typeof themeConfig.bgPatternOpacity === 'number'
+        ? (themeConfig.bgPatternOpacity > 1 ? themeConfig.bgPatternOpacity / 100 : themeConfig.bgPatternOpacity)
+        : 0.15;
+
+      let bgImg = '';
+      let bgRepeat = 'repeat';
+      let bgSize = `${size}px ${size}px`;
+
+      if (pid === 'grid') {
+        bgImg = `linear-gradient(to right, ${pColor} 1px, transparent 1px), linear-gradient(to bottom, ${pColor} 1px, transparent 1px)`;
+      } else if (pid === 'diagonal') {
+        bgImg = `repeating-linear-gradient(45deg, ${pColor}, ${pColor} 1px, transparent 1px, transparent ${size}px)`;
+        bgSize = 'auto';
+      } else if (pid === 'stripes') {
+        bgImg = `repeating-linear-gradient(0deg, ${pColor}, ${pColor} 1px, transparent 1px, transparent ${size}px)`;
+        bgSize = 'auto';
+      } else if (pid === 'circuit') {
+        bgImg = `url("${PATTERN_PRESETS.circuit}")`;
+      } else {
+        // dots (default)
+        bgImg = `radial-gradient(circle, ${pColor} 1.5px, transparent 1.5px)`;
+      }
+
+      return {
+        backgroundImage: bgImg,
+        backgroundSize: bgSize,
+        backgroundRepeat: bgRepeat,
+        backgroundPosition: 'center',
+        opacity: pOpacity,
+      };
+    }
+
+    return {};
+  };
+
+  const getThemeBackground = () => {
+    return isLight ? 'text-slate-900' : 'text-white';
   };
 
   // 7. Render Header Layout Variants (Curve, Gradient Mask, Minimal)
@@ -1815,10 +1715,27 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
 
   return (
     <div
-      className={`min-h-screen w-full flex flex-col justify-between relative selection:bg-cyan-500 selection:text-white ${activeFontClass} ${getThemeBackground()}`}
+      className={`min-h-screen w-full flex flex-col justify-between relative selection:bg-cyan-500 selection:text-white ${activeFontClass} ${isLight ? 'text-slate-900' : 'text-white'}`}
+      style={{
+        fontSize: `${activeFontSize}px`,
+        ['--dynamic-base-size' as any]: `${activeFontSize}px`,
+      }}
       data-font={isLtr ? (themeConfig.fontEn || 'inter') : (themeConfig.fontFa || 'vazirmatn')}
       dir={isLtr ? 'ltr' : 'rtl'}
     >
+      {/* Layer 1 (-z-20): Base Solid Background Color */}
+      <div
+        className="fixed inset-0 pointer-events-none -z-20"
+        style={{
+          backgroundColor: themeConfig.bgSolidColor || (isLight ? '#f8fafc' : '#090d16'),
+        }}
+      />
+
+      {/* Layer 2 (-z-10): Dynamic Overlay (Gradient, Image, or Pattern) */}
+      <div
+        className="fixed inset-0 pointer-events-none -z-10"
+        style={getDynamicOverlayStyle()}
+      />
       {/* Background Ambience Glows */}
       <div className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-[450px] bg-cyan-500/10 rounded-full blur-3xl pointer-events-none -z-10" />
       <div className="fixed bottom-0 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl pointer-events-none -z-10" />
@@ -2275,7 +2192,7 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
           }
         }}
       >
-        <DialogContent className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[92%] max-w-sm rounded-2xl max-h-[85dvh] overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden z-50 bg-slate-900/95 border border-white/10 backdrop-blur-2xl p-5 text-center text-white shadow-2xl">
+        <DialogContent className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[92%] max-w-sm rounded-2xl h-auto z-50 bg-slate-900/95 border border-white/10 backdrop-blur-2xl p-5 text-center text-white shadow-2xl">
           {/* Ambient Lighting Accents */}
           <div className="absolute -top-16 -right-16 w-36 h-36 bg-cyan-500/20 rounded-full blur-2xl pointer-events-none" />
           <div className="absolute -bottom-16 -left-16 w-36 h-36 bg-emerald-500/20 rounded-full blur-2xl pointer-events-none" />
