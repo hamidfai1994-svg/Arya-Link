@@ -13,7 +13,10 @@ import {
   Clock,
   Sparkles,
   ShieldAlert,
+  ChevronDown,
 } from 'lucide-react';
+import { WhatsAppIcon } from '@/components/icons';
+import { formatSmartDate } from '@/lib/utils/date';
 
 interface UserProfileSummary {
   displayName: string;
@@ -40,15 +43,16 @@ export default function UserTWA() {
   const [profile, setProfile] = useState<UserProfileSummary | null>(null);
   const [stats, setStats] = useState<UserStats | null>(null);
   const [recentMessages, setRecentMessages] = useState<CustomerMessage[]>([]);
+  const [limit, setLimit] = useState(5);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
-  const loadUserData = async (initData: string) => {
-    setIsRefreshing(true);
+  const loadUserData = async (initData: string, currentLimit: number = limit) => {
     try {
-      const res = await fetch('/api/twa/dashboard', {
+      const res = await fetch(`/api/twa/dashboard?limit=${currentLimit}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ initData, type: 'user' }),
+        body: JSON.stringify({ initData, type: 'user', limit: currentLimit }),
       });
       const data = await res.json();
       if (data.success) {
@@ -61,8 +65,6 @@ export default function UserTWA() {
       }
     } catch {
       setAuthStatus('error');
-    } finally {
-      setIsRefreshing(false);
     }
   };
 
@@ -71,16 +73,29 @@ export default function UserTWA() {
     if (tg && tg.initData) {
       tg.ready();
       tg.expand();
-      loadUserData(tg.initData);
+      loadUserData(tg.initData, 5);
     } else {
       setAuthStatus('error');
     }
   }, []);
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     const tg = (window as any).Telegram?.WebApp;
     if (tg && tg.initData) {
-      loadUserData(tg.initData);
+      setIsRefreshing(true);
+      await loadUserData(tg.initData, limit);
+      setIsRefreshing(false);
+    }
+  };
+
+  const handleLoadMore = async () => {
+    const tg = (window as any).Telegram?.WebApp;
+    if (tg && tg.initData) {
+      setIsLoadingMore(true);
+      const nextLimit = limit + 5;
+      setLimit(nextLimit);
+      await loadUserData(tg.initData, nextLimit);
+      setIsLoadingMore(false);
     }
   };
 
@@ -111,6 +126,11 @@ export default function UserTWA() {
       </div>
     );
   }
+
+  const cleanDigits = (phoneStr?: string) => {
+    if (!phoneStr) return '';
+    return phoneStr.replace(/[^0-9]/g, '');
+  };
 
   return (
     <div className="p-4 space-y-4 font-sans select-none max-w-md mx-auto" dir="rtl">
@@ -251,7 +271,7 @@ export default function UserTWA() {
             </span>
           </div>
           <span className="text-[11px] font-mono" style={{ color: 'var(--tg-theme-hint-color, #94a3b8)' }}>
-            5 پیام اخیر
+            نمایش {recentMessages.length} مورد
           </span>
         </div>
 
@@ -270,89 +290,145 @@ export default function UserTWA() {
             </p>
           </div>
         ) : (
-          <div className="space-y-2">
-            {recentMessages.map((msg) => (
-              <div
-                key={msg._id}
-                className="p-3.5 rounded-2xl border space-y-2 transition-all"
-                style={{
-                  backgroundColor: 'var(--tg-theme-secondary-bg-color, rgba(255, 255, 255, 0.05))',
-                  borderColor: 'rgba(255, 255, 255, 0.08)',
-                }}
-              >
-                {/* Header row: Sender & Time */}
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold" style={{ color: 'var(--tg-theme-text-color, #f8fafc)' }}>
-                    {msg.name || 'مخاطب ناشناس'}
-                  </span>
-                  <span
-                    className="flex items-center gap-1 text-[10px] font-mono"
-                    style={{ color: 'var(--tg-theme-hint-color, #94a3b8)' }}
-                  >
-                    <Clock className="w-2.5 h-2.5" />
-                    {new Date(msg.createdAt).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      hour12: false,
-                    })}
-                  </span>
-                </div>
+          <div className="space-y-2.5">
+            {recentMessages.map((msg) => {
+              const waNumber = cleanDigits(msg.phone);
+              const hasPhone = Boolean(msg.phone && msg.phone.trim());
+              const hasEmail = Boolean(msg.email && msg.email.trim());
 
-                {/* Message Body */}
-                <p
-                  className="text-xs leading-relaxed"
-                  style={{ color: 'var(--tg-theme-text-color, #f8fafc)' }}
-                >
-                  {msg.message}
-                </p>
-
-                {/* Contact info & Action Buttons */}
+              return (
                 <div
-                  className="pt-2 border-t flex flex-wrap items-center justify-between gap-2"
-                  style={{ borderColor: 'rgba(255, 255, 255, 0.05)' }}
+                  key={msg._id}
+                  className="p-3.5 rounded-2xl border space-y-2.5 transition-all shadow-xs"
+                  style={{
+                    backgroundColor: 'var(--tg-theme-secondary-bg-color, rgba(255, 255, 255, 0.05))',
+                    borderColor: 'rgba(255, 255, 255, 0.08)',
+                  }}
                 >
-                  <div
-                    className="text-[11px] font-mono"
-                    style={{ color: 'var(--tg-theme-hint-color, #94a3b8)' }}
-                  >
-                    {msg.phone || msg.email || 'بدون اطلاعات تماس'}
+                  {/* Header row: Sender & Smart Date */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold" style={{ color: 'var(--tg-theme-text-color, #f8fafc)' }}>
+                      {msg.name || 'مخاطب ناشناس'}
+                    </span>
+                    <span
+                      className="flex items-center gap-1 text-[11px]"
+                      style={{ color: 'var(--tg-theme-hint-color, #94a3b8)' }}
+                    >
+                      <Clock className="w-3 h-3 shrink-0" />
+                      <span>{formatSmartDate(msg.createdAt)}</span>
+                    </span>
                   </div>
 
-                  <div className="flex items-center gap-1.5 mr-auto">
-                    {msg.phone && (
-                      <a
-                        href={`tel:${msg.phone}`}
-                        className="p-1.5 rounded-lg border flex items-center gap-1 text-[10px] font-bold transition-all active:scale-95"
-                        style={{
-                          backgroundColor: 'rgba(16, 185, 129, 0.15)',
-                          borderColor: 'rgba(16, 185, 129, 0.3)',
-                          color: '#10b981',
-                        }}
-                      >
-                        <Phone className="w-3 h-3" />
-                        <span>تماس</span>
-                      </a>
-                    )}
-                    {msg.email && (
-                      <a
-                        href={`mailto:${msg.email}`}
-                        className="p-1.5 rounded-lg border flex items-center gap-1 text-[10px] font-bold transition-all active:scale-95"
-                        style={{
-                          backgroundColor: 'rgba(14, 165, 233, 0.15)',
-                          borderColor: 'rgba(14, 165, 233, 0.3)',
-                          color: '#38bdf8',
-                        }}
-                      >
-                        <Mail className="w-3 h-3" />
-                        <span>ایمیل</span>
-                      </a>
-                    )}
-                  </div>
+                  {/* Message Body */}
+                  <p
+                    className="text-xs leading-relaxed"
+                    style={{ color: 'var(--tg-theme-text-color, #f8fafc)' }}
+                  >
+                    {msg.message}
+                  </p>
+
+                  {/* Contact Summary text */}
+                  {(hasPhone || hasEmail) && (
+                    <div
+                      className="text-[10px] font-mono select-all"
+                      style={{ color: 'var(--tg-theme-hint-color, #94a3b8)' }}
+                    >
+                      {[msg.phone, msg.email].filter(Boolean).join(' • ')}
+                    </div>
+                  )}
+
+                  {/* 3-Column Action Buttons Grid (Call, WhatsApp, Email) */}
+                  {(hasPhone || hasEmail) && (
+                    <div className="pt-2 border-t grid grid-cols-3 gap-2" style={{ borderColor: 'rgba(255, 255, 255, 0.06)' }}>
+                      {/* 1. Phone Call Button */}
+                      {hasPhone ? (
+                        <a
+                          href={`tel:${msg.phone}`}
+                          className="py-2 px-2.5 rounded-xl border flex items-center justify-center gap-1.5 text-xs font-bold transition-all active:scale-95 text-center"
+                          style={{
+                            backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                            borderColor: 'rgba(16, 185, 129, 0.3)',
+                            color: '#10b981',
+                          }}
+                        >
+                          <Phone className="w-3.5 h-3.5 shrink-0" />
+                          <span>تماس</span>
+                        </a>
+                      ) : (
+                        <div />
+                      )}
+
+                      {/* 2. WhatsApp Button */}
+                      {hasPhone ? (
+                        <a
+                          href={`https://wa.me/${waNumber}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="py-2 px-2.5 rounded-xl border flex items-center justify-center gap-1.5 text-xs font-bold transition-all active:scale-95 text-center"
+                          style={{
+                            backgroundColor: 'rgba(37, 211, 102, 0.15)',
+                            borderColor: 'rgba(37, 211, 102, 0.3)',
+                            color: '#25d366',
+                          }}
+                        >
+                          <WhatsAppIcon className="w-3.5 h-3.5 shrink-0 fill-current" />
+                          <span>واتساپ</span>
+                        </a>
+                      ) : (
+                        <div />
+                      )}
+
+                      {/* 3. Email Button */}
+                      {hasEmail ? (
+                        <a
+                          href={`mailto:${msg.email}`}
+                          className="py-2 px-2.5 rounded-xl border flex items-center justify-center gap-1.5 text-xs font-bold transition-all active:scale-95 text-center"
+                          style={{
+                            backgroundColor: 'rgba(14, 165, 233, 0.15)',
+                            borderColor: 'rgba(14, 165, 233, 0.3)',
+                            color: 'var(--tg-theme-button-color, #0ea5e9)',
+                          }}
+                        >
+                          <Mail className="w-3.5 h-3.5 shrink-0" />
+                          <span>ایمیل</span>
+                        </a>
+                      ) : (
+                        <div />
+                      )}
+                    </div>
+                  )}
                 </div>
+              );
+            })}
+
+            {/* Load More Button */}
+            {recentMessages.length >= limit && (
+              <div className="pt-2 text-center">
+                <button
+                  type="button"
+                  onClick={handleLoadMore}
+                  disabled={isLoadingMore}
+                  className="w-full py-2.5 px-4 rounded-xl border font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+                  style={{
+                    backgroundColor: 'var(--tg-theme-secondary-bg-color, rgba(255, 255, 255, 0.05))',
+                    borderColor: 'rgba(255, 255, 255, 0.1)',
+                    color: 'var(--tg-theme-button-color, #0ea5e9)',
+                  }}
+                >
+                  {isLoadingMore ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>در حال دریافت پیام‌های بیشتر...</span>
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="w-4 h-4" />
+                      <span>بارگذاری بیشتر</span>
+                    </>
+                  )}
+                </button>
               </div>
-            ))}
+            )}
           </div>
         )}
       </div>

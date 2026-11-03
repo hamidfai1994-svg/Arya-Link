@@ -9,49 +9,54 @@ import {
   ExternalLink,
   Clock,
   Sparkles,
+  User,
+  Eye,
+  Inbox,
+  ChevronDown,
 } from 'lucide-react';
+import { formatSmartDate } from '@/lib/utils/date';
 
 interface AdminStats {
   totalProfiles: number;
   totalMessages: number;
 }
 
-interface RecentMessage {
+interface RecentProfile {
   _id: string;
-  name: string;
-  phone?: string;
-  email?: string;
-  message: string;
-  profileAlias?: string;
+  displayName: string;
+  alias: string;
+  headline?: string;
+  avatarUrl?: string;
+  viewsCount?: number;
+  leadsCount?: number;
   createdAt: string;
 }
 
 export default function AdminTWA() {
   const [authStatus, setAuthStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [stats, setStats] = useState<AdminStats | null>(null);
-  const [recentMessages, setRecentMessages] = useState<RecentMessage[]>([]);
+  const [recentProfiles, setRecentProfiles] = useState<RecentProfile[]>([]);
+  const [limit, setLimit] = useState(5);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
-  const loadDashboardData = async (initData: string) => {
-    setIsRefreshing(true);
+  const loadDashboardData = async (initData: string, currentLimit: number = limit) => {
     try {
-      const res = await fetch('/api/twa/dashboard', {
+      const res = await fetch(`/api/twa/dashboard?limit=${currentLimit}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ initData, type: 'admin' }),
+        body: JSON.stringify({ initData, type: 'admin', limit: currentLimit }),
       });
       const data = await res.json();
       if (data.success) {
         setStats(data.stats);
-        setRecentMessages(data.recentMessages || []);
+        setRecentProfiles(data.recentProfiles || []);
         setAuthStatus('success');
       } else {
         setAuthStatus('error');
       }
     } catch {
       setAuthStatus('error');
-    } finally {
-      setIsRefreshing(false);
     }
   };
 
@@ -60,16 +65,29 @@ export default function AdminTWA() {
     if (tg && tg.initData) {
       tg.ready();
       tg.expand();
-      loadDashboardData(tg.initData);
+      loadDashboardData(tg.initData, 5);
     } else {
       setAuthStatus('error');
     }
   }, []);
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     const tg = (window as any).Telegram?.WebApp;
     if (tg && tg.initData) {
-      loadDashboardData(tg.initData);
+      setIsRefreshing(true);
+      await loadDashboardData(tg.initData, limit);
+      setIsRefreshing(false);
+    }
+  };
+
+  const handleLoadMore = async () => {
+    const tg = (window as any).Telegram?.WebApp;
+    if (tg && tg.initData) {
+      setIsLoadingMore(true);
+      const nextLimit = limit + 5;
+      setLimit(nextLimit);
+      await loadDashboardData(tg.initData, nextLimit);
+      setIsLoadingMore(false);
     }
   };
 
@@ -154,7 +172,7 @@ export default function AdminTWA() {
           <span className="text-xs font-bold text-emerald-500">نشست امن احراز شد</span>
         </div>
         <p className="text-xs leading-relaxed" style={{ color: 'var(--tg-theme-text-color, #f8fafc)' }}>
-          خوش آمدید! در این پنل آمار کلان و آخرین پیام‌های سراسری آریا لینک به صورت زنده نمایش داده می‌شوند.
+          خوش آمدید! در این پنل آمار کلان پلتفرم و ثبت‌نام مینی‌سایت‌های جدید به صورت زنده نمایش داده می‌شوند.
         </p>
       </div>
 
@@ -205,18 +223,18 @@ export default function AdminTWA() {
         </div>
       </div>
 
-      {/* Recent Messages Section */}
+      {/* Recent Profiles / Events Section */}
       <div className="space-y-2.5 pt-1">
         <div className="flex items-center justify-between">
           <span className="text-xs font-bold" style={{ color: 'var(--tg-theme-text-color, #f8fafc)' }}>
-            آخرین پیام‌ها و رخدادهای سیستم
+            پروفایل‌های اخیراً ثبت‌شده (رویدادها)
           </span>
           <span className="text-[11px] font-mono" style={{ color: 'var(--tg-theme-hint-color, #94a3b8)' }}>
-            5 مورد اخیر
+            نمایش {recentProfiles.length} مورد
           </span>
         </div>
 
-        {recentMessages.length === 0 ? (
+        {recentProfiles.length === 0 ? (
           <div
             className="p-6 rounded-2xl border text-center text-xs"
             style={{
@@ -225,65 +243,125 @@ export default function AdminTWA() {
               color: 'var(--tg-theme-hint-color, #94a3b8)',
             }}
           >
-            هنوز پیامی در سامانه ثبت نشده است.
+            هنوز پروفایلی در سامانه ثبت نشده است.
           </div>
         ) : (
-          <div className="space-y-2">
-            {recentMessages.map((msg) => (
+          <div className="space-y-2.5">
+            {recentProfiles.map((p) => (
               <div
-                key={msg._id}
-                className="p-3 rounded-2xl border space-y-1.5 transition-all"
+                key={p._id}
+                className="p-3.5 rounded-2xl border space-y-2.5 transition-all shadow-xs"
                 style={{
                   backgroundColor: 'var(--tg-theme-secondary-bg-color, rgba(255, 255, 255, 0.05))',
                   borderColor: 'rgba(255, 255, 255, 0.08)',
                 }}
               >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold" style={{ color: 'var(--tg-theme-text-color, #f8fafc)' }}>
-                    {msg.name || 'مخاطب ناشناس'}
-                  </span>
-                  {msg.profileAlias && (
-                    <span
-                      className="text-[10px] px-2 py-0.5 rounded-full font-mono flex items-center gap-1"
+                {/* Header row: Avatar, Name & Smart Date */}
+                <div className="flex items-start justify-between gap-2.5">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div
+                      className="w-10 h-10 rounded-xl overflow-hidden border flex items-center justify-center shrink-0 font-bold text-sm"
                       style={{
-                        backgroundColor: 'rgba(14, 165, 233, 0.15)',
-                        color: 'var(--tg-theme-button-color, #0ea5e9)',
+                        backgroundColor: 'rgba(255, 255, 255, 0.06)',
+                        borderColor: 'rgba(255, 255, 255, 0.1)',
+                        color: 'var(--tg-theme-text-color, #f8fafc)',
                       }}
                     >
-                      <span>aryal.ink/{msg.profileAlias}</span>
-                      <ExternalLink className="w-2.5 h-2.5" />
-                    </span>
-                  )}
+                      {p.avatarUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={p.avatarUrl} alt={p.displayName} className="w-full h-full object-cover" />
+                      ) : (
+                        <span>{p.displayName?.trim().charAt(0) || <User className="w-4 h-4" />}</span>
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <span className="text-xs font-bold block truncate" style={{ color: 'var(--tg-theme-text-color, #f8fafc)' }}>
+                        {p.displayName || p.alias}
+                      </span>
+                      {p.headline ? (
+                        <span className="text-[11px] block truncate" style={{ color: 'var(--tg-theme-hint-color, #94a3b8)' }}>
+                          {p.headline}
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-mono block truncate" style={{ color: 'var(--tg-theme-hint-color, #94a3b8)' }}>
+                          @{p.alias}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <span
+                    className="flex items-center gap-1 text-[10px] shrink-0"
+                    style={{ color: 'var(--tg-theme-hint-color, #94a3b8)' }}
+                  >
+                    <Clock className="w-2.5 h-2.5" />
+                    <span>{formatSmartDate(p.createdAt)}</span>
+                  </span>
                 </div>
 
-                <p
-                  className="text-xs leading-relaxed line-clamp-2"
-                  style={{ color: 'var(--tg-theme-hint-color, #94a3b8)' }}
-                >
-                  {msg.message}
-                </p>
-
+                {/* Metrics & Action Row */}
                 <div
-                  className="pt-1 border-t flex items-center justify-between text-[10px]"
-                  style={{
-                    borderColor: 'rgba(255, 255, 255, 0.05)',
-                    color: 'var(--tg-theme-hint-color, #94a3b8)',
-                  }}
+                  className="pt-2 border-t flex items-center justify-between gap-2"
+                  style={{ borderColor: 'rgba(255, 255, 255, 0.06)' }}
                 >
-                  <span>{msg.phone || msg.email || 'بدون اطلاعات تماس'}</span>
-                  <span className="flex items-center gap-1 font-mono">
-                    <Clock className="w-2.5 h-2.5" />
-                    {new Date(msg.createdAt).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      hour12: false,
-                    })}
-                  </span>
+                  <div className="flex items-center gap-2 text-[10px] font-mono" style={{ color: 'var(--tg-theme-hint-color, #94a3b8)' }}>
+                    <span className="flex items-center gap-1">
+                      <Eye className="w-3 h-3 text-sky-400" />
+                      <span>{(p.viewsCount || 0).toLocaleString('en-US')}</span>
+                    </span>
+                    <span>•</span>
+                    <span className="flex items-center gap-1">
+                      <Inbox className="w-3 h-3 text-emerald-400" />
+                      <span>{(p.leadsCount || 0).toLocaleString('en-US')}</span>
+                    </span>
+                  </div>
+
+                  <a
+                    href={`/${p.alias}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="py-1.5 px-3 rounded-xl border flex items-center gap-1.5 text-xs font-bold transition-all active:scale-95"
+                    style={{
+                      backgroundColor: 'rgba(14, 165, 233, 0.15)',
+                      borderColor: 'rgba(14, 165, 233, 0.3)',
+                      color: 'var(--tg-theme-button-color, #0ea5e9)',
+                    }}
+                  >
+                    <span>مشاهده کارت</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
                 </div>
               </div>
             ))}
+
+            {/* Load More Button */}
+            {recentProfiles.length >= limit && (
+              <div className="pt-2 text-center">
+                <button
+                  type="button"
+                  onClick={handleLoadMore}
+                  disabled={isLoadingMore}
+                  className="w-full py-2.5 px-4 rounded-xl border font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+                  style={{
+                    backgroundColor: 'var(--tg-theme-secondary-bg-color, rgba(255, 255, 255, 0.05))',
+                    borderColor: 'rgba(255, 255, 255, 0.1)',
+                    color: 'var(--tg-theme-button-color, #0ea5e9)',
+                  }}
+                >
+                  {isLoadingMore ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>در حال دریافت پروفایل‌های بیشتر...</span>
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="w-4 h-4" />
+                      <span>بارگذاری بیشتر</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

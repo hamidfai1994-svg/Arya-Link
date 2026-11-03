@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db/mongodb';
 import { validateTelegramWebAppData } from '@/lib/twa-auth';
 import { SystemSettings } from '@/models/systemSettings.model';
@@ -7,9 +7,15 @@ import { Message } from '@/models/Message.model';
 
 export const dynamic = 'force-dynamic';
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
-    const { initData, type } = await req.json();
+    const url = new URL(req.url);
+    const body = await req.json();
+    const { initData, type } = body;
+
+    const limitParam = url.searchParams.get('limit') || body.limit || '5';
+    const limit = Math.max(1, parseInt(String(limitParam), 10) || 5);
+
     if (!initData || typeof initData !== 'string') {
       return NextResponse.json({ error: 'No user data' }, { status: 400 });
     }
@@ -39,10 +45,14 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'Not Admin' }, { status: 403 });
       }
 
-      const [totalProfiles, totalMessages, recentMessages] = await Promise.all([
+      const [totalProfiles, totalMessages, recentProfiles] = await Promise.all([
         Profile.countDocuments(),
         Message.countDocuments(),
-        Message.find().sort({ createdAt: -1 }).limit(5).lean(),
+        Profile.find()
+          .select('displayName alias headline avatarUrl viewsCount leadsCount createdAt')
+          .sort({ createdAt: -1 })
+          .limit(limit)
+          .lean(),
       ]);
 
       return NextResponse.json({
@@ -52,7 +62,7 @@ export async function POST(req: Request) {
           totalProfiles,
           totalMessages,
         },
-        recentMessages,
+        recentProfiles,
       });
     }
 
@@ -70,7 +80,10 @@ export async function POST(req: Request) {
       const cleanAlias = (profile.alias || '').toLowerCase().trim();
       const [totalUserMessages, recentMessages] = await Promise.all([
         Message.countDocuments({ profileAlias: cleanAlias }),
-        Message.find({ profileAlias: cleanAlias }).sort({ createdAt: -1 }).limit(5).lean(),
+        Message.find({ profileAlias: cleanAlias })
+          .sort({ createdAt: -1 })
+          .limit(limit)
+          .lean(),
       ]);
 
       return NextResponse.json({
@@ -95,4 +108,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Server Error' }, { status: 500 });
   }
 }
-
