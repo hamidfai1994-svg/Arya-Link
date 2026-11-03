@@ -40,7 +40,8 @@ export interface EditorState {
   updateTheme: (fields: Partial<ProfileThemeConfig>, skipAutoSave?: boolean) => void;
   setThemePreset: (preset: ProfileThemeConfig['preset']) => void;
   toggleDirectMode: (enabled?: boolean, url?: string) => void;
-  updateProSettings: (fields: Partial<Pick<ProfileData, 'seoTitle' | 'seoDescription' | 'hideBranding' | 'selectedTemplateId'>>) => void;
+  updateProSettings: (fields: Partial<Pick<ProfileData, 'seoTitle' | 'seoDescription' | 'hideBranding' | 'selectedTemplateId' | 'crmTelegramChatId' | 'crmTelegramEnable'>>) => void;
+  updateCrmSettings: (fields: Partial<Pick<ProfileData, 'crmTelegramChatId' | 'crmTelegramEnable'>>) => void;
 
   // Sub-tabs & CRM
   activeSubTab: 'content' | 'appearance' | 'fonts' | 'settings' | 'crm';
@@ -168,6 +169,8 @@ const emptyProfile: ProfileData = {
   seoTitle: '',
   seoDescription: '',
   hideBranding: false,
+  crmTelegramChatId: '',
+  crmTelegramEnable: false,
 };
 
 export function getDefaultModuleConfig(moduleType: LinkModuleType): { title: string; url: string; metadata: ModuleMetadata } {
@@ -991,6 +994,15 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       isDirty: true,
     })),
 
+  updateCrmSettings: (fields) =>
+    set((state) => ({
+      profile: {
+        ...state.profile,
+        ...fields,
+      },
+      isDirty: true,
+    })),
+
   addModule: (moduleType, parentId) => {
     const defaults = getDefaultModuleConfig(moduleType);
     const newId = `module_${Date.now()}`;
@@ -1265,6 +1277,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
           verificationStatus: dbData.verificationStatus || 'unverified',
           verificationData: dbData.verificationData || {},
           profileLanguage: dbData.profileLanguage || 'dari',
+          crmTelegramChatId: dbData.crmTelegramChatId || '',
+          crmTelegramEnable: Boolean(dbData.crmTelegramEnable),
         };
 
         const activeId = normalizedProfile.id;
@@ -1353,6 +1367,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         ...currentProfile,
         id: updatedId,
         alias: savedData.alias || currentProfile.alias,
+        crmTelegramChatId: savedData.crmTelegramChatId ?? currentProfile.crmTelegramChatId,
+        crmTelegramEnable: savedData.crmTelegramEnable ?? currentProfile.crmTelegramEnable,
       };
 
       set((state) => ({

@@ -25,6 +25,7 @@ import {
   CreditCard,
   Truck,
   ExternalLink,
+  BellRing,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -33,8 +34,9 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { INITIAL_LANDING_CMS } from '@/models/LandingCms.model';
+import { SuperAdminApiSettings } from '@/components/admin/SuperAdminApiSettings';
 
-type SettingsTab = 'general' | 'landing' | 'plans' | 'products';
+type SettingsTab = 'general' | 'landing' | 'plans' | 'products' | 'api_notifications';
 
 export default function AdminSettingsPage() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
@@ -232,6 +234,19 @@ export default function AdminSettingsPage() {
         >
           <Package className="w-4 h-4" />
           <span>4. محصولات فیزیکی (Products)</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('api_notifications')}
+          className={`flex items-center gap-2 px-5 py-3 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+            activeTab === 'api_notifications'
+              ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20 font-black'
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
+          }`}
+        >
+          <BellRing className="w-4 h-4" />
+          <span>5. مدیریت API و اعلان‌ها (API & Bots)</span>
         </button>
       </div>
 
@@ -734,6 +749,21 @@ export default function AdminSettingsPage() {
                 </Card>
               ))}
             </div>
+          </motion.div>
+        )}
+
+        {/* =========================================================
+            TAB 5: API & NOTIFICATIONS (ربات‌های تلگرام و وب‌هوک)
+        ========================================================= */}
+        {activeTab === 'api_notifications' && (
+          <motion.div
+            key="api_notifications"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+          >
+            <SuperAdminApiSettings />
           </motion.div>
         )}
       </AnimatePresence>

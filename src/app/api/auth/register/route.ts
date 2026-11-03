@@ -3,6 +3,8 @@ import bcrypt from 'bcryptjs';
 import { connectToDatabase } from '@/lib/db/mongodb';
 import { User } from '@/models/User.model';
 import { Profile } from '@/models/Profile.model';
+import { SystemSettings } from '@/models/systemSettings.model';
+import { sendSupportMessage } from '@/lib/telegram';
 
 export const dynamic = 'force-dynamic';
 
@@ -105,6 +107,24 @@ export async function POST(req: NextRequest) {
       links: [],
       isActive: true,
     });
+
+    // Non-blocking notification to Support Bot
+    (async () => {
+      try {
+        const settings = await SystemSettings.findOne();
+        if (
+          settings &&
+          settings.telegramBotsActive &&
+          settings.telegramSupportChatId &&
+          settings.notifyNewUsers
+        ) {
+          const msg = `🎉 <b>کاربر جدید در آریا لینک ثبت‌نام کرد</b>\n\n👤 <b>نام:</b> ${newUser.name}\n✉️ <b>ایمیل:</b> ${newUser.email}\n📞 <b>تلفن:</b> ${newUser.phone || 'ندارد'}\n🔗 <b>لینک اولیه:</b> aryal.ink/${candidateAlias}`;
+          await sendSupportMessage(settings.telegramSupportChatId, msg);
+        }
+      } catch (err) {
+        console.error('Support bot new user alert error:', err);
+      }
+    })().catch(() => {});
 
     return NextResponse.json(
       {

@@ -34,6 +34,8 @@ export interface IProfileDocument extends Document {
   noIndex?: boolean;
   passwordProtection?: { enabled: boolean; password?: string; hint?: string };
   hideBranding: boolean;
+  crmTelegramChatId?: string;
+  crmTelegramEnable?: boolean;
   isActive: boolean;
   viewsCount: number;
   leadsCount: number;
@@ -200,6 +202,8 @@ const ProfileSchema = new Schema<IProfileDocument>(
       hint: { type: String, default: '' },
     },
     hideBranding: { type: Boolean, default: false },
+    crmTelegramChatId: { type: String, default: '' },
+    crmTelegramEnable: { type: Boolean, default: false },
     isActive: { type: Boolean, default: true, index: true },
     viewsCount: { type: Number, default: 0 },
     leadsCount: { type: Number, default: 0 },

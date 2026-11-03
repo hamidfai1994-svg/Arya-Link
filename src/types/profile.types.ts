@@ -336,6 +336,8 @@ export interface ProfileData {
   passwordProtection?: PasswordProtectionConfig;
   hideBranding?: boolean;
   selectedTemplateId?: string;
+  crmTelegramChatId?: string;
+  crmTelegramEnable?: boolean;
 }
 
 export interface UserProfileSummary {

@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { connectToDatabase } from '@/lib/db/mongodb';
 import { Profile } from '@/models/Profile.model';
 import { buildUserIsolationQuery, isValidUserSession } from '@/lib/db/data-isolation';
+import { profileUpdateSchema } from '@/lib/validations/profile';
 import mongoose from 'mongoose';
 import { revalidatePath } from 'next/cache';
 
@@ -189,6 +190,8 @@ export async function POST(req: NextRequest) {
       verificationStatus,
       verificationData,
       profileLanguage,
+      crmTelegramChatId,
+      crmTelegramEnable,
     } = body;
 
     // 1. Validation
@@ -261,6 +264,8 @@ export async function POST(req: NextRequest) {
       ...(verificationStatus && { verificationStatus }),
       ...(verificationData && { verificationData }),
       ...(profileLanguage && { profileLanguage }),
+      ...(crmTelegramChatId !== undefined && { crmTelegramChatId: typeof crmTelegramChatId === 'string' ? crmTelegramChatId.trim() : '' }),
+      ...(crmTelegramEnable !== undefined && { crmTelegramEnable: Boolean(crmTelegramEnable) }),
     };
 
     if (themeConfig && typeof themeConfig === 'object') {
@@ -400,6 +405,8 @@ export async function POST(req: NextRequest) {
         seoTitle: seoTitle || '',
         seoDescription: seoDescription || '',
         hideBranding: !!hideBranding,
+        crmTelegramChatId: typeof crmTelegramChatId === 'string' ? crmTelegramChatId.trim() : '',
+        crmTelegramEnable: Boolean(crmTelegramEnable),
         isActive: true,
       });
 

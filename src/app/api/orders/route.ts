@@ -5,6 +5,8 @@ import { connectToDatabase } from '@/lib/db/mongodb';
 import { Order } from '@/models/Order.model';
 import { AuditLog } from '@/models/AuditLog.model';
 import { buildOrderIsolationQuery } from '@/lib/db/data-isolation';
+import { SystemSettings } from '@/models/systemSettings.model';
+import { sendInsightsMessage } from '@/lib/telegram';
 
 export const dynamic = 'force-dynamic';
 
@@ -129,6 +131,24 @@ export async function POST(req: NextRequest) {
       cardSpecs: body.cardSpecs || {},
       notes: body.notes || '',
     });
+
+    // Non-blocking notification to Insights Bot
+    (async () => {
+      try {
+        const settings = await SystemSettings.findOne();
+        if (
+          settings &&
+          settings.telegramBotsActive &&
+          settings.telegramInsightsChatId &&
+          settings.notifyOrders
+        ) {
+          const msg = `🛍️ <b>سفارش جدید در سیستم ثبت شد</b>\n\n📦 <b>شماره سفارش:</b> ${newOrder.orderNumber}\n👤 <b>مشتری:</b> ${newOrder.customerName}\n📞 <b>تماس:</b> ${newOrder.customerPhone || 'ندارد'}\n🏷️ <b>محصول:</b> ${newOrder.productTitle}\n💰 <b>مبلغ کل:</b> ${Number(newOrder.totalPrice).toLocaleString('en-US')} ${newOrder.currency}\n💳 <b>وضعیت پرداخت:</b> ${newOrder.paymentStatus}`;
+          await sendInsightsMessage(settings.telegramInsightsChatId, msg);
+        }
+      } catch (e) {
+        console.error('Insights bot order alert error:', e);
+      }
+    })().catch(() => {});
 
     return NextResponse.json({
       success: true,

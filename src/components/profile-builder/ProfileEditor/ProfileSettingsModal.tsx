@@ -23,6 +23,9 @@ import {
   Link2,
   X,
   ChevronDown,
+  Send,
+  Bot,
+  Info,
 } from 'lucide-react';
 
 interface ProfileSettingsModalProps {
@@ -40,12 +43,13 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
     setProfileLanguage,
     toggleDirectMode,
     updateProSettings,
+    updateCrmSettings,
     setProfileType,
     saveProfileData,
     resetState,
   } = useEditorStore();
 
-  const [activeTab, setActiveTab] = useState<'general' | 'seo' | 'access'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'seo' | 'access' | 'crm_integration'>('general');
   const [copiedLink, setCopiedLink] = useState(false);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
 
@@ -118,7 +122,7 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
           {/* 3 Tabs Bar (Strictly Link-Specific) */}
           <div className="pt-3">
             <Tabs value={activeTab} onValueChange={(val: any) => setActiveTab(val)}>
-              <TabsList className="grid grid-cols-3 w-full bg-muted/80 p-1 rounded-xl">
+              <TabsList className="grid grid-cols-4 w-full bg-muted/80 p-1 rounded-xl">
                 <TabsTrigger value="general" className="text-xs font-semibold gap-1.5 data-[state=active]:font-bold">
                   <Globe className="w-3.5 h-3.5" />
                   <span>عمومی و زبان</span>
@@ -130,6 +134,10 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
                 <TabsTrigger value="access" className="text-xs font-semibold gap-1.5 data-[state=active]:font-bold">
                   <Lock className="w-3.5 h-3.5" />
                   <span>دسترسی و هدایت</span>
+                </TabsTrigger>
+                <TabsTrigger value="crm_integration" className="text-xs font-semibold gap-1.5 data-[state=active]:font-bold">
+                  <Send className="w-3.5 h-3.5 text-sky-500" />
+                  <span>اتصال تلگرام</span>
                 </TabsTrigger>
               </TabsList>
             </Tabs>
@@ -452,6 +460,65 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
                     </div>
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 4: CRM TELEGRAM INTEGRATION */}
+          {activeTab === 'crm_integration' && (
+            <div className="space-y-4 animate-in fade-in duration-200">
+              {/* Information Banner */}
+              <div className="p-4 bg-sky-500/10 border border-sky-500/20 rounded-2xl flex items-start gap-3">
+                <div className="w-8 h-8 rounded-xl bg-sky-500/20 text-sky-500 flex items-center justify-center shrink-0 mt-0.5">
+                  <Send className="w-4 h-4" />
+                </div>
+                <div className="space-y-1">
+                  <span className="text-xs font-bold text-foreground block">
+                    اتصال پیام‌های مینی‌سایت به تلگرام شخصی شما
+                  </span>
+                  <span className="text-[11px] text-muted-foreground leading-relaxed block">
+                    هر پیامی که بازدیدکنندگان در فرم تماس مینی‌سایت شما ارسال کنند، بلافاصله و در لحظه به اکانت یا کانال تلگرام شما فرستاده خواهد شد.
+                  </span>
+                </div>
+              </div>
+
+              {/* Master Toggle & Chat ID */}
+              <div className="p-4 bg-muted/30 border border-border rounded-2xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-bold text-foreground block">
+                      دریافت آنی پیام‌ها در تلگرام (crmTelegramEnable)
+                    </span>
+                    <span className="text-[11px] text-muted-foreground mt-0.5 block">
+                      فعال‌سازی فوروارد پیام‌های دریافتی مینی‌سایت به تلگرام شما
+                    </span>
+                  </div>
+                  <Switch
+                    checked={Boolean(profile.crmTelegramEnable)}
+                    onCheckedChange={(checked) => updateCrmSettings({ crmTelegramEnable: checked })}
+                  />
+                </div>
+
+                {/* Chat ID Input */}
+                <div className="pt-2 border-t border-border/70 space-y-2">
+                  <label className="block text-xs font-semibold text-foreground">
+                    شناسه تلگرام شما (crmTelegramChatId)
+                  </label>
+                  <input
+                    type="text"
+                    value={profile.crmTelegramChatId || ''}
+                    onChange={(e) => updateCrmSettings({ crmTelegramChatId: e.target.value.trim() })}
+                    placeholder="مثال: 123456789 یا @YourUsername"
+                    dir="ltr"
+                    className="w-full bg-card border border-border rounded-xl px-3 py-2 text-xs font-mono text-foreground focus:outline-none focus:border-cyan-500 text-left"
+                  />
+                  <div className="p-2.5 rounded-xl bg-card/60 border border-border/60 text-[11px] text-muted-foreground space-y-1">
+                    <span className="font-bold text-cyan-500 block">💡 چگونه Chat ID تلگرام خود را پیدا کنم؟</span>
+                    <p className="leading-relaxed">
+                      کافیست در تلگرام به ربات رسمی <strong dir="ltr" className="text-foreground">@userinfobot</strong> یا بات پیام‌رسان سایت پیام بفرستید تا عدد <strong dir="ltr" className="text-foreground">Id</strong> شما نمایش داده شود. آن عدد را در کادر بالا وارد کنید.
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           )}

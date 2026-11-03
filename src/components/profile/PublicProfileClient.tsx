@@ -381,17 +381,20 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
       const cleanPhone = convertToEnglishDigits(leadPhone.trim());
       const cleanName = leadName.trim();
 
-      // Log Lead & simulate API recording
-      console.log('Public Profile Lead captured:', {
-        name: cleanName,
-        phone: cleanPhone,
-        profileAlias: profile.alias,
-        profileId: profile.id,
-        createdAt: new Date().toISOString(),
+      const response = await fetch('/api/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          profileAlias: profile.alias,
+          name: cleanName || 'کاربر دریافت‌کننده کارت',
+          phone: cleanPhone,
+          message: 'درخواست تبادل اطلاعات تماس (vCard Lead Capture)',
+        }),
       });
 
-      // Simulate subtle network latency
-      await new Promise((resolve) => setTimeout(resolve, 350));
+      if (!response.ok) {
+        throw new Error('Failed to send contact info');
+      }
 
       toast.success(
         isLtr
@@ -486,27 +489,43 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
 
     setIsSubmittingForm(true);
     try {
-      const res = await fetch('/api/lead/submit', {
+      const response = await fetch('/api/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           profileAlias: profile.alias,
           name: formName.trim(),
-          phone: formPhone.trim(),
           email: formEmail.trim(),
+          phone: formPhone.trim(),
           message: formMessage.trim(),
         }),
       });
 
-      const data = await res.json();
-      if (res.ok && data.success) {
-        setFormSubmitted(true);
-        toast.success('پیام شما با موفقیت ارسال شد و به اطلاع صاحب کارت خواهد رسید.');
-      } else {
-        toast.error(data.message || 'خطا در ثبت پیام');
+      if (!response.ok) {
+        throw new Error('Failed to send message');
       }
-    } catch (err) {
-      toast.error('خطای شبکه در برقراری ارتباط');
+
+      setFormSubmitted(true);
+      setFormName('');
+      setFormPhone('');
+      setFormEmail('');
+      setFormMessage('');
+      toast.success(
+        isLtr
+          ? 'Your message has been sent successfully!'
+          : isPashto
+            ? 'ستاسو پیغام په بریالیتوب سره واستول شو!'
+            : 'پیام شما با موفقیت ارسال شد و به اطلاع صاحب کارت خواهد رسید.'
+      );
+    } catch (err: any) {
+      console.error('Failed to send message:', err);
+      toast.error(
+        isLtr
+          ? 'Failed to send message. Please try again.'
+          : isPashto
+            ? 'د پیغام په استولو کې تېروتنه رامنځته شوه.'
+            : 'خطا در ارسال پیام. لطفاً مجدداً تلاش نمایید.'
+      );
     } finally {
       setIsSubmittingForm(false);
     }
