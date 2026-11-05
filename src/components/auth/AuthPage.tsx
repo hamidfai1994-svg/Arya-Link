@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
-import { ImagePuzzleCaptcha } from '@/components/auth/ImagePuzzleCaptcha';
+import { useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 import { AnimatedOtpInput, OTPStatus } from '@/components/auth/AnimatedOtpInput';
 import { PhoneInput } from '@/components/ui/phone-input';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -106,7 +106,7 @@ const authDictionary = {
     recoveryCancel: 'انصراف',
     recoveryLoading: 'در حال پردازش...',
     // Dynamic Toast Errors
-    errorCaptcha: 'لطفاً پازل تصویری ضد ربات را تکمیل نمایید.',
+    errorCaptcha: 'لطفاً اعتبارسنجی امنیتی را تکمیل نمایید.',
     errorIncomplete: 'لطفاً ایمیل و رمز عبور خود را وارد نمایید.',
     errorInvalidCredentials: 'ایمیل یا رمز عبور اشتباه است.',
     errorIncorrectPassword: 'رمز عبور وارد شده نادرست است.',
@@ -204,7 +204,7 @@ const authDictionary = {
     recoveryCancel: 'بندول',
     recoveryLoading: 'د پروسس په حال کې...',
     // Dynamic Toast Errors
-    errorCaptcha: 'مهرباني وکړئ د ربات ضد امنیتي پازل بشپړ کړئ.',
+    errorCaptcha: 'مهرباني وکړئ امنیتي تایید بشپړ کړئ.',
     errorIncomplete: 'مهرباني وکړئ برېښنالیک او رمز داخل کړئ.',
     errorInvalidCredentials: 'برېښنالیک یا پټ نوم ناسم دی.',
     errorIncorrectPassword: 'داخل شوی رمز ناسم دی.',
@@ -302,7 +302,7 @@ const authDictionary = {
     recoveryCancel: 'Cancel',
     recoveryLoading: 'Processing...',
     // Dynamic Toast Errors
-    errorCaptcha: 'Please complete the security puzzle verification.',
+    errorCaptcha: 'Please complete the security verification challenge.',
     errorIncomplete: 'Please enter your email and password.',
     errorInvalidCredentials: 'Invalid email or password.',
     errorIncorrectPassword: 'Incorrect password entered.',
@@ -381,6 +381,9 @@ export function AuthPage({
   const callbackUrl =
     propCallbackUrl || searchParams.get('callbackUrl') || '/dashboard';
 
+  // Google reCAPTCHA v3 hook
+  const { executeRecaptcha } = useGoogleReCaptcha();
+
   // Global Language Sync from LanguageContext (Independent of profile/vCard language)
   const { language, dir } = useLanguage();
   const activeLang: SupportedLanguage =
@@ -395,7 +398,6 @@ export function AuthPage({
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [showLoginPassword, setShowLoginPassword] = useState(false);
-  const [isLoginCaptchaValid, setIsLoginCaptchaValid] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
 
   // 2-Step OTP Authentication States
@@ -419,7 +421,6 @@ export function AuthPage({
   const [registerPassword, setRegisterPassword] = useState('');
   const [registerConfirmPassword, setRegisterConfirmPassword] = useState('');
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
-  const [isRegisterCaptchaValid, setIsRegisterCaptchaValid] = useState(false);
 
   // Loading States
   const [isLoading, setIsLoading] = useState(false);
@@ -435,9 +436,6 @@ export function AuthPage({
   const [showRecoveryPassword, setShowRecoveryPassword] = useState(false);
   const [isRecoveryLoading, setIsRecoveryLoading] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
-
-  // Captcha Reset Signal
-  const [captchaSignal, setCaptchaSignal] = useState(0);
 
   // Sync mode when initialMode prop changes
   useEffect(() => {
@@ -519,9 +517,6 @@ export function AuthPage({
   const handleToggleMode = (mode: 'login' | 'register') => {
     const nextIsLogin = mode === 'login';
     setIsLogin(nextIsLogin);
-    setCaptchaSignal((prev) => prev + 1);
-    setIsLoginCaptchaValid(false);
-    setIsRegisterCaptchaValid(false);
     setOtpStep('email');
     setOtpCodeStatus('typing');
     setOtpErrorMessage('');
@@ -566,20 +561,28 @@ export function AuthPage({
       return;
     }
 
-    // Only verify captcha if not a direct resend click
-    if (typeof e !== 'boolean' && !isLoginCaptchaValid) {
-      toast.error(t.errorCaptcha);
-      return;
-    }
-
     setIsOtpSending(true);
     setOtpErrorMessage('');
+
+    // Invisible Google reCAPTCHA v3 execution
+    let recaptchaToken = '';
+    if (executeRecaptcha) {
+      try {
+        recaptchaToken = await executeRecaptcha('login');
+      } catch (recaptchaErr) {
+        console.warn('Google reCAPTCHA execution error:', recaptchaErr);
+      }
+    }
 
     try {
       const res = await fetch('/api/auth/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: loginEmail.trim() }),
+        body: JSON.stringify({
+          email: loginEmail.trim(),
+          recaptchaToken,
+          isResend: typeof e === 'boolean' && e === true,
+        }),
       });
 
       const data = await res.json();
@@ -663,11 +666,6 @@ export function AuthPage({
       return;
     }
 
-    if (!isLoginCaptchaValid) {
-      toast.error(t.errorCaptcha);
-      return;
-    }
-
     if (!loginEmail.trim() || !loginPassword) {
       toast.error(t.errorIncomplete);
       return;
@@ -675,10 +673,21 @@ export function AuthPage({
 
     setIsLoading(true);
 
+    // Invisible Google reCAPTCHA v3 execution
+    let recaptchaToken = '';
+    if (executeRecaptcha) {
+      try {
+        recaptchaToken = await executeRecaptcha('login');
+      } catch (recaptchaErr) {
+        console.warn('Google reCAPTCHA execution error:', recaptchaErr);
+      }
+    }
+
     try {
       const res = await signIn('credentials', {
         email: loginEmail.trim(),
         password: loginPassword,
+        recaptchaToken,
         redirect: false,
         callbackUrl,
       });
@@ -714,8 +723,6 @@ export function AuthPage({
           description: `تلاش ناموفق (${nextAttempts} از 5)`,
         });
         setIsLoading(false);
-        setCaptchaSignal((prev) => prev + 1);
-        setIsLoginCaptchaValid(false);
         return;
       }
 
@@ -748,11 +755,6 @@ export function AuthPage({
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!isRegisterCaptchaValid) {
-      toast.error(t.errorCaptcha);
-      return;
-    }
-
     if (!registerName.trim()) {
       toast.error(t.errorNameRequired);
       return;
@@ -775,6 +777,16 @@ export function AuthPage({
 
     setIsLoading(true);
 
+    // Invisible Google reCAPTCHA v3 execution
+    let recaptchaToken = '';
+    if (executeRecaptcha) {
+      try {
+        recaptchaToken = await executeRecaptcha('register');
+      } catch (recaptchaErr) {
+        console.warn('Google reCAPTCHA execution error:', recaptchaErr);
+      }
+    }
+
     try {
       const registerRes = await fetch('/api/auth/register', {
         method: 'POST',
@@ -784,6 +796,7 @@ export function AuthPage({
           email: registerEmail.trim(),
           phone: registerPhone ? registerPhone.trim() : '',
           password: registerPassword,
+          recaptchaToken,
         }),
       });
 
@@ -793,8 +806,6 @@ export function AuthPage({
         const localizedMsg = resolveLocalizedAuthError(registerData.message, activeLang);
         toast.error(localizedMsg);
         setIsLoading(false);
-        setCaptchaSignal((prev) => prev + 1);
-        setIsRegisterCaptchaValid(false);
         return;
       }
 
@@ -805,6 +816,7 @@ export function AuthPage({
       const loginRes = await signIn('credentials', {
         email: registerEmail.trim(),
         password: registerPassword,
+        recaptchaToken,
         redirect: false,
         callbackUrl,
       });
@@ -1065,18 +1077,10 @@ export function AuthPage({
                     </div>
                   </div>
 
-                  {/* Security Puzzle CAPTCHA */}
-                  <ImagePuzzleCaptcha
-                    onVerify={setIsLoginCaptchaValid}
-                    resetSignal={captchaSignal}
-                    lang={activeLang}
-                    className={`mt-2 ${isLockedOut ? 'opacity-50 pointer-events-none' : ''}`}
-                  />
-
                   {/* Submit Button (Send OTP) */}
                   <button
                     type="submit"
-                    disabled={isOtpSending || isGoogleLoading || !isLoginCaptchaValid || isLockedOut || !loginEmail.trim()}
+                    disabled={isOtpSending || isGoogleLoading || isLockedOut || !loginEmail.trim()}
                     className="w-full h-11 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-cyan-500/25 transition-all active:scale-[0.99] mt-2 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   >
                     {isOtpSending ? (
@@ -1098,8 +1102,6 @@ export function AuthPage({
                       type="button"
                       onClick={() => {
                         setLoginMethod('password');
-                        setCaptchaSignal((p) => p + 1);
-                        setIsLoginCaptchaValid(false);
                       }}
                       className="text-xs text-slate-500 hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors font-medium cursor-pointer"
                     >
@@ -1171,8 +1173,6 @@ export function AuthPage({
                         type="button"
                         onClick={() => {
                           setLoginMethod('password');
-                          setCaptchaSignal((p) => p + 1);
-                          setIsLoginCaptchaValid(false);
                         }}
                         className="hover:text-slate-600 dark:hover:text-white transition-colors cursor-pointer"
                       >
@@ -1275,18 +1275,10 @@ export function AuthPage({
                   </button>
                 </div>
 
-                {/* Upgraded Image / Puzzle Slider CAPTCHA */}
-                <ImagePuzzleCaptcha
-                  onVerify={setIsLoginCaptchaValid}
-                  resetSignal={captchaSignal}
-                  lang={activeLang}
-                  className={`mt-2 ${isLockedOut ? 'opacity-50 pointer-events-none' : ''}`}
-                />
-
                 {/* Submit Button */}
                 <button
                   type="submit"
-                  disabled={isLoading || isGoogleLoading || !isLoginCaptchaValid || isLockedOut}
+                  disabled={isLoading || isGoogleLoading || isLockedOut}
                   className="w-full h-11 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-cyan-500/25 transition-all active:scale-[0.99] mt-2 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
                   {isLoading ? (
@@ -1309,8 +1301,6 @@ export function AuthPage({
                     onClick={() => {
                       setLoginMethod('otp');
                       setOtpStep('email');
-                      setCaptchaSignal((p) => p + 1);
-                      setIsLoginCaptchaValid(false);
                     }}
                     className="text-xs text-slate-500 hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors font-medium cursor-pointer"
                   >
@@ -1505,18 +1495,10 @@ export function AuthPage({
                 </div>
               </div>
 
-              {/* Upgraded Image / Puzzle Slider CAPTCHA */}
-              <ImagePuzzleCaptcha
-                onVerify={setIsRegisterCaptchaValid}
-                resetSignal={captchaSignal}
-                lang={activeLang}
-                className="mt-1"
-              />
-
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={isLoading || isGoogleLoading || !isRegisterCaptchaValid}
+                disabled={isLoading || isGoogleLoading}
                 className="w-full h-11 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-cyan-500/25 transition-all active:scale-[0.99] mt-2 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               >
                 {isLoading ? (

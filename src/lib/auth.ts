@@ -6,6 +6,7 @@ import { connectToDatabase } from '@/lib/db/mongodb';
 import { User } from '@/models/User.model';
 import { Profile } from '@/models/Profile.model';
 import { Otp } from '@/models/Otp.model';
+import { verifyRecaptcha } from '@/lib/recaptcha';
 
 async function generateGoogleAlias(rawName: string): Promise<string> {
   let clean = rawName
@@ -37,10 +38,17 @@ export const authOptions: NextAuthOptions = {
       credentials: {
         email: { label: 'ایمیل', type: 'email' },
         password: { label: 'رمز عبور', type: 'password' },
+        recaptchaToken: { label: 'reCAPTCHA Token', type: 'text' },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
           throw new Error('لطفاً ایمیل و رمز عبور را وارد نمایید.');
+        }
+
+        // Verify Google reCAPTCHA v3
+        const recaptchaResult = await verifyRecaptcha(credentials?.recaptchaToken);
+        if (!recaptchaResult.success) {
+          throw new Error(recaptchaResult.message || 'درخواست نامعتبر: اعتبارسنجی امنیتی تایید نشد.');
         }
 
         await connectToDatabase();

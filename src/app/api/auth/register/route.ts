@@ -5,13 +5,31 @@ import { User } from '@/models/User.model';
 import { Profile } from '@/models/Profile.model';
 import { SystemSettings } from '@/models/systemSettings.model';
 import { sendSupportMessage } from '@/lib/telegram';
+import { verifyRecaptcha } from '@/lib/recaptcha';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, email, password, phone } = body;
+    const { name, email, password, phone, recaptchaToken } = body;
+
+    // Verify Google reCAPTCHA v3
+    const remoteIp =
+      req.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
+      req.headers.get('x-real-ip') ||
+      undefined;
+
+    const recaptchaResult = await verifyRecaptcha(recaptchaToken, remoteIp);
+    if (!recaptchaResult.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: recaptchaResult.message || 'درخواست نامعتبر: اعتبارسنجی امنیتی تایید نشد.',
+        },
+        { status: 400 }
+      );
+    }
 
     // 1. Validation
     if (!name || typeof name !== 'string' || name.trim().length < 2) {

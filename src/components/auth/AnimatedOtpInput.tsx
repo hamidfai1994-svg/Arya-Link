@@ -42,7 +42,7 @@ const translations = {
 const containerVariants = {
   typing: { x: 0 },
   error: {
-    x: [-10, 10, -10, 10, 0],
+    x: [-10, 10, -8, 8, -4, 4, 0],
     transition: {
       duration: 0.45,
       ease: 'easeInOut',
@@ -65,26 +65,18 @@ const boxVariants = {
       ? 'rgba(6, 182, 212, 0.03)'
       : 'rgba(255, 255, 255, 0.04)',
     boxShadow: custom.isActive ? '0 0 0 3px rgba(6, 182, 212, 0.2)' : 'none',
-    transition: { duration: 0.2 },
+    transition: { duration: 0.15 },
   }),
-  error: (custom: { index: number }) => ({
-    scale: [1, 1.06, 1],
-    borderColor: ['rgba(239, 68, 68, 0.4)', '#ef4444', '#ef4444'],
-    backgroundColor: [
-      'rgba(239, 68, 68, 0.04)',
-      'rgba(239, 68, 68, 0.16)',
-      'rgba(239, 68, 68, 0.06)',
-    ],
-    boxShadow: [
-      '0 0 0px rgba(239, 68, 68, 0)',
-      '0 0 14px rgba(239, 68, 68, 0.6)',
-      '0 0 4px rgba(239, 68, 68, 0.2)',
-    ],
-    transition: {
-      delay: custom.index * 0.05,
-      duration: 0.35,
-      ease: 'easeInOut',
-    },
+  error: (custom: { index: number; isActive: boolean }) => ({
+    scale: 1,
+    borderColor: '#ef4444',
+    backgroundColor: custom.isActive
+      ? 'rgba(239, 68, 68, 0.1)'
+      : 'rgba(239, 68, 68, 0.04)',
+    boxShadow: custom.isActive
+      ? '0 0 0 3px rgba(239, 68, 68, 0.35), 0 0 12px rgba(239, 68, 68, 0.35)'
+      : '0 0 0 1px rgba(239, 68, 68, 0.2)',
+    transition: { duration: 0.15 },
   }),
   success: (custom: { index: number }) => ({
     scale: [1, 1.08, 1],
@@ -146,7 +138,7 @@ const OTPBox: React.FC<OTPBoxProps> = ({
       variants={boxVariants}
       custom={{ index, isActive, hasValue }}
       animate={status}
-      whileTap={status === 'typing' ? { scale: 0.96 } : {}}
+      whileTap={status === 'typing' && !disabled ? { scale: 0.96 } : {}}
     >
       <input
         ref={inputRef}
@@ -158,14 +150,14 @@ const OTPBox: React.FC<OTPBoxProps> = ({
         onKeyDown={(e) => onKeyDown(e, index)}
         onPaste={onPaste}
         onFocus={() => onFocus(index)}
-        className={`w-full h-full bg-transparent border-none outline-none text-center font-sans font-bold text-lg sm:text-xl transition-colors cursor-text caret-cyan-500 dark:caret-cyan-400 select-all z-10 ${
+        className={`w-full h-full bg-transparent border-none outline-none text-center font-sans font-bold text-lg sm:text-xl transition-colors cursor-text select-all z-10 ${
           status === 'success'
-            ? 'text-emerald-500 dark:text-emerald-400'
+            ? 'text-emerald-500 dark:text-emerald-400 caret-emerald-500'
             : status === 'error'
-            ? 'text-rose-500 dark:text-rose-400'
-            : 'text-slate-900 dark:text-white'
+            ? 'text-rose-500 dark:text-rose-400 caret-rose-500'
+            : 'text-slate-900 dark:text-white caret-cyan-500 dark:caret-cyan-400'
         }`}
-        disabled={status !== 'typing' || disabled}
+        disabled={disabled}
         autoComplete="one-time-code"
       />
     </motion.div>
@@ -188,12 +180,14 @@ export const AnimatedOtpInput: React.FC<AnimatedOtpInputProps> = ({
   const [otp, setOtp] = useState<string[]>(Array(length).fill(''));
   const [activeIndex, setActiveIndex] = useState<number>(0);
   const [currentStatus, setCurrentStatus] = useState<OTPStatus>('typing');
+  const [isShaking, setIsShaking] = useState<boolean>(false);
   const [windowWidth, setWindowWidth] = useState<number>(
     typeof window !== 'undefined' ? window.innerWidth : 1024
   );
 
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
-  const errorTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const shakeTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const focusTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastSubmittedCodeRef = useRef<string>('');
 
   const isMobile = windowWidth <= 480;
@@ -209,47 +203,47 @@ export const AnimatedOtpInput: React.FC<AnimatedOtpInputProps> = ({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Sync external status prop with internal currentStatus and manage error timers
+  // Manage status transitions, shake completion, auto-clearing, and reliable auto-focus
   useEffect(() => {
     if (status === 'error') {
-      if (errorTimerRef.current) {
-        clearTimeout(errorTimerRef.current);
-      }
       setCurrentStatus('error');
+      setIsShaking(true);
 
-      // Auto-recover after ~650ms error animation (between 500ms and 800ms)
-      errorTimerRef.current = setTimeout(() => {
+      if (shakeTimerRef.current) clearTimeout(shakeTimerRef.current);
+      if (focusTimerRef.current) clearTimeout(focusTimerRef.current);
+
+      // Wait for shake animation (~500ms) to finish
+      shakeTimerRef.current = setTimeout(() => {
+        // Step 1: Clear values, enable fields, but keep error state persistent
         setOtp(Array(length).fill(''));
         setActiveIndex(0);
-        setCurrentStatus('typing');
+        setIsShaking(false);
         lastSubmittedCodeRef.current = '';
-        if (inputRefs.current[0]) {
-          inputRefs.current[0].focus();
-        }
-        onErrorComplete?.();
-        errorTimerRef.current = null;
-      }, 650);
+
+        // Step 1: Delay focus by 10ms to ensure DOM has rendered enabled state
+        focusTimerRef.current = setTimeout(() => {
+          if (inputRefs.current[0]) {
+            inputRefs.current[0].focus();
+          }
+        }, 10);
+      }, 500);
     } else if (status === 'success') {
-      if (errorTimerRef.current) {
-        clearTimeout(errorTimerRef.current);
-        errorTimerRef.current = null;
-      }
+      if (shakeTimerRef.current) clearTimeout(shakeTimerRef.current);
+      if (focusTimerRef.current) clearTimeout(focusTimerRef.current);
+      setIsShaking(false);
       setCurrentStatus('success');
     } else {
-      if (errorTimerRef.current) {
-        clearTimeout(errorTimerRef.current);
-        errorTimerRef.current = null;
-      }
+      if (shakeTimerRef.current) clearTimeout(shakeTimerRef.current);
+      if (focusTimerRef.current) clearTimeout(focusTimerRef.current);
+      setIsShaking(false);
       setCurrentStatus('typing');
     }
 
     return () => {
-      if (errorTimerRef.current) {
-        clearTimeout(errorTimerRef.current);
-        errorTimerRef.current = null;
-      }
+      if (shakeTimerRef.current) clearTimeout(shakeTimerRef.current);
+      if (focusTimerRef.current) clearTimeout(focusTimerRef.current);
     };
-  }, [status, length, onErrorComplete]);
+  }, [status, length]);
 
   // When all digits are entered, trigger onComplete exactly once per full code
   useEffect(() => {
@@ -264,13 +258,9 @@ export const AnimatedOtpInput: React.FC<AnimatedOtpInputProps> = ({
   }, [otp, currentStatus, onComplete]);
 
   // Handle typing of digits (strict English numerals)
+  // Step 2: Clear persistent error state on the very first new keystroke/input
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
-    // If currently in error state, immediately switch back to typing and clear error
     if (currentStatus === 'error' || status === 'error') {
-      if (errorTimerRef.current) {
-        clearTimeout(errorTimerRef.current);
-        errorTimerRef.current = null;
-      }
       setCurrentStatus('typing');
       onErrorComplete?.();
     }
@@ -295,11 +285,8 @@ export const AnimatedOtpInput: React.FC<AnimatedOtpInputProps> = ({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
+    // Step 2: Clear persistent error state on keydown
     if (currentStatus === 'error' || status === 'error') {
-      if (errorTimerRef.current) {
-        clearTimeout(errorTimerRef.current);
-        errorTimerRef.current = null;
-      }
       setCurrentStatus('typing');
       onErrorComplete?.();
     }
@@ -326,24 +313,12 @@ export const AnimatedOtpInput: React.FC<AnimatedOtpInputProps> = ({
   };
 
   const handleFocus = (index: number) => {
-    if (currentStatus === 'error' || status === 'error') {
-      if (errorTimerRef.current) {
-        clearTimeout(errorTimerRef.current);
-        errorTimerRef.current = null;
-      }
-      setCurrentStatus('typing');
-      onErrorComplete?.();
-    }
     setActiveIndex(index);
   };
 
   const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
     e.preventDefault();
     if (currentStatus === 'error' || status === 'error') {
-      if (errorTimerRef.current) {
-        clearTimeout(errorTimerRef.current);
-        errorTimerRef.current = null;
-      }
       setCurrentStatus('typing');
       onErrorComplete?.();
     }
@@ -418,7 +393,7 @@ export const AnimatedOtpInput: React.FC<AnimatedOtpInputProps> = ({
               <button
                 type="button"
                 onClick={onChangeEmail}
-                disabled={currentStatus !== 'typing' || disabled}
+                disabled={isShaking || disabled || currentStatus === 'success'}
                 className="text-cyan-600 dark:text-cyan-400 hover:underline font-medium text-[11px] mt-0.5 cursor-pointer disabled:opacity-50"
               >
                 {t.changeEmail}
@@ -433,22 +408,22 @@ export const AnimatedOtpInput: React.FC<AnimatedOtpInputProps> = ({
       {/* 6 OTP Boxes Container with Horizontal Shake Animation */}
       <motion.div
         className={`flex items-center justify-center gap-2 sm:gap-2.5 ${
-          currentStatus !== 'typing' ? 'pointer-events-none' : 'pointer-events-auto'
+          isShaking || currentStatus === 'success' ? 'pointer-events-none' : 'pointer-events-auto'
         }`}
         dir="ltr"
         style={{ gap: `${gapSize}px` }}
         variants={containerVariants}
-        animate={currentStatus}
+        animate={isShaking ? 'error' : currentStatus}
       >
         {otp.map((digit, index) => (
           <OTPBox
             key={index}
             index={index}
             value={digit}
-            isActive={activeIndex === index && currentStatus === 'typing'}
+            isActive={activeIndex === index}
             status={currentStatus}
             boxSize={boxSize}
-            disabled={disabled}
+            disabled={isShaking || disabled || currentStatus === 'success'}
             onChange={handleChange}
             onKeyDown={handleKeyDown}
             onPaste={handlePaste}

@@ -2,13 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 import { connectToDatabase } from '@/lib/db/mongodb';
 import { Otp } from '@/models/Otp.model';
+import { verifyRecaptcha } from '@/lib/recaptcha';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { email } = body;
+    const { email, recaptchaToken, isResend } = body;
 
     if (!email || typeof email !== 'string') {
       return NextResponse.json(
@@ -27,6 +28,33 @@ export async function POST(req: NextRequest) {
     }
 
     await connectToDatabase();
+
+    // Allow legitimate resend if an unexpired OTP session already exists
+    let skipRecaptcha = false;
+    if (isResend) {
+      const recentOtp = await Otp.findOne({ email: cleanEmail });
+      if (recentOtp) {
+        skipRecaptcha = true;
+      }
+    }
+
+    if (!skipRecaptcha) {
+      const remoteIp =
+        req.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
+        req.headers.get('x-real-ip') ||
+        undefined;
+
+      const recaptchaResult = await verifyRecaptcha(recaptchaToken, remoteIp);
+      if (!recaptchaResult.success) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: recaptchaResult.message || 'درخواست نامعتبر: اعتبارسنجی امنیتی تایید نشد.',
+          },
+          { status: 400 }
+        );
+      }
+    }
 
     // Generate 6-digit random English numeric code
     const code = Math.floor(100000 + Math.random() * 900000).toString();
