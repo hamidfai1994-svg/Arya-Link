@@ -7,6 +7,7 @@ import { signIn } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { ImagePuzzleCaptcha } from '@/components/auth/ImagePuzzleCaptcha';
+import { AnimatedOtpInput } from '@/components/auth/AnimatedOtpInput';
 import { PhoneInput } from '@/components/ui/phone-input';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { SiteLogo } from '@/components/SiteLogo';
@@ -28,6 +29,8 @@ import {
   Check,
   AlertOctagon,
   RotateCcw,
+  Send,
+  Sparkles,
 } from 'lucide-react';
 
 interface AuthPageProps {
@@ -124,6 +127,19 @@ const authDictionary = {
     toastLoginSuccessDesc: 'ورود موفقیت‌آمیز بود. در حال انتقال به داشبورد...',
     toastRegisterSuccess: 'ثبت نام با موفقیت انجام شد!',
     toastRegisterSuccessDesc: 'در حال ورود خودکار به اکانت کاربری...',
+    // 2-Step OTP Authentication
+    otpLoginTab: 'ورود با کد یکبار مصرف (Email OTP)',
+    passwordLoginTab: 'ورود با رمز عبور',
+    sendOtpBtn: 'دریافت کد تایید یکبار مصرف',
+    sendingOtp: 'در حال ارسال کد تایید...',
+    verifyingOtp: 'در حال بررسی کد...',
+    otpSentSuccess: 'کد تایید 6 رقمی به ایمیل شما ارسال شد.',
+    resendOtp: 'ارسال مجدد کد',
+    resendCooldownText: 'ارسال مجدد تا {sec} ثانیه دیگر',
+    changeEmail: 'تغییر ایمیل',
+    orPasswordLogin: 'یا ورود با رمز عبور',
+    orOtpLogin: 'یا ورود با کد تایید یکبار مصرف ایمیل',
+    devModeNotice: 'حالت توسعه فعال است (کد تایید: {code})',
   },
   ps: {
     backToHome: 'اصلي مخ ته ستنېدل',
@@ -209,6 +225,19 @@ const authDictionary = {
     toastLoginSuccessDesc: 'ننوتل بریالي وو. ډشبورډ ته د لېږد په حال کې...',
     toastRegisterSuccess: 'نوم‌لیکنه په بریالیتوب سره ترسره شوه!',
     toastRegisterSuccessDesc: 'په اوتومات ډول اکاونټ ته د ننوتلو په حال کې...',
+    // 2-Step OTP Authentication
+    otpLoginTab: 'په یو ځلي کوډ ننوتل (Email OTP)',
+    passwordLoginTab: 'په پټ نوم ننوتل',
+    sendOtpBtn: 'د تایید 6 عددي کوډ ترلاسه کول',
+    sendingOtp: 'د کوډ لېږلو په حال کې...',
+    verifyingOtp: 'د کوډ کتلو په حال کې...',
+    otpSentSuccess: 'ستاسو برېښنالیک ته 6 عددي کوډ واستول شو.',
+    resendOtp: 'د کوډ بیا لېږل',
+    resendCooldownText: 'د کوډ بیا لېږل تر {sec} ثانیو پورې',
+    changeEmail: 'د برېښنالیک بدلون',
+    orPasswordLogin: 'یا په پټ نوم ننوتل',
+    orOtpLogin: 'یا په یو ځلي کوډ ننوتل (له رمز پرته)',
+    devModeNotice: 'د ازموینې حالت فعال دی (کوډ: {code})',
   },
   en: {
     backToHome: 'Back to Home',
@@ -294,6 +323,19 @@ const authDictionary = {
     toastLoginSuccessDesc: 'Sign in successful. Redirecting to dashboard...',
     toastRegisterSuccess: 'Registration Successful!',
     toastRegisterSuccessDesc: 'Automatically signing in to your account...',
+    // 2-Step OTP Authentication
+    otpLoginTab: 'Sign in with One-Time Code (Email OTP)',
+    passwordLoginTab: 'Sign in with Password',
+    sendOtpBtn: 'Send 6-Digit Login Code',
+    sendingOtp: 'Sending verification code...',
+    verifyingOtp: 'Verifying code...',
+    otpSentSuccess: '6-digit verification code sent to your email.',
+    resendOtp: 'Resend Code',
+    resendCooldownText: 'Resend code in {sec}s',
+    changeEmail: 'Change Email',
+    orPasswordLogin: 'or sign in with password',
+    orOtpLogin: 'or sign in with one-time code (passwordless)',
+    devModeNotice: 'Development mode active (OTP Code: {code})',
   },
 };
 
@@ -355,6 +397,15 @@ export function AuthPage({
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [isLoginCaptchaValid, setIsLoginCaptchaValid] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+
+  // 2-Step OTP Authentication States
+  const [loginMethod, setLoginMethod] = useState<'otp' | 'password'>('otp');
+  const [otpStep, setOtpStep] = useState<'email' | 'code'>('email');
+  const [isOtpSending, setIsOtpSending] = useState(false);
+  const [otpCooldown, setOtpCooldown] = useState(0);
+  const [otpCodeStatus, setOtpCodeStatus] = useState<'idle' | 'merging' | 'success' | 'error'>('idle');
+  const [otpErrorMessage, setOtpErrorMessage] = useState('');
+  const [devOtpCode, setDevOtpCode] = useState<string | null>(null);
 
   // Rate Limiting & Lockout States
   const [failedAttempts, setFailedAttempts] = useState(0);
@@ -455,6 +506,15 @@ export function AuthPage({
     return () => clearInterval(interval);
   }, [resendCooldown]);
 
+  // Countdown timer for Login Email OTP Cooldown
+  useEffect(() => {
+    if (otpCooldown <= 0) return;
+    const interval = setInterval(() => {
+      setOtpCooldown((prev) => (prev <= 1 ? 0 : prev - 1));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [otpCooldown]);
+
   // Mode switcher handler
   const handleToggleMode = (mode: 'login' | 'register') => {
     const nextIsLogin = mode === 'login';
@@ -462,6 +522,9 @@ export function AuthPage({
     setCaptchaSignal((prev) => prev + 1);
     setIsLoginCaptchaValid(false);
     setIsRegisterCaptchaValid(false);
+    setOtpStep('email');
+    setOtpCodeStatus('idle');
+    setOtpErrorMessage('');
 
     if (typeof window !== 'undefined') {
       const url = new URL(window.location.href);
@@ -482,6 +545,108 @@ export function AuthPage({
       console.error('Google sign-in error:', err);
       toast.error(t.errorGoogleSignIn);
       setIsGoogleLoading(false);
+    }
+  };
+
+  // 2-Step OTP: Send OTP to Email
+  const handleSendOtp = async (e?: React.FormEvent | boolean) => {
+    if (e && typeof e !== 'boolean' && (e as any).preventDefault) {
+      (e as any).preventDefault();
+    }
+
+    if (isLockedOut) {
+      toast.error(t.lockoutTitle, {
+        description: `${t.lockoutDescPart1} ${formatLockoutTime(lockoutSecondsLeft)} ${t.lockoutDescPart2}`,
+      });
+      return;
+    }
+
+    if (!loginEmail.trim()) {
+      toast.error(t.errorEmailRequired);
+      return;
+    }
+
+    // Only verify captcha if not a direct resend click
+    if (typeof e !== 'boolean' && !isLoginCaptchaValid) {
+      toast.error(t.errorCaptcha);
+      return;
+    }
+
+    setIsOtpSending(true);
+    setOtpErrorMessage('');
+
+    try {
+      const res = await fetch('/api/auth/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: loginEmail.trim() }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        toast.error(data.message || 'خطا در ارسال کد تایید.');
+        setIsOtpSending(false);
+        return;
+      }
+
+      setOtpStep('code');
+      setOtpCooldown(60);
+      setOtpCodeStatus('idle');
+
+      if (data.devMode && data.devCode) {
+        setDevOtpCode(data.devCode);
+        toast.info(`[حالت توسعه] کد تایید: ${data.devCode}`, {
+          duration: 9000,
+        });
+      } else {
+        toast.success(t.otpSentSuccess);
+      }
+    } catch (err: any) {
+      console.error('Send OTP error:', err);
+      toast.error(t.errorNetwork);
+    } finally {
+      setIsOtpSending(false);
+    }
+  };
+
+  // 2-Step OTP: Verify Code and Establish NextAuth Session
+  const handleVerifyOtp = async (code: string) => {
+    if (isLockedOut) return;
+
+    setOtpCodeStatus('merging');
+    setOtpErrorMessage('');
+
+    try {
+      const res = await signIn('email-otp', {
+        email: loginEmail.trim(),
+        code,
+        redirect: false,
+        callbackUrl,
+      });
+
+      if (!res?.ok || res?.error) {
+        setOtpCodeStatus('error');
+        const errorMsg = res?.error || 'کد تایید نادرست یا منقضی شده است.';
+        setOtpErrorMessage(errorMsg);
+        toast.error(errorMsg);
+        return;
+      }
+
+      // Success! Play merge capsule animation and redirect to dashboard
+      setOtpCodeStatus('success');
+      toast.success(t.toastLoginSuccess, {
+        description: t.toastLoginSuccessDesc,
+      });
+
+      setTimeout(() => {
+        router.push(callbackUrl);
+        router.refresh();
+      }, 800);
+    } catch (err: any) {
+      console.error('Verify OTP error:', err);
+      setOtpCodeStatus('error');
+      setOtpErrorMessage('خطا در برقراری ارتباط با سرور.');
+      toast.error(t.errorNetwork);
     }
   };
 
@@ -871,127 +1036,283 @@ export function AuthPage({
               <div className="border-t border-slate-200 dark:border-white/10 w-full" />
             </div>
 
-            {/* Login Form */}
-            <form onSubmit={handleLoginSubmit} className="space-y-3">
-              {/* Email */}
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-slate-700 dark:text-slate-300 block">
-                  {t.emailLabel}
-                </label>
-                <div className="relative">
-                  <input
-                    type="email"
-                    dir="ltr"
-                    disabled={isLockedOut}
-                    value={loginEmail}
-                    onChange={(e) => setLoginEmail(e.target.value)}
-                    placeholder={t.emailPlaceholder}
-                    required
-                    className={`w-full h-11 rounded-xl bg-slate-100/70 dark:bg-slate-950/60 border border-slate-300/80 dark:border-white/10 text-slate-900 dark:text-white text-left placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 pl-10 pr-3 font-sans text-sm transition-all ${
-                      isLockedOut ? 'opacity-50 cursor-not-allowed' : ''
-                    }`}
-                  />
-                  <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                </div>
-              </div>
+            {/* Login Flow: 2-Step Email OTP (Default) OR Password */}
+            {loginMethod === 'otp' ? (
+              otpStep === 'email' ? (
+                /* STEP 1: Enter Email & Captcha to Send OTP */
+                <form onSubmit={handleSendOtp} className="space-y-3">
+                  {/* Email */}
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-slate-700 dark:text-slate-300 block">
+                      {t.emailLabel}
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="email"
+                        dir="ltr"
+                        disabled={isLockedOut}
+                        value={loginEmail}
+                        onChange={(e) => setLoginEmail(e.target.value)}
+                        placeholder={t.emailPlaceholder}
+                        required
+                        className={`w-full h-11 rounded-xl bg-slate-100/70 dark:bg-slate-950/60 border border-slate-300/80 dark:border-white/10 text-slate-900 dark:text-white text-left placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 pl-10 pr-3 font-sans text-sm transition-all ${
+                          isLockedOut ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
+                      />
+                      <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    </div>
+                  </div>
 
-              {/* Password */}
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-slate-700 dark:text-slate-300 block">
-                  {t.passwordLabel}
-                </label>
-                <div className="relative">
-                  <input
-                    type={showLoginPassword ? 'text' : 'password'}
-                    dir="ltr"
-                    disabled={isLockedOut}
-                    value={loginPassword}
-                    onChange={(e) => setLoginPassword(e.target.value)}
-                    placeholder={t.passwordPlaceholder}
-                    required
-                    className={`w-full h-11 rounded-xl bg-slate-100/70 dark:bg-slate-950/60 border border-slate-300/80 dark:border-white/10 text-slate-900 dark:text-white text-left placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 pl-10 pr-10 font-sans text-sm transition-all ${
-                      isLockedOut ? 'opacity-50 cursor-not-allowed' : ''
-                    }`}
+                  {/* Security Puzzle CAPTCHA */}
+                  <ImagePuzzleCaptcha
+                    onVerify={setIsLoginCaptchaValid}
+                    resetSignal={captchaSignal}
+                    lang={activeLang}
+                    className={`mt-2 ${isLockedOut ? 'opacity-50 pointer-events-none' : ''}`}
                   />
-                  <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+
+                  {/* Submit Button (Send OTP) */}
                   <button
-                    type="button"
-                    disabled={isLockedOut}
-                    onClick={() => setShowLoginPassword(!showLoginPassword)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors cursor-pointer disabled:opacity-50"
-                    aria-label={showLoginPassword ? 'Hide password' : 'Show password'}
+                    type="submit"
+                    disabled={isOtpSending || isGoogleLoading || !isLoginCaptchaValid || isLockedOut || !loginEmail.trim()}
+                    className="w-full h-11 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-cyan-500/25 transition-all active:scale-[0.99] mt-2 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   >
-                    {showLoginPassword ? (
-                      <EyeOff className="w-4 h-4" />
+                    {isOtpSending ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>{t.sendingOtp}</span>
+                      </>
                     ) : (
-                      <Eye className="w-4 h-4" />
+                      <>
+                        <Send className="w-4 h-4" />
+                        <span>{t.sendOtpBtn}</span>
+                      </>
                     )}
                   </button>
-                </div>
-              </div>
 
-              {/* Remember Me Checkbox & Forgot Password Link */}
-              <div className="flex items-center justify-between pt-0.5">
-                {/* Custom Remember Me Checkbox */}
-                <label className="flex items-center gap-2 cursor-pointer select-none group">
-                  <div
-                    onClick={() => !isLockedOut && setRememberMe(!rememberMe)}
-                    className={`w-4 h-4 rounded-md flex items-center justify-center transition-all ${
-                      rememberMe
-                        ? 'bg-gradient-to-tr from-cyan-500 to-blue-600 border border-cyan-400 text-white shadow-sm shadow-cyan-500/30'
-                        : 'border border-slate-300 dark:border-white/20 bg-slate-100 dark:bg-slate-900/60 group-hover:border-cyan-500/60'
-                    } ${isLockedOut ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  >
-                    {rememberMe && <Check className="w-3 h-3 stroke-[3]" />}
+                  {/* Switch to Password Login */}
+                  <div className="pt-2 text-center">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLoginMethod('password');
+                        setCaptchaSignal((p) => p + 1);
+                        setIsLoginCaptchaValid(false);
+                      }}
+                      className="text-xs text-slate-500 hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors font-medium cursor-pointer"
+                    >
+                      {t.orPasswordLogin}
+                    </button>
                   </div>
-                  <span
-                    onClick={() => !isLockedOut && setRememberMe(!rememberMe)}
-                    className="text-xs text-slate-600 dark:text-slate-300 font-medium group-hover:text-slate-900 dark:group-hover:text-white transition-colors"
+                </form>
+              ) : (
+                /* STEP 2: Enter 6-digit Animated OTP Input */
+                <div className="space-y-4 py-2">
+                  <AnimatedOtpInput
+                    length={6}
+                    status={otpCodeStatus}
+                    errorMessage={otpErrorMessage}
+                    email={loginEmail}
+                    onChangeEmail={() => {
+                      setOtpStep('email');
+                      setOtpCodeStatus('idle');
+                      setOtpErrorMessage('');
+                    }}
+                    onComplete={handleVerifyOtp}
+                    disabled={isLockedOut}
+                  />
+
+                  {/* Resend Cooldown Timer & Action */}
+                  <div className="flex flex-col items-center justify-center gap-2 pt-2 text-xs">
+                    {otpCooldown > 0 ? (
+                      <span className="text-slate-400 text-xs font-sans">
+                        {t.resendCooldownText.replace('{sec}', String(otpCooldown))}
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleSendOtp(true)}
+                        disabled={isOtpSending}
+                        className="text-cyan-600 dark:text-cyan-400 hover:underline flex items-center gap-1.5 font-medium cursor-pointer"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        <span>{t.resendOtp}</span>
+                      </button>
+                    )}
+
+                    {/* Dev Mode Banner (If OTP code was generated in dev mode) */}
+                    {devOtpCode && (
+                      <div className="mt-1 p-2 px-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-500 text-[11px] font-sans flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                        <span>{t.devModeNotice.replace('{code}', devOtpCode)}</span>
+                      </div>
+                    )}
+
+                    {/* Secondary Navigation */}
+                    <div className="pt-2 flex items-center gap-3 text-slate-400 text-xs">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setOtpStep('email');
+                          setOtpCodeStatus('idle');
+                        }}
+                        className="hover:text-slate-600 dark:hover:text-white transition-colors cursor-pointer"
+                      >
+                        {t.changeEmail}
+                      </button>
+                      <span>•</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setLoginMethod('password');
+                          setCaptchaSignal((p) => p + 1);
+                          setIsLoginCaptchaValid(false);
+                        }}
+                        className="hover:text-slate-600 dark:hover:text-white transition-colors cursor-pointer"
+                      >
+                        {t.orPasswordLogin}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )
+            ) : (
+              /* Traditional Password Login Form */
+              <form onSubmit={handleLoginSubmit} className="space-y-3">
+                {/* Email */}
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-slate-700 dark:text-slate-300 block">
+                    {t.emailLabel}
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="email"
+                      dir="ltr"
+                      disabled={isLockedOut}
+                      value={loginEmail}
+                      onChange={(e) => setLoginEmail(e.target.value)}
+                      placeholder={t.emailPlaceholder}
+                      required
+                      className={`w-full h-11 rounded-xl bg-slate-100/70 dark:bg-slate-950/60 border border-slate-300/80 dark:border-white/10 text-slate-900 dark:text-white text-left placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 pl-10 pr-3 font-sans text-sm transition-all ${
+                        isLockedOut ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}
+                    />
+                    <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
+                </div>
+
+                {/* Password */}
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-slate-700 dark:text-slate-300 block">
+                    {t.passwordLabel}
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showLoginPassword ? 'text' : 'password'}
+                      dir="ltr"
+                      disabled={isLockedOut}
+                      value={loginPassword}
+                      onChange={(e) => setLoginPassword(e.target.value)}
+                      placeholder={t.passwordPlaceholder}
+                      required
+                      className={`w-full h-11 rounded-xl bg-slate-100/70 dark:bg-slate-950/60 border border-slate-300/80 dark:border-white/10 text-slate-900 dark:text-white text-left placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 pl-10 pr-10 font-sans text-sm transition-all ${
+                        isLockedOut ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}
+                    />
+                    <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <button
+                      type="button"
+                      disabled={isLockedOut}
+                      onClick={() => setShowLoginPassword(!showLoginPassword)}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors cursor-pointer disabled:opacity-50"
+                      aria-label={showLoginPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showLoginPassword ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Remember Me Checkbox & Forgot Password Link */}
+                <div className="flex items-center justify-between pt-0.5">
+                  <label className="flex items-center gap-2 cursor-pointer select-none group">
+                    <div
+                      onClick={() => !isLockedOut && setRememberMe(!rememberMe)}
+                      className={`w-4 h-4 rounded-md flex items-center justify-center transition-all ${
+                        rememberMe
+                          ? 'bg-gradient-to-tr from-cyan-500 to-blue-600 border border-cyan-400 text-white shadow-sm shadow-cyan-500/30'
+                          : 'border border-slate-300 dark:border-white/20 bg-slate-100 dark:bg-slate-900/60 group-hover:border-cyan-500/60'
+                      } ${isLockedOut ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      {rememberMe && <Check className="w-3 h-3 stroke-[3]" />}
+                    </div>
+                    <span
+                      onClick={() => !isLockedOut && setRememberMe(!rememberMe)}
+                      className="text-xs text-slate-600 dark:text-slate-300 font-medium group-hover:text-slate-900 dark:group-hover:text-white transition-colors"
+                    >
+                      {t.rememberMe}
+                    </span>
+                  </label>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRecoveryStep(1);
+                      setIsRecoveryOpen(true);
+                    }}
+                    className="text-[11px] text-cyan-600 dark:text-cyan-400 hover:text-cyan-500 hover:underline transition-colors cursor-pointer"
                   >
-                    {t.rememberMe}
-                  </span>
-                </label>
+                    {t.forgotPassword}
+                  </button>
+                </div>
 
-                {/* Forgot Password Trigger */}
+                {/* Upgraded Image / Puzzle Slider CAPTCHA */}
+                <ImagePuzzleCaptcha
+                  onVerify={setIsLoginCaptchaValid}
+                  resetSignal={captchaSignal}
+                  lang={activeLang}
+                  className={`mt-2 ${isLockedOut ? 'opacity-50 pointer-events-none' : ''}`}
+                />
+
+                {/* Submit Button */}
                 <button
-                  type="button"
-                  onClick={() => {
-                    setRecoveryStep(1);
-                    setIsRecoveryOpen(true);
-                  }}
-                  className="text-[11px] text-cyan-600 dark:text-cyan-400 hover:text-cyan-500 hover:underline transition-colors cursor-pointer"
+                  type="submit"
+                  disabled={isLoading || isGoogleLoading || !isLoginCaptchaValid || isLockedOut}
+                  className="w-full h-11 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-cyan-500/25 transition-all active:scale-[0.99] mt-2 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
-                  {t.forgotPassword}
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>{t.loadingLogin}</span>
+                    </>
+                  ) : (
+                    <>
+                      <ShieldCheck className="w-4 h-4" />
+                      <span>{t.submitLogin}</span>
+                    </>
+                  )}
                 </button>
-              </div>
 
-              {/* Upgraded Image / Puzzle Slider CAPTCHA */}
-              <ImagePuzzleCaptcha
-                onVerify={setIsLoginCaptchaValid}
-                resetSignal={captchaSignal}
-                lang={activeLang}
-                className={`mt-2 ${isLockedOut ? 'opacity-50 pointer-events-none' : ''}`}
-              />
-
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={isLoading || isGoogleLoading || !isLoginCaptchaValid || isLockedOut}
-                className="w-full h-11 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-cyan-500/25 transition-all active:scale-[0.99] mt-2 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>{t.loadingLogin}</span>
-                  </>
-                ) : (
-                  <>
-                    <ShieldCheck className="w-4 h-4" />
-                    <span>{t.submitLogin}</span>
-                  </>
-                )}
-              </button>
-            </form>
+                {/* Switch to OTP Login */}
+                <div className="pt-2 text-center">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLoginMethod('otp');
+                      setOtpStep('email');
+                      setCaptchaSignal((p) => p + 1);
+                      setIsLoginCaptchaValid(false);
+                    }}
+                    className="text-xs text-slate-500 hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors font-medium cursor-pointer"
+                  >
+                    {t.orOtpLogin}
+                  </button>
+                </div>
+              </form>
+            )}
 
             {/* Mobile switch link */}
             <div className="mt-5 text-center md:hidden">

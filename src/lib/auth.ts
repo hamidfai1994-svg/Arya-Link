@@ -5,6 +5,7 @@ import bcrypt from 'bcryptjs';
 import { connectToDatabase } from '@/lib/db/mongodb';
 import { User } from '@/models/User.model';
 import { Profile } from '@/models/Profile.model';
+import { Otp } from '@/models/Otp.model';
 
 async function generateGoogleAlias(rawName: string): Promise<string> {
   let clean = rawName
@@ -67,6 +68,93 @@ export const authOptions: NextAuthOptions = {
         // Update last login timestamp
         user.lastLoginAt = new Date();
         await user.save();
+
+        return {
+          id: user._id.toString(),
+          name: user.name,
+          email: user.email,
+          image: user.avatar || '',
+          role: user.role,
+          subscriptionPlan: user.subscriptionPlan,
+        };
+      },
+    }),
+
+    CredentialsProvider({
+      id: 'email-otp',
+      name: 'ورود با کد یکبار مصرف (Email OTP)',
+      credentials: {
+        email: { label: 'ایمیل', type: 'email' },
+        code: { label: 'کد تایید', type: 'text' },
+      },
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.code) {
+          throw new Error('لطفاً ایمیل و کد تایید را وارد نمایید.');
+        }
+
+        await connectToDatabase();
+
+        const cleanEmail = credentials.email.toLowerCase().trim();
+        const cleanCode = credentials.code.toString().trim();
+
+        // Validate 6-digit OTP code in MongoDB
+        const validOtp = await Otp.findOne({ email: cleanEmail, code: cleanCode });
+        if (!validOtp) {
+          throw new Error('کد تایید نادرست یا منقضی شده است.');
+        }
+
+        // Delete used OTP to prevent replay
+        await Otp.deleteMany({ email: cleanEmail });
+
+        let user = await User.findOne({ email: cleanEmail });
+        if (!user) {
+          const defaultName = cleanEmail.split('@')[0] || 'کاربر آریا لینک';
+          user = await User.create({
+            name: defaultName,
+            email: cleanEmail,
+            role: 'user',
+            subscriptionPlan: 'free',
+            isActive: true,
+            emailVerified: new Date(),
+            lastLoginAt: new Date(),
+          });
+
+          // Auto-provision single personal profile
+          const uniqueAlias = await generateGoogleAlias(user.name);
+          await Profile.create({
+            userId: user._id,
+            alias: uniqueAlias,
+            displayName: user.name,
+            headline: 'پروفایل شخصی',
+            bio: 'به کارت هوشمند دیجیتال من در آریا لینک خوش آمدید.',
+            avatarUrl: '',
+            email: user.email,
+            phone: '',
+            whatsapp: '',
+            location: 'افغانستان',
+            directModeEnabled: false,
+            hideBranding: false,
+            seoTitle: `${user.name} | کارت دیجیتال آریا لینک`,
+            seoDescription: 'صفحه رسمی و کارت ویزیت هوشمند',
+            themeConfig: {
+              preset: 'dark_neon',
+              primaryColor: '#0ea5e9',
+              accentColor: '#06b6d4',
+              backgroundColor: 'linear-gradient(135deg, #090d16 0%, #0f172a 50%, #1e1b4b 100%)',
+              cardBlur: 'backdrop-blur-md bg-white/10 border-white/20',
+              textColor: '#ffffff',
+              borderRadius: 'rounded-2xl',
+            },
+            links: [],
+            isActive: true,
+          });
+        } else {
+          if (!user.isActive) {
+            throw new Error('حساب کاربری شما غیرفعال شده است.');
+          }
+          user.lastLoginAt = new Date();
+          await user.save();
+        }
 
         return {
           id: user._id.toString(),
