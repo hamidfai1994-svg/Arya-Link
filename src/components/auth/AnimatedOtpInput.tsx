@@ -158,31 +158,16 @@ const OTPBox: React.FC<OTPBoxProps> = ({
         onKeyDown={(e) => onKeyDown(e, index)}
         onPaste={onPaste}
         onFocus={() => onFocus(index)}
-        className="absolute inset-0 w-full h-full bg-transparent border-none outline-none text-transparent caret-transparent cursor-text z-10"
+        className={`w-full h-full bg-transparent border-none outline-none text-center font-sans font-bold text-lg sm:text-xl transition-colors cursor-text caret-cyan-500 dark:caret-cyan-400 select-all z-10 ${
+          status === 'success'
+            ? 'text-emerald-500 dark:text-emerald-400'
+            : status === 'error'
+            ? 'text-rose-500 dark:text-rose-400'
+            : 'text-slate-900 dark:text-white'
+        }`}
         disabled={status !== 'typing' || disabled}
         autoComplete="one-time-code"
       />
-
-      <AnimatePresence mode="popLayout">
-        {value && (
-          <motion.span
-            key={`val-${value}`}
-            className={`text-lg sm:text-xl font-bold font-sans pointer-events-none select-none transition-colors duration-200 ${
-              status === 'success'
-                ? 'text-emerald-500 dark:text-emerald-400'
-                : status === 'error'
-                ? 'text-rose-500 dark:text-rose-400'
-                : 'text-slate-900 dark:text-white'
-            }`}
-            initial={{ opacity: 0, scale: 0.6, y: 3 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.4 }}
-            transition={{ duration: 0.14, ease: 'easeOut' }}
-          >
-            {value}
-          </motion.span>
-        )}
-      </AnimatePresence>
     </motion.div>
   );
 };
@@ -208,6 +193,8 @@ export const AnimatedOtpInput: React.FC<AnimatedOtpInputProps> = ({
   );
 
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const errorTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastSubmittedCodeRef = useRef<string>('');
 
   const isMobile = windowWidth <= 480;
   const boxSize = isMobile ? 42 : 48;
@@ -222,41 +209,72 @@ export const AnimatedOtpInput: React.FC<AnimatedOtpInputProps> = ({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Sync external status prop with currentStatus
+  // Sync external status prop with internal currentStatus and manage error timers
   useEffect(() => {
     if (status === 'error') {
+      if (errorTimerRef.current) {
+        clearTimeout(errorTimerRef.current);
+      }
       setCurrentStatus('error');
 
-      // Auto-recover after ~500ms error animation (Telegram style)
-      const timer = setTimeout(() => {
+      // Auto-recover after ~650ms error animation (between 500ms and 800ms)
+      errorTimerRef.current = setTimeout(() => {
         setOtp(Array(length).fill(''));
         setActiveIndex(0);
         setCurrentStatus('typing');
+        lastSubmittedCodeRef.current = '';
         if (inputRefs.current[0]) {
           inputRefs.current[0].focus();
         }
         onErrorComplete?.();
-      }, 500);
-
-      return () => clearTimeout(timer);
+        errorTimerRef.current = null;
+      }, 650);
     } else if (status === 'success') {
+      if (errorTimerRef.current) {
+        clearTimeout(errorTimerRef.current);
+        errorTimerRef.current = null;
+      }
       setCurrentStatus('success');
     } else {
+      if (errorTimerRef.current) {
+        clearTimeout(errorTimerRef.current);
+        errorTimerRef.current = null;
+      }
       setCurrentStatus('typing');
     }
+
+    return () => {
+      if (errorTimerRef.current) {
+        clearTimeout(errorTimerRef.current);
+        errorTimerRef.current = null;
+      }
+    };
   }, [status, length, onErrorComplete]);
 
-  // When all digits are entered, trigger onComplete
+  // When all digits are entered, trigger onComplete exactly once per full code
   useEffect(() => {
     const isComplete = otp.every((d) => d !== '');
-    if (isComplete && currentStatus === 'typing') {
-      const fullCode = otp.join('');
+    const fullCode = otp.join('');
+    if (isComplete && currentStatus === 'typing' && fullCode !== lastSubmittedCodeRef.current) {
+      lastSubmittedCodeRef.current = fullCode;
       onComplete(fullCode);
+    } else if (!isComplete) {
+      lastSubmittedCodeRef.current = '';
     }
   }, [otp, currentStatus, onComplete]);
 
   // Handle typing of digits (strict English numerals)
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
+    // If currently in error state, immediately switch back to typing and clear error
+    if (currentStatus === 'error' || status === 'error') {
+      if (errorTimerRef.current) {
+        clearTimeout(errorTimerRef.current);
+        errorTimerRef.current = null;
+      }
+      setCurrentStatus('typing');
+      onErrorComplete?.();
+    }
+
     const val = e.target.value.replace(/[^0-9]/g, '');
     if (!val) {
       const newOtp = [...otp];
@@ -277,6 +295,15 @@ export const AnimatedOtpInput: React.FC<AnimatedOtpInputProps> = ({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
+    if (currentStatus === 'error' || status === 'error') {
+      if (errorTimerRef.current) {
+        clearTimeout(errorTimerRef.current);
+        errorTimerRef.current = null;
+      }
+      setCurrentStatus('typing');
+      onErrorComplete?.();
+    }
+
     if (e.key === 'Backspace') {
       if (otp[index] === '' && index > 0) {
         const newOtp = [...otp];
@@ -298,8 +325,29 @@ export const AnimatedOtpInput: React.FC<AnimatedOtpInputProps> = ({
     }
   };
 
+  const handleFocus = (index: number) => {
+    if (currentStatus === 'error' || status === 'error') {
+      if (errorTimerRef.current) {
+        clearTimeout(errorTimerRef.current);
+        errorTimerRef.current = null;
+      }
+      setCurrentStatus('typing');
+      onErrorComplete?.();
+    }
+    setActiveIndex(index);
+  };
+
   const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
     e.preventDefault();
+    if (currentStatus === 'error' || status === 'error') {
+      if (errorTimerRef.current) {
+        clearTimeout(errorTimerRef.current);
+        errorTimerRef.current = null;
+      }
+      setCurrentStatus('typing');
+      onErrorComplete?.();
+    }
+
     const pasted = e.clipboardData.getData('text/plain').replace(/[^0-9]/g, '').slice(0, length);
     if (!pasted) return;
 
@@ -404,7 +452,7 @@ export const AnimatedOtpInput: React.FC<AnimatedOtpInputProps> = ({
             onChange={handleChange}
             onKeyDown={handleKeyDown}
             onPaste={handlePaste}
-            onFocus={(i) => setActiveIndex(i)}
+            onFocus={handleFocus}
             inputRef={(el) => (inputRefs.current[index] = el)}
           />
         ))}

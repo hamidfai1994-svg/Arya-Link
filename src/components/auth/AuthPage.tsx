@@ -613,6 +613,8 @@ export function AuthPage({
   const handleVerifyOtp = async (code: string) => {
     if (isLockedOut) return;
 
+    // Reset previous error states before starting new verification
+    setOtpCodeStatus('typing');
     setOtpErrorMessage('');
 
     try {
@@ -633,6 +635,7 @@ export function AuthPage({
 
       // Success! Play sequential green wave across OTP boxes and redirect to dashboard
       setOtpCodeStatus('success');
+      setOtpErrorMessage('');
       toast.success(t.toastLoginSuccess, {
         description: t.toastLoginSuccessDesc,
       });
