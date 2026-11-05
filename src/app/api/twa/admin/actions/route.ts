@@ -4,13 +4,14 @@ import { connectToDatabase } from '@/lib/db/mongodb';
 import { validateTelegramWebAppData } from '@/lib/twa-auth';
 import { SystemSettings } from '@/models/systemSettings.model';
 import { Profile } from '@/models/Profile.model';
+import { Order } from '@/models/Order.model';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { initData, actionType, profileId } = body;
+    const { initData, actionType, profileId, orderId, newStatus, payload } = body;
 
     if (!initData || typeof initData !== 'string') {
       return NextResponse.json({ error: 'No user data' }, { status: 400 });
@@ -61,6 +62,36 @@ export async function POST(req: NextRequest) {
         profileId: profile._id.toString(),
         isActive: profile.isActive,
         message: profile.isActive ? 'وضعیت کاربر به فعال تغییر یافت' : 'کاربر با موفقیت مسدود شد',
+      });
+    }
+
+    if (actionType === 'updateOrderStatus') {
+      const targetOrderId = orderId || payload?.orderId;
+      const targetStatus = newStatus || payload?.newStatus || payload;
+
+      if (!targetOrderId || !mongoose.isValidObjectId(targetOrderId)) {
+        return NextResponse.json({ error: 'Invalid order ID' }, { status: 400 });
+      }
+
+      const order = await Order.findById(targetOrderId);
+      if (!order) {
+        return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+      }
+
+      if (!['pending', 'processing', 'shipped', 'completed', 'cancelled'].includes(targetStatus)) {
+        return NextResponse.json({ error: 'Invalid order status' }, { status: 400 });
+      }
+
+      order.status = targetStatus;
+      order.orderStatus = targetStatus as any;
+      await order.save();
+
+      return NextResponse.json({
+        success: true,
+        actionType,
+        orderId: order._id.toString(),
+        status: order.status,
+        message: 'وضعیت سفارش با موفقیت به‌روزرسانی شد',
       });
     }
 

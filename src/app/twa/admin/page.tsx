@@ -18,12 +18,14 @@ import {
   CreditCard,
   Ban,
   CheckCircle2,
+  Wallet,
 } from 'lucide-react';
 import { formatSmartDate } from '@/lib/utils/date';
 
 interface AdminStats {
   totalProfiles: number;
   totalMessages: number;
+  totalRevenue?: number;
 }
 
 interface RecentProfile {
@@ -49,6 +51,16 @@ interface AdminOrder {
   createdAt: string;
 }
 
+interface AdminTransaction {
+  _id: string;
+  amount: number;
+  type: string;
+  status: 'pending' | 'successful' | 'failed' | string;
+  currency?: string;
+  description?: string;
+  createdAt: string;
+}
+
 const navItems = [
   { id: 'dashboard' as const, label: 'پیشخوان', icon: BarChart3, emoji: '📊' },
   { id: 'users' as const, label: 'کاربران', icon: Users, emoji: '👥' },
@@ -62,10 +74,12 @@ export default function AdminTWA() {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [recentProfiles, setRecentProfiles] = useState<RecentProfile[]>([]);
   const [recentOrders, setRecentOrders] = useState<AdminOrder[]>([]);
+  const [recentTransactions, setRecentTransactions] = useState<AdminTransaction[]>([]);
   const [limit, setLimit] = useState(5);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [updatingProfileId, setUpdatingProfileId] = useState<string | null>(null);
+  const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
 
   const loadDashboardData = async (initData: string, currentLimit: number = limit) => {
     try {
@@ -79,12 +93,49 @@ export default function AdminTWA() {
         setStats(data.stats);
         setRecentProfiles(data.recentProfiles || []);
         setRecentOrders(data.recentOrders || []);
+        setRecentTransactions(data.recentTransactions || []);
         setAuthStatus('success');
       } else {
         setAuthStatus('error');
       }
     } catch {
       setAuthStatus('error');
+    }
+  };
+
+  const handleUpdateOrderStatus = async (orderId: string, newStatus: string) => {
+    const tg = (window as any).Telegram?.WebApp;
+    if (!tg || !tg.initData) return;
+
+    setUpdatingOrderId(orderId);
+    try {
+      const res = await fetch('/api/twa/admin/actions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          initData: tg.initData,
+          actionType: 'updateOrderStatus',
+          orderId,
+          newStatus,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        tg.HapticFeedback?.notificationOccurred('success');
+        setRecentOrders((prev) =>
+          prev.map((o) => (o._id === orderId ? { ...o, status: newStatus } : o))
+        );
+      } else {
+        tg.HapticFeedback?.notificationOccurred('error');
+        if (tg.showAlert) {
+          tg.showAlert(data.error || 'خطا در تغییر وضعیت سفارش');
+        }
+      }
+    } catch (err) {
+      console.error('Error updating order status:', err);
+      tg?.HapticFeedback?.notificationOccurred('error');
+    } finally {
+      setUpdatingOrderId(null);
     }
   };
 
@@ -502,46 +553,59 @@ export default function AdminTWA() {
               {recentOrders.map((ord) => (
                 <div
                   key={ord._id}
-                  className="p-3.5 rounded-2xl border space-y-2 transition-all shadow-xs"
+                  className="p-3.5 rounded-2xl border space-y-2.5 transition-all shadow-xs"
                   style={{
                     backgroundColor: 'var(--tg-theme-secondary-bg-color, rgba(255, 255, 255, 0.05))',
                     borderColor: 'rgba(255, 255, 255, 0.08)',
                   }}
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-lg bg-cyan-500/15 text-cyan-400 flex items-center justify-center text-xs font-bold">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-8 h-8 rounded-xl bg-cyan-500/15 text-cyan-400 flex items-center justify-center text-sm font-bold shrink-0">
                         🛒
                       </div>
-                      <div>
-                        <span className="text-xs font-bold block" style={{ color: 'var(--tg-theme-text-color, #f8fafc)' }}>
+                      <div className="min-w-0">
+                        <span className="text-xs font-bold block truncate" style={{ color: 'var(--tg-theme-text-color, #f8fafc)' }}>
                           {ord.orderType || 'کارت NFC'}
                         </span>
-                        {ord.customerName && (
-                          <span className="text-[10px]" style={{ color: 'var(--tg-theme-hint-color, #94a3b8)' }}>
-                            {ord.customerName}
+                        {ord.customerName ? (
+                          <span className="text-[10px] block truncate" style={{ color: 'var(--tg-theme-hint-color, #94a3b8)' }}>
+                            خریدار: {ord.customerName}
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-mono block truncate opacity-70" style={{ color: 'var(--tg-theme-hint-color, #94a3b8)' }}>
+                            #{ord.orderNumber || ord._id.slice(-6)}
                           </span>
                         )}
                       </div>
                     </div>
 
-                    <span
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                        ord.status === 'shipped' || ord.status === 'completed'
-                          ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
-                          : ord.status === 'processing'
-                          ? 'bg-sky-500/15 border-sky-500/30 text-sky-400'
-                          : 'bg-amber-500/15 border-amber-500/30 text-amber-400'
-                      }`}
-                    >
-                      {ord.status === 'shipped'
-                        ? 'ارسال شده'
-                        : ord.status === 'processing'
-                        ? 'در حال پردازش'
-                        : ord.status === 'completed'
-                        ? 'تکمیل شده'
-                        : 'در انتظار بررسی'}
-                    </span>
+                    {/* Status Dropdown */}
+                    <div className="relative shrink-0">
+                      <select
+                        value={ord.status || 'pending'}
+                        disabled={updatingOrderId === ord._id}
+                        onChange={(e) => handleUpdateOrderStatus(ord._id, e.target.value)}
+                        className={`text-[11px] font-bold px-3 py-1.5 rounded-xl border appearance-none pr-7 pl-3 cursor-pointer outline-none transition-all ${
+                          ord.status === 'shipped' || ord.status === 'completed'
+                            ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
+                            : ord.status === 'processing'
+                            ? 'bg-sky-500/15 border-sky-500/30 text-sky-400'
+                            : 'bg-amber-500/15 border-amber-500/30 text-amber-400'
+                        }`}
+                      >
+                        <option value="pending" className="bg-slate-900 text-amber-400">🟡 در انتظار</option>
+                        <option value="processing" className="bg-slate-900 text-sky-400">🔵 در حال پردازش</option>
+                        <option value="shipped" className="bg-slate-900 text-emerald-400">🟢 ارسال شده</option>
+                      </select>
+                      <div className="absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none text-current opacity-70">
+                        {updatingOrderId === ord._id ? (
+                          <RefreshCw className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <ChevronDown className="w-3 h-3" />
+                        )}
+                      </div>
+                    </div>
                   </div>
 
                   <div
@@ -564,8 +628,142 @@ export default function AdminTWA() {
             </div>
           )}
         </div>
+      ) : activeTab === 'finance' ? (
+        /* Finance Tab Content */
+        <div className="space-y-4 pt-1">
+          {/* Revenue Hero Card */}
+          <div
+            className="p-5 rounded-2xl border relative overflow-hidden space-y-2 shadow-lg"
+            style={{
+              background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.15) 0%, rgba(16, 185, 129, 0.15) 100%)',
+              borderColor: 'rgba(14, 165, 233, 0.3)',
+            }}
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-sky-400 flex items-center gap-1.5">
+                <Wallet className="w-4 h-4" />
+                <span>مجموع درآمدهای کل پلتفرم</span>
+              </span>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                تسویه زنده
+              </span>
+            </div>
+
+            <div className="flex items-baseline gap-2 pt-1">
+              <span className="text-3xl font-black font-sans" style={{ color: 'var(--tg-theme-text-color, #f8fafc)' }}>
+                {(stats?.totalRevenue ?? 0).toLocaleString('en-US')}
+              </span>
+              <span className="text-xs font-bold text-sky-400">افغانی</span>
+            </div>
+
+            <p className="text-[11px] leading-relaxed opacity-80" style={{ color: 'var(--tg-theme-hint-color, #94a3b8)' }}>
+              حاصل از فروش کارت‌های هوشمند NFC، تمدید اشتراک‌ها و تراکنش‌های موفق.
+            </p>
+          </div>
+
+          {/* Transactions Section */}
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold" style={{ color: 'var(--tg-theme-text-color, #f8fafc)' }}>
+                تراکنش‌های اخیر
+              </span>
+              <span className="text-[11px] font-mono" style={{ color: 'var(--tg-theme-hint-color, #94a3b8)' }}>
+                نمایش {recentTransactions.length} مورد
+              </span>
+            </div>
+
+            {recentTransactions.length === 0 ? (
+              <div
+                className="p-8 rounded-2xl border text-center space-y-2 text-xs"
+                style={{
+                  backgroundColor: 'var(--tg-theme-secondary-bg-color, rgba(255, 255, 255, 0.05))',
+                  borderColor: 'rgba(255, 255, 255, 0.08)',
+                  color: 'var(--tg-theme-hint-color, #94a3b8)',
+                }}
+              >
+                <CreditCard className="w-8 h-8 mx-auto opacity-40 mb-1" />
+                <p className="font-bold">تراکنشی یافت نشد</p>
+                <p className="text-[11px] opacity-70">
+                  هنوز تراکنش مالی ثبت‌شده‌ای در سیستم وجود ندارد.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2.5">
+                {recentTransactions.map((tx) => (
+                  <div
+                    key={tx._id}
+                    className="p-3.5 rounded-2xl border space-y-2 transition-all shadow-xs"
+                    style={{
+                      backgroundColor: 'var(--tg-theme-secondary-bg-color, rgba(255, 255, 255, 0.05))',
+                      borderColor: 'rgba(255, 255, 255, 0.08)',
+                    }}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div
+                          className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold ${
+                            tx.status === 'successful'
+                              ? 'bg-emerald-500/15 text-emerald-400'
+                              : tx.status === 'failed'
+                              ? 'bg-rose-500/15 text-rose-400'
+                              : 'bg-amber-500/15 text-amber-400'
+                          }`}
+                        >
+                          {tx.status === 'successful' ? '✓' : tx.status === 'failed' ? '✕' : '⏳'}
+                        </div>
+                        <div>
+                          <span className="text-xs font-bold block" style={{ color: 'var(--tg-theme-text-color, #f8fafc)' }}>
+                            {tx.type === 'subscription' ? 'اشتراک پریمیوم' : tx.type === 'nfc_card' ? 'خرید کارت NFC' : tx.type}
+                          </span>
+                          {tx.description && (
+                            <span className="text-[10px] block truncate max-w-[170px]" style={{ color: 'var(--tg-theme-hint-color, #94a3b8)' }}>
+                              {tx.description}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Status Badge */}
+                      <span
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                          tx.status === 'successful'
+                            ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
+                            : tx.status === 'failed'
+                            ? 'bg-rose-500/15 border-rose-500/30 text-rose-400'
+                            : 'bg-amber-500/15 border-amber-500/30 text-amber-400'
+                        }`}
+                      >
+                        {tx.status === 'successful'
+                          ? 'موفق'
+                          : tx.status === 'failed'
+                          ? 'ناموفق'
+                          : 'در انتظار پرداخت'}
+                      </span>
+                    </div>
+
+                    <div
+                      className="pt-2 border-t flex items-center justify-between text-xs"
+                      style={{ borderColor: 'rgba(255, 255, 255, 0.06)' }}
+                    >
+                      <span className="font-bold font-sans" style={{ color: 'var(--tg-theme-text-color, #f8fafc)' }}>
+                        {(tx.amount || 0).toLocaleString('en-US')} {tx.currency || 'AFN'}
+                      </span>
+                      <span
+                        className="flex items-center gap-1 text-[10px]"
+                        style={{ color: 'var(--tg-theme-hint-color, #94a3b8)' }}
+                      >
+                        <Clock className="w-2.5 h-2.5" />
+                        <span>{formatSmartDate(tx.createdAt)}</span>
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       ) : (
-        /* Placeholder for other tabs (Users, Finance) */
+        /* Placeholder for Users tab */
         <div
           className="p-8 rounded-2xl border text-center space-y-4 my-8"
           style={{
@@ -580,13 +778,11 @@ export default function AdminTWA() {
               borderColor: 'rgba(255, 255, 255, 0.1)',
             }}
           >
-            {activeTab === 'users' && '👥'}
-            {activeTab === 'finance' && '💳'}
+            👥
           </div>
           <div className="space-y-1">
             <h2 className="text-sm font-bold" style={{ color: 'var(--tg-theme-text-color, #f8fafc)' }}>
-              {activeTab === 'users' && 'مدیریت کاربران و دسترسی‌ها'}
-              {activeTab === 'finance' && 'گزارش‌های مالی و تراکنش‌ها'}
+              مدیریت کاربران و دسترسی‌ها
             </h2>
             <p className="text-xs" style={{ color: 'var(--tg-theme-hint-color, #94a3b8)' }}>
               در حال بارگذاری زیرساخت...

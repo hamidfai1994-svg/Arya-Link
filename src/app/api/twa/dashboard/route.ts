@@ -5,6 +5,7 @@ import { SystemSettings } from '@/models/systemSettings.model';
 import { Profile } from '@/models/Profile.model';
 import { Message } from '@/models/Message.model';
 import { Order } from '@/models/Order.model';
+import { Transaction } from '@/models/Transaction.model';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,7 +47,14 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Not Admin' }, { status: 403 });
       }
 
-      const [totalProfiles, totalMessages, recentProfiles, recentOrders] = await Promise.all([
+      const [
+        totalProfiles,
+        totalMessages,
+        recentProfiles,
+        recentOrders,
+        recentTransactions,
+        revenueAgg,
+      ] = await Promise.all([
         Profile.countDocuments(),
         Message.countDocuments(),
         Profile.find()
@@ -58,7 +66,26 @@ export async function POST(req: NextRequest) {
           .sort({ createdAt: -1 })
           .limit(limit)
           .lean(),
+        Transaction.find()
+          .sort({ createdAt: -1 })
+          .limit(limit)
+          .lean(),
+        Transaction.aggregate([
+          { $match: { status: 'successful' } },
+          { $group: { _id: null, total: { $sum: '$amount' } } },
+        ]),
       ]);
+
+      let totalRevenue = revenueAgg && revenueAgg[0]?.total ? Number(revenueAgg[0].total) : 0;
+      if (totalRevenue === 0) {
+        const orderAgg = await Order.aggregate([
+          { $match: { paymentStatus: 'paid' } },
+          { $group: { _id: null, total: { $sum: '$totalPrice' } } },
+        ]);
+        if (orderAgg && orderAgg[0]?.total) {
+          totalRevenue = Number(orderAgg[0].total);
+        }
+      }
 
       const normalizedOrders = (recentOrders || []).map((o: any) => ({
         _id: o._id?.toString(),
@@ -71,15 +98,27 @@ export async function POST(req: NextRequest) {
         createdAt: o.createdAt,
       }));
 
+      const normalizedTransactions = (recentTransactions || []).map((t: any) => ({
+        _id: t._id?.toString(),
+        amount: Number(t.amount || 0),
+        type: t.type || 'subscription',
+        status: t.status || 'pending',
+        currency: t.currency || 'AFN',
+        description: t.description || '',
+        createdAt: t.createdAt,
+      }));
+
       return NextResponse.json({
         success: true,
         role: 'admin',
         stats: {
           totalProfiles,
           totalMessages,
+          totalRevenue,
         },
         recentProfiles,
         recentOrders: normalizedOrders,
+        recentTransactions: normalizedTransactions,
       });
     }
 
