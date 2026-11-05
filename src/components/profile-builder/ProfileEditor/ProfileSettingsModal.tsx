@@ -522,19 +522,20 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
                     dir="ltr"
                     className="w-full bg-card border border-border rounded-xl px-3 py-2 text-xs font-mono text-foreground focus:outline-none focus:border-cyan-500 text-left"
                   />
-                  <a
-                    href="https://t.me/userinfobot?start=getid"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-blue-500 hover:underline mt-1 inline-block"
-                  >
-                    شناسه (Chat ID) من چیست؟ برای دریافت کلیک کنید
-                  </a>
+
                   <div className="p-2.5 rounded-xl bg-card/60 border border-border/60 text-[11px] text-muted-foreground space-y-1">
                     <span className="font-bold text-cyan-500 block">💡 چگونه Chat ID تلگرام خود را پیدا کنم؟</span>
                     <p className="leading-relaxed">
                       کافیست در تلگرام به ربات رسمی <strong dir="ltr" className="text-foreground">@userinfobot</strong> یا بات پیام‌رسان سایت پیام بفرستید تا عدد <strong dir="ltr" className="text-foreground">Id</strong> شما نمایش داده شود. آن عدد را در کادر بالا وارد کنید.
                     </p>
+                    <a
+                      href="https://t.me/userinfobot?start=getid"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-blue-500 hover:underline mt-1 inline-block"
+                    >
+                      برای دریافت (Chat ID) کلیک کنید
+                    </a>
                   </div>
 
                   {/* Warning Notice: Must start bot */}
@@ -582,11 +583,10 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
               type="button"
               onClick={handleSaveAndConfirm}
               disabled={!isDirty || isSavingSettings}
-              className={`px-5 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 ${
-                isDirty && !isSavingSettings
-                  ? 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white shadow-md shadow-emerald-500/25 cursor-pointer active:scale-95'
-                  : 'bg-muted text-muted-foreground border border-border cursor-not-allowed opacity-50'
-              }`}
+              className={`px-5 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 ${isDirty && !isSavingSettings
+                ? 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white shadow-md shadow-emerald-500/25 cursor-pointer active:scale-95'
+                : 'bg-muted text-muted-foreground border border-border cursor-not-allowed opacity-50'
+                }`}
             >
               {isSavingSettings ? (
                 <>

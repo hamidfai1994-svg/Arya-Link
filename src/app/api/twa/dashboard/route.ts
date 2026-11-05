@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
         Profile.countDocuments(),
         Message.countDocuments(),
         Profile.find()
-          .select('displayName alias headline avatarUrl viewsCount leadsCount createdAt')
+          .select('displayName alias headline avatarUrl viewsCount leadsCount isActive createdAt')
           .sort({ createdAt: -1 })
           .limit(limit)
           .lean(),
