@@ -1,50 +1,119 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence, useAnimation } from 'framer-motion';
-import { Shield, Check, AlertCircle, RefreshCw } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Shield, Check, AlertCircle } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
+
+export type OTPStatus = 'typing' | 'error' | 'success';
 
 export interface AnimatedOtpInputProps {
   length?: number;
   onComplete: (code: string) => void;
-  status?: 'idle' | 'merging' | 'success' | 'error';
+  status?: OTPStatus | 'idle' | 'merging';
   errorMessage?: string;
   disabled?: boolean;
   email?: string;
   onChangeEmail?: () => void;
+  onErrorComplete?: () => void;
 }
 
 const translations = {
   da: {
     verifyTitle: 'تایید کد ورود',
-    verifySubtitle: 'کد ۶ رقمی ارسال‌شده به ایمیل را وارد نمایید.',
-    verifiedSuccess: 'کد با موفقیت تایید گردید',
+    verifySubtitle: 'کد 6 رقمی ارسال‌شده به ایمیل را وارد نمایید.',
     digitAria: 'رقم',
     changeEmail: 'تغییر ایمیل',
   },
   pa: {
     verifyTitle: 'د ننوتلو کوډ تایید',
-    verifySubtitle: 'خپل برېښنالیک ته استول شوی ۶ عددي کوډ ولیکئ.',
-    verifiedSuccess: 'کوډ په بریا سره تایید شو',
+    verifySubtitle: 'خپل برېښنالیک ته استول شوی 6 عددي کوډ ولیکئ.',
     digitAria: 'شمېره',
     changeEmail: 'د برېښنالیک بدلون',
   },
   en: {
     verifyTitle: 'Verify Login Code',
     verifySubtitle: 'Enter the 6-digit code sent to your email.',
-    verifiedSuccess: 'Verified Successfully',
     digitAria: 'Digit',
     changeEmail: 'Change Email',
   },
+};
+
+const containerVariants = {
+  typing: { x: 0 },
+  error: {
+    x: [-10, 10, -10, 10, 0],
+    transition: {
+      duration: 0.45,
+      ease: 'easeInOut',
+    },
+  },
+  success: { x: 0 },
+};
+
+const boxVariants = {
+  typing: (custom: { index: number; isActive: boolean; hasValue: boolean }) => ({
+    scale: 1,
+    borderColor: custom.isActive
+      ? '#06b6d4'
+      : custom.hasValue
+      ? 'rgba(6, 182, 212, 0.45)'
+      : 'rgba(148, 163, 184, 0.25)',
+    backgroundColor: custom.isActive
+      ? 'rgba(6, 182, 212, 0.08)'
+      : custom.hasValue
+      ? 'rgba(6, 182, 212, 0.03)'
+      : 'rgba(255, 255, 255, 0.04)',
+    boxShadow: custom.isActive ? '0 0 0 3px rgba(6, 182, 212, 0.2)' : 'none',
+    transition: { duration: 0.2 },
+  }),
+  error: (custom: { index: number }) => ({
+    scale: [1, 1.06, 1],
+    borderColor: ['rgba(239, 68, 68, 0.4)', '#ef4444', '#ef4444'],
+    backgroundColor: [
+      'rgba(239, 68, 68, 0.04)',
+      'rgba(239, 68, 68, 0.16)',
+      'rgba(239, 68, 68, 0.06)',
+    ],
+    boxShadow: [
+      '0 0 0px rgba(239, 68, 68, 0)',
+      '0 0 14px rgba(239, 68, 68, 0.6)',
+      '0 0 4px rgba(239, 68, 68, 0.2)',
+    ],
+    transition: {
+      delay: custom.index * 0.05,
+      duration: 0.35,
+      ease: 'easeInOut',
+    },
+  }),
+  success: (custom: { index: number }) => ({
+    scale: [1, 1.08, 1],
+    borderColor: ['rgba(6, 182, 212, 0.5)', '#10b981', '#10b981'],
+    backgroundColor: [
+      'rgba(16, 185, 129, 0.05)',
+      'rgba(16, 185, 129, 0.2)',
+      'rgba(16, 185, 129, 0.1)',
+    ],
+    boxShadow: [
+      '0 0 0px rgba(16, 185, 129, 0)',
+      '0 0 18px rgba(16, 185, 129, 0.7)',
+      '0 0 8px rgba(16, 185, 129, 0.3)',
+    ],
+    transition: {
+      delay: custom.index * 0.08,
+      duration: 0.4,
+      ease: [0.22, 1, 0.36, 1],
+    },
+  }),
 };
 
 interface OTPBoxProps {
   index: number;
   value: string;
   isActive: boolean;
-  status: 'idle' | 'merging' | 'success' | 'error';
-  stepSize: number;
+  status: OTPStatus;
+  boxSize: number;
+  disabled?: boolean;
   onChange: (e: React.ChangeEvent<HTMLInputElement>, index: number) => void;
   onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>, index: number) => void;
   onPaste: (e: React.ClipboardEvent<HTMLInputElement>) => void;
@@ -57,79 +126,27 @@ const OTPBox: React.FC<OTPBoxProps> = ({
   value,
   isActive,
   status,
-  stepSize,
+  boxSize,
+  disabled = false,
   onChange,
   onKeyDown,
   onPaste,
   onFocus,
   inputRef,
 }) => {
-  const controls = useAnimation();
-  const prevValue = useRef(value);
-
-  // Micro-interactions for typing
-  useEffect(() => {
-    if (status === 'idle' && value !== prevValue.current) {
-      if (value !== '') {
-        controls.start({
-          x: [0, -2, 3, -2, 2, 0],
-          scale: [1, 1.05, 1],
-          transition: { duration: 0.15, ease: 'easeOut' },
-        });
-      } else if (value === '' && prevValue.current !== '') {
-        controls.start({
-          x: [0, 2, -2, 0],
-          transition: { duration: 0.12, ease: 'easeOut' },
-        });
-      }
-      prevValue.current = value;
-    }
-  }, [value, controls, status]);
-
-  // Premium Slow-Motion Merge Animation towards center (center index is 2.5 for 6 boxes)
-  useEffect(() => {
-    if (status === 'merging') {
-      const xOffset = (2.5 - index) * stepSize;
-      controls.start({
-        x: xOffset,
-        backgroundColor: '#10b981',
-        borderColor: '#10b981',
-        boxShadow: '0 0 20px rgba(16, 185, 129, 0.4)',
-        scale: 0.95,
-        transition: {
-          duration: 0.75,
-          ease: [0.16, 1, 0.3, 1],
-        },
-      });
-    } else if (status === 'error') {
-      controls.start({
-        x: [0, -6, 6, -4, 4, 0],
-        borderColor: '#ef4444',
-        boxShadow: '0 0 12px rgba(239, 68, 68, 0.3)',
-        transition: { duration: 0.35 },
-      });
-    } else if (status === 'idle') {
-      controls.start({
-        x: 0,
-        backgroundColor: isActive ? 'rgba(6, 182, 212, 0.08)' : '',
-        borderColor: isActive ? '#06b6d4' : '',
-        boxShadow: isActive ? '0 0 0 3px rgba(6, 182, 212, 0.2)' : 'none',
-        scale: 1,
-        transition: { duration: 0.25 },
-      });
-    }
-  }, [status, index, controls, stepSize, isActive]);
+  const hasValue = value !== '';
 
   return (
     <motion.div
-      className="relative rounded-2xl border border-slate-300 dark:border-white/10 bg-slate-100/80 dark:bg-white/5 transition-colors select-none"
-      animate={controls}
-      whileTap={status === 'idle' ? { scale: 0.96 } : {}}
+      className="relative rounded-2xl border transition-colors select-none flex items-center justify-center overflow-hidden"
       style={{
-        width: 'var(--box-size, 48px)',
-        height: 'var(--box-size, 48px)',
-        zIndex: status === 'merging' ? 10 - Math.abs(2.5 - index) : 1,
+        width: `${boxSize}px`,
+        height: `${boxSize}px`,
       }}
+      variants={boxVariants}
+      custom={{ index, isActive, hasValue }}
+      animate={status}
+      whileTap={status === 'typing' ? { scale: 0.96 } : {}}
     >
       <input
         ref={inputRef}
@@ -141,19 +158,26 @@ const OTPBox: React.FC<OTPBoxProps> = ({
         onKeyDown={(e) => onKeyDown(e, index)}
         onPaste={onPaste}
         onFocus={() => onFocus(index)}
-        className="absolute inset-0 w-full h-full bg-transparent border-none outline-none text-transparent caret-transparent cursor-text z-2"
-        disabled={status === 'merging' || status === 'success'}
+        className="absolute inset-0 w-full h-full bg-transparent border-none outline-none text-transparent caret-transparent cursor-text z-10"
+        disabled={status !== 'typing' || disabled}
         autoComplete="one-time-code"
       />
 
-      <AnimatePresence>
-        {value && status === 'idle' && (
+      <AnimatePresence mode="popLayout">
+        {value && (
           <motion.span
-            className="absolute inset-0 flex items-center justify-center text-lg sm:text-xl font-bold font-sans text-slate-900 dark:text-white pointer-events-none z-1"
-            initial={{ opacity: 0, scale: 0.75, y: 3 }}
+            key={`val-${value}`}
+            className={`text-lg sm:text-xl font-bold font-sans pointer-events-none select-none transition-colors duration-200 ${
+              status === 'success'
+                ? 'text-emerald-500 dark:text-emerald-400'
+                : status === 'error'
+                ? 'text-rose-500 dark:text-rose-400'
+                : 'text-slate-900 dark:text-white'
+            }`}
+            initial={{ opacity: 0, scale: 0.6, y: 3 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.5 }}
-            transition={{ duration: 0.15, ease: 'easeOut' }}
+            exit={{ opacity: 0, scale: 0.4 }}
+            transition={{ duration: 0.14, ease: 'easeOut' }}
           >
             {value}
           </motion.span>
@@ -166,17 +190,19 @@ const OTPBox: React.FC<OTPBoxProps> = ({
 export const AnimatedOtpInput: React.FC<AnimatedOtpInputProps> = ({
   length = 6,
   onComplete,
-  status = 'idle',
+  status = 'typing',
   errorMessage,
   disabled = false,
   email,
   onChangeEmail,
+  onErrorComplete,
 }) => {
   const { language } = useLanguage();
   const t = translations[language] || translations.da;
 
   const [otp, setOtp] = useState<string[]>(Array(length).fill(''));
   const [activeIndex, setActiveIndex] = useState<number>(0);
+  const [currentStatus, setCurrentStatus] = useState<OTPStatus>('typing');
   const [windowWidth, setWindowWidth] = useState<number>(
     typeof window !== 'undefined' ? window.innerWidth : 1024
   );
@@ -186,7 +212,6 @@ export const AnimatedOtpInput: React.FC<AnimatedOtpInputProps> = ({
   const isMobile = windowWidth <= 480;
   const boxSize = isMobile ? 42 : 48;
   const gapSize = isMobile ? 8 : 10;
-  const stepSize = boxSize + gapSize;
 
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
@@ -197,16 +222,40 @@ export const AnimatedOtpInput: React.FC<AnimatedOtpInputProps> = ({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Sync external status prop with currentStatus
+  useEffect(() => {
+    if (status === 'error') {
+      setCurrentStatus('error');
+
+      // Auto-recover after ~500ms error animation (Telegram style)
+      const timer = setTimeout(() => {
+        setOtp(Array(length).fill(''));
+        setActiveIndex(0);
+        setCurrentStatus('typing');
+        if (inputRefs.current[0]) {
+          inputRefs.current[0].focus();
+        }
+        onErrorComplete?.();
+      }, 500);
+
+      return () => clearTimeout(timer);
+    } else if (status === 'success') {
+      setCurrentStatus('success');
+    } else {
+      setCurrentStatus('typing');
+    }
+  }, [status, length, onErrorComplete]);
+
   // When all digits are entered, trigger onComplete
   useEffect(() => {
     const isComplete = otp.every((d) => d !== '');
-    if (isComplete && status === 'idle') {
+    if (isComplete && currentStatus === 'typing') {
       const fullCode = otp.join('');
       onComplete(fullCode);
     }
-  }, [otp, status, onComplete]);
+  }, [otp, currentStatus, onComplete]);
 
-  // Clean English numeric digits
+  // Handle typing of digits (strict English numerals)
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
     const val = e.target.value.replace(/[^0-9]/g, '');
     if (!val) {
@@ -266,21 +315,21 @@ export const AnimatedOtpInput: React.FC<AnimatedOtpInputProps> = ({
   };
 
   return (
-    <div className="w-full flex flex-col items-center select-none" style={{ '--box-size': `${boxSize}px` } as React.CSSProperties}>
+    <div className="w-full flex flex-col items-center select-none">
       {/* Dynamic Animated Status Icon */}
       <motion.div
         className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 transition-colors duration-300"
         style={{
           backgroundColor:
-            status === 'success'
+            currentStatus === 'success'
               ? 'rgba(16, 185, 129, 0.15)'
-              : status === 'error'
+              : currentStatus === 'error'
               ? 'rgba(239, 68, 68, 0.15)'
               : 'rgba(6, 182, 212, 0.15)',
           border: `1px solid ${
-            status === 'success'
+            currentStatus === 'success'
               ? 'rgba(16, 185, 129, 0.3)'
-              : status === 'error'
+              : currentStatus === 'error'
               ? 'rgba(239, 68, 68, 0.3)'
               : 'rgba(6, 182, 212, 0.3)'
           }`,
@@ -288,17 +337,13 @@ export const AnimatedOtpInput: React.FC<AnimatedOtpInputProps> = ({
         layout
       >
         <AnimatePresence mode="wait">
-          {status === 'success' ? (
+          {currentStatus === 'success' ? (
             <motion.div key="check" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring' }}>
               <Check className="w-7 h-7 text-emerald-400" strokeWidth={2.5} />
             </motion.div>
-          ) : status === 'error' ? (
+          ) : currentStatus === 'error' ? (
             <motion.div key="err" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring' }}>
               <AlertCircle className="w-7 h-7 text-rose-400" strokeWidth={2} />
-            </motion.div>
-          ) : status === 'merging' ? (
-            <motion.div key="spin" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <RefreshCw className="w-6 h-6 text-cyan-400 animate-spin" />
             </motion.div>
           ) : (
             <motion.div key="shield" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}>
@@ -325,7 +370,7 @@ export const AnimatedOtpInput: React.FC<AnimatedOtpInputProps> = ({
               <button
                 type="button"
                 onClick={onChangeEmail}
-                disabled={status === 'merging' || status === 'success'}
+                disabled={currentStatus !== 'typing' || disabled}
                 className="text-cyan-600 dark:text-cyan-400 hover:underline font-medium text-[11px] mt-0.5 cursor-pointer disabled:opacity-50"
               >
                 {t.changeEmail}
@@ -337,67 +382,36 @@ export const AnimatedOtpInput: React.FC<AnimatedOtpInputProps> = ({
         )}
       </motion.div>
 
-      {/* Boxes Container with Grid Stacking for Merge Animation */}
-      <div className="relative flex justify-center items-center w-full min-h-[52px]">
-        <div
-          className="grid place-items-center w-full"
-          style={{ height: `${boxSize}px` }}
-        >
-          {/* Default Boxes: strict LTR direction */}
-          <AnimatePresence>
-            {status !== 'success' && (
-              <motion.div
-                key="boxes"
-                className="flex items-center justify-center gap-2 sm:gap-2.5"
-                dir="ltr"
-                style={{ gap: `${gapSize}px` }}
-                exit={{ opacity: 0, transition: { duration: 0.1 } }}
-              >
-                {otp.map((digit, index) => (
-                  <OTPBox
-                    key={index}
-                    index={index}
-                    value={digit}
-                    isActive={activeIndex === index}
-                    status={status}
-                    stepSize={stepSize}
-                    onChange={handleChange}
-                    onKeyDown={handleKeyDown}
-                    onPaste={handlePaste}
-                    onFocus={(i) => setActiveIndex(i)}
-                    inputRef={(el) => (inputRefs.current[index] = el)}
-                  />
-                ))}
-              </motion.div>
-            )}
-
-            {/* Merged Capsule on Success */}
-            {status === 'success' && (
-              <motion.div
-                key="merged"
-                className="flex items-center justify-center bg-emerald-500 text-white rounded-2xl shadow-xl shadow-emerald-500/30 overflow-hidden"
-                style={{ height: `${boxSize}px` }}
-                initial={{ width: `${boxSize}px`, borderRadius: '16px' }}
-                animate={{ width: '100%', maxWidth: '320px', borderRadius: '24px' }}
-                transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-              >
-                <motion.div
-                  className="flex items-center justify-center gap-2 px-4 font-bold text-xs sm:text-sm whitespace-nowrap"
-                  initial={{ scale: 0, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: 0.15, type: 'spring', bounce: 0.4 }}
-                >
-                  <Check className="w-5 h-5 text-white" strokeWidth={3} />
-                  <span>{t.verifiedSuccess}</span>
-                </motion.div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </div>
+      {/* 6 OTP Boxes Container with Horizontal Shake Animation */}
+      <motion.div
+        className={`flex items-center justify-center gap-2 sm:gap-2.5 ${
+          currentStatus !== 'typing' ? 'pointer-events-none' : 'pointer-events-auto'
+        }`}
+        dir="ltr"
+        style={{ gap: `${gapSize}px` }}
+        variants={containerVariants}
+        animate={currentStatus}
+      >
+        {otp.map((digit, index) => (
+          <OTPBox
+            key={index}
+            index={index}
+            value={digit}
+            isActive={activeIndex === index && currentStatus === 'typing'}
+            status={currentStatus}
+            boxSize={boxSize}
+            disabled={disabled}
+            onChange={handleChange}
+            onKeyDown={handleKeyDown}
+            onPaste={handlePaste}
+            onFocus={(i) => setActiveIndex(i)}
+            inputRef={(el) => (inputRefs.current[index] = el)}
+          />
+        ))}
+      </motion.div>
 
       {/* Error Message */}
-      {status === 'error' && errorMessage && (
+      {currentStatus === 'error' && errorMessage && (
         <motion.p
           initial={{ opacity: 0, y: -4 }}
           animate={{ opacity: 1, y: 0 }}

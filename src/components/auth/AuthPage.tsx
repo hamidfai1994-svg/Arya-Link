@@ -7,7 +7,7 @@ import { signIn } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { ImagePuzzleCaptcha } from '@/components/auth/ImagePuzzleCaptcha';
-import { AnimatedOtpInput } from '@/components/auth/AnimatedOtpInput';
+import { AnimatedOtpInput, OTPStatus } from '@/components/auth/AnimatedOtpInput';
 import { PhoneInput } from '@/components/ui/phone-input';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { SiteLogo } from '@/components/SiteLogo';
@@ -403,7 +403,7 @@ export function AuthPage({
   const [otpStep, setOtpStep] = useState<'email' | 'code'>('email');
   const [isOtpSending, setIsOtpSending] = useState(false);
   const [otpCooldown, setOtpCooldown] = useState(0);
-  const [otpCodeStatus, setOtpCodeStatus] = useState<'idle' | 'merging' | 'success' | 'error'>('idle');
+  const [otpCodeStatus, setOtpCodeStatus] = useState<OTPStatus>('typing');
   const [otpErrorMessage, setOtpErrorMessage] = useState('');
   const [devOtpCode, setDevOtpCode] = useState<string | null>(null);
 
@@ -523,7 +523,7 @@ export function AuthPage({
     setIsLoginCaptchaValid(false);
     setIsRegisterCaptchaValid(false);
     setOtpStep('email');
-    setOtpCodeStatus('idle');
+    setOtpCodeStatus('typing');
     setOtpErrorMessage('');
 
     if (typeof window !== 'undefined') {
@@ -591,7 +591,7 @@ export function AuthPage({
 
       setOtpStep('code');
       setOtpCooldown(60);
-      setOtpCodeStatus('idle');
+      setOtpCodeStatus('typing');
 
       if (data.devMode && data.devCode) {
         setDevOtpCode(data.devCode);
@@ -613,7 +613,6 @@ export function AuthPage({
   const handleVerifyOtp = async (code: string) => {
     if (isLockedOut) return;
 
-    setOtpCodeStatus('merging');
     setOtpErrorMessage('');
 
     try {
@@ -632,7 +631,7 @@ export function AuthPage({
         return;
       }
 
-      // Success! Play merge capsule animation and redirect to dashboard
+      // Success! Play sequential green wave across OTP boxes and redirect to dashboard
       setOtpCodeStatus('success');
       toast.success(t.toastLoginSuccess, {
         description: t.toastLoginSuccessDesc,
@@ -641,7 +640,7 @@ export function AuthPage({
       setTimeout(() => {
         router.push(callbackUrl);
         router.refresh();
-      }, 800);
+      }, 850);
     } catch (err: any) {
       console.error('Verify OTP error:', err);
       setOtpCodeStatus('error');
@@ -1115,7 +1114,11 @@ export function AuthPage({
                     email={loginEmail}
                     onChangeEmail={() => {
                       setOtpStep('email');
-                      setOtpCodeStatus('idle');
+                      setOtpCodeStatus('typing');
+                      setOtpErrorMessage('');
+                    }}
+                    onErrorComplete={() => {
+                      setOtpCodeStatus('typing');
                       setOtpErrorMessage('');
                     }}
                     onComplete={handleVerifyOtp}
@@ -1154,7 +1157,7 @@ export function AuthPage({
                         type="button"
                         onClick={() => {
                           setOtpStep('email');
-                          setOtpCodeStatus('idle');
+                          setOtpCodeStatus('typing');
                         }}
                         className="hover:text-slate-600 dark:hover:text-white transition-colors cursor-pointer"
                       >
