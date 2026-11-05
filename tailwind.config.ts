@@ -19,6 +19,7 @@ const config: Config = {
       fontFamily: {
         sans: [
           "var(--font-vazirmatn)",
+          "var(--font-outfit)",
           "var(--font-inter)",
           "system-ui",
           "-apple-system",
@@ -26,17 +27,19 @@ const config: Config = {
           "sans-serif",
         ],
         outfit: [
+          "var(--font-outfit)",
           "var(--font-vazirmatn)",
-          "var(--font-inter)",
           "sans-serif",
         ],
         mono: [
           "var(--font-vazirmatn)",
+          "var(--font-outfit)",
           "var(--font-inter)",
           "ui-monospace",
           "monospace",
         ],
         inter: [
+          "var(--font-outfit)",
           "var(--font-vazirmatn)",
           "var(--font-inter)",
           "sans-serif",

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Vazirmatn, Inter } from 'next/font/google';
+import { Vazirmatn, Outfit } from 'next/font/google';
 import { cookies } from 'next/headers';
 import { ThemeProvider } from '@/components/theme-provider';
 import { AuthProvider } from '@/components/providers/AuthProvider';
@@ -12,20 +12,16 @@ import { DEFAULT_SITE_SETTINGS } from '@/types/settings';
 import { Toaster } from '@/components/ui/sonner';
 import './globals.css';
 
-// Strict Typography: Persian/Dari/Pashto standard (Regular 400 & Bold 700)
 const vazirmatn = Vazirmatn({
   subsets: ['arabic', 'latin'],
-  weight: ['400', '700'],
-  variable: '--font-vazirmatn',
   display: 'swap',
+  variable: '--font-vazirmatn',
 });
 
-// Strict Typography: English Minimalist standard (Regular 400 & Bold 700)
-const inter = Inter({
+const outfit = Outfit({
   subsets: ['latin'],
-  weight: ['400', '700'],
-  variable: '--font-inter',
   display: 'swap',
+  variable: '--font-outfit',
 });
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -52,7 +48,7 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const langCookie = cookieStore.get('aryalink_lang')?.value;
   const initialLanguage: SupportedLanguage =
     langCookie === 'ps' || langCookie === 'en' ? langCookie : 'da';
@@ -63,13 +59,13 @@ export default async function RootLayout({
     <html
       lang={initialLanguage}
       dir={initialDir}
-      className={`${vazirmatn.variable} ${inter.variable}`}
+      className={`${vazirmatn.variable} ${outfit.variable}`}
       suppressHydrationWarning
     >
       <head>
         <link rel="icon" href={brandSettings?.favicon || '/favicon.ico'} />
       </head>
-      <body className="min-h-screen bg-background text-foreground font-sans antialiased selection:bg-cyan-500 selection:text-white">
+      <body className={`${vazirmatn.variable} ${outfit.variable} min-h-screen bg-background text-foreground font-sans antialiased selection:bg-cyan-500 selection:text-white`}>
         <AuthProvider>
           <LanguageProvider initialLanguage={initialLanguage}>
             <BrandingProvider initialSettings={brandSettings}>
