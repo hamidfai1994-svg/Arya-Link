@@ -38,6 +38,17 @@ interface RecentProfile {
   createdAt: string;
 }
 
+interface AdminOrder {
+  _id: string;
+  orderNumber?: string;
+  orderType: string;
+  price: number;
+  currency?: string;
+  status: 'pending' | 'processing' | 'shipped' | 'completed' | 'cancelled' | string;
+  customerName?: string;
+  createdAt: string;
+}
+
 const navItems = [
   { id: 'dashboard' as const, label: 'پیشخوان', icon: BarChart3, emoji: '📊' },
   { id: 'users' as const, label: 'کاربران', icon: Users, emoji: '👥' },
@@ -50,6 +61,7 @@ export default function AdminTWA() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'users' | 'orders' | 'finance'>('dashboard');
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [recentProfiles, setRecentProfiles] = useState<RecentProfile[]>([]);
+  const [recentOrders, setRecentOrders] = useState<AdminOrder[]>([]);
   const [limit, setLimit] = useState(5);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -66,6 +78,7 @@ export default function AdminTWA() {
       if (data.success) {
         setStats(data.stats);
         setRecentProfiles(data.recentProfiles || []);
+        setRecentOrders(data.recentOrders || []);
         setAuthStatus('success');
       } else {
         setAuthStatus('error');
@@ -457,8 +470,102 @@ export default function AdminTWA() {
             )}
           </div>
         </>
+      ) : activeTab === 'orders' ? (
+        /* Orders Tab Content */
+        <div className="space-y-3 pt-1">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold" style={{ color: 'var(--tg-theme-text-color, #f8fafc)' }}>
+              لیست سفارشات کارت و اقلام
+            </span>
+            <span className="text-[11px] font-mono" style={{ color: 'var(--tg-theme-hint-color, #94a3b8)' }}>
+              نمایش {recentOrders.length} مورد
+            </span>
+          </div>
+
+          {recentOrders.length === 0 ? (
+            <div
+              className="p-8 rounded-2xl border text-center space-y-2 text-xs"
+              style={{
+                backgroundColor: 'var(--tg-theme-secondary-bg-color, rgba(255, 255, 255, 0.05))',
+                borderColor: 'rgba(255, 255, 255, 0.08)',
+                color: 'var(--tg-theme-hint-color, #94a3b8)',
+              }}
+            >
+              <ShoppingCart className="w-8 h-8 mx-auto opacity-40 mb-1" />
+              <p className="font-bold">سفارشی یافت نشد</p>
+              <p className="text-[11px] opacity-70">
+                تاکنون سفارشی برای کارت هوشمند NFC در سامانه ثبت نشده است.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2.5">
+              {recentOrders.map((ord) => (
+                <div
+                  key={ord._id}
+                  className="p-3.5 rounded-2xl border space-y-2 transition-all shadow-xs"
+                  style={{
+                    backgroundColor: 'var(--tg-theme-secondary-bg-color, rgba(255, 255, 255, 0.05))',
+                    borderColor: 'rgba(255, 255, 255, 0.08)',
+                  }}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-cyan-500/15 text-cyan-400 flex items-center justify-center text-xs font-bold">
+                        🛒
+                      </div>
+                      <div>
+                        <span className="text-xs font-bold block" style={{ color: 'var(--tg-theme-text-color, #f8fafc)' }}>
+                          {ord.orderType || 'کارت NFC'}
+                        </span>
+                        {ord.customerName && (
+                          <span className="text-[10px]" style={{ color: 'var(--tg-theme-hint-color, #94a3b8)' }}>
+                            {ord.customerName}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <span
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                        ord.status === 'shipped' || ord.status === 'completed'
+                          ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
+                          : ord.status === 'processing'
+                          ? 'bg-sky-500/15 border-sky-500/30 text-sky-400'
+                          : 'bg-amber-500/15 border-amber-500/30 text-amber-400'
+                      }`}
+                    >
+                      {ord.status === 'shipped'
+                        ? 'ارسال شده'
+                        : ord.status === 'processing'
+                        ? 'در حال پردازش'
+                        : ord.status === 'completed'
+                        ? 'تکمیل شده'
+                        : 'در انتظار بررسی'}
+                    </span>
+                  </div>
+
+                  <div
+                    className="pt-2 border-t flex items-center justify-between text-xs"
+                    style={{ borderColor: 'rgba(255, 255, 255, 0.06)' }}
+                  >
+                    <span className="font-bold font-sans" style={{ color: 'var(--tg-theme-text-color, #f8fafc)' }}>
+                      {(ord.price || 0).toLocaleString('en-US')} {ord.currency || 'AFN'}
+                    </span>
+                    <span
+                      className="flex items-center gap-1 text-[10px]"
+                      style={{ color: 'var(--tg-theme-hint-color, #94a3b8)' }}
+                    >
+                      <Clock className="w-2.5 h-2.5" />
+                      <span>{formatSmartDate(ord.createdAt)}</span>
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       ) : (
-        /* Placeholder for other tabs (Users, Orders, Finance) */
+        /* Placeholder for other tabs (Users, Finance) */
         <div
           className="p-8 rounded-2xl border text-center space-y-4 my-8"
           style={{
@@ -474,13 +581,11 @@ export default function AdminTWA() {
             }}
           >
             {activeTab === 'users' && '👥'}
-            {activeTab === 'orders' && '🛒'}
             {activeTab === 'finance' && '💳'}
           </div>
           <div className="space-y-1">
             <h2 className="text-sm font-bold" style={{ color: 'var(--tg-theme-text-color, #f8fafc)' }}>
               {activeTab === 'users' && 'مدیریت کاربران و دسترسی‌ها'}
-              {activeTab === 'orders' && 'مدیریت سفارشات کارت و اشتراک'}
               {activeTab === 'finance' && 'گزارش‌های مالی و تراکنش‌ها'}
             </h2>
             <p className="text-xs" style={{ color: 'var(--tg-theme-hint-color, #94a3b8)' }}>

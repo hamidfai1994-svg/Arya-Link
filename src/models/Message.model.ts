@@ -6,7 +6,10 @@ export interface IMessageDocument extends Document {
   phone?: string;
   message: string;
   profileAlias?: string;
+  profileId?: mongoose.Types.ObjectId | string;
   isRead: boolean;
+  status: 'new' | 'contacted' | 'resolved';
+  privateNote?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -44,6 +47,17 @@ const MessageSchema = new Schema<IMessageDocument>(
       type: Boolean,
       default: false,
       index: true,
+    },
+    status: {
+      type: String,
+      enum: ['new', 'contacted', 'resolved'],
+      default: 'new',
+      index: true,
+    },
+    privateNote: {
+      type: String,
+      default: '',
+      trim: true,
     },
   },
   {

@@ -31,6 +31,9 @@ export interface IOrderDocument extends Document {
   currency: 'AFN' | 'USD';
   paymentStatus: 'paid' | 'pending' | 'failed' | 'refunded';
   orderStatus: 'completed' | 'processing' | 'printing' | 'shipped' | 'pending' | 'cancelled';
+  orderType?: string;
+  status?: 'pending' | 'processing' | 'shipped' | 'completed' | 'cancelled';
+  price?: number;
   paymentMethod: string;
   trackingNumber?: string;
   cardSpecs?: IOrderCardSpecs;
@@ -68,6 +71,21 @@ const OrderSchema = new Schema<IOrderDocument>(
       enum: ['completed', 'processing', 'printing', 'shipped', 'pending', 'cancelled'],
       default: 'pending',
       index: true,
+    },
+    orderType: {
+      type: String,
+      default: 'nfc_card',
+      index: true,
+    },
+    status: {
+      type: String,
+      enum: ['pending', 'processing', 'shipped', 'completed', 'cancelled'],
+      default: 'pending',
+      index: true,
+    },
+    price: {
+      type: Number,
+      default: 0,
     },
     paymentMethod: { type: String, default: 'HesabPay' },
     trackingNumber: { type: String, default: '' },

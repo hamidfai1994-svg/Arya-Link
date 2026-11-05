@@ -4,6 +4,7 @@ import { validateTelegramWebAppData } from '@/lib/twa-auth';
 import { SystemSettings } from '@/models/systemSettings.model';
 import { Profile } from '@/models/Profile.model';
 import { Message } from '@/models/Message.model';
+import { Order } from '@/models/Order.model';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,7 +46,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Not Admin' }, { status: 403 });
       }
 
-      const [totalProfiles, totalMessages, recentProfiles] = await Promise.all([
+      const [totalProfiles, totalMessages, recentProfiles, recentOrders] = await Promise.all([
         Profile.countDocuments(),
         Message.countDocuments(),
         Profile.find()
@@ -53,7 +54,22 @@ export async function POST(req: NextRequest) {
           .sort({ createdAt: -1 })
           .limit(limit)
           .lean(),
+        Order.find()
+          .sort({ createdAt: -1 })
+          .limit(limit)
+          .lean(),
       ]);
+
+      const normalizedOrders = (recentOrders || []).map((o: any) => ({
+        _id: o._id?.toString(),
+        orderNumber: o.orderNumber || o._id?.toString()?.substring(0, 8),
+        orderType: o.orderType || o.productTitle || 'کارت NFC',
+        price: o.price ?? o.totalPrice ?? 0,
+        currency: o.currency || 'AFN',
+        status: o.status || o.orderStatus || 'pending',
+        customerName: o.customerName || '',
+        createdAt: o.createdAt,
+      }));
 
       return NextResponse.json({
         success: true,
@@ -63,6 +79,7 @@ export async function POST(req: NextRequest) {
           totalMessages,
         },
         recentProfiles,
+        recentOrders: normalizedOrders,
       });
     }
 

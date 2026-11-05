@@ -36,6 +36,8 @@ interface CustomerMessage {
   phone?: string;
   email?: string;
   message: string;
+  status?: 'new' | 'contacted' | 'resolved';
+  privateNote?: string;
   createdAt: string;
 }
 
@@ -47,6 +49,78 @@ export default function UserTWA() {
   const [limit, setLimit] = useState(5);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
+  const [updatingMessageId, setUpdatingMessageId] = useState<string | null>(null);
+  const [savingNoteId, setSavingNoteId] = useState<string | null>(null);
+
+  const handleUpdateStatus = async (messageId: string, newStatus: 'new' | 'contacted' | 'resolved') => {
+    const tg = (window as any).Telegram?.WebApp;
+    if (!tg || !tg.initData) return;
+
+    setUpdatingMessageId(messageId);
+    try {
+      const res = await fetch('/api/twa/user/actions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          initData: tg.initData,
+          messageId,
+          actionType: 'updateStatus',
+          payload: newStatus,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        tg.HapticFeedback?.notificationOccurred('success');
+        setRecentMessages((prev) =>
+          prev.map((m) => (m._id === messageId ? { ...m, status: newStatus } : m))
+        );
+      } else {
+        tg.HapticFeedback?.notificationOccurred('error');
+        if (tg.showAlert) tg.showAlert(data.error || 'خطا در تغییر وضعیت لید');
+      }
+    } catch {
+      tg?.HapticFeedback?.notificationOccurred('error');
+    } finally {
+      setUpdatingMessageId(null);
+    }
+  };
+
+  const handleUpdateNote = async (messageId: string) => {
+    const tg = (window as any).Telegram?.WebApp;
+    if (!tg || !tg.initData) return;
+
+    const currentMsg = recentMessages.find((m) => m._id === messageId);
+    const noteValue = noteDrafts[messageId] !== undefined ? noteDrafts[messageId] : (currentMsg?.privateNote || '');
+
+    setSavingNoteId(messageId);
+    try {
+      const res = await fetch('/api/twa/user/actions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          initData: tg.initData,
+          messageId,
+          actionType: 'updateNote',
+          payload: noteValue.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        tg.HapticFeedback?.notificationOccurred('success');
+        setRecentMessages((prev) =>
+          prev.map((m) => (m._id === messageId ? { ...m, privateNote: noteValue.trim() } : m))
+        );
+      } else {
+        tg.HapticFeedback?.notificationOccurred('error');
+        if (tg.showAlert) tg.showAlert(data.error || 'خطا در ذخیره یادداشت');
+      }
+    } catch {
+      tg?.HapticFeedback?.notificationOccurred('error');
+    } finally {
+      setSavingNoteId(null);
+    }
+  };
 
   const loadUserData = async (initData: string, currentLimit: number = limit) => {
     try {
@@ -337,6 +411,81 @@ export default function UserTWA() {
                       {[msg.phone, msg.email].filter(Boolean).join(' • ')}
                     </div>
                   )}
+
+                  {/* CRM Controls: Lead Status & Private Note */}
+                  <div
+                    className="pt-2 border-t space-y-2"
+                    style={{ borderColor: 'rgba(255, 255, 255, 0.06)' }}
+                  >
+                    {/* Row 1: Status Dropdown */}
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[11px] font-semibold" style={{ color: 'var(--tg-theme-hint-color, #94a3b8)' }}>
+                        وضعیت لید:
+                      </span>
+                      <div className="relative">
+                        <select
+                          value={msg.status || 'new'}
+                          disabled={updatingMessageId === msg._id}
+                          onChange={(e) => handleUpdateStatus(msg._id, e.target.value as 'new' | 'contacted' | 'resolved')}
+                          className={`text-xs font-bold px-3 py-1.5 rounded-xl border appearance-none pr-8 pl-3 cursor-pointer outline-none transition-all ${
+                            msg.status === 'resolved'
+                              ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
+                              : msg.status === 'contacted'
+                              ? 'bg-amber-500/15 border-amber-500/30 text-amber-400'
+                              : 'bg-rose-500/15 border-rose-500/30 text-rose-400'
+                          }`}
+                        >
+                          <option value="new" className="bg-slate-900 text-rose-400">🔴 لید جدید</option>
+                          <option value="contacted" className="bg-slate-900 text-amber-400">🟡 در حال پیگیری</option>
+                          <option value="resolved" className="bg-slate-900 text-emerald-400">🟢 نهایی شده</option>
+                        </select>
+                        <div className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-current opacity-70">
+                          {updatingMessageId === msg._id ? (
+                            <RefreshCw className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <ChevronDown className="w-3 h-3" />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Row 2: Private Note Input & Save Button */}
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        handleUpdateNote(msg._id);
+                      }}
+                      className="flex items-center gap-1.5"
+                    >
+                      <input
+                        type="text"
+                        placeholder="یادداشت شخصی (مثلاً: نیاز به تماس فردا)..."
+                        value={noteDrafts[msg._id] !== undefined ? noteDrafts[msg._id] : (msg.privateNote || '')}
+                        onChange={(e) =>
+                          setNoteDrafts((prev) => ({ ...prev, [msg._id]: e.target.value }))
+                        }
+                        className="flex-1 bg-card/60 border rounded-xl px-2.5 py-1.5 text-xs outline-none transition-all focus:border-cyan-500"
+                        style={{
+                          borderColor: 'rgba(255, 255, 255, 0.1)',
+                          color: 'var(--tg-theme-text-color, #f8fafc)',
+                        }}
+                      />
+                      <button
+                        type="submit"
+                        disabled={savingNoteId === msg._id}
+                        className="px-3 py-1.5 rounded-xl text-xs font-bold text-white transition-all active:scale-95 disabled:opacity-50 shrink-0 cursor-pointer"
+                        style={{
+                          backgroundColor: 'var(--tg-theme-button-color, #0ea5e9)',
+                        }}
+                      >
+                        {savingNoteId === msg._id ? (
+                          <RefreshCw className="w-3 h-3 animate-spin" />
+                        ) : (
+                          'ثبت'
+                        )}
+                      </button>
+                    </form>
+                  </div>
 
                   {/* Action Buttons Grid (Call, WhatsApp, Telegram, Email) */}
                   {(hasPhone || hasEmail) && (
