@@ -34,7 +34,10 @@ export interface IOrderDocument extends Document {
   orderType?: string;
   status?: 'pending' | 'processing' | 'shipped' | 'completed' | 'cancelled';
   price?: number;
-  paymentMethod: string;
+  paymentMethod: 'online' | 'cod' | string;
+  deliveryFee?: number;
+  deliveryCompany?: string;
+  isDeliverySettled?: boolean;
   trackingNumber?: string;
   cardSpecs?: IOrderCardSpecs;
   notes?: string;
@@ -87,7 +90,24 @@ const OrderSchema = new Schema<IOrderDocument>(
       type: Number,
       default: 0,
     },
-    paymentMethod: { type: String, default: 'HesabPay' },
+    paymentMethod: {
+      type: String,
+      default: 'online',
+    },
+    deliveryFee: {
+      type: Number,
+      default: 0,
+    },
+    deliveryCompany: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    isDeliverySettled: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
     trackingNumber: { type: String, default: '' },
     cardSpecs: {
       material: { type: String, default: '' },

@@ -95,6 +95,30 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    if (actionType === 'settleDelivery') {
+      const targetOrderId = orderId || payload?.orderId || payload;
+
+      if (!targetOrderId || !mongoose.isValidObjectId(targetOrderId)) {
+        return NextResponse.json({ error: 'Invalid order ID' }, { status: 400 });
+      }
+
+      const order = await Order.findById(targetOrderId);
+      if (!order) {
+        return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+      }
+
+      order.isDeliverySettled = true;
+      await order.save();
+
+      return NextResponse.json({
+        success: true,
+        actionType,
+        orderId: order._id.toString(),
+        isDeliverySettled: true,
+        message: 'تسویه حساب دلیوری با موفقیت ثبت شد',
+      });
+    }
+
     return NextResponse.json({ error: 'Unknown actionType' }, { status: 400 });
   } catch (error: any) {
     console.error('Admin action error:', error);

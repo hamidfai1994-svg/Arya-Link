@@ -95,6 +95,10 @@ export async function POST(req: NextRequest) {
         currency: o.currency || 'AFN',
         status: o.status || o.orderStatus || 'pending',
         customerName: o.customerName || '',
+        paymentMethod: o.paymentMethod || 'online',
+        deliveryFee: Number(o.deliveryFee || 0),
+        deliveryCompany: o.deliveryCompany || '',
+        isDeliverySettled: Boolean(o.isDeliverySettled),
         createdAt: o.createdAt,
       }));
 

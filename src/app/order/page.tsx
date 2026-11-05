@@ -376,6 +376,9 @@ function OrderWizardInner() {
     notes: '',
   });
 
+  // Payment Method
+  const [paymentMethod, setPaymentMethod] = useState<'online' | 'cod'>('online');
+
   // Quantity
   const [quantity, setQuantity] = useState<number>(1);
 
@@ -681,9 +684,12 @@ function OrderWizardInner() {
         unitPrice: baseCardPrice,
         totalPrice: totalPrice,
         currency: 'AFN',
-        paymentStatus: 'pending',
+        paymentStatus: paymentMethod === 'online' ? 'paid' : 'pending',
         orderStatus: 'pending',
-        paymentMethod: 'HesabPay / Cash on Delivery',
+        paymentMethod: paymentMethod,
+        deliveryFee: shippingFee,
+        deliveryCompany: 'پست اکسپرس افغانستان',
+        isDeliverySettled: false,
         cardSpecs: {
           material: activeTemplate.materialName,
           templateId: activeTemplate.id,
@@ -1830,6 +1836,44 @@ function OrderWizardInner() {
                         <div className="flex justify-between items-center text-slate-300">
                           <span>هزینه پست اکسپرس در سراسر افغانستان:</span>
                           <span className="font-sans">{shippingFee.toLocaleString()} AFN</span>
+                        </div>
+                      </div>
+
+                      {/* Payment Method Selection */}
+                      <div className="space-y-2">
+                        <label className="text-xs font-semibold text-slate-300 block">شیوه پرداخت:</label>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setPaymentMethod('online')}
+                            className={cn(
+                              'p-3 rounded-xl border text-right transition-all flex flex-col gap-1 cursor-pointer',
+                              paymentMethod === 'online'
+                                ? 'bg-cyan-500/15 border-cyan-500/50 text-cyan-300'
+                                : 'bg-black/30 border-white/10 text-slate-400 hover:border-white/20'
+                            )}
+                          >
+                            <span className="text-xs font-bold flex items-center gap-1.5">
+                              💳 پرداخت آنلاین
+                            </span>
+                            <span className="text-[10px] opacity-80">حساب‌پی / کارت بانکی</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setPaymentMethod('cod')}
+                            className={cn(
+                              'p-3 rounded-xl border text-right transition-all flex flex-col gap-1 cursor-pointer',
+                              paymentMethod === 'cod'
+                                ? 'bg-cyan-500/15 border-cyan-500/50 text-cyan-300'
+                                : 'bg-black/30 border-white/10 text-slate-400 hover:border-white/20'
+                            )}
+                          >
+                            <span className="text-xs font-bold flex items-center gap-1.5">
+                              🚚 پرداخت در محل
+                            </span>
+                            <span className="text-[10px] opacity-80">تحویل و تسویه با پیک</span>
+                          </button>
                         </div>
                       </div>
 

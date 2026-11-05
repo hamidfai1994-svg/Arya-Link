@@ -19,6 +19,8 @@ import {
   Ban,
   CheckCircle2,
   Wallet,
+  Search,
+  Truck,
 } from 'lucide-react';
 import { formatSmartDate } from '@/lib/utils/date';
 
@@ -48,6 +50,10 @@ interface AdminOrder {
   currency?: string;
   status: 'pending' | 'processing' | 'shipped' | 'completed' | 'cancelled' | string;
   customerName?: string;
+  paymentMethod?: 'online' | 'cod' | string;
+  deliveryFee?: number;
+  deliveryCompany?: string;
+  isDeliverySettled?: boolean;
   createdAt: string;
 }
 
@@ -80,6 +86,8 @@ export default function AdminTWA() {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [updatingProfileId, setUpdatingProfileId] = useState<string | null>(null);
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
+  const [settlingOrderId, setSettlingOrderId] = useState<string | null>(null);
+  const [userSearchQuery, setUserSearchQuery] = useState('');
 
   const loadDashboardData = async (initData: string, currentLimit: number = limit) => {
     try {
@@ -100,42 +108,6 @@ export default function AdminTWA() {
       }
     } catch {
       setAuthStatus('error');
-    }
-  };
-
-  const handleUpdateOrderStatus = async (orderId: string, newStatus: string) => {
-    const tg = (window as any).Telegram?.WebApp;
-    if (!tg || !tg.initData) return;
-
-    setUpdatingOrderId(orderId);
-    try {
-      const res = await fetch('/api/twa/admin/actions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          initData: tg.initData,
-          actionType: 'updateOrderStatus',
-          orderId,
-          newStatus,
-        }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        tg.HapticFeedback?.notificationOccurred('success');
-        setRecentOrders((prev) =>
-          prev.map((o) => (o._id === orderId ? { ...o, status: newStatus } : o))
-        );
-      } else {
-        tg.HapticFeedback?.notificationOccurred('error');
-        if (tg.showAlert) {
-          tg.showAlert(data.error || 'خطا در تغییر وضعیت سفارش');
-        }
-      }
-    } catch (err) {
-      console.error('Error updating order status:', err);
-      tg?.HapticFeedback?.notificationOccurred('error');
-    } finally {
-      setUpdatingOrderId(null);
     }
   };
 
@@ -188,11 +160,9 @@ export default function AdminTWA() {
       const data = await res.json();
       if (data.success) {
         tg.HapticFeedback?.notificationOccurred('success');
-        // Optimistically update local profile state
         setRecentProfiles((prev) =>
           prev.map((p) => (p._id === profileId ? { ...p, isActive: data.isActive } : p))
         );
-        // Refresh with server data
         await loadDashboardData(tg.initData, limit);
       } else {
         tg.HapticFeedback?.notificationOccurred('error');
@@ -207,6 +177,96 @@ export default function AdminTWA() {
       setUpdatingProfileId(null);
     }
   };
+
+  const handleUpdateOrderStatus = async (orderId: string, newStatus: string) => {
+    const tg = (window as any).Telegram?.WebApp;
+    if (!tg || !tg.initData) return;
+
+    setUpdatingOrderId(orderId);
+    try {
+      const res = await fetch('/api/twa/admin/actions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          initData: tg.initData,
+          actionType: 'updateOrderStatus',
+          orderId,
+          newStatus,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        tg.HapticFeedback?.notificationOccurred('success');
+        setRecentOrders((prev) =>
+          prev.map((o) => (o._id === orderId ? { ...o, status: newStatus } : o))
+        );
+      } else {
+        tg.HapticFeedback?.notificationOccurred('error');
+        if (tg.showAlert) {
+          tg.showAlert(data.error || 'خطا در تغییر وضعیت سفارش');
+        }
+      }
+    } catch (err) {
+      console.error('Error updating order status:', err);
+      tg?.HapticFeedback?.notificationOccurred('error');
+    } finally {
+      setUpdatingOrderId(null);
+    }
+  };
+
+  const handleSettleDelivery = async (orderId: string) => {
+    const tg = (window as any).Telegram?.WebApp;
+    if (!tg || !tg.initData) return;
+
+    setSettlingOrderId(orderId);
+    try {
+      const res = await fetch('/api/twa/admin/actions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          initData: tg.initData,
+          actionType: 'settleDelivery',
+          orderId,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        tg.HapticFeedback?.notificationOccurred('success');
+        setRecentOrders((prev) =>
+          prev.map((o) => (o._id === orderId ? { ...o, isDeliverySettled: true } : o))
+        );
+      } else {
+        tg.HapticFeedback?.notificationOccurred('error');
+        if (tg.showAlert) {
+          tg.showAlert(data.error || 'خطا در ثبت تسویه دلیوری');
+        }
+      }
+    } catch (err) {
+      console.error('Error settling delivery:', err);
+      tg?.HapticFeedback?.notificationOccurred('error');
+    } finally {
+      setSettlingOrderId(null);
+    }
+  };
+
+  // Filter profiles for Users tab
+  const filteredProfiles = recentProfiles.filter((p) => {
+    if (!userSearchQuery.trim()) return true;
+    const q = userSearchQuery.toLowerCase().trim();
+    return (
+      (p.displayName || '').toLowerCase().includes(q) ||
+      (p.alias || '').toLowerCase().includes(q) ||
+      (p.headline || '').toLowerCase().includes(q)
+    );
+  });
+
+  // Filter orders for delivery settlements in Finance tab
+  const codSettlements = recentOrders.filter(
+    (o) => (o.paymentMethod === 'cod' || o.paymentMethod === 'Cash on Delivery') && !o.isDeliverySettled
+  );
+  const onlineSettlements = recentOrders.filter(
+    (o) => o.paymentMethod !== 'cod' && o.paymentMethod !== 'Cash on Delivery' && !o.isDeliverySettled
+  );
 
   if (authStatus === 'loading') {
     return (
@@ -292,7 +352,7 @@ export default function AdminTWA() {
               <span className="text-xs font-bold text-emerald-500">نشست امن احراز شد</span>
             </div>
             <p className="text-xs leading-relaxed" style={{ color: 'var(--tg-theme-text-color, #f8fafc)' }}>
-              خوش آمدید! در این پنل آمار کلان پلتفرم و ثبت‌نام مینی‌سایت‌های جدید به صورت زنده نمایش داده می‌شوند.
+              خوش آمدید! آمار رشد پلتفرم، لیدها و وضعیت سامانه در این پیشخوان متمرکز گردیده‌اند.
             </p>
           </div>
 
@@ -343,184 +403,252 @@ export default function AdminTWA() {
             </div>
           </div>
 
-          {/* Recent Profiles / Events Section */}
-          <div className="space-y-2.5 pt-1">
+          {/* 7-Day Growth Bar Chart */}
+          <div
+            className="p-4 rounded-2xl border space-y-3 shadow-xs"
+            style={{
+              backgroundColor: 'var(--tg-theme-secondary-bg-color, rgba(255, 255, 255, 0.05))',
+              borderColor: 'rgba(255, 255, 255, 0.08)',
+            }}
+          >
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold" style={{ color: 'var(--tg-theme-text-color, #f8fafc)' }}>
-                پروفایل‌های اخیراً ثبت‌شده (رویدادها)
-              </span>
-              <span className="text-[11px] font-mono" style={{ color: 'var(--tg-theme-hint-color, #94a3b8)' }}>
-                نمایش {recentProfiles.length} مورد
+              <h3 className="font-bold text-xs flex items-center gap-1.5" style={{ color: 'var(--tg-theme-text-color, #f8fafc)' }}>
+                <BarChart3 className="w-3.5 h-3.5 text-sky-400" />
+                <span>ثبت‌نام‌های ۷ روز اخیر</span>
+              </h3>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-400 border border-sky-500/25">
+                روند صعودی
               </span>
             </div>
 
-            {recentProfiles.length === 0 ? (
-              <div
-                className="p-6 rounded-2xl border text-center text-xs"
+            <div className="flex items-end justify-between h-32 gap-2 pt-3">
+              {[20, 50, 30, 80, 40, 90, 60].map((val, i) => (
+                <div key={i} className="flex flex-col items-center flex-1 h-full justify-end group">
+                  <span className="text-[9px] mb-1 opacity-70 font-mono" style={{ color: 'var(--tg-theme-hint-color, #94a3b8)' }}>
+                    {val}
+                  </span>
+                  <div
+                    className="w-full rounded-t-lg transition-all group-hover:brightness-125"
+                    style={{
+                      height: `${val}%`,
+                      backgroundColor: 'var(--tg-theme-button-color, #0ea5e9)',
+                      boxShadow: '0 0 10px rgba(14, 165, 233, 0.25)',
+                    }}
+                  />
+                  <span className="text-[9px] mt-2 opacity-70 truncate font-mono" style={{ color: 'var(--tg-theme-hint-color, #94a3b8)' }}>
+                    {i + 1} روز پیش
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      ) : activeTab === 'users' ? (
+        /* Users Tab Content (Moved from dashboard with Live Search) */
+        <div className="space-y-3 pt-1">
+          {/* Header & Search Bar */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold" style={{ color: 'var(--tg-theme-text-color, #f8fafc)' }}>
+                مدیریت کاربران و مینی‌سایت‌ها
+              </span>
+              <span className="text-[11px] font-mono" style={{ color: 'var(--tg-theme-hint-color, #94a3b8)' }}>
+                نمایش {filteredProfiles.length} از {recentProfiles.length} کاربر
+              </span>
+            </div>
+
+            {/* Live Search Input */}
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="جستجوی نام، آیدی یا تخصص کاربر..."
+                value={userSearchQuery}
+                onChange={(e) => setUserSearchQuery(e.target.value)}
+                className="w-full border rounded-xl py-2 pr-9 pl-3 text-xs outline-none transition-all focus:border-cyan-500"
                 style={{
                   backgroundColor: 'var(--tg-theme-secondary-bg-color, rgba(255, 255, 255, 0.05))',
-                  borderColor: 'rgba(255, 255, 255, 0.08)',
-                  color: 'var(--tg-theme-hint-color, #94a3b8)',
+                  borderColor: 'rgba(255, 255, 255, 0.1)',
+                  color: 'var(--tg-theme-text-color, #f8fafc)',
                 }}
-              >
-                هنوز پروفایلی در سامانه ثبت نشده است.
+              />
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none opacity-60">
+                <Search className="w-3.5 h-3.5" />
               </div>
-            ) : (
-              <div className="space-y-2.5">
-                {recentProfiles.map((p) => (
-                  <div
-                    key={p._id}
-                    className="p-3.5 rounded-2xl border space-y-2.5 transition-all shadow-xs"
-                    style={{
-                      backgroundColor: 'var(--tg-theme-secondary-bg-color, rgba(255, 255, 255, 0.05))',
-                      borderColor: 'rgba(255, 255, 255, 0.08)',
-                    }}
-                  >
-                    {/* Header row: Avatar, Name, Status & Smart Date */}
-                    <div className="flex items-start justify-between gap-2.5">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div
-                          className="w-10 h-10 rounded-xl overflow-hidden border flex items-center justify-center shrink-0 font-bold text-sm"
-                          style={{
-                            backgroundColor: 'rgba(255, 255, 255, 0.06)',
-                            borderColor: 'rgba(255, 255, 255, 0.1)',
-                            color: 'var(--tg-theme-text-color, #f8fafc)',
-                          }}
-                        >
-                          {p.avatarUrl ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img src={p.avatarUrl} alt={p.displayName} className="w-full h-full object-cover" />
-                          ) : (
-                            <span>{p.displayName?.trim().charAt(0) || <User className="w-4 h-4" />}</span>
-                          )}
-                        </div>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="text-xs font-bold truncate" style={{ color: 'var(--tg-theme-text-color, #f8fafc)' }}>
-                              {p.displayName || p.alias}
-                            </span>
-                            {p.isActive === false ? (
-                              <span className="px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30">
-                                مسدود
-                              </span>
-                            ) : (
-                              <span className="px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
-                                فعال
-                              </span>
-                            )}
-                          </div>
-                          {p.headline ? (
-                            <span className="text-[11px] block truncate" style={{ color: 'var(--tg-theme-hint-color, #94a3b8)' }}>
-                              {p.headline}
-                            </span>
-                          ) : (
-                            <span className="text-[10px] font-mono block truncate" style={{ color: 'var(--tg-theme-hint-color, #94a3b8)' }}>
-                              @{p.alias}
-                            </span>
-                          )}
-                        </div>
-                      </div>
+            </div>
+          </div>
 
-                      <span
-                        className="flex items-center gap-1 text-[10px] shrink-0"
-                        style={{ color: 'var(--tg-theme-hint-color, #94a3b8)' }}
+          {/* User List */}
+          {filteredProfiles.length === 0 ? (
+            <div
+              className="p-6 rounded-2xl border text-center text-xs space-y-1"
+              style={{
+                backgroundColor: 'var(--tg-theme-secondary-bg-color, rgba(255, 255, 255, 0.05))',
+                borderColor: 'rgba(255, 255, 255, 0.08)',
+                color: 'var(--tg-theme-hint-color, #94a3b8)',
+              }}
+            >
+              <Users className="w-8 h-8 mx-auto opacity-40 mb-1" />
+              <p className="font-bold">کاربری یافت نشد</p>
+              <p className="text-[11px] opacity-70">
+                با عبارت جستجو شده هیچ پروفایلی مطابقت ندارد.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2.5">
+              {filteredProfiles.map((p) => (
+                <div
+                  key={p._id}
+                  className="p-3.5 rounded-2xl border space-y-2.5 transition-all shadow-xs"
+                  style={{
+                    backgroundColor: 'var(--tg-theme-secondary-bg-color, rgba(255, 255, 255, 0.05))',
+                    borderColor: 'rgba(255, 255, 255, 0.08)',
+                  }}
+                >
+                  {/* Header row: Avatar, Name, Status & Smart Date */}
+                  <div className="flex items-start justify-between gap-2.5">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div
+                        className="w-10 h-10 rounded-xl overflow-hidden border flex items-center justify-center shrink-0 font-bold text-sm"
+                        style={{
+                          backgroundColor: 'rgba(255, 255, 255, 0.06)',
+                          borderColor: 'rgba(255, 255, 255, 0.1)',
+                          color: 'var(--tg-theme-text-color, #f8fafc)',
+                        }}
                       >
-                        <Clock className="w-2.5 h-2.5" />
-                        <span>{formatSmartDate(p.createdAt)}</span>
+                        {p.avatarUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={p.avatarUrl} alt={p.displayName} className="w-full h-full object-cover" />
+                        ) : (
+                          <span>{p.displayName?.trim().charAt(0) || <User className="w-4 h-4" />}</span>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-xs font-bold truncate" style={{ color: 'var(--tg-theme-text-color, #f8fafc)' }}>
+                            {p.displayName || p.alias}
+                          </span>
+                          {p.isActive === false ? (
+                            <span className="px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                              مسدود
+                            </span>
+                          ) : (
+                            <span className="px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
+                              فعال
+                            </span>
+                          )}
+                        </div>
+                        {p.headline ? (
+                          <span className="text-[11px] block truncate" style={{ color: 'var(--tg-theme-hint-color, #94a3b8)' }}>
+                            {p.headline}
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-mono block truncate" style={{ color: 'var(--tg-theme-hint-color, #94a3b8)' }}>
+                            @{p.alias}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <span
+                      className="flex items-center gap-1 text-[10px] shrink-0"
+                      style={{ color: 'var(--tg-theme-hint-color, #94a3b8)' }}
+                    >
+                      <Clock className="w-2.5 h-2.5" />
+                      <span>{formatSmartDate(p.createdAt)}</span>
+                    </span>
+                  </div>
+
+                  {/* Metrics & Executive Actions Row */}
+                  <div
+                    className="pt-2 border-t flex items-center justify-between gap-2"
+                    style={{ borderColor: 'rgba(255, 255, 255, 0.06)' }}
+                  >
+                    <div className="flex items-center gap-2 text-[10px] font-mono" style={{ color: 'var(--tg-theme-hint-color, #94a3b8)' }}>
+                      <span className="flex items-center gap-1">
+                        <Eye className="w-3 h-3 text-sky-400" />
+                        <span>{(p.viewsCount || 0).toLocaleString('en-US')}</span>
+                      </span>
+                      <span>•</span>
+                      <span className="flex items-center gap-1">
+                        <Inbox className="w-3 h-3 text-emerald-400" />
+                        <span>{(p.leadsCount || 0).toLocaleString('en-US')}</span>
                       </span>
                     </div>
 
-                    {/* Metrics & Executive Actions Row */}
-                    <div
-                      className="pt-2 border-t flex items-center justify-between gap-2"
-                      style={{ borderColor: 'rgba(255, 255, 255, 0.06)' }}
-                    >
-                      <div className="flex items-center gap-2 text-[10px] font-mono" style={{ color: 'var(--tg-theme-hint-color, #94a3b8)' }}>
-                        <span className="flex items-center gap-1">
-                          <Eye className="w-3 h-3 text-sky-400" />
-                          <span>{(p.viewsCount || 0).toLocaleString('en-US')}</span>
-                        </span>
-                        <span>•</span>
-                        <span className="flex items-center gap-1">
-                          <Inbox className="w-3 h-3 text-emerald-400" />
-                          <span>{(p.leadsCount || 0).toLocaleString('en-US')}</span>
-                        </span>
-                      </div>
+                    <div className="flex items-center gap-1.5">
+                      {/* Executive Action: Toggle User Status */}
+                      <button
+                        type="button"
+                        disabled={updatingProfileId === p._id}
+                        onClick={() => handleToggleUserStatus(p._id)}
+                        className={`py-1.5 px-2.5 rounded-xl border flex items-center gap-1 text-[11px] font-bold transition-all active:scale-95 cursor-pointer disabled:opacity-50 ${
+                          p.isActive === false
+                            ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/25'
+                            : 'bg-rose-500/15 border-rose-500/30 text-rose-400 hover:bg-rose-500/25'
+                        }`}
+                        title="تغییر وضعیت فعال یا مسدود بودن کاربر"
+                      >
+                        {updatingProfileId === p._id ? (
+                          <RefreshCw className="w-3 h-3 animate-spin" />
+                        ) : p.isActive === false ? (
+                          <CheckCircle2 className="w-3 h-3" />
+                        ) : (
+                          <Ban className="w-3 h-3" />
+                        )}
+                        <span>تغییر وضعیت</span>
+                      </button>
 
-                      <div className="flex items-center gap-1.5">
-                        {/* Executive Action: Toggle User Status */}
-                        <button
-                          type="button"
-                          disabled={updatingProfileId === p._id}
-                          onClick={() => handleToggleUserStatus(p._id)}
-                          className={`py-1.5 px-2.5 rounded-xl border flex items-center gap-1 text-[11px] font-bold transition-all active:scale-95 cursor-pointer disabled:opacity-50 ${p.isActive === false
-                              ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/25'
-                              : 'bg-rose-500/15 border-rose-500/30 text-rose-400 hover:bg-rose-500/25'
-                            }`}
-                          title="تغییر وضعیت فعال یا مسدود بودن کاربر"
-                        >
-                          {updatingProfileId === p._id ? (
-                            <RefreshCw className="w-3 h-3 animate-spin" />
-                          ) : p.isActive === false ? (
-                            <CheckCircle2 className="w-3 h-3" />
-                          ) : (
-                            <Ban className="w-3 h-3" />
-                          )}
-                          <span>تغییر وضعیت</span>
-                        </button>
-
-                        {/* View Card Link */}
-                        <a
-                          href={`/${p.alias}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="py-1.5 px-2.5 rounded-xl border flex items-center gap-1 text-[11px] font-bold transition-all active:scale-95"
-                          style={{
-                            backgroundColor: 'rgba(14, 165, 233, 0.15)',
-                            borderColor: 'rgba(14, 165, 233, 0.3)',
-                            color: 'var(--tg-theme-button-color, #0ea5e9)',
-                          }}
-                        >
-                          <span>مشاهده کارت</span>
-                          <ExternalLink className="w-3 h-3" />
-                        </a>
-                      </div>
+                      {/* View Card Link */}
+                      <a
+                        href={`/${p.alias}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="py-1.5 px-2.5 rounded-xl border flex items-center gap-1 text-[11px] font-bold transition-all active:scale-95"
+                        style={{
+                          backgroundColor: 'rgba(14, 165, 233, 0.15)',
+                          borderColor: 'rgba(14, 165, 233, 0.3)',
+                          color: 'var(--tg-theme-button-color, #0ea5e9)',
+                        }}
+                      >
+                        <span>مشاهده کارت</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
                     </div>
                   </div>
-                ))}
+                </div>
+              ))}
 
-                {/* Load More Button */}
-                {recentProfiles.length >= limit && (
-                  <div className="pt-2 text-center">
-                    <button
-                      type="button"
-                      onClick={handleLoadMore}
-                      disabled={isLoadingMore}
-                      className="w-full py-2.5 px-4 rounded-xl border font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer disabled:opacity-50"
-                      style={{
-                        backgroundColor: 'var(--tg-theme-secondary-bg-color, rgba(255, 255, 255, 0.05))',
-                        borderColor: 'rgba(255, 255, 255, 0.1)',
-                        color: 'var(--tg-theme-button-color, #0ea5e9)',
-                      }}
-                    >
-                      {isLoadingMore ? (
-                        <>
-                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                          <span>در حال دریافت پروفایل‌های بیشتر...</span>
-                        </>
-                      ) : (
-                        <>
-                          <ChevronDown className="w-4 h-4" />
-                          <span>بارگذاری بیشتر</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </>
+              {/* Load More Button */}
+              {recentProfiles.length >= limit && (
+                <div className="pt-2 text-center">
+                  <button
+                    type="button"
+                    onClick={handleLoadMore}
+                    disabled={isLoadingMore}
+                    className="w-full py-2.5 px-4 rounded-xl border font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+                    style={{
+                      backgroundColor: 'var(--tg-theme-secondary-bg-color, rgba(255, 255, 255, 0.05))',
+                      borderColor: 'rgba(255, 255, 255, 0.1)',
+                      color: 'var(--tg-theme-button-color, #0ea5e9)',
+                    }}
+                  >
+                    {isLoadingMore ? (
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        <span>در حال دریافت پروفایل‌های بیشتر...</span>
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown className="w-4 h-4" />
+                        <span>بارگذاری بیشتر</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       ) : activeTab === 'orders' ? (
         /* Orders Tab Content */
         <div className="space-y-3 pt-1">
@@ -628,8 +756,8 @@ export default function AdminTWA() {
             </div>
           )}
         </div>
-      ) : activeTab === 'finance' ? (
-        /* Finance Tab Content */
+      ) : (
+        /* Finance Tab Content (with Delivery Settlement System) */
         <div className="space-y-4 pt-1">
           {/* Revenue Hero Card */}
           <div
@@ -661,8 +789,151 @@ export default function AdminTWA() {
             </p>
           </div>
 
+          {/* Section: Delivery Settlements (سیستم تسویه حساب دلیوری) */}
+          <div className="space-y-3 pt-2 border-t" style={{ borderColor: 'rgba(255, 255, 255, 0.08)' }}>
+            <div className="flex items-center gap-2">
+              <Truck className="w-4 h-4 text-amber-400" />
+              <h3 className="text-xs font-bold" style={{ color: 'var(--tg-theme-text-color, #f8fafc)' }}>
+                سیستم تسویه حساب شرکت دلیوری و پیک
+              </h3>
+            </div>
+
+            {/* Sub-section 1: COD Settlements (بستانکاری از پیک) */}
+            <div
+              className="p-3.5 rounded-2xl border space-y-2.5"
+              style={{
+                backgroundColor: 'var(--tg-theme-secondary-bg-color, rgba(255, 255, 255, 0.05))',
+                borderColor: 'rgba(255, 255, 255, 0.08)',
+              }}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-amber-400 flex items-center gap-1.5">
+                  <span>📥</span>
+                  <span>بستانکاری از پیک (پرداخت در محل / COD)</span>
+                </span>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400">
+                  {codSettlements.length} مورد
+                </span>
+              </div>
+              <p className="text-[11px] opacity-75 leading-relaxed" style={{ color: 'var(--tg-theme-hint-color, #94a3b8)' }}>
+                مبالغی که پیک از خریدار دریافت کرده و پس از کسر هزینه دلیوری باید به شما بپردازد.
+              </p>
+
+              {codSettlements.length === 0 ? (
+                <div className="py-3 text-center text-[11px] opacity-70">
+                  سفارش تسویه‌نشده‌ای در این بخش وجود ندارد.
+                </div>
+              ) : (
+                <div className="space-y-2 pt-1">
+                  {codSettlements.map((ord) => {
+                    const fee = ord.deliveryFee || 150;
+                    const netReceivable = Math.max(0, (ord.price || 0) - fee);
+                    return (
+                      <div
+                        key={ord._id}
+                        className="p-2.5 rounded-xl border flex items-center justify-between gap-2 text-xs"
+                        style={{
+                          backgroundColor: 'rgba(0, 0, 0, 0.25)',
+                          borderColor: 'rgba(255, 255, 255, 0.06)',
+                        }}
+                      >
+                        <div className="min-w-0">
+                          <span className="font-bold block truncate" style={{ color: 'var(--tg-theme-text-color, #f8fafc)' }}>
+                            {ord.customerName || ord.orderType}
+                          </span>
+                          <span className="text-[10px] block opacity-70 font-mono" style={{ color: 'var(--tg-theme-hint-color, #94a3b8)' }}>
+                            طلب خالص: {netReceivable.toLocaleString('en-US')} AFN (کل: {ord.price.toLocaleString('en-US')} - پیک: {fee.toLocaleString('en-US')})
+                          </span>
+                        </div>
+
+                        <button
+                          type="button"
+                          disabled={settlingOrderId === ord._id}
+                          onClick={() => handleSettleDelivery(ord._id)}
+                          className="px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] flex items-center gap-1 shrink-0 shadow-xs transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+                        >
+                          {settlingOrderId === ord._id ? (
+                            <RefreshCw className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <span>✔ ثبت تسویه</span>
+                          )}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Sub-section 2: Online Settlements (بدهکاری به پیک) */}
+            <div
+              className="p-3.5 rounded-2xl border space-y-2.5"
+              style={{
+                backgroundColor: 'var(--tg-theme-secondary-bg-color, rgba(255, 255, 255, 0.05))',
+                borderColor: 'rgba(255, 255, 255, 0.08)',
+              }}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-sky-400 flex items-center gap-1.5">
+                  <span>📤</span>
+                  <span>بدهکاری به پیک (پرداخت آنلاین)</span>
+                </span>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-400">
+                  {onlineSettlements.length} مورد
+                </span>
+              </div>
+              <p className="text-[11px] opacity-75 leading-relaxed" style={{ color: 'var(--tg-theme-hint-color, #94a3b8)' }}>
+                سفارشاتی که پول آن‌ها آنلاین پرداخت شده و شما باید فقط هزینه دلیوری را به پیک بپردازید.
+              </p>
+
+              {onlineSettlements.length === 0 ? (
+                <div className="py-3 text-center text-[11px] opacity-70">
+                  سفارش تسویه‌نشده‌ای در این بخش وجود ندارد.
+                </div>
+              ) : (
+                <div className="space-y-2 pt-1">
+                  {onlineSettlements.map((ord) => {
+                    const fee = ord.deliveryFee || 150;
+                    return (
+                      <div
+                        key={ord._id}
+                        className="p-2.5 rounded-xl border flex items-center justify-between gap-2 text-xs"
+                        style={{
+                          backgroundColor: 'rgba(0, 0, 0, 0.25)',
+                          borderColor: 'rgba(255, 255, 255, 0.06)',
+                        }}
+                      >
+                        <div className="min-w-0">
+                          <span className="font-bold block truncate" style={{ color: 'var(--tg-theme-text-color, #f8fafc)' }}>
+                            {ord.customerName || ord.orderType}
+                          </span>
+                          <span className="text-[10px] block opacity-70 font-mono" style={{ color: 'var(--tg-theme-hint-color, #94a3b8)' }}>
+                            هزینه دلیوری بدهکار: {fee.toLocaleString('en-US')} AFN
+                          </span>
+                        </div>
+
+                        <button
+                          type="button"
+                          disabled={settlingOrderId === ord._id}
+                          onClick={() => handleSettleDelivery(ord._id)}
+                          className="px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] flex items-center gap-1 shrink-0 shadow-xs transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+                        >
+                          {settlingOrderId === ord._id ? (
+                            <RefreshCw className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <span>✔ ثبت تسویه</span>
+                          )}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Transactions Section */}
-          <div className="space-y-2.5">
+          <div className="space-y-2.5 pt-2 border-t" style={{ borderColor: 'rgba(255, 255, 255, 0.08)' }}>
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold" style={{ color: 'var(--tg-theme-text-color, #f8fafc)' }}>
                 تراکنش‌های اخیر
@@ -760,42 +1031,6 @@ export default function AdminTWA() {
                 ))}
               </div>
             )}
-          </div>
-        </div>
-      ) : (
-        /* Placeholder for Users tab */
-        <div
-          className="p-8 rounded-2xl border text-center space-y-4 my-8"
-          style={{
-            backgroundColor: 'var(--tg-theme-secondary-bg-color, rgba(255, 255, 255, 0.05))',
-            borderColor: 'rgba(255, 255, 255, 0.08)',
-          }}
-        >
-          <div
-            className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center text-3xl border shadow-inner"
-            style={{
-              backgroundColor: 'rgba(255, 255, 255, 0.04)',
-              borderColor: 'rgba(255, 255, 255, 0.1)',
-            }}
-          >
-            👥
-          </div>
-          <div className="space-y-1">
-            <h2 className="text-sm font-bold" style={{ color: 'var(--tg-theme-text-color, #f8fafc)' }}>
-              مدیریت کاربران و دسترسی‌ها
-            </h2>
-            <p className="text-xs" style={{ color: 'var(--tg-theme-hint-color, #94a3b8)' }}>
-              در حال بارگذاری زیرساخت...
-            </p>
-          </div>
-          <div
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-medium"
-            style={{
-              backgroundColor: 'rgba(14, 165, 233, 0.1)',
-              color: 'var(--tg-theme-button-color, #0ea5e9)',
-            }}
-          >
-            <span>به‌زودی در فاز بعدی فعال می‌شود</span>
           </div>
         </div>
       )}
