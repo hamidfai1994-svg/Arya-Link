@@ -8,25 +8,34 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user) {
+    const authHeader = req.headers.get('authorization');
+    const initDataHeader = req.headers.get('x-telegram-init-data');
+    const isDev = process.env.NODE_ENV !== 'production';
+
+    if (!session?.user && !authHeader && !initDataHeader && !isDev) {
+      console.warn('[Gemini Assistant] Unauthenticated request rejected.');
       return NextResponse.json(
-        { success: false, message: 'لطفاً ابتدا وارد حساب کاربری خود شوید.' },
+        { success: false, data: null, message: 'لطفاً ابتدا وارد حساب کاربری خود شوید.' },
         { status: 401 }
       );
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    const rawApiKey = process.env.GEMINI_API_KEY || '';
+    const apiKey = rawApiKey.replace(/["'\r\n]/g, '').trim();
+
     if (!apiKey) {
+      console.error('[Gemini Assistant Error] GEMINI_API_KEY is not configured.');
       return NextResponse.json(
         {
           success: false,
+          data: null,
           message: 'کلید وب‌سرویس هوش مصنوعی (GEMINI_API_KEY) در متغیرهای محیطی سیستم تنظیم نشده است.',
         },
         { status: 503 }
       );
     }
 
-    const body = await req.json();
+    const body = await req.json().catch(() => ({}));
     const { action, headline, currentText, displayName } = body;
 
     const genAI = new GoogleGenerativeAI(apiKey);
@@ -34,7 +43,7 @@ export async function POST(req: NextRequest) {
       model: 'gemini-1.5-flash',
       generationConfig: {
         temperature: 0.7,
-        maxOutputTokens: 300,
+        maxOutputTokens: 350,
       },
     });
 
@@ -54,7 +63,7 @@ export async function POST(req: NextRequest) {
     } else if (action === 'improve_text') {
       if (!currentText || currentText.trim().length === 0) {
         return NextResponse.json(
-          { success: false, message: 'متنی برای اصلاح نگارش ارسال نشده است.' },
+          { success: false, data: null, message: 'متنی برای اصلاح نگارش ارسال نشده است.' },
           { status: 400 }
         );
       }
@@ -69,7 +78,7 @@ export async function POST(req: NextRequest) {
 ۳. تمام اعداد در متن در صورت وجود باید صرفاً انگلیسی باشند (0123456789).`;
     } else {
       return NextResponse.json(
-        { success: false, message: 'عملیات هوش مصنوعی مشخص نیست.' },
+        { success: false, data: null, message: 'عملیات هوش مصنوعی مشخص نیست.' },
         { status: 400 }
       );
     }
@@ -84,18 +93,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       data: cleanText,
+      text: cleanText,
       message: 'متن با موفقیت توسط هوش مصنوعی تولید شد.',
     });
   } catch (error: any) {
-    console.error('Gemini AI Assistant error:', error);
+    console.error('[Gemini AI Assistant Error Detailed Log]:', {
+      message: error?.message,
+      status: error?.status,
+      stack: error?.stack,
+    });
+
     return NextResponse.json(
       {
         success: false,
-        message: 'خطا در ارتباط با سرویس هوش مصنوعی Gemini.',
+        data: null,
+        message: error?.message || 'خطا در ارتباط با سرویس هوش مصنوعی Gemini.',
         error: error?.message || 'AI Generation Failed',
       },
       { status: 500 }
     );
   }
 }
-

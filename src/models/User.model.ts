@@ -28,6 +28,14 @@ export interface IUserDocument extends Document {
     submittedAt?: Date;
     reviewedAt?: Date;
     rejectionReason?: string;
+    fullName?: string;
+    firstName?: string;
+    lastName?: string;
+    fatherName?: string;
+    idNumber?: string;
+    birthDate?: string;
+    expiryDate?: string;
+    [key: string]: any;
   };
   emailVerified?: Date;
   lastLoginAt?: Date;

@@ -125,7 +125,7 @@ export default function UserTWA() {
         message: scanned.notes || 'مخاطب اسکن شده از کارت ویزیت کاغذی',
         profileAlias: profile?.alias,
       }),
-    }).catch(() => {});
+    }).catch(() => { });
   };
 
   const TABS_ORDER: UserTabId[] = ['settings', 'contacts', 'add', 'stats', 'card'];
@@ -520,7 +520,7 @@ export default function UserTWA() {
                 {/* کارت شیشه‌ای دیجیتال */}
                 <div className="relative rounded-3xl p-5 border overflow-hidden bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-cyan-950/40 border-cyan-500/20 shadow-xl shadow-cyan-950/30">
                   <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/10 rounded-full blur-2xl pointer-events-none" />
-                  
+
                   <div className="flex items-start justify-between relative z-10 mb-4">
                     <div className="flex items-center gap-3">
                       <div className="w-14 h-14 rounded-2xl border-2 border-cyan-400/30 overflow-hidden shadow-md">
@@ -795,11 +795,10 @@ export default function UserTWA() {
                         key={tab.id}
                         type="button"
                         onClick={() => setCrmStatusFilter(tab.id as any)}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
-                          crmStatusFilter === tab.id
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${crmStatusFilter === tab.id
                             ? 'bg-cyan-500 text-white shadow-md shadow-cyan-500/20'
                             : 'bg-slate-900/40 text-slate-400 border border-white/5 hover:text-white'
-                        }`}
+                          }`}
                       >
                         {tab.label}
                       </button>
@@ -826,19 +825,18 @@ export default function UserTWA() {
                             <div className="flex items-center gap-2">
                               <h3 className="text-sm font-bold text-white">{msg.name}</h3>
                               <span
-                                className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                                  msg.status === 'resolved'
+                                className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${msg.status === 'resolved'
                                     ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
                                     : msg.status === 'contacted'
-                                    ? 'bg-blue-500/15 text-blue-400 border border-blue-500/30'
-                                    : 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
-                                }`}
+                                      ? 'bg-blue-500/15 text-blue-400 border border-blue-500/30'
+                                      : 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                                  }`}
                               >
                                 {msg.status === 'resolved'
                                   ? 'تکمیل شده'
                                   : msg.status === 'contacted'
-                                  ? 'تماس گرفته'
-                                  : 'جدید'}
+                                    ? 'تماس گرفته'
+                                    : 'جدید'}
                               </span>
                             </div>
                             <span className="text-[10px] font-mono text-slate-400 flex items-center gap-1 mt-1">
@@ -1005,7 +1003,7 @@ export default function UserTWA() {
                     تیم پشتیبانی فنی آریا لینک ۲۴ ساعته در تلگرام پاسخگوی شماست.
                   </p>
                   <a
-                    href="https://t.me/aryalink_support"
+                    href="https://t.me/aryalink_SP"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1.5 text-xs text-cyan-400 font-bold hover:underline pt-1"

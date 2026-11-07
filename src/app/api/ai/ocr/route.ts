@@ -15,25 +15,35 @@ function normalizeToEnglishDigits(str: string): string {
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user) {
+    const authHeader = req.headers.get('authorization');
+    const initDataHeader = req.headers.get('x-telegram-init-data');
+    const isDev = process.env.NODE_ENV !== 'production';
+
+    // Allow authenticated web users, Telegram mini-app requests, or local development
+    if (!session?.user && !authHeader && !initDataHeader && !isDev) {
+      console.warn('[Gemini OCR] Unauthenticated request rejected.');
       return NextResponse.json(
-        { success: false, message: 'لطفاً ابتدا وارد حساب کاربری خود شوید.' },
+        { success: false, data: null, message: 'لطفاً ابتدا وارد حساب کاربری خود شوید.' },
         { status: 401 }
       );
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    const rawApiKey = process.env.GEMINI_API_KEY || '';
+    const apiKey = rawApiKey.replace(/["'\r\n]/g, '').trim();
+
     if (!apiKey) {
+      console.error('[Gemini OCR Error] GEMINI_API_KEY is not defined in environment variables.');
       return NextResponse.json(
         {
           success: false,
+          data: null,
           message: 'کلید وب‌سرویس هوش مصنوعی (GEMINI_API_KEY) در سرور تنظیم نشده است.',
         },
         { status: 503 }
       );
     }
 
-    const body = await req.json();
+    const body = await req.json().catch(() => ({}));
     const { imageBase64, imageUrl } = body;
 
     let base64Data = '';
@@ -44,7 +54,7 @@ export async function POST(req: NextRequest) {
         const imageRes = await fetch(imageUrl);
         if (!imageRes.ok) {
           return NextResponse.json(
-            { success: false, message: 'دانلود تصویر از آدرس اینترنتی با خطا مواجه شد.' },
+            { success: false, data: null, message: 'دانلود تصویر از آدرس اینترنتی با خطا مواجه شد.' },
             { status: 400 }
           );
         }
@@ -55,8 +65,9 @@ export async function POST(req: NextRequest) {
         const buffer = await imageRes.arrayBuffer();
         base64Data = Buffer.from(buffer).toString('base64');
       } catch (err: any) {
+        console.error('[Gemini OCR Error] Failed to fetch image URL:', err);
         return NextResponse.json(
-          { success: false, message: 'خطا در بارگیری آدرس اینترنتی تصویر کارت.', error: err?.message },
+          { success: false, data: null, message: 'خطا در بارگیری آدرس اینترنتی تصویر کارت.', error: err?.message },
           { status: 400 }
         );
       }
@@ -66,22 +77,23 @@ export async function POST(req: NextRequest) {
         mimeType = match[1];
         base64Data = match[2];
       } else {
-        base64Data = imageBase64.replace(/^data:image\/[a-z]+;base64,/, '');
+        base64Data = imageBase64.replace(/^data:image\/[a-z0-9-.+]+;base64,/, '');
       }
     } else {
       return NextResponse.json(
-        { success: false, message: 'لطفاً تصویر کارت ویزیت را به صورت فایل یا آدرس اینترنتی ارسال کنید.' },
+        { success: false, data: null, message: 'لطفاً تصویر کارت ویزیت را به صورت فایل یا آدرس اینترنتی ارسال کنید.' },
         { status: 400 }
       );
     }
 
     if (!base64Data || base64Data.length < 10) {
       return NextResponse.json(
-        { success: false, message: 'داده‌های تصویر ارسالی نامعتبر است.' },
+        { success: false, data: null, message: 'داده‌های تصویر ارسالی نامعتبر یا بسیار کوتاه است.' },
         { status: 400 }
       );
     }
 
+    // Initialize Gemini Vision Client
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
       model: 'gemini-1.5-flash',
@@ -125,9 +137,24 @@ export async function POST(req: NextRequest) {
     try {
       parsedResult = JSON.parse(textOutput);
     } catch {
-      // Clean markdown wrappers if any
-      const cleaned = textOutput.replace(/```json/g, '').replace(/```/g, '').trim();
-      parsedResult = JSON.parse(cleaned);
+      const cleaned = textOutput.replace(/```json/gi, '').replace(/```/g, '').trim();
+      try {
+        parsedResult = JSON.parse(cleaned);
+      } catch (parseErr) {
+        console.warn('[Gemini OCR] JSON parse fallback via regex:', textOutput);
+        const nameMatch = textOutput.match(/"name"\s*:\s*"([^"]*)"/);
+        const phoneMatch = textOutput.match(/"phone"\s*:\s*"([^"]*)"/);
+        const emailMatch = textOutput.match(/"email"\s*:\s*"([^"]*)"/);
+        const companyMatch = textOutput.match(/"company"\s*:\s*"([^"]*)"/);
+        const jobTitleMatch = textOutput.match(/"job_title"\s*:\s*"([^"]*)"/);
+        parsedResult = {
+          name: nameMatch ? nameMatch[1] : '',
+          phone: phoneMatch ? phoneMatch[1] : '',
+          email: emailMatch ? emailMatch[1] : '',
+          company: companyMatch ? companyMatch[1] : '',
+          job_title: jobTitleMatch ? jobTitleMatch[1] : '',
+        };
+      }
     }
 
     const name = (parsedResult.name || '').trim();
@@ -148,15 +175,20 @@ export async function POST(req: NextRequest) {
       message: 'کارت ویزیت با موفقیت توسط Gemini Vision تحلیل شد.',
     });
   } catch (error: any) {
-    console.error('Gemini OCR error:', error);
+    console.error('[Gemini OCR Error Detailed Log]:', {
+      message: error?.message,
+      status: error?.status,
+      stack: error?.stack,
+    });
+
     return NextResponse.json(
       {
         success: false,
-        message: 'خطا در تحلیل تصویر کارت ویزیت با هوش مصنوعی.',
+        data: null,
+        message: error?.message || 'خطا در تحلیل تصویر کارت ویزیت با هوش مصنوعی.',
         error: error?.message || 'OCR processing failed',
       },
       { status: 500 }
     );
   }
 }
-
