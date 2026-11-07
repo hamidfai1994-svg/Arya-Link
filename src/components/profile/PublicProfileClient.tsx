@@ -201,7 +201,8 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
   const [linkPasswordError, setLinkPasswordError] = useState('');
 
   const handleProtectedLinkClick = (e: React.MouseEvent, link: ProfileLinkItem) => {
-    const isExpired = link.expiresAt ? new Date(link.expiresAt).getTime() < Date.now() : false;
+    const exp = link.expiresAt || link.advancedSettings?.expiresAt;
+    const isExpired = exp ? new Date(exp).getTime() < Date.now() : false;
     if (isExpired) {
       e.preventDefault();
       toast.error('این لینک منقضی شده است و دسترسی به آن امکان‌پذیر نیست.');
@@ -389,11 +390,53 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
     'email_direct',
   ];
 
+  // Check if link is currently active according to daily schedule
+  const isLinkScheduledActive = (link: ProfileLinkItem): boolean => {
+    const sched = link.advancedSettings?.scheduling;
+    if (!sched || !sched.enabled) return true;
+
+    try {
+      const now = new Date();
+      if (Array.isArray(sched.days) && sched.days.length > 0) {
+        const currentDay = now.getDay();
+        if (!sched.days.includes(currentDay)) {
+          return false;
+        }
+      }
+
+      if (sched.startTime && sched.endTime) {
+        const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+        const [startH, startM] = sched.startTime.split(':').map((v) => parseInt(v, 10));
+        const [endH, endM] = sched.endTime.split(':').map((v) => parseInt(v, 10));
+
+        const startMinutes = (startH || 0) * 60 + (startM || 0);
+        const endMinutes = (endH || 0) * 60 + (endM || 0);
+
+        if (startMinutes <= endMinutes) {
+          if (currentMinutes < startMinutes || currentMinutes > endMinutes) {
+            return false;
+          }
+        } else {
+          // Cross-midnight range (e.g. 22:00 to 06:00)
+          if (currentMinutes < startMinutes && currentMinutes > endMinutes) {
+            return false;
+          }
+        }
+      }
+    } catch (e) {
+      return true;
+    }
+
+    return true;
+  };
+
   // Compact social icons rendered horizontally in top matrix (only standalone ones without parentId)
   const compactSocialLinks = (profile.links || []).filter(
     (l) =>
       l.isActive &&
       !l.advancedSettings?.isHidden &&
+      isLinkScheduledActive(l) &&
       !l.parentId &&
       socialModuleTypes.includes(l.moduleType) &&
       l.advancedSettings?.isCompactIcon !== false
@@ -401,7 +444,7 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
 
   // Top-level vertical modules (includes containers and standalone non-compact modules)
   const topLevelNonSocialLinks = (profile.links || []).filter((l) => {
-    if (!l.isActive || l.advancedSettings?.isHidden) return false;
+    if (!l.isActive || l.advancedSettings?.isHidden || !isLinkScheduledActive(l)) return false;
     if (l.parentId) return false;
     if (socialModuleTypes.includes(l.moduleType) && l.advancedSettings?.isCompactIcon !== false) {
       return false;
@@ -414,7 +457,9 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
   });
 
   const getContainerChildren = (containerId: string) =>
-    (profile.links || []).filter((l) => l.isActive && !l.advancedSettings?.isHidden && l.parentId === containerId);
+    (profile.links || []).filter(
+      (l) => l.isActive && !l.advancedSettings?.isHidden && isLinkScheduledActive(l) && l.parentId === containerId
+    );
 
   const hasWhatsAppLink = compactSocialLinks.some((l) => l.moduleType === 'whatsapp_direct');
   const hasPhoneLink = (profile.links || []).some((l) => l.moduleType === 'phone_call');
@@ -687,7 +732,8 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
       ['--btn-border-width' as any]: '1.5px',
     };
 
-    const isExpired = link.expiresAt ? new Date(link.expiresAt).getTime() < Date.now() : false;
+    const exp = link.expiresAt || link.advancedSettings?.expiresAt;
+    const isExpired = exp ? new Date(exp).getTime() < Date.now() : false;
     const maxClicks = typeof link.maxClicks === 'number' ? link.maxClicks : link.advancedSettings?.maxClicks;
     const isMaxClicksReached = typeof maxClicks === 'number' && maxClicks > 0 && (link.clickCount || 0) >= maxClicks;
     const isProtected = Boolean(
@@ -1351,7 +1397,8 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
       displaySubtitle = displayEmail;
     }
 
-    const isExpired = link.expiresAt ? new Date(link.expiresAt).getTime() < Date.now() : false;
+    const exp = link.expiresAt || link.advancedSettings?.expiresAt;
+    const isExpired = exp ? new Date(exp).getTime() < Date.now() : false;
     const maxClicks = typeof link.maxClicks === 'number' ? link.maxClicks : link.advancedSettings?.maxClicks;
     const isMaxClicksReached = typeof maxClicks === 'number' && maxClicks > 0 && (link.clickCount || 0) >= maxClicks;
     const isProtected = Boolean(

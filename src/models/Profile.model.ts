@@ -78,6 +78,9 @@ const LinkAdvancedSettingsSchema = new Schema(
     animationTrigger: { type: String, default: 'infinite' },
     animationSpeed: { type: Number, default: 1.6 },
     isCompactIcon: { type: Boolean, default: true },
+    expiresAt: { type: Date, default: null },
+    maxClicks: { type: Number, default: null },
+    passwordHash: { type: String, default: null },
   },
   { _id: false, strict: false }
 );

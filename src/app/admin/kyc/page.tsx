@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   ShieldCheck,
   Clock,
@@ -14,6 +14,9 @@ import {
   RefreshCw,
   Loader2,
   AlertTriangle,
+  Wand2,
+  Sparkles,
+  Upload,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -54,6 +57,12 @@ interface KycRequest {
     submittedAt?: string;
     reviewedAt?: string;
     rejectionReason?: string;
+    firstName?: string;
+    lastName?: string;
+    fatherName?: string;
+    idNumber?: string;
+    birthDate?: string;
+    expiryDate?: string;
   };
   createdAt: string;
 }
@@ -69,6 +78,93 @@ export default function AdminKycPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [showRejectInput, setShowRejectInput] = useState(false);
+
+  // AI KYC Assistant States (Gemini Vision 1.5 Flash Auto-fill)
+  const [extractedKycForm, setExtractedKycForm] = useState({
+    firstName: '',
+    lastName: '',
+    fatherName: '',
+    idNumber: '',
+    birthDate: '',
+    expiryDate: '',
+  });
+  const [isAiExtracting, setIsAiExtracting] = useState(false);
+  const [customDocBase64, setCustomDocBase64] = useState<string | null>(null);
+  const docFileInputRef = useRef<HTMLInputElement>(null);
+
+  const openReviewModal = (req: KycRequest) => {
+    setReviewingKyc(req);
+    setShowRejectInput(false);
+    setRejectReason('');
+    setCustomDocBase64(null);
+
+    const [first, ...rest] = (req.kycData?.fullName || req.name || '').split(' ');
+    setExtractedKycForm({
+      firstName: req.kycData?.firstName || first || '',
+      lastName: req.kycData?.lastName || rest.join(' ') || '',
+      fatherName: req.kycData?.fatherName || '',
+      idNumber: req.kycData?.idNumber || req.kycData?.nationalId || '',
+      birthDate: req.kycData?.birthDate || '',
+      expiryDate: req.kycData?.expiryDate || '',
+    });
+  };
+
+  const handleDocFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64 = event.target?.result as string;
+      if (base64) {
+        setCustomDocBase64(base64);
+        handleAiExtractKyc(undefined, base64);
+      }
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const handleAiExtractKyc = async (docImgUrl?: string, base64Override?: string) => {
+    const targetImage = base64Override || customDocBase64 || docImgUrl || reviewingKyc?.kycData?.documentUrl;
+    if (!targetImage) {
+      toast.error('هیچ تصویر مدرکی برای استخراج مشخصات وجود ندارد. لطفاً ابتدا عکس مدرک را آپلود فرمایید.');
+      return;
+    }
+
+    setIsAiExtracting(true);
+    toast.info('هوش مصنوعی در حال تحلیل تصویر پاسپورت/تذکره و استخراج مشخصات...', { duration: 3000 });
+
+    try {
+      const isBase64 = targetImage.startsWith('data:');
+      const res = await fetch('/api/ai/kyc', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(
+          isBase64 ? { imageBase64: targetImage } : { imageUrl: targetImage }
+        ),
+      });
+
+      const json = await res.json();
+      if (json.success && json.data) {
+        setExtractedKycForm({
+          firstName: json.data.firstName || '',
+          lastName: json.data.lastName || '',
+          fatherName: json.data.fatherName || '',
+          idNumber: json.data.idNumber || '',
+          birthDate: json.data.birthDate || '',
+          expiryDate: json.data.expiryDate || '',
+        });
+        toast.success('اطلاعات هویتی با موفقیت توسط هوش مصنوعی استخراج و در فیلدهای بررسی قرار گرفت!');
+      } else {
+        toast.error(json.message || 'خطا در استخراج اطلاعات مدرک توسط هوش مصنوعی.');
+      }
+    } catch (err: any) {
+      console.error('KYC AI Extraction error:', err);
+      toast.error('خطای ارتباط با سرور هنگام استخراج هوش مصنوعی.');
+    } finally {
+      setIsAiExtracting(false);
+    }
+  };
 
   useEffect(() => {
     fetchKycRequests();
@@ -95,7 +191,11 @@ export default function AdminKycPage() {
       const res = await fetch('/api/admin/kyc', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, action: 'approve' }),
+        body: JSON.stringify({
+          userId,
+          action: 'approve',
+          verifiedData: extractedKycForm,
+        }),
       });
       const data = await res.json();
       if (data.success) {
@@ -338,11 +438,7 @@ export default function AdminKycPage() {
                     <TableCell className="text-center">
                       <Button
                         size="sm"
-                        onClick={() => {
-                          setReviewingKyc(req);
-                          setShowRejectInput(false);
-                          setRejectReason('');
-                        }}
+                        onClick={() => openReviewModal(req)}
                         className="h-8 px-3 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 font-bold text-xs border border-cyan-500/20"
                       >
                         <Eye className="w-3.5 h-3.5 ml-1" />
@@ -426,23 +522,62 @@ export default function AdminKycPage() {
 
                 {/* ID Doc */}
                 <div className="space-y-2">
-                  <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                    <FileText className="w-3.5 h-3.5 text-blue-500" />
-                    <span>تصویر مدرک هویتی</span>
-                  </span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                      <FileText className="w-3.5 h-3.5 text-blue-500" />
+                      <span>تصویر مدرک هویتی</span>
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <Button
+                        type="button"
+                        size="sm"
+                        disabled={isAiExtracting}
+                        onClick={() => handleAiExtractKyc()}
+                        className="h-7 px-2.5 rounded-lg bg-gradient-to-r from-purple-500/20 to-cyan-500/20 hover:from-purple-500/30 hover:to-cyan-500/30 text-purple-300 font-bold text-[11px] border border-purple-500/30 flex items-center gap-1 shadow-xs cursor-pointer disabled:opacity-50"
+                        title="استخراج خودکار تمام مشخصات تذکره/پاسپورت با هوش مصنوعی"
+                      >
+                        {isAiExtracting ? (
+                          <Loader2 className="w-3 h-3 animate-spin text-cyan-400" />
+                        ) : (
+                          <Wand2 className="w-3 h-3 text-purple-400" />
+                        )}
+                        <span>استخراج هوشمند اطلاعات</span>
+                      </Button>
+
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => docFileInputRef.current?.click()}
+                        className="h-7 px-2 rounded-lg text-[11px] flex items-center gap-1 border-white/10"
+                        title="آپلود تصویر جایگزین یا مدرک جدید"
+                      >
+                        <Upload className="w-3 h-3 text-slate-400" />
+                        <span>آپلود تصویر</span>
+                      </Button>
+                      <input
+                        ref={docFileInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleDocFileUpload}
+                      />
+                    </div>
+                  </div>
+
                   <div className="h-56 rounded-2xl bg-slate-950 border border-border overflow-hidden flex items-center justify-center relative group">
-                    {reviewingKyc.kycData?.documentUrl ? (
+                    {customDocBase64 || reviewingKyc.kycData?.documentUrl ? (
                       <img
-                        src={reviewingKyc.kycData.documentUrl}
+                        src={customDocBase64 || reviewingKyc.kycData?.documentUrl}
                         alt="Document"
                         className="w-full h-full object-contain"
                       />
                     ) : (
                       <span className="text-xs text-muted-foreground">تصویر مدرک وجود ندارد</span>
                     )}
-                    {reviewingKyc.kycData?.documentUrl && (
+                    {(customDocBase64 || reviewingKyc.kycData?.documentUrl) && (
                       <a
-                        href={reviewingKyc.kycData.documentUrl}
+                        href={customDocBase64 || reviewingKyc.kycData?.documentUrl}
                         target="_blank"
                         rel="noreferrer"
                         className="absolute bottom-2 left-2 p-1.5 rounded-lg bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity"
@@ -452,6 +587,110 @@ export default function AdminKycPage() {
                       </a>
                     )}
                   </div>
+                </div>
+              </div>
+
+              {/* AI Extracted Identity Form (Editable Auto-fill) */}
+              <div className="p-3.5 rounded-2xl bg-slate-900/60 border border-purple-500/25 space-y-3">
+                <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-purple-400" />
+                    <span className="text-xs font-bold text-foreground">
+                      مشخصات استخراج‌شده از مدرک (Auto-fill هوش مصنوعی)
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-muted-foreground">جهت بررسی و ویرایش مدیر</span>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs">
+                  {/* First Name */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-muted-foreground block">نام کوچک (First Name):</label>
+                    <Input
+                      value={extractedKycForm.firstName}
+                      onChange={(e) =>
+                        setExtractedKycForm({ ...extractedKycForm, firstName: e.target.value })
+                      }
+                      placeholder="نام کوچک..."
+                      className="h-8 rounded-xl text-xs bg-background/80"
+                    />
+                  </div>
+
+                  {/* Last Name */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-muted-foreground block">تخلص / نام خانوادگی:</label>
+                    <Input
+                      value={extractedKycForm.lastName}
+                      onChange={(e) =>
+                        setExtractedKycForm({ ...extractedKycForm, lastName: e.target.value })
+                      }
+                      placeholder="تخلص..."
+                      className="h-8 rounded-xl text-xs bg-background/80"
+                    />
+                  </div>
+
+                  {/* Father Name */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-muted-foreground block">نام پدر (Father Name):</label>
+                    <Input
+                      value={extractedKycForm.fatherName}
+                      onChange={(e) =>
+                        setExtractedKycForm({ ...extractedKycForm, fatherName: e.target.value })
+                      }
+                      placeholder="نام پدر..."
+                      className="h-8 rounded-xl text-xs bg-background/80"
+                    />
+                  </div>
+
+                  {/* Document ID Number */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-muted-foreground block">شماره تذکره / پاسپورت:</label>
+                    <Input
+                      dir="ltr"
+                      value={extractedKycForm.idNumber}
+                      onChange={(e) =>
+                        setExtractedKycForm({ ...extractedKycForm, idNumber: e.target.value })
+                      }
+                      placeholder="P1234567 / 1400-01..."
+                      className="h-8 rounded-xl text-xs bg-background/80 font-sans text-left"
+                    />
+                  </div>
+
+                  {/* Birth Date */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-muted-foreground block">تاریخ تولد (Birth Date):</label>
+                    <Input
+                      dir="ltr"
+                      value={extractedKycForm.birthDate}
+                      onChange={(e) =>
+                        setExtractedKycForm({ ...extractedKycForm, birthDate: e.target.value })
+                      }
+                      placeholder="1995/05/12..."
+                      className="h-8 rounded-xl text-xs bg-background/80 font-sans text-left"
+                    />
+                  </div>
+
+                  {/* Expiry Date */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-muted-foreground block">تاریخ انقضا (Expiry Date):</label>
+                    <Input
+                      dir="ltr"
+                      value={extractedKycForm.expiryDate}
+                      onChange={(e) =>
+                        setExtractedKycForm({ ...extractedKycForm, expiryDate: e.target.value })
+                      }
+                      placeholder="2030/10/24..."
+                      className="h-8 rounded-xl text-xs bg-background/80 font-sans text-left"
+                    />
+                  </div>
+                </div>
+
+                {/* Security Rule Notice */}
+                <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-start gap-2 text-[11px] text-amber-300/90 leading-relaxed">
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                  <span>
+                    <strong>قانون امنیتی سامانه:</strong> هوش مصنوعی فقط داده‌های متنی را از مدرک استخراج و فیلدها را پر می‌کند. تایید یا رد نهایی الزاماً منوط به بررسی چشمی و کلیک دستی شما بر دکمه‌های زیر است.
+                  </span>
                 </div>
               </div>
 

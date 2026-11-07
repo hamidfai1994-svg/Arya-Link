@@ -2210,7 +2210,7 @@ export const SectionModulesList: React.FC = () => {
     }
   };
 
-  // 5. ADVANCED SETTINGS (ONLY for Interactive Modules: Links, Social, Products, Video, Maps)
+  // 5. ADVANCED SETTINGS (Structured into 2 Unified Groups: Access & Scheduling, then Appearance & Styling)
   const renderAdvancedSettings = (link: ProfileLinkItem) => {
     const adv = link.advancedSettings || {};
     const sched = adv.scheduling || { enabled: false, days: [0, 1, 2, 3, 4, 5, 6], startTime: '08:00', endTime: '20:00' };
@@ -2219,587 +2219,205 @@ export const SectionModulesList: React.FC = () => {
 
     return (
       <div className="space-y-4 pt-1">
-        {/* 1. BUTTON ANIMATION (Categorized + 7 Types + Speed Slider) */}
-        <div className="p-3.5 rounded-xl border border-border bg-muted/20 space-y-3.5">
-          <div className="flex items-center justify-between">
-            <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-cyan-500" />
-              <span>انیمیشن دکمه (Button Animation)</span>
-            </label>
-            <span className="text-[10px] text-muted-foreground font-sans">
-              Duration: {adv.animationSpeed || 1.6}s
-            </span>
-          </div>
-
-          {/* Animation Trigger Category (Infinite Loop vs Hover-Only) */}
-          <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-background/80 border border-border">
-            <button
-              type="button"
-              onClick={() => updateLinkAdvancedSettings(link.id, { animationTrigger: 'infinite' })}
-              className={`py-1.5 px-2 rounded-lg text-xs font-bold transition-all text-center ${(adv.animationTrigger || 'infinite') === 'infinite'
-                ? 'bg-cyan-500 text-slate-950 shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-                }`}
-            >
-              انیمیشن همیشگی (Infinite Loop)
-            </button>
-            <button
-              type="button"
-              onClick={() => updateLinkAdvancedSettings(link.id, { animationTrigger: 'hover' })}
-              className={`py-1.5 px-2 rounded-lg text-xs font-bold transition-all text-center ${adv.animationTrigger === 'hover'
-                ? 'bg-cyan-500 text-slate-950 shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-                }`}
-            >
-              انیمیشن با عبور موس (Hover-Only)
-            </button>
-          </div>
-
-          {/* Animation Speed Slider */}
-          <div className="space-y-1.5 pt-1">
-            <div className="flex items-center justify-between text-[11px]">
-              <span className="text-muted-foreground font-medium">سرعت اجرای انیمیشن</span>
-              <span className="font-sans font-bold text-cyan-500 bg-cyan-500/10 px-2 py-0.5 rounded-md border border-cyan-500/20">
-                {adv.animationSpeed || 1.6}s
-              </span>
-            </div>
-            <input
-              type="range"
-              min="0.5"
-              max="3.0"
-              step="0.1"
-              value={adv.animationSpeed || 1.6}
-              onChange={(e) =>
-                updateLinkAdvancedSettings(link.id, {
-                  animationSpeed: parseFloat(e.target.value),
-                })
-              }
-              className="w-full accent-cyan-500 cursor-pointer"
-            />
-            <div className="flex justify-between text-[10px] text-muted-foreground font-sans">
-              <span>0.5s (سریع)</span>
-              <span>1.6s (استاندارد)</span>
-              <span>3.0s (ملایم)</span>
-            </div>
-          </div>
-
-          {/* 7 Animation Types Grid matching image_89af44.png */}
-          <div className="grid grid-cols-4 gap-2 pt-1">
-            {[
-              { id: 'shake_x', label: 'Shake x', animClass: 'animate-shake-x' },
-              { id: 'wobble', label: 'Wobble', animClass: 'animate-wobble' },
-              { id: 'buzz', label: 'Buzz', animClass: 'animate-buzz' },
-              { id: 'tada', label: 'Tada', animClass: 'animate-tada' },
-              { id: 'heart', label: 'Heart', animClass: 'animate-heart' },
-              { id: 'pulse', label: 'Pulse', animClass: 'animate-pulse-smooth' },
-              { id: 'shake_y', label: 'Shake y', animClass: 'animate-shake-y' },
-              { id: 'none', label: 'None', animClass: '' },
-            ].map((anim) => {
-              const isSelected = (adv.buttonAnimation || 'none') === anim.id;
-              return (
-                <button
-                  key={anim.id}
-                  type="button"
-                  onClick={() => updateLinkAdvancedSettings(link.id, { buttonAnimation: anim.id as any })}
-                  className={`relative p-2.5 rounded-2xl border transition-all flex flex-col items-center justify-center gap-2 group min-h-[72px] ${isSelected
-                    ? 'bg-card border-slate-900 dark:border-purple-400 ring-2 ring-purple-500/40 shadow-md font-bold'
-                    : 'bg-card/90 border-border/70 hover:border-border text-muted-foreground hover:text-foreground'
-                    }`}
-                >
-                  {/* Selected Checkmark Badge (matching image_89af44.png) */}
-                  {isSelected && (
-                    <span className="absolute top-1.5 left-1.5 w-4 h-4 rounded-full bg-purple-700 text-white flex items-center justify-center text-[9px] shadow-xs">
-                      ✓
-                    </span>
-                  )}
-                  {/* Purple Preview Square */}
-                  <div className="w-5 h-5 rounded-md bg-purple-900/90 dark:bg-purple-500 flex items-center justify-center shadow-xs">
-                    <span className={`w-3.5 h-3.5 rounded-sm bg-purple-300 dark:bg-purple-950 ${anim.animClass}`} />
-                  </div>
-                  <span className="text-[11px] font-sans font-medium text-foreground block text-center">
-                    {anim.label}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* 2. OPEN IN NEW TAB SWITCH */}
-        <div className="p-3 rounded-xl border border-border bg-muted/30 flex items-center justify-between">
-          <div>
-            <span className="text-xs font-bold text-foreground block">باز شدن در پنجره جدید (Open in new tab)</span>
-            <span className="text-[10px] text-muted-foreground block">هنگام کلیک، این لینک در یک صفحه مجزا باز شود</span>
-          </div>
-          <Switch
-            checked={adv.openInNewTab !== false}
-            onCheckedChange={(checked) => updateLinkAdvancedSettings(link.id, { openInNewTab: checked })}
-          />
-        </div>
-
-        {/* 2.1 COMPACT ICON TOGGLE (For Standalone Social & Messenger Modules) */}
-        {isSocialModule(link.moduleType) && !link.parentId && (
-          <div className="p-3 rounded-xl border border-border bg-muted/30 flex items-center justify-between">
-            <div className="space-y-0.5 max-w-[80%]">
+        {/* ========================================================================= */}
+        {/* GROUP 1: ACCESS & SCHEDULING (دسترسی و زمان‌بندی)                         */}
+        {/* ========================================================================= */}
+        <div className="p-3.5 rounded-xl border border-cyan-500/25 bg-gradient-to-br from-cyan-950/20 via-background to-slate-900/30 space-y-3.5">
+          <div className="flex items-center gap-2 border-b border-border/50 pb-2.5">
+            <ShieldCheck className="w-4 h-4 text-cyan-400" />
+            <div>
               <span className="text-xs font-bold text-foreground block">
-                نمایش فشرده (فقط آیکون)
+                دسترسی و زمان‌بندی (Access &amp; Scheduling)
               </span>
               <span className="text-[10px] text-muted-foreground block">
-                نمایش به عنوان آیکون کوچک در ردیف بالای صفحه به جای کارت مستقل
+                مدیریت زمان، انقضا، سقف کلیک و سطوح دسترسی امنیتی دکمه
               </span>
             </div>
-            <Switch
-              checked={adv.isCompactIcon !== false}
-              onCheckedChange={(checked) =>
-                updateLinkAdvancedSettings(link.id, { isCompactIcon: checked })
-              }
-            />
-          </div>
-        )}
-
-        {/* 3. SCHEDULING */}
-        <div className="p-3 rounded-xl border border-border bg-muted/30 space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-cyan-500" />
-              <span className="text-xs font-bold text-foreground">زمان‌بندی هوشمند نمایش دکمه</span>
-            </div>
-            <Switch
-              checked={sched.enabled}
-              onCheckedChange={(checked) =>
-                updateLinkAdvancedSettings(link.id, {
-                  scheduling: { ...sched, enabled: checked },
-                })
-              }
-            />
           </div>
 
-          {sched.enabled && (
-            <div className="space-y-3 pt-2 border-t border-border animate-in fade-in">
-              <p className="text-[11px] text-muted-foreground">
-                این دکمه فقط در ساعات تعیین‌شده در طول روز به بازدیدکنندگان نمایش داده می‌شود:
-              </p>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[10px] text-muted-foreground mb-1">ساعت شروع</label>
-                  <input
-                    type="time"
-                    value={sched.startTime || '08:00'}
-                    onChange={(e) =>
-                      updateLinkAdvancedSettings(link.id, {
-                        scheduling: { ...sched, startTime: e.target.value },
-                      })
-                    }
-                    className="w-full bg-background border border-border rounded-lg px-2 py-1 text-xs text-foreground font-sans"
-                  />
+          <div className="space-y-3">
+            {/* 1. زمان‌بندی نمایش روزانه (ساعات فعال بودن / Daily Scheduling) */}
+            <div className="p-3 rounded-lg border border-border/80 bg-background/60 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-3.5 h-3.5 text-cyan-400" />
+                  <div>
+                    <span className="text-xs font-semibold text-foreground block">۱. زمان‌بندی نمایش روزانه</span>
+                    <span className="text-[10px] text-muted-foreground block">تعیین بازه ساعات فعال بودن ماژول در طول شبانه‌روز</span>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-[10px] text-muted-foreground mb-1">ساعت پایان</label>
-                  <input
-                    type="time"
-                    value={sched.endTime || '20:00'}
-                    onChange={(e) =>
-                      updateLinkAdvancedSettings(link.id, {
-                        scheduling: { ...sched, endTime: e.target.value },
-                      })
-                    }
-                    className="w-full bg-background border border-border rounded-lg px-2 py-1 text-xs text-foreground font-sans"
-                  />
-                </div>
+                <Switch
+                  checked={sched.enabled}
+                  onCheckedChange={(checked) =>
+                    updateLinkAdvancedSettings(link.id, {
+                      scheduling: { ...sched, enabled: checked },
+                    })
+                  }
+                />
               </div>
-            </div>
-          )}
-        </div>
 
-        {/* 4. MONETIZATION / LOCKED LINK */}
-        <div className="p-3 rounded-xl border border-border bg-muted/30 space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Lock className="w-4 h-4 text-amber-500" />
-              <span className="text-xs font-bold text-foreground">لینک قفل‌شده / محتوای پولی (Locked Link)</span>
+              {sched.enabled && (
+                <div className="space-y-3 pt-2.5 border-t border-border/50 animate-in fade-in">
+                  <p className="text-[11px] text-muted-foreground">
+                    این دکمه فقط در ساعات تعیین‌شده در طول شبانه‌روز برای بازدیدکنندگان فعال و نمایان است:
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[10px] text-muted-foreground mb-1">ساعت شروع</label>
+                      <input
+                        type="time"
+                        value={sched.startTime || '08:00'}
+                        onChange={(e) =>
+                          updateLinkAdvancedSettings(link.id, {
+                            scheduling: { ...sched, startTime: e.target.value },
+                          })
+                        }
+                        className="w-full bg-background border border-border rounded-lg px-2.5 py-1.5 text-xs text-foreground font-sans"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] text-muted-foreground mb-1">ساعت پایان</label>
+                      <input
+                        type="time"
+                        value={sched.endTime || '20:00'}
+                        onChange={(e) =>
+                          updateLinkAdvancedSettings(link.id, {
+                            scheduling: { ...sched, endTime: e.target.value },
+                          })
+                        }
+                        className="w-full bg-background border border-border rounded-lg px-2.5 py-1.5 text-xs text-foreground font-sans"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
-            <Switch
-              checked={lock.isLocked}
-              onCheckedChange={(checked) =>
-                updateLinkAdvancedSettings(link.id, {
-                  monetization: { ...lock, isLocked: checked },
-                })
-              }
-            />
-          </div>
 
-          {lock.isLocked && (
-            <div className="space-y-3 pt-2 border-t border-border animate-in fade-in">
-              <p className="text-[11px] text-muted-foreground">
-                بازدیدکننده برای باز کردن و دسترسی به این لینک باید هزینه تعیین‌شده را پرداخت کند:
-              </p>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[10px] text-muted-foreground mb-1">مبلغ بازگشایی</label>
-                  <input
-                    type="number"
-                    value={lock.price || 50}
-                    onChange={(e) =>
-                      updateLinkAdvancedSettings(link.id, {
-                        monetization: { ...lock, price: Number(e.target.value) },
-                      })
+            {/* 2. تاریخ انقضای ماژول (Module Expiration Date) */}
+            <div className="p-3 rounded-lg border border-border/80 bg-background/60 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Hourglass className="w-3.5 h-3.5 text-amber-400" />
+                  <div>
+                    <span className="text-xs font-semibold text-foreground block">۲. تاریخ انقضای ماژول</span>
+                    <span className="text-[10px] text-muted-foreground block">غیرفعال‌سازی خودکار دکمه پس از سررسید زمانی</span>
+                  </div>
+                </div>
+                <Switch
+                  checked={Boolean(link.expiresAt || adv.expiresAt)}
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      const defaultExp = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16);
+                      updateLink(link.id, {
+                        expiresAt: defaultExp,
+                        advancedSettings: { ...adv, expiresAt: defaultExp },
+                      });
+                    } else {
+                      updateLink(link.id, {
+                        expiresAt: null,
+                        advancedSettings: { ...adv, expiresAt: null },
+                      });
                     }
-                    className="w-full bg-background border border-border rounded-lg px-2 py-1 text-xs text-foreground font-sans text-left"
+                  }}
+                />
+              </div>
+
+              {Boolean(link.expiresAt || adv.expiresAt) && (
+                <div className="pt-2 border-t border-border/50 space-y-1.5 animate-in fade-in">
+                  <label className="block text-[10px] text-muted-foreground">
+                    پس از رسیدن به این تاریخ و ساعت، دکمه به طور خودکار غیرفعال و مخفی خواهد شد:
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={
+                      link.expiresAt
+                        ? (link.expiresAt instanceof Date ? link.expiresAt.toISOString().slice(0, 16) : String(link.expiresAt).slice(0, 16))
+                        : (adv.expiresAt ? String(adv.expiresAt).slice(0, 16) : '')
+                    }
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      updateLink(link.id, {
+                        expiresAt: val || null,
+                        advancedSettings: { ...adv, expiresAt: val || null },
+                      });
+                    }}
+                    className="w-full bg-background border border-border rounded-lg px-2.5 py-1.5 text-xs text-foreground font-sans text-left"
                     dir="ltr"
                   />
                 </div>
-                <div>
-                  <label className="block text-[10px] text-muted-foreground mb-1">واحد پول</label>
-                  <select
-                    value={lock.currency || 'AFN'}
-                    onChange={(e) =>
-                      updateLinkAdvancedSettings(link.id, {
-                        monetization: { ...lock, currency: e.target.value as any },
-                      })
-                    }
-                    className="w-full bg-background border border-border rounded-lg px-2 py-1 text-xs text-foreground font-sans"
-                  >
-                    <option value="AFN">AFN (افغانی)</option>
-                    <option value="USD">USD (دلار)</option>
-                  </select>
-                </div>
-              </div>
+              )}
             </div>
-          )}
-        </div>
 
-        {/* 5. CUSTOM STYLING (COLORS) */}
-        <div className="p-3 rounded-xl border border-border bg-muted/30 space-y-3">
-          <div className="flex items-center gap-2">
-            <Palette className="w-4 h-4 text-purple-500" />
-            <span className="text-xs font-bold text-foreground">شخصی‌سازی رنگ اختصاصی این دکمه</span>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3 pt-1">
-            <div>
-              <label className="block text-[10px] text-muted-foreground mb-1">رنگ پس‌زمینه</label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="color"
-                  value={style.customBgColor || '#0ea5e9'}
-                  onChange={(e) =>
-                    updateLinkAdvancedSettings(link.id, {
-                      customStyling: { ...style, customBgColor: e.target.value },
-                    })
-                  }
-                  className="w-7 h-7 rounded-lg cursor-pointer bg-transparent border-0"
-                />
-                <span className="font-sans text-xs text-muted-foreground">{style.customBgColor || 'پیش‌فرض'}</span>
-              </div>
-            </div>
-            <div>
-              <label className="block text-[10px] text-muted-foreground mb-1">رنگ متن</label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="color"
-                  value={style.customTextColor || '#ffffff'}
-                  onChange={(e) =>
-                    updateLinkAdvancedSettings(link.id, {
-                      customStyling: { ...style, customTextColor: e.target.value },
-                    })
-                  }
-                  className="w-7 h-7 rounded-lg cursor-pointer bg-transparent border-0"
-                />
-                <span className="font-sans text-xs text-muted-foreground">{style.customTextColor || 'پیش‌فرض'}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* 6. BUTTON SHAPE & INHERITANCE (Global vs. Local State) */}
-        <div className="p-3.5 rounded-xl border border-border bg-muted/20 space-y-2.5">
-          <div className="flex items-center justify-between">
-            <label className="text-xs font-bold text-foreground block">
-              شکل و استایل دکمه (Button Shape)
-            </label>
-            <span className="text-[10px] text-muted-foreground font-sans bg-muted/60 px-2 py-0.5 rounded-md">
-              تم عمومی: {(() => {
-                const s = profile.themeConfig.buttonShape || 'soft';
-                switch (s) {
-                  case 'sharp': return 'مربع تیز';
-                  case 'soft': return 'لبه‌گرد ملایم';
-                  case 'pill': return 'کاملاً گرد (کپسولی)';
-                  case 'leaf': return 'برگ';
-                  case 'cut_corners': return 'پخ‌خورده';
-                  case 'ticket': return 'تیکت';
-                  case 'hexagon': return 'شش‌ضلعی';
-                  case 'parallelogram_l': return 'متوازی';
-                  default: return s;
-                }
-              })()}
-            </span>
-          </div>
-
-          <div className="grid grid-cols-3 gap-2">
-            {[
-              {
-                id: 'inherit',
-                label: 'ارث‌بری از تم',
-                sub: 'Inherit (پیش‌فرض)',
-                renderWireframe: () => (
-                  <div className="w-10 h-5 border-2 border-dashed border-current rounded-md flex items-center justify-center text-[8px] font-sans font-bold">
-                    AUTO
+            {/* 3. محدودیت تعداد کلیک/بازدید (Max Clicks / Click Limit) */}
+            <div className="p-3 rounded-lg border border-border/80 bg-background/60 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <MousePointerClick className="w-3.5 h-3.5 text-cyan-400" />
+                  <div>
+                    <span className="text-xs font-semibold text-foreground block">۳. محدودیت تعداد کلیک/بازدید</span>
+                    <span className="text-[10px] text-muted-foreground block">تعیین سقف کلیک مجاز قبل از انقضای دکمه</span>
                   </div>
-                ),
-              },
-              {
-                id: 'sharp',
-                label: 'مربع تیز',
-                sub: 'Sharp',
-                renderWireframe: () => (
-                  <div className="w-10 h-5 border-2 border-current rounded-none" />
-                ),
-              },
-              {
-                id: 'soft',
-                label: 'لبه‌گرد ملایم',
-                sub: 'Soft',
-                renderWireframe: () => (
-                  <div className="w-10 h-5 border-2 border-current rounded-[3px]" />
-                ),
-              },
-              {
-                id: 'pill',
-                label: 'کاملاً گرد',
-                sub: 'Pill',
-                renderWireframe: () => (
-                  <div className="w-10 h-5 border-2 border-current rounded-full" />
-                ),
-              },
-              {
-                id: 'leaf',
-                label: 'برگ',
-                sub: 'Leaf',
-                renderWireframe: () => (
-                  <div className="w-10 h-5 border-2 border-current rounded-tr-lg rounded-bl-lg rounded-tl-none rounded-br-none" />
-                ),
-              },
-              {
-                id: 'cut_corners',
-                label: 'پخ‌خورده',
-                sub: 'Cut Corners',
-                renderWireframe: () => (
-                  <div className="w-10 h-5 border border-current btn-shape-cut_corners bg-current/25" />
-                ),
-              },
-              {
-                id: 'ticket',
-                label: 'تیکت',
-                sub: 'Ticket',
-                renderWireframe: () => (
-                  <div className="w-10 h-5 border border-current btn-shape-ticket bg-current/25" />
-                ),
-              },
-              {
-                id: 'hexagon',
-                label: 'شش‌ضلعی',
-                sub: 'Hexagon',
-                renderWireframe: () => (
-                  <div className="w-10 h-5 border border-current btn-shape-hexagon bg-current/25" />
-                ),
-              },
-              {
-                id: 'parallelogram_l',
-                label: 'متوازی',
-                sub: 'Parallelogram',
-                renderWireframe: () => (
-                  <div className="w-10 h-5 border border-current btn-shape-parallelogram_l bg-current/25" />
-                ),
-              },
-            ].map((r) => {
-              const currentShape = style.buttonShape || 'inherit';
-              const isSelected = currentShape === r.id;
-              return (
-                <button
-                  key={r.id}
-                  type="button"
-                  onClick={() =>
-                    updateLinkAdvancedSettings(link.id, {
-                      customStyling: {
-                        ...style,
-                        buttonShape: r.id === 'inherit' ? 'inherit' : (r.id as any),
-                      },
-                    })
-                  }
-                  className={`p-2 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all text-center ${
-                    isSelected
-                      ? 'bg-cyan-500/15 border-cyan-500 text-cyan-400 ring-2 ring-cyan-500/30 font-bold shadow-sm'
-                      : 'bg-card/80 border-border text-muted-foreground hover:text-foreground hover:bg-muted/50'
-                  }`}
-                >
-                  <div className="h-6 flex items-center justify-center">{r.renderWireframe()}</div>
-                  <span className="text-[11px] font-bold block truncate w-full">{r.label}</span>
-                  <span className="text-[9px] opacity-70 block font-sans" dir="ltr">
-                    {r.sub}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-          <p className="text-[10px] text-muted-foreground leading-relaxed">
-            در حالت «ارث‌بری از تم»، شکل دکمه به طور خودکار از تنظیمات تب طراحی و تم ارث برده می‌شود. با انتخاب هر شکل اختصاصی، این دکمه استایل منحصربه‌فرد خواهد داشت.
-          </p>
-        </div>
-
-        {/* 6. LINK PROTECTION & ACCESS CONTROL (محافظت و محدودیت لینک) */}
-        <div className="p-3.5 rounded-xl border border-cyan-500/20 bg-gradient-to-br from-cyan-950/20 to-slate-900/40 space-y-4">
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-cyan-400" />
-            <span className="text-xs font-bold text-foreground">
-              محافظت و مدیریت پیشرفته لینک (Link Protection)
-            </span>
-          </div>
-          <p className="text-[11px] text-muted-foreground leading-relaxed">
-            تنظیم تاریخ انقضا، محدودیت تعداد کلیک و قفل کردن لینک با رمز عبور بدون هیچ هزینه سرور.
-          </p>
-
-          {/* 6.1 Expiration Date */}
-          <div className="p-2.5 rounded-lg border border-border/80 bg-background/50 space-y-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <Hourglass className="w-3.5 h-3.5 text-amber-400" />
-                <span className="text-xs font-semibold text-foreground">تاریخ و زمان انقضا</span>
-              </div>
-              <Switch
-                checked={Boolean(link.expiresAt || adv.expiresAt)}
-                onCheckedChange={(checked) => {
-                  if (checked) {
-                    const defaultExp = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16);
-                    updateLink(link.id, {
-                      expiresAt: defaultExp,
-                      advancedSettings: { ...adv, expiresAt: defaultExp },
-                    });
-                  } else {
-                    updateLink(link.id, {
-                      expiresAt: null,
-                      advancedSettings: { ...adv, expiresAt: null },
-                    });
-                  }
-                }}
-              />
-            </div>
-            {Boolean(link.expiresAt || adv.expiresAt) && (
-              <div className="pt-1.5 border-t border-border/40 space-y-1">
-                <label className="block text-[10px] text-muted-foreground">
-                  پس از این تاریخ، لینک به صورت خودکار منقضی و غیرفعال خواهد شد:
-                </label>
-                <input
-                  type="datetime-local"
-                  value={
-                    link.expiresAt
-                      ? (link.expiresAt instanceof Date ? link.expiresAt.toISOString().slice(0, 16) : String(link.expiresAt).slice(0, 16))
-                      : (adv.expiresAt ? String(adv.expiresAt).slice(0, 16) : '')
-                  }
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    updateLink(link.id, {
-                      expiresAt: val || null,
-                      advancedSettings: { ...adv, expiresAt: val || null },
-                    });
-                  }}
-                  className="w-full bg-background border border-border rounded-lg px-2.5 py-1.5 text-xs text-foreground font-sans text-left"
-                  dir="ltr"
-                />
-              </div>
-            )}
-          </div>
-
-          {/* 6.2 Max Clicks */}
-          <div className="p-2.5 rounded-lg border border-border/80 bg-background/50 space-y-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <MousePointerClick className="w-3.5 h-3.5 text-cyan-400" />
-                <span className="text-xs font-semibold text-foreground">سقف مجاز تعداد کلیک</span>
-              </div>
-              <Switch
-                checked={typeof (link.maxClicks ?? adv.maxClicks) === 'number' && (link.maxClicks ?? adv.maxClicks)! > 0}
-                onCheckedChange={(checked) => {
-                  if (checked) {
-                    updateLink(link.id, {
-                      maxClicks: 100,
-                      advancedSettings: { ...adv, maxClicks: 100 },
-                    });
-                  } else {
-                    updateLink(link.id, {
-                      maxClicks: null,
-                      advancedSettings: { ...adv, maxClicks: null },
-                    });
-                  }
-                }}
-              />
-            </div>
-            {typeof (link.maxClicks ?? adv.maxClicks) === 'number' && (link.maxClicks ?? adv.maxClicks)! > 0 && (
-              <div className="pt-1.5 border-t border-border/40 space-y-1">
-                <div className="flex items-center justify-between">
-                  <label className="text-[10px] text-muted-foreground">حداکثر کلیک مجاز:</label>
-                  <span className="text-[10px] text-cyan-400 font-sans">
-                    کلیک‌های ثبت‌شده تاکنون: {link.clickCount || 0}
-                  </span>
                 </div>
-                <input
-                  type="number"
-                  min="1"
-                  step="1"
-                  value={link.maxClicks ?? adv.maxClicks ?? 100}
-                  onChange={(e) => {
-                    const val = e.target.value ? parseInt(e.target.value, 10) : null;
-                    updateLink(link.id, {
-                      maxClicks: val,
-                      advancedSettings: { ...adv, maxClicks: val },
-                    });
+                <Switch
+                  checked={typeof (link.maxClicks ?? adv.maxClicks) === 'number' && (link.maxClicks ?? adv.maxClicks)! > 0}
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      updateLink(link.id, {
+                        maxClicks: 100,
+                        advancedSettings: { ...adv, maxClicks: 100 },
+                      });
+                    } else {
+                      updateLink(link.id, {
+                        maxClicks: null,
+                        advancedSettings: { ...adv, maxClicks: null },
+                      });
+                    }
                   }}
-                  placeholder="مثلاً 100"
-                  className="w-full bg-background border border-border rounded-lg px-2.5 py-1.5 text-xs text-foreground font-sans text-left"
-                  dir="ltr"
                 />
               </div>
-            )}
-          </div>
 
-          {/* 6.3 Password Protection */}
-          <div className="p-2.5 rounded-lg border border-border/80 bg-background/50 space-y-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <KeyRound className="w-3.5 h-3.5 text-purple-400" />
-                <span className="text-xs font-semibold text-foreground">محافظت با رمز عبور (Password)</span>
-              </div>
-              <Switch
-                checked={Boolean(link.hasPassword || link.passwordHash || adv.hasPassword || (link as any).rawPassword)}
-                onCheckedChange={(checked) => {
-                  if (!checked) {
-                    updateLink(link.id, {
-                      passwordHash: null,
-                      hasPassword: false,
-                      rawPassword: '',
-                      removePassword: true,
-                      advancedSettings: {
-                        ...adv,
-                        passwordHash: null,
-                        hasPassword: false,
-                        removePassword: true,
-                      },
-                    } as any);
-                    toast.success('رمز عبور این لینک حذف شد.');
-                  }
-                }}
-              />
+              {typeof (link.maxClicks ?? adv.maxClicks) === 'number' && (link.maxClicks ?? adv.maxClicks)! > 0 && (
+                <div className="pt-2 border-t border-border/50 space-y-1.5 animate-in fade-in">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[10px] text-muted-foreground">حداکثر کلیک مجاز:</label>
+                    <span className="text-[10px] text-cyan-400 font-sans">
+                      کلیک‌های ثبت‌شده تاکنون: {link.clickCount || 0}
+                    </span>
+                  </div>
+                  <input
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={link.maxClicks ?? adv.maxClicks ?? 100}
+                    onChange={(e) => {
+                      const val = e.target.value ? parseInt(e.target.value, 10) : null;
+                      updateLink(link.id, {
+                        maxClicks: val,
+                        advancedSettings: { ...adv, maxClicks: val },
+                      });
+                    }}
+                    placeholder="مثلاً 100"
+                    className="w-full bg-background border border-border rounded-lg px-2.5 py-1.5 text-xs text-foreground font-sans text-left"
+                    dir="ltr"
+                  />
+                </div>
+              )}
             </div>
 
-            <div className="space-y-2 pt-1">
-              {Boolean(link.hasPassword || link.passwordHash || adv.hasPassword) && (
-                <div className="flex items-center justify-between bg-purple-500/10 border border-purple-500/20 px-2.5 py-1.5 rounded-lg">
-                  <span className="text-[11px] text-purple-300 font-medium flex items-center gap-1">
-                    <Check className="w-3 h-3 text-purple-400" />
-                    رمز عبور فعال است
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => {
+            {/* 4. قفل با گذرواژه (Password Lock) */}
+            <div className="p-3 rounded-lg border border-border/80 bg-background/60 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <KeyRound className="w-3.5 h-3.5 text-purple-400" />
+                  <div>
+                    <span className="text-xs font-semibold text-foreground block">۴. قفل با گذرواژه (Password)</span>
+                    <span className="text-[10px] text-muted-foreground block">دسترسی و باز شدن لینک منوط به وارد کردن رمز اختصاصی</span>
+                  </div>
+                </div>
+                <Switch
+                  checked={Boolean(link.hasPassword || link.passwordHash || adv.hasPassword || (link as any).rawPassword)}
+                  onCheckedChange={(checked) => {
+                    if (!checked) {
                       updateLink(link.id, {
                         passwordHash: null,
                         hasPassword: false,
@@ -2812,42 +2430,464 @@ export const SectionModulesList: React.FC = () => {
                           removePassword: true,
                         },
                       } as any);
-                      toast.success('رمز عبور لینک برداشته شد.');
-                    }}
-                    className="text-[10px] text-rose-400 hover:text-rose-300 transition-colors"
-                  >
-                    حذف رمز
-                  </button>
-                </div>
-              )}
-              <div className="space-y-1">
-                <label className="block text-[10px] text-muted-foreground">
-                  {link.hasPassword || link.passwordHash || adv.hasPassword
-                    ? 'تعیین رمز عبور جدید (در صورت تمایل به تغییر رمز فعلی):'
-                    : 'رمز عبور دلخواه برای قفل کردن لینک:'}
-                </label>
-                <input
-                  type="password"
-                  placeholder="رمز عبور دلخواه..."
-                  value={(link as any).rawPassword || ''}
-                  onChange={(e) => {
-                    const pass = e.target.value;
-                    updateLink(link.id, {
-                      rawPassword: pass,
-                      hasPassword: Boolean(pass || link.hasPassword || link.passwordHash),
-                      removePassword: false,
-                      advancedSettings: {
-                        ...adv,
-                        hasPassword: Boolean(pass || link.hasPassword || link.passwordHash),
-                        removePassword: false,
-                      },
-                    } as any);
+                      toast.success('رمز عبور این لینک حذف شد.');
+                    }
                   }}
-                  className="w-full bg-background border border-border rounded-lg px-2.5 py-1.5 text-xs text-foreground font-sans text-left"
-                  dir="ltr"
                 />
               </div>
+
+              <div className="space-y-2 pt-1 animate-in fade-in">
+                {Boolean(link.hasPassword || link.passwordHash || adv.hasPassword) && (
+                  <div className="flex items-center justify-between bg-purple-500/10 border border-purple-500/20 px-2.5 py-1.5 rounded-lg">
+                    <span className="text-[11px] text-purple-300 font-medium flex items-center gap-1">
+                      <Check className="w-3 h-3 text-purple-400" />
+                      رمز عبور فعال است
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        updateLink(link.id, {
+                          passwordHash: null,
+                          hasPassword: false,
+                          rawPassword: '',
+                          removePassword: true,
+                          advancedSettings: {
+                            ...adv,
+                            passwordHash: null,
+                            hasPassword: false,
+                            removePassword: true,
+                          },
+                        } as any);
+                        toast.success('رمز عبور لینک برداشته شد.');
+                      }}
+                      className="text-[10px] text-rose-400 hover:text-rose-300 transition-colors"
+                    >
+                      حذف رمز
+                    </button>
+                  </div>
+                )}
+                <div className="space-y-1">
+                  <label className="block text-[10px] text-muted-foreground">
+                    {link.hasPassword || link.passwordHash || adv.hasPassword
+                      ? 'تعیین رمز عبور جدید (در صورت تمایل به تغییر رمز فعلی):'
+                      : 'رمز عبور دلخواه برای قفل کردن لینک:'}
+                  </label>
+                  <input
+                    type="password"
+                    placeholder="رمز عبور دلخواه..."
+                    value={(link as any).rawPassword || ''}
+                    onChange={(e) => {
+                      const pass = e.target.value;
+                      updateLink(link.id, {
+                        rawPassword: pass,
+                        hasPassword: Boolean(pass || link.hasPassword || link.passwordHash),
+                        removePassword: false,
+                        advancedSettings: {
+                          ...adv,
+                          hasPassword: Boolean(pass || link.hasPassword || link.passwordHash),
+                          removePassword: false,
+                        },
+                      } as any);
+                    }}
+                    className="w-full bg-background border border-border rounded-lg px-2.5 py-1.5 text-xs text-foreground font-sans text-left"
+                    dir="ltr"
+                  />
+                </div>
+              </div>
             </div>
+
+            {/* 5. قفل پولی/VIP (پرداخت برای مشاهده / Monetization) */}
+            <div className="p-3 rounded-lg border border-border/80 bg-background/60 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Lock className="w-3.5 h-3.5 text-amber-500" />
+                  <div>
+                    <span className="text-xs font-semibold text-foreground block">۵. قفل پولی / VIP (پرداخت برای مشاهده)</span>
+                    <span className="text-[10px] text-muted-foreground block">دریافت هزینه از کاربر جهت دسترسی به محتوا یا لینک</span>
+                  </div>
+                </div>
+                <Switch
+                  checked={lock.isLocked}
+                  onCheckedChange={(checked) =>
+                    updateLinkAdvancedSettings(link.id, {
+                      monetization: { ...lock, isLocked: checked },
+                    })
+                  }
+                />
+              </div>
+
+              {lock.isLocked && (
+                <div className="space-y-3 pt-2.5 border-t border-border/50 animate-in fade-in">
+                  <p className="text-[11px] text-muted-foreground">
+                    بازدیدکننده برای باز کردن و دسترسی به این لینک باید هزینه تعیین‌شده را پرداخت کند:
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[10px] text-muted-foreground mb-1">مبلغ بازگشایی</label>
+                      <input
+                        type="number"
+                        value={lock.price || 50}
+                        onChange={(e) =>
+                          updateLinkAdvancedSettings(link.id, {
+                            monetization: { ...lock, price: Number(e.target.value) },
+                          })
+                        }
+                        className="w-full bg-background border border-border rounded-lg px-2.5 py-1.5 text-xs text-foreground font-sans text-left"
+                        dir="ltr"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] text-muted-foreground mb-1">واحد پول</label>
+                      <select
+                        value={lock.currency || 'AFN'}
+                        onChange={(e) =>
+                          updateLinkAdvancedSettings(link.id, {
+                            monetization: { ...lock, currency: e.target.value as any },
+                          })
+                        }
+                        className="w-full bg-background border border-border rounded-lg px-2.5 py-1.5 text-xs text-foreground font-sans"
+                      >
+                        <option value="AFN">AFN (افغانی)</option>
+                        <option value="USD">USD (دلار)</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* ========================================================================= */}
+        {/* GROUP 2: APPEARANCE & STYLING (ظاهر و استایل)                             */}
+        {/* ========================================================================= */}
+        <div className="p-3.5 rounded-xl border border-purple-500/25 bg-gradient-to-br from-purple-950/20 via-background to-slate-900/30 space-y-3.5">
+          <div className="flex items-center gap-2 border-b border-border/50 pb-2.5">
+            <Sparkles className="w-4 h-4 text-purple-400" />
+            <div>
+              <span className="text-xs font-bold text-foreground block">
+                ظاهر و استایل (Appearance &amp; Styling)
+              </span>
+              <span className="text-[10px] text-muted-foreground block">
+                تنظیمات بصری، انیمیشن‌ها، رنگ اختصاصی و فرم هندسی دکمه
+              </span>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            {/* 1. انیمیشن دکمه (Button Animation + Trigger + Speed + Types) */}
+            <div className="p-3 rounded-lg border border-border/80 bg-background/60 space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-cyan-500" />
+                  <span>انیمیشن دکمه (Button Animation)</span>
+                </label>
+                <span className="text-[10px] text-muted-foreground font-sans">
+                  Duration: {adv.animationSpeed || 1.6}s
+                </span>
+              </div>
+
+              {/* Animation Trigger Category (Infinite Loop vs Hover-Only) */}
+              <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-background/80 border border-border">
+                <button
+                  type="button"
+                  onClick={() => updateLinkAdvancedSettings(link.id, { animationTrigger: 'infinite' })}
+                  className={`py-1.5 px-2 rounded-lg text-xs font-bold transition-all text-center ${(adv.animationTrigger || 'infinite') === 'infinite'
+                    ? 'bg-cyan-500 text-slate-950 shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                >
+                  انیمیشن همیشگی (Infinite Loop)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => updateLinkAdvancedSettings(link.id, { animationTrigger: 'hover' })}
+                  className={`py-1.5 px-2 rounded-lg text-xs font-bold transition-all text-center ${adv.animationTrigger === 'hover'
+                    ? 'bg-cyan-500 text-slate-950 shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                >
+                  انیمیشن با عبور موس (Hover-Only)
+                </button>
+              </div>
+
+              {/* Animation Speed Slider */}
+              <div className="space-y-1.5 pt-1">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-muted-foreground font-medium">سرعت اجرای انیمیشن</span>
+                  <span className="font-sans font-bold text-cyan-500 bg-cyan-500/10 px-2 py-0.5 rounded-md border border-cyan-500/20">
+                    {adv.animationSpeed || 1.6}s
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="0.5"
+                  max="3.0"
+                  step="0.1"
+                  value={adv.animationSpeed || 1.6}
+                  onChange={(e) =>
+                    updateLinkAdvancedSettings(link.id, {
+                      animationSpeed: parseFloat(e.target.value),
+                    })
+                  }
+                  className="w-full accent-cyan-500 cursor-pointer"
+                />
+                <div className="flex justify-between text-[10px] text-muted-foreground font-sans">
+                  <span>0.5s (سریع)</span>
+                  <span>1.6s (استاندارد)</span>
+                  <span>3.0s (ملایم)</span>
+                </div>
+              </div>
+
+              {/* 7 Animation Types Grid */}
+              <div className="grid grid-cols-4 gap-2 pt-1">
+                {[
+                  { id: 'shake_x', label: 'Shake x', animClass: 'animate-shake-x' },
+                  { id: 'wobble', label: 'Wobble', animClass: 'animate-wobble' },
+                  { id: 'buzz', label: 'Buzz', animClass: 'animate-buzz' },
+                  { id: 'tada', label: 'Tada', animClass: 'animate-tada' },
+                  { id: 'heart', label: 'Heart', animClass: 'animate-heart' },
+                  { id: 'pulse', label: 'Pulse', animClass: 'animate-pulse-smooth' },
+                  { id: 'shake_y', label: 'Shake y', animClass: 'animate-shake-y' },
+                  { id: 'none', label: 'None', animClass: '' },
+                ].map((anim) => {
+                  const isSelected = (adv.buttonAnimation || 'none') === anim.id;
+                  return (
+                    <button
+                      key={anim.id}
+                      type="button"
+                      onClick={() => updateLinkAdvancedSettings(link.id, { buttonAnimation: anim.id as any })}
+                      className={`relative p-2.5 rounded-2xl border transition-all flex flex-col items-center justify-center gap-2 group min-h-[72px] ${isSelected
+                        ? 'bg-card border-slate-900 dark:border-purple-400 ring-2 ring-purple-500/40 shadow-md font-bold'
+                        : 'bg-card/90 border-border/70 hover:border-border text-muted-foreground hover:text-foreground'
+                        }`}
+                    >
+                      {isSelected && (
+                        <span className="absolute top-1.5 left-1.5 w-4 h-4 rounded-full bg-purple-700 text-white flex items-center justify-center text-[9px] shadow-xs">
+                          ✓
+                        </span>
+                      )}
+                      <div className="w-5 h-5 rounded-md bg-purple-900/90 dark:bg-purple-500 flex items-center justify-center shadow-xs">
+                        <span className={`w-3.5 h-3.5 rounded-sm bg-purple-300 dark:bg-purple-950 ${anim.animClass}`} />
+                      </div>
+                      <span className="text-[11px] font-sans font-medium text-foreground block text-center">
+                        {anim.label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 2. شخصی‌سازی رنگ‌های دکمه (Custom Colors) */}
+            <div className="p-3 rounded-lg border border-border/80 bg-background/60 space-y-3">
+              <div className="flex items-center gap-2">
+                <Palette className="w-4 h-4 text-purple-400" />
+                <span className="text-xs font-bold text-foreground">شخصی‌سازی رنگ اختصاصی این دکمه</span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 pt-1">
+                <div>
+                  <label className="block text-[10px] text-muted-foreground mb-1">رنگ پس‌زمینه</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={style.customBgColor || '#0ea5e9'}
+                      onChange={(e) =>
+                        updateLinkAdvancedSettings(link.id, {
+                          customStyling: { ...style, customBgColor: e.target.value },
+                        })
+                      }
+                      className="w-7 h-7 rounded-lg cursor-pointer bg-transparent border-0"
+                    />
+                    <span className="font-sans text-xs text-muted-foreground">{style.customBgColor || 'پیش‌فرض'}</span>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[10px] text-muted-foreground mb-1">رنگ متن</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={style.customTextColor || '#ffffff'}
+                      onChange={(e) =>
+                        updateLinkAdvancedSettings(link.id, {
+                          customStyling: { ...style, customTextColor: e.target.value },
+                        })
+                      }
+                      className="w-7 h-7 rounded-lg cursor-pointer bg-transparent border-0"
+                    />
+                    <span className="font-sans text-xs text-muted-foreground">{style.customTextColor || 'پیش‌فرض'}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 3. شکل هندسی دکمه (Button Shape & Inheritance) */}
+            <div className="p-3 rounded-lg border border-border/80 bg-background/60 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-foreground block">
+                  شکل و فرم هندسی دکمه (Button Shape)
+                </label>
+                <span className="text-[10px] text-muted-foreground font-sans bg-muted/60 px-2 py-0.5 rounded-md">
+                  تم عمومی: {(() => {
+                    const s = profile.themeConfig.buttonShape || 'soft';
+                    switch (s) {
+                      case 'sharp': return 'مربع تیز';
+                      case 'soft': return 'لبه‌گرد ملایم';
+                      case 'pill': return 'کاملاً گرد (کپسولی)';
+                      case 'leaf': return 'برگ';
+                      case 'cut_corners': return 'پخ‌خورده';
+                      case 'ticket': return 'تیکت';
+                      case 'hexagon': return 'شش‌ضلعی';
+                      case 'parallelogram_l': return 'متوازی';
+                      default: return s;
+                    }
+                  })()}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  {
+                    id: 'inherit',
+                    label: 'ارث‌بری از تم',
+                    sub: 'Inherit (پیش‌فرض)',
+                    renderWireframe: () => (
+                      <div className="w-10 h-5 border-2 border-dashed border-current rounded-md flex items-center justify-center text-[8px] font-sans font-bold">
+                        AUTO
+                      </div>
+                    ),
+                  },
+                  {
+                    id: 'sharp',
+                    label: 'مربع تیز',
+                    sub: 'Sharp',
+                    renderWireframe: () => (
+                      <div className="w-10 h-5 border-2 border-current rounded-none" />
+                    ),
+                  },
+                  {
+                    id: 'soft',
+                    label: 'لبه‌گرد ملایم',
+                    sub: 'Soft',
+                    renderWireframe: () => (
+                      <div className="w-10 h-5 border-2 border-current rounded-[3px]" />
+                    ),
+                  },
+                  {
+                    id: 'pill',
+                    label: 'کاملاً گرد',
+                    sub: 'Pill',
+                    renderWireframe: () => (
+                      <div className="w-10 h-5 border-2 border-current rounded-full" />
+                    ),
+                  },
+                  {
+                    id: 'leaf',
+                    label: 'برگ',
+                    sub: 'Leaf',
+                    renderWireframe: () => (
+                      <div className="w-10 h-5 border-2 border-current rounded-tr-lg rounded-bl-lg rounded-tl-none rounded-br-none" />
+                    ),
+                  },
+                  {
+                    id: 'cut_corners',
+                    label: 'پخ‌خورده',
+                    sub: 'Cut Corners',
+                    renderWireframe: () => (
+                      <div className="w-10 h-5 border border-current btn-shape-cut_corners bg-current/25" />
+                    ),
+                  },
+                  {
+                    id: 'ticket',
+                    label: 'تیکت',
+                    sub: 'Ticket',
+                    renderWireframe: () => (
+                      <div className="w-10 h-5 border border-current btn-shape-ticket bg-current/25" />
+                    ),
+                  },
+                  {
+                    id: 'hexagon',
+                    label: 'شش‌ضلعی',
+                    sub: 'Hexagon',
+                    renderWireframe: () => (
+                      <div className="w-10 h-5 border border-current btn-shape-hexagon bg-current/25" />
+                    ),
+                  },
+                  {
+                    id: 'parallelogram_l',
+                    label: 'متوازی',
+                    sub: 'Parallelogram',
+                    renderWireframe: () => (
+                      <div className="w-10 h-5 border border-current btn-shape-parallelogram_l bg-current/25" />
+                    ),
+                  },
+                ].map((r) => {
+                  const currentShape = style.buttonShape || 'inherit';
+                  const isSelected = currentShape === r.id;
+                  return (
+                    <button
+                      key={r.id}
+                      type="button"
+                      onClick={() =>
+                        updateLinkAdvancedSettings(link.id, {
+                          customStyling: {
+                            ...style,
+                            buttonShape: r.id === 'inherit' ? 'inherit' : (r.id as any),
+                          },
+                        })
+                      }
+                      className={`p-2 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all text-center ${
+                        isSelected
+                          ? 'bg-cyan-500/15 border-cyan-500 text-cyan-400 ring-2 ring-cyan-500/30 font-bold shadow-sm'
+                          : 'bg-card/80 border-border text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                      }`}
+                    >
+                      <div className="h-6 flex items-center justify-center">{r.renderWireframe()}</div>
+                      <span className="text-[11px] font-bold block truncate w-full">{r.label}</span>
+                      <span className="text-[9px] opacity-70 block font-sans" dir="ltr">
+                        {r.sub}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-[10px] text-muted-foreground leading-relaxed">
+                در حالت «ارث‌بری از تم»، شکل دکمه به طور خودکار از تنظیمات تب طراحی و تم ارث برده می‌شود. با انتخاب هر شکل اختصاصی، این دکمه استایل منحصربه‌فرد خواهد داشت.
+              </p>
+            </div>
+
+            {/* 4. باز شدن در پنجره جدید (Open in new tab) */}
+            <div className="p-3 rounded-lg border border-border/80 bg-background/60 flex items-center justify-between">
+              <div>
+                <span className="text-xs font-bold text-foreground block">باز شدن در پنجره جدید (Open in new tab)</span>
+                <span className="text-[10px] text-muted-foreground block">هنگام کلیک، این لینک در یک صفحه مجزا باز شود</span>
+              </div>
+              <Switch
+                checked={adv.openInNewTab !== false}
+                onCheckedChange={(checked) => updateLinkAdvancedSettings(link.id, { openInNewTab: checked })}
+              />
+            </div>
+
+            {/* 5. نمایش فشرده (فقط آیکون) (Compact Icon) */}
+            {isSocialModule(link.moduleType) && !link.parentId && (
+              <div className="p-3 rounded-lg border border-border/80 bg-background/60 flex items-center justify-between">
+                <div className="space-y-0.5 max-w-[80%]">
+                  <span className="text-xs font-bold text-foreground block">
+                    نمایش فشرده (فقط آیکون)
+                  </span>
+                  <span className="text-[10px] text-muted-foreground block">
+                    نمایش به عنوان آیکون کوچک در ردیف بالای صفحه به جای کارت مستقل
+                  </span>
+                </div>
+                <Switch
+                  checked={adv.isCompactIcon !== false}
+                  onCheckedChange={(checked) =>
+                    updateLinkAdvancedSettings(link.id, { isCompactIcon: checked })
+                  }
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>

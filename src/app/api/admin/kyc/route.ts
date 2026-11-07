@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
 
     await connectToDatabase();
     const body = await req.json();
-    const { userId, action, rejectionReason } = body;
+    const { userId, action, rejectionReason, verifiedData } = body;
 
     if (!userId || !action || !['approve', 'reject'].includes(action)) {
       return NextResponse.json(
@@ -94,6 +94,17 @@ export async function POST(req: NextRequest) {
       if (!user.kycData) user.kycData = {};
       user.kycData.reviewedAt = new Date();
       user.kycData.rejectionReason = undefined;
+
+      if (verifiedData && typeof verifiedData === 'object') {
+        if (verifiedData.firstName || verifiedData.lastName) {
+          user.kycData.fullName = `${verifiedData.firstName || ''} ${verifiedData.lastName || ''}`.trim() || user.kycData.fullName;
+        }
+        if (verifiedData.idNumber) {
+          user.kycData.nationalId = verifiedData.idNumber;
+        }
+        Object.assign(user.kycData, verifiedData);
+      }
+
       await user.save();
 
       // Update all profiles of this user to verified
