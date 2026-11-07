@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, useSpring } from 'framer-motion';
+import { motion, useSpring, AnimatePresence } from 'framer-motion';
 import { LayoutDashboard, Users, ShoppingBag, Wallet } from 'lucide-react';
 
 export type TelegramTabId = 'dashboard' | 'users' | 'orders' | 'finance';
@@ -13,15 +13,53 @@ export const NAV_ITEMS = [
   { id: 'dashboard', label: 'پیشخوان', icon: LayoutDashboard },
 ] as const;
 
-// تابع محاسبات ریاضی برای رسم منحنی شیشه‌ای داینامیک
-function generatePillPath(w: number, h: number, r: number, bx: number, bw: number, bh: number) {
-  const t = 0, L = r, R = w - r, a = Math.max(L + bw / 2, Math.min(R - bw / 2, bx));
-  let top = `M${L},${t}`;
-  if (bh) {
-    const s = a - bw / 2, e = a + bw / 2, q = bw * 0.28;
-    top += ` L${s},${t} C${s + q},${t} ${a - bw * 0.22},${t - bh} ${a},${t - bh} C${a + bw * 0.22},${t - bh} ${e - q},${t} ${e},${t}`;
-  }
-  return top + ` L${R},${t} A${r},${r} 0 0 1 ${R},${h} L${L},${h} A${r},${r} 0 0 1 ${L},${t} Z`;
+// ابعاد استاندارد برای هماهنگی کامل فرورفتگی با دکمه دایره‌ای ۵۶ پیکسلی
+const NAV_CONFIG = {
+  height: 68,
+  cornerRadius: 20,
+  dipWidth: 80, // عرض فرورفتگی کاهش یافته برای انطباق ۴ پیکسلی با دکمه ۵۶ پیکسلی
+  dipDepth: 32, // عمق فرورفتگی (شعاع ۲۸ پیکسل + ۴ پیکسل فاصله)
+  buttonRadius: 28,
+  sidePadding: 20,
+};
+
+// تابع محاسبات دقیق هندسه منحنی بزیه برای رسم فرورفتگی مایع شیشه‌ای
+function generatePillPath(
+  w: number,
+  h: number,
+  r: number,
+  bx: number,
+  bw: number,
+  bh: number
+): string {
+  if (w <= 0) return '';
+
+  const halfBw = bw / 2;
+  // محدود کردن مرکز فرورفتگی به گونه‌ای که هرگز با گوشه‌های گرد تداخل نکند
+  const minCenter = r + halfBw;
+  const maxCenter = w - r - halfBw;
+  const a = Math.max(minCenter, Math.min(maxCenter, bx));
+
+  const s = a - halfBw;
+  const e = a + halfBw;
+  const q1 = bw * 0.22;
+  const q2 = bw * 0.2;
+  const depth = bh;
+
+  return (
+    `M ${r},0 ` +
+    `L ${s},0 ` +
+    `C ${s + q1},0 ${a - q2},${depth} ${a},${depth} ` +
+    `C ${a + q2},${depth} ${e - q1},0 ${e},0 ` +
+    `L ${w - r},0 ` +
+    `A ${r},${r} 0 0 1 ${w},${r} ` +
+    `L ${w},${h - r} ` +
+    `A ${r},${r} 0 0 1 ${w - r},${h} ` +
+    `L ${r},${h} ` +
+    `A ${r},${r} 0 0 1 0,${h - r} ` +
+    `L 0,${r} ` +
+    `A ${r},${r} 0 0 1 ${r},0 Z`
+  );
 }
 
 interface TelegramBottomNavProps {
@@ -30,15 +68,15 @@ interface TelegramBottomNavProps {
 }
 
 export default function TelegramBottomNav({ activeTab, onChange }: TelegramBottomNavProps) {
-  const [active, setActive] = useState(3); // پیش‌فرض روی تب آخر (پیشخوان)
+  const [active, setActive] = useState(3); // پیش‌فرض: پیشخوان (تب راست)
   const navRef = useRef<HTMLElement>(null);
   const [navWidth, setNavWidth] = useState(0);
   const [pathD, setPathD] = useState('');
 
-  // فیزیک فنری (Spring) برای حرکت نرم دکمه شناور
-  const springX = useSpring(0, { stiffness: 350, damping: 30 });
+  // فیزیک فنری دقیق برای حرکت روان و بدون لرزش
+  const springX = useSpring(0, { stiffness: 380, damping: 32 });
 
-  // همگام‌سازی با تب فعال از پراپس ورودی در صورت وجود
+  // همگام‌سازی استیت محلی با تب اکتیو پاس داده شده
   useEffect(() => {
     if (activeTab) {
       const idx = NAV_ITEMS.findIndex((item) => item.id === activeTab);
@@ -50,87 +88,144 @@ export default function TelegramBottomNav({ activeTab, onChange }: TelegramBotto
 
   useEffect(() => {
     const updateWidth = () => {
-      if (navRef.current) setNavWidth(navRef.current.offsetWidth);
+      if (navRef.current) {
+        setNavWidth(navRef.current.offsetWidth);
+      }
     };
     updateWidth();
     window.addEventListener('resize', updateWidth);
     return () => window.removeEventListener('resize', updateWidth);
   }, []);
 
+  // محاسبه مکان دکمه شناور به همراه Clamping برای جلوگیری از برخورد به لبه‌ها
   useEffect(() => {
     if (navWidth > 0) {
-      const itemWidth = navWidth / NAV_ITEMS.length;
-      const targetX = (active + 0.5) * itemWidth;
+      const { cornerRadius, dipWidth, sidePadding, buttonRadius } = NAV_CONFIG;
+      const innerWidth = navWidth - sidePadding * 2;
+      const itemWidth = innerWidth / NAV_ITEMS.length;
+      const rawTargetX = sidePadding + (active + 0.5) * itemWidth;
+
+      // کلمپ کردن targetX تا مرکز دکمه هرگز از شعاع خود و فرورفتگی به لبه‌ها نزدیک‌تر نشود
+      const minX = Math.max(cornerRadius + dipWidth / 2, buttonRadius + 8);
+      const maxX = navWidth - minX;
+      const targetX = Math.max(minX, Math.min(maxX, rawTargetX));
+
       springX.set(targetX);
     }
   }, [active, navWidth, springX]);
 
+  // به‌روزرسانی مداوم مسیر SVG با تغییرات فنری
   useEffect(() => {
     const unsubscribe = springX.on('change', (latestX) => {
       if (navWidth > 0) {
-        // bw: عرض فرورفتگی، bh: عمق فرورفتگی
-        setPathD(generatePillPath(navWidth, 70, 35, latestX, 105, -34));
+        setPathD(
+          generatePillPath(
+            navWidth,
+            NAV_CONFIG.height,
+            NAV_CONFIG.cornerRadius,
+            latestX,
+            NAV_CONFIG.dipWidth,
+            NAV_CONFIG.dipDepth
+          )
+        );
       }
     });
     return () => unsubscribe();
   }, [springX, navWidth]);
 
+  const handleSelect = (index: number) => {
+    setActive(index);
+    const item = NAV_ITEMS[index];
+    if (item && onChange) {
+      onChange(item.id as TelegramTabId);
+    }
+    if (typeof window !== 'undefined') {
+      const tg = (window as any).Telegram?.WebApp;
+      tg?.HapticFeedback?.selectionChanged();
+    }
+  };
+
   const ActiveIcon = NAV_ITEMS[active]?.icon || LayoutDashboard;
 
   return (
-    <div className="fixed bottom-6 left-4 right-4 z-50 max-w-md mx-auto" dir="ltr">
-      <nav ref={navRef} className="relative h-[70px] w-full flex items-center">
-        
+    <div className="fixed bottom-6 left-4 right-4 z-50 max-w-md mx-auto pointer-events-auto" dir="ltr">
+      <nav
+        ref={navRef}
+        className="relative h-[68px] w-full flex items-center select-none"
+        style={{
+          paddingLeft: `${NAV_CONFIG.sidePadding}px`,
+          paddingRight: `${NAV_CONFIG.sidePadding}px`,
+        }}
+      >
         {/* پس‌زمینه شیشه‌ای بلور شده */}
-        <div className="absolute inset-0 rounded-full bg-slate-900/40 backdrop-blur-xl -z-20"></div>
+        <div
+          className="absolute inset-0 bg-slate-900/60 backdrop-blur-2xl -z-20 border border-white/10"
+          style={{ borderRadius: `${NAV_CONFIG.cornerRadius}px` }}
+        />
 
-        {/* رسم لایه داینامیک SVG با Stroke */}
+        {/* رسم لایه داینامیک SVG با کانتور فیروزه‌ای */}
         <div className="absolute -inset-[2px] pointer-events-none -z-10" style={{ top: '-40px' }}>
-          <svg viewBox={`-2 -40 ${navWidth + 4} 112`} className="w-full h-full overflow-visible">
+          <svg
+            viewBox={`-2 -40 ${navWidth + 4} 112`}
+            className="w-full h-full overflow-visible"
+            preserveAspectRatio="none"
+          >
             <path
               d={pathD}
-              fill="rgba(15, 23, 42, 0.75)"
-              stroke="rgba(6, 182, 212, 0.4)"
+              fill="rgba(15, 23, 42, 0.85)"
+              stroke="rgba(6, 182, 212, 0.45)"
               strokeWidth="1.5"
             />
           </svg>
         </div>
 
-        {/* دکمه شناور (Floating Button) */}
+        {/* دکمه شناور فیروزه‌ای (Floating Button) با افکت Glow و انیمیشن آیکون */}
         <motion.div
-          className="absolute top-0 -mt-[28px] w-[56px] h-[56px] rounded-full flex items-center justify-center bg-gradient-to-br from-cyan-400 to-teal-600 shadow-[0_0_22px_rgba(6,182,212,0.55)] border border-cyan-200/50 z-10"
+          className="absolute top-0 -mt-[24px] w-[56px] h-[56px] rounded-full flex items-center justify-center bg-gradient-to-br from-cyan-400 via-cyan-500 to-teal-600 shadow-[0_8px_24px_rgba(6,182,212,0.55)] border-2 border-cyan-200/60 z-20 cursor-pointer"
           style={{ x: springX, left: -28 }}
+          whileTap={{ scale: 0.94 }}
         >
-          <ActiveIcon className="w-6 h-6 text-white" />
+          {/* نور محیطی زیر دکمه شناور */}
+          <div className="absolute -inset-1.5 rounded-full bg-cyan-400/35 blur-md -z-10 pointer-events-none" />
+
+          {/* ترنزیشن نرم تغییر آیکون درون دکمه شناور */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={NAV_ITEMS[active]?.id}
+              initial={{ scale: 0.5, opacity: 0, rotate: -20 }}
+              animate={{ scale: 1, opacity: 1, rotate: 0 }}
+              exit={{ scale: 0.5, opacity: 0, rotate: 20 }}
+              transition={{ duration: 0.18 }}
+            >
+              <ActiveIcon className="w-6 h-6 text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]" />
+            </motion.div>
+          </AnimatePresence>
         </motion.div>
 
-        {/* دکمه‌های منو */}
+        {/* دکمه‌های ناوبری چهارگانه */}
         {NAV_ITEMS.map((item, index) => {
           const Icon = item.icon;
           const isActive = index === active;
-          
+
           return (
             <button
               key={item.id}
               type="button"
-              onClick={() => {
-                setActive(index);
-                onChange?.(item.id as TelegramTabId);
-                if (typeof window !== 'undefined') {
-                  const tg = (window as any).Telegram?.WebApp;
-                  tg?.HapticFeedback?.selectionChanged();
-                }
-              }}
-              className="flex-1 flex flex-col items-center justify-center gap-1 z-0 relative h-full cursor-pointer select-none"
+              onClick={() => handleSelect(index)}
+              className="flex-1 flex flex-col items-center justify-center gap-1 z-10 relative h-full cursor-pointer select-none group"
             >
               <Icon
                 className={`w-[22px] h-[22px] transition-all duration-300 ${
-                  isActive ? 'opacity-0 scale-50' : 'opacity-100 text-slate-300'
+                  isActive
+                    ? 'opacity-0 scale-50 -translate-y-2'
+                    : 'opacity-100 text-slate-400 group-hover:text-slate-200'
                 }`}
               />
               <span
                 className={`text-[11px] font-medium tracking-wide transition-colors duration-300 ${
-                  isActive ? 'text-cyan-400' : 'text-slate-400'
+                  isActive
+                    ? 'text-cyan-400 font-bold'
+                    : 'text-slate-400 group-hover:text-slate-200'
                 }`}
               >
                 {item.label}
@@ -142,4 +237,3 @@ export default function TelegramBottomNav({ activeTab, onChange }: TelegramBotto
     </div>
   );
 }
-

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Users,
   MessageSquare,
@@ -72,6 +73,63 @@ interface AdminTransaction {
 export default function AdminTWA() {
   const [authStatus, setAuthStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [activeTab, setActiveTab] = useState<'dashboard' | 'users' | 'orders' | 'finance'>('dashboard');
+  const [slideDirection, setSlideDirection] = useState<number>(0);
+
+  const TABS_ORDER: ('dashboard' | 'users' | 'orders' | 'finance')[] = [
+    'finance',
+    'orders',
+    'users',
+    'dashboard',
+  ];
+
+  const handleTabChange = (newTab: 'dashboard' | 'users' | 'orders' | 'finance') => {
+    const oldIdx = TABS_ORDER.indexOf(activeTab);
+    const newIdx = TABS_ORDER.indexOf(newTab);
+    if (newIdx !== oldIdx) {
+      setSlideDirection(newIdx > oldIdx ? 1 : -1);
+      setActiveTab(newTab);
+      if (typeof window !== 'undefined') {
+        const tg = (window as any).Telegram?.WebApp;
+        tg?.HapticFeedback?.selectionChanged();
+      }
+    }
+  };
+
+  const handleSwipeEnd = (
+    offset: { x: number; y: number },
+    velocity: { x: number; y: number }
+  ) => {
+    // If vertical gesture is dominant, do not trigger horizontal tab swipe
+    if (Math.abs(offset.y) > Math.abs(offset.x) * 1.5) {
+      return;
+    }
+
+    const swipeThreshold = 45;
+    const velocityThreshold = 250;
+    const currentIdx = TABS_ORDER.indexOf(activeTab);
+
+    if (offset.x < -swipeThreshold || velocity.x < -velocityThreshold) {
+      // Swiping to the Left -> move towards lower index in TABS_ORDER ('finance' side)
+      if (currentIdx > 0) {
+        setSlideDirection(-1);
+        setActiveTab(TABS_ORDER[currentIdx - 1]);
+        if (typeof window !== 'undefined') {
+          const tg = (window as any).Telegram?.WebApp;
+          tg?.HapticFeedback?.selectionChanged();
+        }
+      }
+    } else if (offset.x > swipeThreshold || velocity.x > velocityThreshold) {
+      // Swiping to the Right -> move towards higher index in TABS_ORDER ('dashboard' side)
+      if (currentIdx < TABS_ORDER.length - 1) {
+        setSlideDirection(1);
+        setActiveTab(TABS_ORDER[currentIdx + 1]);
+        if (typeof window !== 'undefined') {
+          const tg = (window as any).Telegram?.WebApp;
+          tg?.HapticFeedback?.selectionChanged();
+        }
+      }
+    }
+  };
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [recentProfiles, setRecentProfiles] = useState<RecentProfile[]>([]);
   const [recentOrders, setRecentOrders] = useState<AdminOrder[]>([]);
@@ -292,7 +350,7 @@ export default function AdminTWA() {
   }
 
   return (
-    <div className="p-4 pb-32 space-y-4 font-sans select-none max-w-md mx-auto" dir="rtl">
+    <div className="p-4 pb-32 space-y-4 font-sans select-none max-w-md mx-auto overflow-x-hidden" dir="rtl">
       {/* Top Bar Header */}
       <div className="flex items-center justify-between pb-1">
         <div className="flex items-center gap-2">
@@ -331,8 +389,37 @@ export default function AdminTWA() {
         </button>
       </div>
 
-      {/* Content Area Based on Active Tab */}
-      {activeTab === 'dashboard' ? (
+      {/* Animated Content Area with Swipe & Slide Transition */}
+      <div className="overflow-hidden w-full">
+        <AnimatePresence mode="wait" custom={slideDirection}>
+          <motion.div
+            key={activeTab}
+            custom={slideDirection}
+            variants={{
+              enter: (dir: number) => ({
+                x: dir > 0 ? 30 : dir < 0 ? -30 : 0,
+                opacity: 0,
+              }),
+              center: {
+                x: 0,
+                opacity: 1,
+              },
+              exit: (dir: number) => ({
+                x: dir > 0 ? -30 : dir < 0 ? 30 : 0,
+                opacity: 0,
+              }),
+            }}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            drag="x"
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.2}
+            onDragEnd={(e, info) => handleSwipeEnd(info.offset, info.velocity)}
+            className="w-full space-y-4 touch-pan-y"
+          >
+            {activeTab === 'dashboard' ? (
         <>
           {/* Hero Welcome Card */}
           <div
@@ -1029,9 +1116,12 @@ export default function AdminTWA() {
           </div>
         </div>
       )}
+          </motion.div>
+        </AnimatePresence>
+      </div>
 
       {/* Liquid Glass Floating Telegram Bottom Navigation */}
-      <TelegramBottomNav activeTab={activeTab} onChange={setActiveTab} />
+      <TelegramBottomNav activeTab={activeTab} onChange={handleTabChange} />
     </div>
   );
 }
