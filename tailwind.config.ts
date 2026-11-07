@@ -17,33 +17,8 @@ const config: Config = {
     },
     extend: {
       fontFamily: {
-        sans: [
-          "var(--font-vazirmatn)",
-          "var(--font-outfit)",
-          "var(--font-inter)",
-          "system-ui",
-          "-apple-system",
-          "BlinkMacSystemFont",
-          "sans-serif",
-        ],
-        outfit: [
-          "var(--font-outfit)",
-          "var(--font-vazirmatn)",
-          "sans-serif",
-        ],
-        mono: [
-          "var(--font-vazirmatn)",
-          "var(--font-outfit)",
-          "var(--font-inter)",
-          "ui-monospace",
-          "monospace",
-        ],
-        inter: [
-          "var(--font-outfit)",
-          "var(--font-vazirmatn)",
-          "var(--font-inter)",
-          "sans-serif",
-        ],
+        sans: ['var(--font-vazirmatn)', 'sans-serif'],
+        outfit: ['var(--font-outfit)', 'sans-serif'],
       },
       colors: {
         border: "hsl(var(--border))",
