@@ -3,10 +3,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useEditorStore } from '@/store/editor-store';
-import { ProfileThemeConfig, HeaderLayoutType, ProfileLanguage, ProfileType, VerificationData } from '@/types/profile.types';
+import { ProfileThemeConfig, HeaderLayoutType, ProfileLanguage, ProfileType, VerificationData, LinkModuleType, ProfileLinkItem } from '@/types/profile.types';
 import { ModuleSelectorModal } from './ModuleSelectorModal';
 import { SectionModulesList } from './SectionModulesList';
 import { CrmLeadsTable } from './CrmLeadsTable';
+import { CardOcrScannerModal, ScannedContactData } from '@/components/common/CardOcrScannerModal';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { FileUploader } from '@/components/ui/file-uploader';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
@@ -49,6 +50,9 @@ import {
   ChevronDown,
   Undo2,
   Wand2,
+  Scan,
+  Upload,
+  Clipboard,
 } from 'lucide-react';
 
 const DEFAULT_PRESET_COLORS = [
@@ -330,6 +334,264 @@ export const ProfileEditor: React.FC = () => {
   const [isSubmittingKYC, setIsSubmittingKYC] = useState(false);
   const [isProfileInfoExpanded, setIsProfileInfoExpanded] = useState(false);
   const [isSavingTheme, setIsSavingTheme] = useState(false);
+
+  // Business Card OCR Scanner States
+  const [isOcrOpen, setIsOcrOpen] = useState(false);
+  const [ocrInitialMode, setOcrInitialMode] = useState<'upload' | 'url' | 'clipboard' | 'camera'>('upload');
+  const [pastedImageSrc, setPastedImageSrc] = useState<string | null>(null);
+  const [isUploadDropdownOpen, setIsUploadDropdownOpen] = useState(false);
+  const ocrDropdownRef = useRef<HTMLDivElement>(null);
+  const ocrFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Close OCR upload dropdown on click outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (ocrDropdownRef.current && !ocrDropdownRef.current.contains(event.target as Node)) {
+        setIsUploadDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Global Paste Support for Business Cards (Ctrl+V) when activeTab is 'content'
+  useEffect(() => {
+    if (activeTab !== 'content') return;
+
+    const handleGlobalPaste = (e: ClipboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (
+        target &&
+        (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
+      ) {
+        return;
+      }
+
+      const items = e.clipboardData?.items;
+      if (!items || items.length === 0) return;
+
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.type.indexOf('image') !== -1) {
+          e.preventDefault();
+          const file = item.getAsFile();
+          if (file) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+              const base64 = event.target?.result as string;
+              if (base64) {
+                setPastedImageSrc(base64);
+                setOcrInitialMode('upload');
+                setIsOcrOpen(true);
+                toast.success('تصویر کارت ویزیت از کلیپ‌بورد دریافت شد و اسکن هوشمند آغاز گردید!');
+              }
+            };
+            reader.readAsDataURL(file);
+            break;
+          }
+        }
+      }
+    };
+
+    window.addEventListener('paste', handleGlobalPaste);
+    return () => window.removeEventListener('paste', handleGlobalPaste);
+  }, [activeTab]);
+
+  const handleOcrFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64 = event.target?.result as string;
+      if (base64) {
+        setPastedImageSrc(base64);
+        setOcrInitialMode('upload');
+        setIsOcrOpen(true);
+      }
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const handleOcrComplete = (scanned: ScannedContactData) => {
+    const newModules: ProfileLinkItem[] = [];
+    const timestamp = Date.now();
+    let orderIndex = profile.links.length;
+
+    const createModule = (
+      moduleType: LinkModuleType,
+      title: string,
+      url: string,
+      metadata: any
+    ): ProfileLinkItem => ({
+      id: `module_${timestamp}_${Math.random().toString(36).substring(2, 9)}`,
+      title,
+      url,
+      moduleType,
+      parentId: null,
+      isActive: true,
+      isPinned: false,
+      order: orderIndex++,
+      clickCount: 0,
+      metadata,
+      advancedSettings: {
+        scheduling: { enabled: false, days: [0, 1, 2, 3, 4, 5, 6], startTime: '08:00', endTime: '20:00' },
+        monetization: { isLocked: false, price: 50, currency: 'AFN', unlockNote: 'برای مشاهده محتوا پرداخت فرمایید.' },
+        customStyling: {},
+      },
+    });
+
+    // 1. Phone number -> Direct Phone Call
+    if (scanned.phone && scanned.phone.trim()) {
+      const cleanPhone = scanned.phone.trim().replace(/\s+/g, '');
+      const formattedTel = cleanPhone.startsWith('+')
+        ? cleanPhone
+        : cleanPhone.startsWith('00')
+        ? `+${cleanPhone.slice(2)}`
+        : `+${cleanPhone}`;
+      newModules.push(
+        createModule(
+          'phone_call',
+          scanned.name ? `تماس با ${scanned.name}` : 'تماس تلفنی مستقیم',
+          `tel:${formattedTel}`,
+          { phoneNumber: cleanPhone }
+        )
+      );
+    }
+
+    // 2. Email -> Direct Email
+    if (scanned.email && scanned.email.trim()) {
+      const cleanEmail = scanned.email.trim();
+      newModules.push(
+        createModule(
+          'email_direct',
+          'ارسال ایمیل کاری',
+          `mailto:${cleanEmail}`,
+          { emailAddress: cleanEmail, emailSubject: 'پیام از طریق کارت هوشمند آریا لینک' }
+        )
+      );
+    }
+
+    // 3. Website -> Standard Link
+    if (scanned.website && scanned.website.trim()) {
+      const cleanWeb = scanned.website.trim();
+      const webUrl = cleanWeb.startsWith('http://') || cleanWeb.startsWith('https://')
+        ? cleanWeb
+        : `https://${cleanWeb}`;
+      newModules.push(
+        createModule(
+          'standard_link',
+          scanned.company ? `وب‌سایت رسمی ${scanned.company}` : 'وب‌سایت رسمی',
+          webUrl,
+          {}
+        )
+      );
+    }
+
+    // 4. Social Networks
+    if (scanned.socials) {
+      if (scanned.socials.whatsapp && scanned.socials.whatsapp.trim()) {
+        const rawWa = scanned.socials.whatsapp.trim().replace(/[^0-9]/g, '');
+        newModules.push(
+          createModule(
+            'whatsapp_direct',
+            'ارتباط در واتساپ',
+            `https://wa.me/${rawWa}`,
+            { phoneNumber: `+${rawWa}`, prefilledMessage: 'سلام، از طریق کارت هوشمند شما پیام می‌دهم.' }
+          )
+        );
+      }
+
+      if (scanned.socials.telegram && scanned.socials.telegram.trim()) {
+        const tgHandle = scanned.socials.telegram.trim().replace(/^@/, '').replace(/^https?:\/\/t\.me\//, '');
+        newModules.push(
+          createModule(
+            'telegram_channel',
+            'کانال یا آیدی تلگرام',
+            `https://t.me/${tgHandle}`,
+            { username: tgHandle }
+          )
+        );
+      }
+
+      if (scanned.socials.instagram && scanned.socials.instagram.trim()) {
+        const igHandle = scanned.socials.instagram.trim().replace(/^@/, '').replace(/^https?:\/\/instagram\.com\//, '');
+        newModules.push(
+          createModule(
+            'instagram_profile',
+            'صفحه اینستاگرام',
+            `https://instagram.com/${igHandle}`,
+            { username: igHandle }
+          )
+        );
+      }
+
+      if (scanned.socials.linkedin && scanned.socials.linkedin.trim()) {
+        const li = scanned.socials.linkedin.trim();
+        const liUrl = li.startsWith('http') ? li : `https://linkedin.com/in/${li.replace(/^@/, '')}`;
+        newModules.push(
+          createModule(
+            'linkedin_profile',
+            'پروفایل لینکدین',
+            liUrl,
+            { username: li }
+          )
+        );
+      }
+
+      if (scanned.socials.twitter && scanned.socials.twitter.trim()) {
+        const tw = scanned.socials.twitter.trim().replace(/^@/, '').replace(/^https?:\/\/(twitter|x)\.com\//, '');
+        newModules.push(
+          createModule(
+            'twitter_x',
+            'صفحه توییتر / ایکس',
+            `https://x.com/${tw}`,
+            { username: tw }
+          )
+        );
+      }
+
+      if (scanned.socials.facebook && scanned.socials.facebook.trim()) {
+        const fb = scanned.socials.facebook.trim();
+        const fbUrl = fb.startsWith('http') ? fb : `https://facebook.com/${fb}`;
+        newModules.push(
+          createModule(
+            'facebook',
+            'صفحه فیسبوک',
+            fbUrl,
+            { username: fb }
+          )
+        );
+      }
+    }
+
+    // 5. Fallback if name or company exists and no specific links were generated
+    if (newModules.length === 0) {
+      if (scanned.name || scanned.company || scanned.job_title) {
+        newModules.push(
+          createModule(
+            'simple_text',
+            'اطلاعات کارت ویزیت',
+            '#text',
+            { simpleTextContent: `${scanned.name || ''} - ${scanned.job_title || ''} (${scanned.company || ''})`.trim() }
+          )
+        );
+      }
+    }
+
+    if (newModules.length > 0) {
+      useEditorStore.setState((state) => ({
+        profile: {
+          ...state.profile,
+          links: [...newModules, ...state.profile.links],
+        },
+        isDirty: true,
+      }));
+      toast.success(`${newModules.length} ماژول جدید با موفقیت از کارت ویزیت استخراج و افزوده شد!`);
+    } else {
+      toast.warning('اطلاعات قابل تبدیل به ماژول در تصویر کارت ویزیت یافت نشد.');
+    }
+  };
 
   // AI Assistant States (Google Gemini 1.5 Flash - Free Tier)
   const [isAiMenuOpen, setIsAiMenuOpen] = useState(false);
@@ -1042,6 +1304,98 @@ export const ProfileEditor: React.FC = () => {
                 </div>
 
                 <div className="flex items-center gap-2">
+                  {/* Scan Business Card Button & Dropdown */}
+                  <div className="relative" ref={ocrDropdownRef}>
+                    <div className="flex items-center rounded-xl border border-cyan-500/40 bg-gradient-to-r from-cyan-500/15 via-purple-500/15 to-slate-900 text-cyan-300 shadow-sm overflow-hidden">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPastedImageSrc(null);
+                          setOcrInitialMode('upload');
+                          setIsOcrOpen(true);
+                        }}
+                        className="px-3 py-1.5 text-xs font-semibold flex items-center gap-1.5 hover:bg-cyan-500/20 transition-all cursor-pointer"
+                        title="اسکن هوشمند کارت ویزیت و تبدیل به ماژول (کلید میانبر Ctrl+V)"
+                      >
+                        <Scan className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
+                        <span>اسکن کارت ویزیت</span>
+                        <span className="text-[10px] font-sans font-bold bg-slate-900/80 text-cyan-300 px-1 py-0.2 rounded border border-cyan-500/30">
+                          Ctrl+V
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIsUploadDropdownOpen(!isUploadDropdownOpen)}
+                        className="px-2 py-1.5 border-r border-cyan-500/30 hover:bg-cyan-500/25 transition-all text-cyan-300 cursor-pointer"
+                        title="روش‌های مختلف آپلود عکس"
+                      >
+                        <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isUploadDropdownOpen ? 'rotate-180' : ''}`} />
+                      </button>
+                    </div>
+
+                    {/* Upload Dropdown Menu */}
+                    {isUploadDropdownOpen && (
+                      <div className="absolute left-0 top-full mt-1.5 w-64 rounded-2xl bg-slate-950 border border-cyan-500/30 shadow-2xl z-50 p-1.5 space-y-1 animate-in fade-in slide-in-from-top-1 text-right">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsUploadDropdownOpen(false);
+                            ocrFileInputRef.current?.click();
+                          }}
+                          className="w-full text-right p-2.5 rounded-xl hover:bg-cyan-500/10 text-xs text-slate-200 hover:text-cyan-300 transition-colors flex items-center gap-2.5 cursor-pointer"
+                        >
+                          <Upload className="w-4 h-4 text-cyan-400 shrink-0" />
+                          <div>
+                            <span className="font-semibold block">۱. آپلود از دستگاه</span>
+                            <span className="text-[10px] text-slate-400 block font-normal">انتخاب تصویر از گالری/کامپیوتر</span>
+                          </div>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsUploadDropdownOpen(false);
+                            setPastedImageSrc(null);
+                            setOcrInitialMode('url');
+                            setIsOcrOpen(true);
+                          }}
+                          className="w-full text-right p-2.5 rounded-xl hover:bg-purple-500/10 text-xs text-slate-200 hover:text-purple-300 transition-colors flex items-center gap-2.5 cursor-pointer"
+                        >
+                          <Link2 className="w-4 h-4 text-purple-400 shrink-0" />
+                          <div>
+                            <span className="font-semibold block">۲. جایگذاری لینک عکس</span>
+                            <span className="text-[10px] text-slate-400 block font-normal">ورود URL اینترنتی تصویر</span>
+                          </div>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsUploadDropdownOpen(false);
+                            setPastedImageSrc(null);
+                            setOcrInitialMode('clipboard');
+                            setIsOcrOpen(true);
+                          }}
+                          className="w-full text-right p-2.5 rounded-xl hover:bg-emerald-500/10 text-xs text-slate-200 hover:text-emerald-300 transition-colors flex items-center gap-2.5 cursor-pointer"
+                        >
+                          <Clipboard className="w-4 h-4 text-emerald-400 shrink-0" />
+                          <div>
+                            <span className="font-semibold block">۳. خواندن از کلیپ‌بورد</span>
+                            <span className="text-[10px] text-slate-400 block font-normal">استخراج مستقیم تصویر کپی‌شده</span>
+                          </div>
+                        </button>
+                      </div>
+                    )}
+
+                    <input
+                      ref={ocrFileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleOcrFileSelect}
+                    />
+                  </div>
+
                   <button
                     type="button"
                     onClick={() => {
@@ -2398,6 +2752,18 @@ export const ProfileEditor: React.FC = () => {
       <ModuleSelectorModal
         open={isModuleModalOpen}
         onOpenChange={setIsModuleModalOpen}
+      />
+
+      {/* Card OCR Scanner Modal (Gemini Vision) */}
+      <CardOcrScannerModal
+        isOpen={isOcrOpen}
+        onClose={() => {
+          setIsOcrOpen(false);
+          setPastedImageSrc(null);
+        }}
+        onScanComplete={handleOcrComplete}
+        initialImageSrc={pastedImageSrc}
+        initialMode={ocrInitialMode}
       />
     </div>
   );

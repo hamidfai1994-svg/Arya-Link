@@ -28,6 +28,7 @@ import {
   Sparkles,
   Zap,
   ArrowRight,
+  Globe,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -35,8 +36,18 @@ export interface ScannedContactData {
   name: string;
   phone: string;
   email: string;
+  website?: string;
   company?: string;
   job_title?: string;
+  socials?: {
+    whatsapp?: string;
+    telegram?: string;
+    instagram?: string;
+    linkedin?: string;
+    twitter?: string;
+    facebook?: string;
+    [key: string]: string | undefined;
+  };
   notes?: string;
   rawText?: string;
 }
@@ -252,13 +263,14 @@ export const CardOcrScannerModal: React.FC<CardOcrScannerModalProps> = ({
         throw new Error(result.message || 'خطا در اسکن تصویر کارت با هوش مصنوعی.');
       }
 
-      const { name, phone, email, company, job_title } = result.data;
+      const { name, phone, email, website, company, job_title, socials } = result.data;
       setScanProgress(100);
       setStatusText('اطلاعات با دقت بالا استخراج شد!');
 
       const notesArr = [
         company ? `شرکت: ${company}` : '',
         job_title ? `سمت: ${job_title}` : '',
+        website ? `وب‌سایت: ${website}` : '',
         'اسکن شده با Gemini Vision در Arya Link',
       ].filter(Boolean);
 
@@ -266,8 +278,10 @@ export const CardOcrScannerModal: React.FC<CardOcrScannerModalProps> = ({
         name: name || '',
         phone: phone || '',
         email: email || '',
+        website: website || '',
         company: company || '',
         job_title: job_title || '',
+        socials: socials || {},
         notes: notesArr.join(' - '),
       };
 
@@ -670,7 +684,7 @@ export const CardOcrScannerModal: React.FC<CardOcrScannerModalProps> = ({
                 </div>
 
                 {/* Email */}
-                <div className="space-y-1 sm:col-span-2">
+                <div className="space-y-1">
                   <label className="text-[10px] text-slate-400 flex items-center gap-1">
                     <Mail className="w-3 h-3 text-amber-400" />
                     <span>آدرس ایمیل:</span>
@@ -684,6 +698,22 @@ export const CardOcrScannerModal: React.FC<CardOcrScannerModalProps> = ({
                     className="w-full bg-slate-950 border border-slate-700 focus:border-amber-400 rounded-xl px-2.5 py-1.5 text-xs text-white font-sans text-left outline-none"
                   />
                 </div>
+
+                {/* Website */}
+                <div className="space-y-1">
+                  <label className="text-[10px] text-slate-400 flex items-center gap-1">
+                    <Globe className="w-3 h-3 text-cyan-400" />
+                    <span>آدرس وب‌سایت:</span>
+                  </label>
+                  <input
+                    type="url"
+                    dir="ltr"
+                    value={parsedData.website || ''}
+                    onChange={(e) => setParsedData({ ...parsedData, website: e.target.value })}
+                    placeholder="https://example.com"
+                    className="w-full bg-slate-950 border border-slate-700 focus:border-cyan-400 rounded-xl px-2.5 py-1.5 text-xs text-white font-sans text-left outline-none"
+                  />
+                </div>
               </div>
 
               {/* Action Buttons */}
@@ -694,7 +724,7 @@ export const CardOcrScannerModal: React.FC<CardOcrScannerModalProps> = ({
                   className="flex-1 py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 font-bold text-xs shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
                 >
                   <CheckCircle2 className="w-4 h-4" />
-                  <span>ثبت در مخاطبین و پیام‌ها</span>
+                  <span>تبدیل و افزودن به ماژول‌های کارت</span>
                 </button>
                 <button
                   type="button"

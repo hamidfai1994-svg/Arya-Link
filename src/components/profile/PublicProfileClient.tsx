@@ -1977,8 +1977,18 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
 
               {/* 2. UNIFIED SOCIAL NETWORKS MATRIX */}
               {hasAnySocial && (
-                <div className="pt-2 pb-1 md:px-5 md:pt-3 md:pb-4">
-                  <div className="flex items-center justify-center flex-wrap gap-2.5 p-2 rounded-2xl bg-black/10 dark:bg-white/5 border border-white/10 backdrop-blur-md">
+                <div className="pt-2 pb-1 md:px-5 md:pt-3 md:pb-4 flex justify-center text-center">
+                  <div
+                    className={`inline-flex flex-wrap justify-center mx-auto max-w-full w-max items-center gap-2.5 p-2 ${
+                      themeConfig.buttonShape === 'pill' || themeConfig.borderRadius === 'rounded-full'
+                        ? 'rounded-full px-3.5'
+                        : themeConfig.buttonShape === 'sharp' || themeConfig.borderRadius === 'rounded-none'
+                        ? 'rounded-none'
+                        : themeConfig.borderRadius === 'rounded-xl' || themeConfig.borderRadius === 'rounded-lg'
+                        ? 'rounded-xl'
+                        : 'rounded-2xl'
+                    } bg-black/10 dark:bg-white/5 border border-white/10 backdrop-blur-md`}
+                  >
                     {/* WhatsApp (from profile if no module link exists) */}
                     {profile.whatsapp && !hasWhatsAppLink && (
                       <a
@@ -1986,7 +1996,11 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
                         target="_blank"
                         rel="noopener noreferrer"
                         title="ارسال پیام در واتساپ"
-                        className="w-11 h-11 rounded-2xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm"
+                        className={`w-11 h-11 ${
+                          themeConfig.buttonShape === 'pill' || themeConfig.borderRadius === 'rounded-full'
+                            ? 'rounded-full'
+                            : 'rounded-2xl'
+                        } bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm`}
                       >
                         <WhatsAppIcon className="w-5 h-5 fill-current" />
                       </a>
@@ -2000,7 +2014,11 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
                       <a
                         href={getSmartLink('phone', profile.phone)}
                         title={`تماس تلفنی: ${profile.phone}`}
-                        className="w-11 h-11 rounded-2xl bg-teal-500/15 hover:bg-teal-500/25 border border-teal-500/30 text-teal-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm"
+                        className={`w-11 h-11 ${
+                          themeConfig.buttonShape === 'pill' || themeConfig.borderRadius === 'rounded-full'
+                            ? 'rounded-full'
+                            : 'rounded-2xl'
+                        } bg-teal-500/15 hover:bg-teal-500/25 border border-teal-500/30 text-teal-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm`}
                       >
                         <Phone className="w-5 h-5" />
                       </a>

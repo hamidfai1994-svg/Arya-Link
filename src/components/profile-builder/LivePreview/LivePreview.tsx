@@ -2053,7 +2053,7 @@ export const LivePreview: React.FC = () => {
                 <div className="px-4 flex-1 flex flex-col">
                   {/* SOCIAL NETWORKS ICON GRID (Dedicated Row / Matrix with Horizontal Dnd) */}
                   {(compactSocialLinks.length > 0 || profile.whatsapp || profile.phone) && (
-                    <div className="mb-4 pt-1">
+                    <div className="mb-4 pt-1 flex justify-center text-center">
                       <DndContext
                         id="social-dnd-context"
                         sensors={sensors}
@@ -2066,7 +2066,17 @@ export const LivePreview: React.FC = () => {
                           items={compactSocialLinks.map((l) => l.id)}
                           strategy={horizontalListSortingStrategy}
                         >
-                          <div className="flex items-center justify-center flex-wrap gap-2.5 p-2 rounded-2xl bg-black/10 dark:bg-white/5 border border-white/10 backdrop-blur-md">
+                          <div
+                            className={`inline-flex flex-wrap justify-center mx-auto max-w-full w-max items-center gap-2.5 p-2 ${
+                              themeConfig.buttonShape === 'pill' || themeConfig.borderRadius === 'rounded-full'
+                                ? 'rounded-full px-3.5'
+                                : themeConfig.buttonShape === 'sharp' || themeConfig.borderRadius === 'rounded-none'
+                                ? 'rounded-none'
+                                : themeConfig.borderRadius === 'rounded-xl' || themeConfig.borderRadius === 'rounded-lg'
+                                ? 'rounded-xl'
+                                : 'rounded-2xl'
+                            } bg-black/10 dark:bg-white/5 border border-white/10 backdrop-blur-md`}
+                          >
                             {profile.whatsapp && !compactSocialLinks.some((l) => l.moduleType === 'whatsapp_direct') && (
                               <button
                                 type="button"
@@ -2075,7 +2085,11 @@ export const LivePreview: React.FC = () => {
                                   e.stopPropagation();
                                   toast.info('این آیکون مربوط به شماره واتساپ در اطلاعات شناسنامه‌ای پروفایل است.');
                                 }}
-                                className="w-11 h-11 rounded-2xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm cursor-pointer"
+                                className={`w-11 h-11 ${
+                                  themeConfig.buttonShape === 'pill' || themeConfig.borderRadius === 'rounded-full'
+                                    ? 'rounded-full'
+                                    : 'rounded-2xl'
+                                } bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm cursor-pointer`}
                                 title="واتساپ (پروفایل)"
                               >
                                 <WhatsAppIcon className="w-5 h-5 fill-current" />
@@ -2098,7 +2112,11 @@ export const LivePreview: React.FC = () => {
                                   e.stopPropagation();
                                   toast.info('این آیکون مربوط به شماره تماس در اطلاعات شناسنامه‌ای پروفایل است.');
                                 }}
-                                className="w-11 h-11 rounded-2xl bg-teal-500/15 hover:bg-teal-500/25 border border-teal-500/30 text-teal-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm cursor-pointer"
+                                className={`w-11 h-11 ${
+                                  themeConfig.buttonShape === 'pill' || themeConfig.borderRadius === 'rounded-full'
+                                    ? 'rounded-full'
+                                    : 'rounded-2xl'
+                                } bg-teal-500/15 hover:bg-teal-500/25 border border-teal-500/30 text-teal-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm cursor-pointer`}
                                 title="تماس (پروفایل)"
                               >
                                 <Phone className="w-5 h-5" />
