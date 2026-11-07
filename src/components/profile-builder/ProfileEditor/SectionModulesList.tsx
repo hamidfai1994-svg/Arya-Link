@@ -84,6 +84,10 @@ import {
   RotateCcw,
   FolderPlus,
   Folder,
+  ShieldCheck,
+  KeyRound,
+  MousePointerClick,
+  Hourglass,
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import {
@@ -2640,6 +2644,211 @@ export const SectionModulesList: React.FC = () => {
           <p className="text-[10px] text-muted-foreground leading-relaxed">
             در حالت «ارث‌بری از تم»، شکل دکمه به طور خودکار از تنظیمات تب طراحی و تم ارث برده می‌شود. با انتخاب هر شکل اختصاصی، این دکمه استایل منحصربه‌فرد خواهد داشت.
           </p>
+        </div>
+
+        {/* 6. LINK PROTECTION & ACCESS CONTROL (محافظت و محدودیت لینک) */}
+        <div className="p-3.5 rounded-xl border border-cyan-500/20 bg-gradient-to-br from-cyan-950/20 to-slate-900/40 space-y-4">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-cyan-400" />
+            <span className="text-xs font-bold text-foreground">
+              محافظت و مدیریت پیشرفته لینک (Link Protection)
+            </span>
+          </div>
+          <p className="text-[11px] text-muted-foreground leading-relaxed">
+            تنظیم تاریخ انقضا، محدودیت تعداد کلیک و قفل کردن لینک با رمز عبور بدون هیچ هزینه سرور.
+          </p>
+
+          {/* 6.1 Expiration Date */}
+          <div className="p-2.5 rounded-lg border border-border/80 bg-background/50 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <Hourglass className="w-3.5 h-3.5 text-amber-400" />
+                <span className="text-xs font-semibold text-foreground">تاریخ و زمان انقضا</span>
+              </div>
+              <Switch
+                checked={Boolean(link.expiresAt || adv.expiresAt)}
+                onCheckedChange={(checked) => {
+                  if (checked) {
+                    const defaultExp = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16);
+                    updateLink(link.id, {
+                      expiresAt: defaultExp,
+                      advancedSettings: { ...adv, expiresAt: defaultExp },
+                    });
+                  } else {
+                    updateLink(link.id, {
+                      expiresAt: null,
+                      advancedSettings: { ...adv, expiresAt: null },
+                    });
+                  }
+                }}
+              />
+            </div>
+            {Boolean(link.expiresAt || adv.expiresAt) && (
+              <div className="pt-1.5 border-t border-border/40 space-y-1">
+                <label className="block text-[10px] text-muted-foreground">
+                  پس از این تاریخ، لینک به صورت خودکار منقضی و غیرفعال خواهد شد:
+                </label>
+                <input
+                  type="datetime-local"
+                  value={
+                    link.expiresAt
+                      ? (link.expiresAt instanceof Date ? link.expiresAt.toISOString().slice(0, 16) : String(link.expiresAt).slice(0, 16))
+                      : (adv.expiresAt ? String(adv.expiresAt).slice(0, 16) : '')
+                  }
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    updateLink(link.id, {
+                      expiresAt: val || null,
+                      advancedSettings: { ...adv, expiresAt: val || null },
+                    });
+                  }}
+                  className="w-full bg-background border border-border rounded-lg px-2.5 py-1.5 text-xs text-foreground font-sans text-left"
+                  dir="ltr"
+                />
+              </div>
+            )}
+          </div>
+
+          {/* 6.2 Max Clicks */}
+          <div className="p-2.5 rounded-lg border border-border/80 bg-background/50 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <MousePointerClick className="w-3.5 h-3.5 text-cyan-400" />
+                <span className="text-xs font-semibold text-foreground">سقف مجاز تعداد کلیک</span>
+              </div>
+              <Switch
+                checked={typeof (link.maxClicks ?? adv.maxClicks) === 'number' && (link.maxClicks ?? adv.maxClicks)! > 0}
+                onCheckedChange={(checked) => {
+                  if (checked) {
+                    updateLink(link.id, {
+                      maxClicks: 100,
+                      advancedSettings: { ...adv, maxClicks: 100 },
+                    });
+                  } else {
+                    updateLink(link.id, {
+                      maxClicks: null,
+                      advancedSettings: { ...adv, maxClicks: null },
+                    });
+                  }
+                }}
+              />
+            </div>
+            {typeof (link.maxClicks ?? adv.maxClicks) === 'number' && (link.maxClicks ?? adv.maxClicks)! > 0 && (
+              <div className="pt-1.5 border-t border-border/40 space-y-1">
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] text-muted-foreground">حداکثر کلیک مجاز:</label>
+                  <span className="text-[10px] text-cyan-400 font-sans">
+                    کلیک‌های ثبت‌شده تاکنون: {link.clickCount || 0}
+                  </span>
+                </div>
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={link.maxClicks ?? adv.maxClicks ?? 100}
+                  onChange={(e) => {
+                    const val = e.target.value ? parseInt(e.target.value, 10) : null;
+                    updateLink(link.id, {
+                      maxClicks: val,
+                      advancedSettings: { ...adv, maxClicks: val },
+                    });
+                  }}
+                  placeholder="مثلاً 100"
+                  className="w-full bg-background border border-border rounded-lg px-2.5 py-1.5 text-xs text-foreground font-sans text-left"
+                  dir="ltr"
+                />
+              </div>
+            )}
+          </div>
+
+          {/* 6.3 Password Protection */}
+          <div className="p-2.5 rounded-lg border border-border/80 bg-background/50 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <KeyRound className="w-3.5 h-3.5 text-purple-400" />
+                <span className="text-xs font-semibold text-foreground">محافظت با رمز عبور (Password)</span>
+              </div>
+              <Switch
+                checked={Boolean(link.hasPassword || link.passwordHash || adv.hasPassword || (link as any).rawPassword)}
+                onCheckedChange={(checked) => {
+                  if (!checked) {
+                    updateLink(link.id, {
+                      passwordHash: null,
+                      hasPassword: false,
+                      rawPassword: '',
+                      removePassword: true,
+                      advancedSettings: {
+                        ...adv,
+                        passwordHash: null,
+                        hasPassword: false,
+                        removePassword: true,
+                      },
+                    } as any);
+                    toast.success('رمز عبور این لینک حذف شد.');
+                  }
+                }}
+              />
+            </div>
+
+            <div className="space-y-2 pt-1">
+              {Boolean(link.hasPassword || link.passwordHash || adv.hasPassword) && (
+                <div className="flex items-center justify-between bg-purple-500/10 border border-purple-500/20 px-2.5 py-1.5 rounded-lg">
+                  <span className="text-[11px] text-purple-300 font-medium flex items-center gap-1">
+                    <Check className="w-3 h-3 text-purple-400" />
+                    رمز عبور فعال است
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      updateLink(link.id, {
+                        passwordHash: null,
+                        hasPassword: false,
+                        rawPassword: '',
+                        removePassword: true,
+                        advancedSettings: {
+                          ...adv,
+                          passwordHash: null,
+                          hasPassword: false,
+                          removePassword: true,
+                        },
+                      } as any);
+                      toast.success('رمز عبور لینک برداشته شد.');
+                    }}
+                    className="text-[10px] text-rose-400 hover:text-rose-300 transition-colors"
+                  >
+                    حذف رمز
+                  </button>
+                </div>
+              )}
+              <div className="space-y-1">
+                <label className="block text-[10px] text-muted-foreground">
+                  {link.hasPassword || link.passwordHash || adv.hasPassword
+                    ? 'تعیین رمز عبور جدید (در صورت تمایل به تغییر رمز فعلی):'
+                    : 'رمز عبور دلخواه برای قفل کردن لینک:'}
+                </label>
+                <input
+                  type="password"
+                  placeholder="رمز عبور دلخواه..."
+                  value={(link as any).rawPassword || ''}
+                  onChange={(e) => {
+                    const pass = e.target.value;
+                    updateLink(link.id, {
+                      rawPassword: pass,
+                      hasPassword: Boolean(pass || link.hasPassword || link.passwordHash),
+                      removePassword: false,
+                      advancedSettings: {
+                        ...adv,
+                        hasPassword: Boolean(pass || link.hasPassword || link.passwordHash),
+                        removePassword: false,
+                      },
+                    } as any);
+                  }}
+                  className="w-full bg-background border border-border rounded-lg px-2.5 py-1.5 text-xs text-foreground font-sans text-left"
+                  dir="ltr"
+                />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );

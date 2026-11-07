@@ -75,6 +75,9 @@ import {
   Link2,
   HeartHandshake,
   Music,
+  KeyRound,
+  Hourglass,
+  ShieldAlert,
 } from 'lucide-react';
 import {
   Dialog,
@@ -188,6 +191,83 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
     } else {
       setPasswordError(true);
       toast.error('رمز عبور وارد شده نادرست است!');
+    }
+  };
+
+  // Link Protection States & Handlers (Zero Cost Password & Expiration Check)
+  const [selectedProtectedLink, setSelectedProtectedLink] = useState<ProfileLinkItem | null>(null);
+  const [linkPasswordInput, setLinkPasswordInput] = useState('');
+  const [linkPasswordLoading, setLinkPasswordLoading] = useState(false);
+  const [linkPasswordError, setLinkPasswordError] = useState('');
+
+  const handleProtectedLinkClick = (e: React.MouseEvent, link: ProfileLinkItem) => {
+    const isExpired = link.expiresAt ? new Date(link.expiresAt).getTime() < Date.now() : false;
+    if (isExpired) {
+      e.preventDefault();
+      toast.error('این لینک منقضی شده است و دسترسی به آن امکان‌پذیر نیست.');
+      return;
+    }
+
+    const maxClicks = typeof link.maxClicks === 'number' ? link.maxClicks : link.advancedSettings?.maxClicks;
+    if (typeof maxClicks === 'number' && maxClicks > 0 && (link.clickCount || 0) >= maxClicks) {
+      e.preventDefault();
+      toast.error('ظرفیت مجاز کلیک برای این لینک تکمیل شده است.');
+      return;
+    }
+
+    const hasPassword = Boolean(
+      link.hasPassword ||
+      (link as any).passwordHash ||
+      link.advancedSettings?.passwordHash ||
+      link.advancedSettings?.hasPassword
+    );
+    if (hasPassword) {
+      e.preventDefault();
+      setSelectedProtectedLink(link);
+      setLinkPasswordInput('');
+      setLinkPasswordError('');
+      return;
+    }
+  };
+
+  const handleVerifyLinkPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedProtectedLink || !linkPasswordInput.trim()) return;
+
+    setLinkPasswordLoading(true);
+    setLinkPasswordError('');
+    try {
+      const res = await fetch('/api/profile/link/verify-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          profileAlias: profile.alias,
+          profileId: (profile as any)._id || (profile as any).id,
+          linkId: selectedProtectedLink.id,
+          password: linkPasswordInput.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (data.success && data.url) {
+        toast.success('رمز عبور تایید شد!');
+        const targetUrl = data.url;
+        const openInNewTab = selectedProtectedLink.advancedSettings?.openInNewTab !== false;
+        setSelectedProtectedLink(null);
+        setLinkPasswordInput('');
+        if (openInNewTab) {
+          window.open(targetUrl, '_blank', 'noopener,noreferrer');
+        } else {
+          window.location.href = targetUrl;
+        }
+      } else {
+        setLinkPasswordError(data.message || 'رمز عبور وارد شده نادرست است.');
+        toast.error(data.message || 'رمز عبور نادرست است.');
+      }
+    } catch (err) {
+      setLinkPasswordError('خطا در برقراری ارتباط با سرور.');
+      toast.error('خطا در بررسی رمز عبور.');
+    } finally {
+      setLinkPasswordLoading(false);
     }
   };
 
@@ -607,17 +687,38 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
       ['--btn-border-width' as any]: '1.5px',
     };
 
+    const isExpired = link.expiresAt ? new Date(link.expiresAt).getTime() < Date.now() : false;
+    const maxClicks = typeof link.maxClicks === 'number' ? link.maxClicks : link.advancedSettings?.maxClicks;
+    const isMaxClicksReached = typeof maxClicks === 'number' && maxClicks > 0 && (link.clickCount || 0) >= maxClicks;
+    const isProtected = Boolean(
+      link.hasPassword ||
+      (link as any).passwordHash ||
+      link.advancedSettings?.passwordHash ||
+      link.advancedSettings?.hasPassword
+    );
+    const isDisabled = isExpired || isMaxClicksReached;
+
     return (
       <a
         key={link.id}
-        href={smartUrl}
-        target="_blank"
+        href={isDisabled || isProtected ? '#' : smartUrl}
+        target={isDisabled || isProtected ? '_self' : '_blank'}
         rel="noreferrer"
-        title={link.title}
-        className={`w-11 h-11 ${cardShape} ${animClass} ${sInfo.classes} flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm`}
+        title={isExpired ? 'منقضی شده' : isMaxClicksReached ? 'تکمیل ظرفیت کلیک' : isProtected ? 'محافظت با رمز عبور' : link.title}
+        onClick={(e) => {
+          if (isDisabled || isProtected) {
+            handleProtectedLinkClick(e, link);
+          }
+        }}
+        className={`w-11 h-11 ${cardShape} ${animClass} ${sInfo.classes} flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm relative ${isDisabled ? 'opacity-40 grayscale pointer-events-auto cursor-not-allowed' : ''}`}
         style={iconStyle}
       >
         {sInfo.icon}
+        {isProtected && !isDisabled && (
+          <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-purple-600 rounded-full flex items-center justify-center text-[9px] text-white shadow-xs">
+            <Lock className="w-2 h-2" />
+          </span>
+        )}
       </a>
     );
   };
@@ -1250,6 +1351,17 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
       displaySubtitle = displayEmail;
     }
 
+    const isExpired = link.expiresAt ? new Date(link.expiresAt).getTime() < Date.now() : false;
+    const maxClicks = typeof link.maxClicks === 'number' ? link.maxClicks : link.advancedSettings?.maxClicks;
+    const isMaxClicksReached = typeof maxClicks === 'number' && maxClicks > 0 && (link.clickCount || 0) >= maxClicks;
+    const isProtected = Boolean(
+      link.hasPassword ||
+      (link as any).passwordHash ||
+      link.advancedSettings?.passwordHash ||
+      link.advancedSettings?.hasPassword
+    );
+    const isDisabled = isExpired || isMaxClicksReached;
+
     return (
       <motion.a
         key={link.id}
@@ -1257,12 +1369,19 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
         initial={{ opacity: 0, y: 15, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.15 } }}
-        whileHover={{ scale: 1.02, x: -2 }}
-        whileTap={{ scale: 0.98 }}
-        href={smartUrl}
-        target={adv.openInNewTab === false || smartUrl.startsWith('tel:') || smartUrl.startsWith('mailto:') || smartUrl.startsWith('#') ? '_self' : '_blank'}
+        whileHover={{ scale: isDisabled ? 1 : 1.02, x: isDisabled ? 0 : -2 }}
+        whileTap={{ scale: isDisabled ? 1 : 0.98 }}
+        href={isDisabled || isProtected ? '#' : smartUrl}
+        target={isDisabled || isProtected ? '_self' : (adv.openInNewTab === false || smartUrl.startsWith('tel:') || smartUrl.startsWith('mailto:') || smartUrl.startsWith('#') ? '_self' : '_blank')}
         rel="noopener noreferrer"
-        className={`w-full flex items-center justify-between gap-3 text-right shadow-sm cursor-pointer overflow-hidden transition-all duration-200 ${cardShape} ${cardSize} ${cardBorderWidth} ${animClass} ${isLight
+        onClick={(e) => {
+          if (isDisabled || isProtected) {
+            handleProtectedLinkClick(e, link);
+          }
+        }}
+        className={`w-full flex items-center justify-between gap-3 text-right shadow-sm cursor-pointer overflow-hidden transition-all duration-200 ${cardShape} ${cardSize} ${cardBorderWidth} ${animClass} ${
+          isDisabled ? 'opacity-50 grayscale-[40%] cursor-not-allowed' : ''
+        } ${isLight
           ? 'bg-white/95 border-slate-200 hover:border-slate-300 hover:bg-white shadow-sm'
           : themeConfig.cardBlur
           }`}
@@ -1307,13 +1426,31 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
           </div>
 
           <div className="truncate">
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 flex-wrap">
               <span
                 className={`font-bold block truncate ${isLight ? 'text-slate-900' : 'text-white'}`}
                 style={{ fontSize: 'calc(var(--dynamic-base-size) * 0.95)' }}
               >
                 {link.title}
               </span>
+              {isExpired && (
+                <span className="text-[9px] bg-rose-500/20 text-rose-400 font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5 border border-rose-500/30 shrink-0 font-sans">
+                  <Hourglass className="w-2.5 h-2.5" />
+                  منقضی شده
+                </span>
+              )}
+              {isMaxClicksReached && !isExpired && (
+                <span className="text-[9px] bg-amber-500/20 text-amber-400 font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5 border border-amber-500/30 shrink-0 font-sans">
+                  <ShieldAlert className="w-2.5 h-2.5" />
+                  تکمیل ظرفیت
+                </span>
+              )}
+              {isProtected && !isDisabled && (
+                <span className="text-[9px] bg-purple-500/20 text-purple-300 font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5 border border-purple-500/30 shrink-0 font-sans">
+                  <KeyRound className="w-2.5 h-2.5" />
+                  رمزدار
+                </span>
+              )}
               {lock?.isLocked && (
                 <span className="text-[9px] bg-amber-500/20 text-amber-600 dark:text-amber-400 font-bold px-1.5 py-0.2 rounded-full flex items-center gap-0.5 border border-amber-500/30 shrink-0 font-sans">
                   <Lock className="w-2.5 h-2.5" />
@@ -2302,6 +2439,87 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
                 className="w-full sm:w-auto py-2.5 px-4 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/10 text-xs font-semibold transition-all active:scale-95 cursor-pointer"
               >
                 {isLtr ? 'Close' : isPashto ? 'بندول' : 'بستن'}
+              </button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Link Password Verification Modal (Zero Cost Password Protected Link) */}
+      <Dialog
+        open={Boolean(selectedProtectedLink)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedProtectedLink(null);
+            setLinkPasswordInput('');
+            setLinkPasswordError('');
+          }
+        }}
+      >
+        <DialogContent
+          className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[92%] max-w-sm rounded-2xl h-auto z-50 bg-slate-900/95 border border-purple-500/30 backdrop-blur-2xl p-5 text-center text-white shadow-2xl"
+          dir={isLtr ? 'ltr' : 'rtl'}
+        >
+          <DialogHeader className="space-y-2 pb-3 border-b border-white/10 text-center relative z-10">
+            <div className="w-12 h-12 rounded-2xl bg-purple-500/20 text-purple-400 flex items-center justify-center mx-auto border border-purple-500/30 shadow-inner">
+              <KeyRound className="w-6 h-6 animate-pulse" />
+            </div>
+            <DialogTitle className="text-base sm:text-lg font-bold text-white flex items-center justify-center gap-1.5">
+              <span>{isLtr ? 'Protected Link' : 'لینک محافظت‌شده با رمز'}</span>
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-300 leading-relaxed max-w-sm mx-auto">
+              {isLtr
+                ? `Enter the password to access "${selectedProtectedLink?.title}":`
+                : `جهت بازگشایی «${selectedProtectedLink?.title}»، لطفاً رمز عبور را وارد کنید:`}
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleVerifyLinkPassword} className="space-y-4 pt-3">
+            <div className="space-y-1.5 text-right">
+              <input
+                type="password"
+                autoFocus
+                placeholder={isLtr ? 'Enter password...' : 'رمز عبور را وارد کنید...'}
+                value={linkPasswordInput}
+                onChange={(e) => {
+                  setLinkPasswordInput(e.target.value);
+                  setLinkPasswordError('');
+                }}
+                className="w-full bg-white/5 border border-white/15 focus:border-purple-400 rounded-xl px-3.5 py-2.5 text-xs text-center text-white placeholder-slate-400 focus:outline-none transition-all font-sans"
+                dir="ltr"
+              />
+              {linkPasswordError && (
+                <p className="text-[11px] text-rose-400 text-center">
+                  {linkPasswordError}
+                </p>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2 pt-1">
+              <button
+                type="submit"
+                disabled={linkPasswordLoading || !linkPasswordInput.trim()}
+                className="flex-1 py-2.5 px-4 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-purple-600/30 flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+              >
+                {linkPasswordLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>
+                    <span>{isLtr ? 'Unlock Link' : 'ورود و بازگشایی'}</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedProtectedLink(null);
+                  setLinkPasswordInput('');
+                  setLinkPasswordError('');
+                }}
+                className="py-2.5 px-4 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/10 text-xs font-semibold transition-all active:scale-95 cursor-pointer"
+              >
+                {isLtr ? 'Cancel' : 'انصراف'}
               </button>
             </div>
           </form>

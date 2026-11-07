@@ -6,6 +6,7 @@ import { Profile } from '@/models/Profile.model';
 import { buildUserIsolationQuery, isValidUserSession } from '@/lib/db/data-isolation';
 import mongoose from 'mongoose';
 import { revalidatePath } from 'next/cache';
+import bcrypt from 'bcryptjs';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,15 +51,52 @@ export async function PUT(req: NextRequest) {
       query.alias = alias.toLowerCase().trim();
     }
 
-    // 3. Find and update profile links in database
+    // 3. Process modules and link protection (hash raw passwords, parse expiration and limits)
+    const processedLinks = await Promise.all(
+      modulesArray.map(async (mod: any, index: number) => {
+        let passwordHash = mod.passwordHash || mod.advancedSettings?.passwordHash || null;
+        if (mod.removePassword || mod.advancedSettings?.removePassword) {
+          passwordHash = null;
+        } else if (mod.rawPassword && typeof mod.rawPassword === 'string' && mod.rawPassword.trim().length > 0) {
+          passwordHash = await bcrypt.hash(mod.rawPassword.trim(), 10);
+        }
+
+        const expiresAt = mod.expiresAt
+          ? new Date(mod.expiresAt)
+          : (mod.advancedSettings?.expiresAt ? new Date(mod.advancedSettings.expiresAt) : null);
+
+        const maxClicks = typeof mod.maxClicks === 'number'
+          ? mod.maxClicks
+          : (typeof mod.advancedSettings?.maxClicks === 'number' ? mod.advancedSettings.maxClicks : null);
+
+        const advSettings = {
+          ...(mod.advancedSettings || {}),
+          expiresAt: expiresAt ? expiresAt.toISOString() : null,
+          maxClicks: maxClicks,
+          passwordHash: passwordHash,
+          hasPassword: Boolean(passwordHash),
+        };
+
+        const { rawPassword, ...cleanMod } = mod;
+
+        return {
+          ...cleanMod,
+          order: typeof mod.order === 'number' ? mod.order : index,
+          expiresAt: expiresAt,
+          maxClicks: maxClicks,
+          passwordHash: passwordHash,
+          hasPassword: Boolean(passwordHash),
+          advancedSettings: advSettings,
+        };
+      })
+    );
+
+    // 4. Find and update profile links in database
     let updatedProfile = await Profile.findOneAndUpdate(
       query,
       {
         $set: {
-          links: modulesArray.map((mod: any, index: number) => ({
-            ...mod,
-            order: typeof mod.order === 'number' ? mod.order : index,
-          })),
+          links: processedLinks,
         },
       },
       { new: true, runValidators: false, strict: false }
@@ -82,10 +120,7 @@ export async function PUT(req: NextRequest) {
             targetId,
             {
               $set: {
-                links: modulesArray.map((mod: any, index: number) => ({
-                  ...mod,
-                  order: typeof mod.order === 'number' ? mod.order : index,
-                })),
+                links: processedLinks,
               },
             },
             { new: true, runValidators: false, strict: false }

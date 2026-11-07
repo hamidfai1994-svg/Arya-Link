@@ -33,11 +33,13 @@ import {
   Globe,
   Radio,
   Search,
+  Scan,
 } from 'lucide-react';
 import { WhatsAppIcon, TelegramIcon } from '@/components/icons';
 import { formatSmartDate } from '@/lib/utils/date';
 import { getTelegramLink } from '@/lib/utils/phone';
 import TelegramBottomNav, { NavItem } from '@/components/navigation/TelegramBottomNav';
+import { CardOcrScannerModal, ScannedContactData } from '@/components/common/CardOcrScannerModal';
 
 interface UserProfileSummary {
   displayName: string;
@@ -99,6 +101,32 @@ export default function UserTWA() {
   const [crmStatusFilter, setCrmStatusFilter] = useState<'all' | 'new' | 'contacted' | 'resolved'>('all');
   const [contactSearchQuery, setContactSearchQuery] = useState('');
   const [selectedModule, setSelectedModule] = useState<string | null>(null);
+  const [isOcrOpen, setIsOcrOpen] = useState(false);
+
+  const handleOcrComplete = (scanned: ScannedContactData) => {
+    const newMsg: CustomerMessage = {
+      _id: `ocr_${Date.now()}`,
+      name: scanned.name || 'مخاطب کارت ویزیت',
+      phone: scanned.phone || '0000',
+      email: scanned.email,
+      message: scanned.notes || 'مخاطب اسکن شده از کارت ویزیت کاغذی',
+      status: 'new',
+      createdAt: new Date().toISOString(),
+    };
+    setRecentMessages((prev) => [newMsg, ...prev]);
+    // Also save to lead API in background
+    fetch('/api/lead', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: scanned.name || 'مخاطب کارت ویزیت',
+        phone: scanned.phone || '0000',
+        email: scanned.email,
+        message: scanned.notes || 'مخاطب اسکن شده از کارت ویزیت کاغذی',
+        profileAlias: profile?.alias,
+      }),
+    }).catch(() => {});
+  };
 
   const TABS_ORDER: UserTabId[] = ['settings', 'contacts', 'add', 'stats', 'card'];
 
@@ -731,6 +759,18 @@ export default function UserTWA() {
                ========================================================= */}
             {activeTab === 'contacts' && (
               <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-bold text-slate-200">مخاطبین و پیام‌ها</h3>
+                  <button
+                    type="button"
+                    onClick={() => setIsOcrOpen(true)}
+                    className="h-8 px-3 rounded-xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 text-xs font-semibold flex items-center gap-1.5 active:scale-95 cursor-pointer shadow-sm"
+                  >
+                    <Scan className="w-3.5 h-3.5 animate-pulse" />
+                    <span>اسکن کارت کاغذی</span>
+                  </button>
+                </div>
+
                 {/* نوار جستجو و فیلتر وضعیت */}
                 <div className="space-y-2">
                   <div className="relative">
@@ -986,6 +1026,13 @@ export default function UserTWA() {
         activeTab={activeTab}
         onChange={handleTabChange}
         defaultIndex={2}
+      />
+
+      {/* مودال اسکنر هوشمند کارت کاغذی */}
+      <CardOcrScannerModal
+        isOpen={isOcrOpen}
+        onClose={() => setIsOcrOpen(false)}
+        onScanComplete={handleOcrComplete}
       />
     </div>
   );

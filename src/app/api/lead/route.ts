@@ -125,3 +125,76 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ success: false, message: 'خطا در حذف پیام' }, { status: 500 });
   }
 }
+
+// POST: Add a new lead / scanned contact manually
+export async function POST(req: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ success: false, message: 'لطفاً وارد شوید.' }, { status: 401 });
+    }
+
+    await connectToDatabase();
+    const body = await req.json();
+    const { name, phone, email, message, profileAlias, profileId } = body;
+
+    if (!name || !phone) {
+      return NextResponse.json(
+        { success: false, message: 'نام و شماره تماس الزامی هستند.' },
+        { status: 400 }
+      );
+    }
+
+    let targetProfile = null;
+    if (profileAlias) {
+      targetProfile = await Profile.findOne({
+        alias: profileAlias.toLowerCase().trim(),
+        userId: session.user.id,
+      }).select('_id');
+    } else if (profileId && mongoose.isValidObjectId(profileId)) {
+      targetProfile = await Profile.findOne({
+        _id: new mongoose.Types.ObjectId(profileId),
+        userId: session.user.id,
+      }).select('_id');
+    } else {
+      targetProfile = await Profile.findOne({ userId: session.user.id }).select('_id');
+    }
+
+    if (!targetProfile) {
+      return NextResponse.json(
+        { success: false, message: 'پروفایل متصل یافت نشد.' },
+        { status: 404 }
+      );
+    }
+
+    const newLead = await Lead.create({
+      profileId: targetProfile._id,
+      name: name.trim(),
+      phone: phone.trim(),
+      email: (email || '').trim(),
+      message: (message || 'مخاطب اسکن شده از کارت ویزیت کاغذی').trim(),
+      status: 'new',
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: 'مخاطب با موفقیت به لیست لیدها اضافه شد.',
+      data: {
+        id: newLead._id.toString(),
+        name: newLead.name,
+        phone: newLead.phone,
+        email: newLead.email,
+        message: newLead.message,
+        status: newLead.status,
+        dateStr: 'همین الان',
+        createdAt: newLead.createdAt,
+      },
+    }, { status: 201 });
+  } catch (error: any) {
+    console.error('Error creating lead:', error);
+    return NextResponse.json(
+      { success: false, message: 'خطا در ثبت مخاطب جدید.', error: error?.message },
+      { status: 500 }
+    );
+  }
+}

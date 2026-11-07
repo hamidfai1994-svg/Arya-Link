@@ -144,6 +144,10 @@ export interface ModuleAdvancedSettings {
   animationTrigger?: ButtonAnimationTrigger;
   animationSpeed?: number;
   isCompactIcon?: boolean; // حالت نمایش فشرده (فقط آیکون) برای شبکه‌های اجتماعی
+  expiresAt?: string | null;
+  maxClicks?: number | null;
+  passwordHash?: string | null;
+  hasPassword?: boolean;
 }
 
 export interface ModuleMetadata {
@@ -240,6 +244,10 @@ export interface ProfileLinkItem {
   parentId?: string | null; // For nested container/group items
   metadata?: ModuleMetadata;
   advancedSettings?: ModuleAdvancedSettings;
+  expiresAt?: string | Date | null;
+  maxClicks?: number | null;
+  passwordHash?: string | null;
+  hasPassword?: boolean;
 }
 
 export interface ProfileThemeConfig {

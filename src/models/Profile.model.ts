@@ -99,9 +99,14 @@ const ProfileLinkSubSchema = new Schema(
     parentId: { type: String, default: null },
     metadata: { type: Schema.Types.Mixed, default: () => ({}) },
     advancedSettings: { type: Schema.Types.Mixed, default: () => ({}) },
+    expiresAt: { type: Date, default: null },
+    maxClicks: { type: Number, default: null },
+    passwordHash: { type: String, default: null },
   },
   { _id: false, timestamps: true, strict: false }
 );
+
+export { ProfileLinkSubSchema };
 
 const ProfileThemeConfigSchema = new Schema(
   {

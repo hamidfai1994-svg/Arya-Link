@@ -48,6 +48,7 @@ import {
   FolderPlus,
   ChevronDown,
   Undo2,
+  Wand2,
 } from 'lucide-react';
 
 const DEFAULT_PRESET_COLORS = [
@@ -329,6 +330,86 @@ export const ProfileEditor: React.FC = () => {
   const [isSubmittingKYC, setIsSubmittingKYC] = useState(false);
   const [isProfileInfoExpanded, setIsProfileInfoExpanded] = useState(false);
   const [isSavingTheme, setIsSavingTheme] = useState(false);
+
+  // AI Assistant States (Google Gemini 1.5 Flash - Free Tier)
+  const [isAiMenuOpen, setIsAiMenuOpen] = useState(false);
+  const [isAiHeadlineMenuOpen, setIsAiHeadlineMenuOpen] = useState(false);
+  const [isAiGenerating, setIsAiGenerating] = useState(false);
+  const aiMenuRef = useRef<HTMLDivElement>(null);
+  const aiHeadlineMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close AI dropdown on click outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (aiMenuRef.current && !aiMenuRef.current.contains(event.target as Node)) {
+        setIsAiMenuOpen(false);
+      }
+      if (aiHeadlineMenuRef.current && !aiHeadlineMenuRef.current.contains(event.target as Node)) {
+        setIsAiHeadlineMenuOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Typewriter effect streaming/typing characters one by one
+  const runTypewriter = (text: string, onUpdate: (chunk: string) => void) => {
+    let index = 0;
+    const intervalMs = 18;
+    const timer = setInterval(() => {
+      index++;
+      onUpdate(text.slice(0, index));
+      if (index >= text.length) {
+        clearInterval(timer);
+        setIsAiGenerating(false);
+      }
+    }, intervalMs);
+  };
+
+  const handleAiAction = async (targetField: 'bio' | 'headline', action: 'generate_bio' | 'improve_text') => {
+    setIsAiMenuOpen(false);
+    setIsAiHeadlineMenuOpen(false);
+
+    const currentText = targetField === 'bio' ? profile.bio : profile.headline;
+    if (action === 'improve_text' && (!currentText || !currentText.trim())) {
+      toast.error('لطفاً ابتدا متنی بنویسید تا هوش مصنوعی آن را اصلاح کند.');
+      return;
+    }
+
+    setIsAiGenerating(true);
+    toast.info('هوش مصنوعی در حال نگارش متن...', { duration: 2500 });
+
+    try {
+      const res = await fetch('/api/ai/assistant', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action,
+          displayName: profile.displayName,
+          headline: profile.headline,
+          currentText: currentText,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success && data.data) {
+        toast.success('متن هوش مصنوعی آماده شد!');
+        runTypewriter(data.data, (chunk) => {
+          if (targetField === 'bio') {
+            updateBasicInfo({ bio: chunk });
+          } else {
+            updateBasicInfo({ headline: chunk });
+          }
+        });
+      } else {
+        setIsAiGenerating(false);
+        toast.error(data.message || 'خطا در ارتباط با هوش مصنوعی.');
+      }
+    } catch (err) {
+      setIsAiGenerating(false);
+      toast.error('خطای ارتباط با سرور.');
+    }
+  };
 
   // Theme snapshot for "لغو تغییرات"
   const themeSnapshotRef = useRef<ProfileThemeConfig | null>(null);
@@ -677,7 +758,37 @@ export const ProfileEditor: React.FC = () => {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-medium text-muted-foreground mb-1.5">{t.headline}</label>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="text-xs font-medium text-muted-foreground">{t.headline}</label>
+                        <div className="relative">
+                          <button
+                            type="button"
+                            disabled={isAiGenerating}
+                            onClick={() => setIsAiHeadlineMenuOpen(!isAiHeadlineMenuOpen)}
+                            className="px-2 py-0.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 hover:text-cyan-300 text-[10px] font-semibold flex items-center gap-1 transition-all shadow-xs cursor-pointer disabled:opacity-50"
+                            title="اصلاح هوشمند عنوان با AI"
+                          >
+                            <Wand2 className="w-3 h-3 text-cyan-400" />
+                            <span>پیشنهاد AI</span>
+                          </button>
+
+                          {isAiHeadlineMenuOpen && (
+                            <div
+                              ref={aiHeadlineMenuRef}
+                              className="absolute left-0 top-full mt-1 w-56 rounded-xl bg-slate-900 border border-cyan-500/30 shadow-2xl z-50 p-1 space-y-1 animate-in fade-in"
+                            >
+                              <button
+                                type="button"
+                                onClick={() => handleAiAction('headline', 'improve_text')}
+                                className="w-full text-right p-2 rounded-lg hover:bg-white/5 text-xs text-slate-200 hover:text-white transition-colors flex items-center gap-2 cursor-pointer"
+                              >
+                                <Sparkles className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                                <span>اصلاح و ارتقای نگارش عنوان</span>
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                       <input
                         type="text"
                         value={profile.headline}
@@ -715,7 +826,50 @@ export const ProfileEditor: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-muted-foreground mb-1.5">{t.bio}</label>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="text-xs font-medium text-muted-foreground">{t.bio}</label>
+                      <div className="relative">
+                        <button
+                          type="button"
+                          disabled={isAiGenerating}
+                          onClick={() => setIsAiMenuOpen(!isAiMenuOpen)}
+                          className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-purple-500/15 to-cyan-500/15 hover:from-purple-500/25 hover:to-cyan-500/25 border border-purple-500/30 text-purple-400 hover:text-purple-300 text-[11px] font-semibold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer disabled:opacity-50"
+                          title="دستیار هوش مصنوعی"
+                        >
+                          {isAiGenerating ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin text-cyan-400" />
+                          ) : (
+                            <Wand2 className="w-3.5 h-3.5 text-purple-400" />
+                          )}
+                          <span>دستیار هوش مصنوعی</span>
+                          <ChevronDown className="w-3 h-3 text-slate-400" />
+                        </button>
+
+                        {isAiMenuOpen && (
+                          <div
+                            ref={aiMenuRef}
+                            className="absolute left-0 top-full mt-1.5 w-64 rounded-2xl bg-slate-900 border border-purple-500/30 shadow-2xl z-50 p-1.5 space-y-1 animate-in fade-in"
+                          >
+                            <button
+                              type="button"
+                              onClick={() => handleAiAction('bio', 'generate_bio')}
+                              className="w-full text-right p-2 rounded-xl hover:bg-white/5 text-xs text-slate-200 hover:text-white transition-colors flex items-center gap-2 cursor-pointer"
+                            >
+                              <Sparkles className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                              <span>نوشتن بیوگرافی حرفه‌ای بر اساس عنوان شغلی</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleAiAction('bio', 'improve_text')}
+                              className="w-full text-right p-2 rounded-xl hover:bg-white/5 text-xs text-slate-200 hover:text-white transition-colors flex items-center gap-2 cursor-pointer"
+                            >
+                              <Wand2 className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                              <span>اصلاح نگارش متن فعلی</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                     <textarea
                       rows={2}
                       value={profile.bio}
