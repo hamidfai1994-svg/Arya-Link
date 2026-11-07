@@ -4,23 +4,27 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, useSpring, AnimatePresence } from 'framer-motion';
 import { LayoutDashboard, Users, ShoppingBag, Wallet } from 'lucide-react';
 
+export interface NavItem {
+  id: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+}
+
 export type TelegramTabId = 'dashboard' | 'users' | 'orders' | 'finance';
 
-export const NAV_ITEMS = [
+// آیتم‌های پیش‌فرض برای داشبورد ادمین (در صورت پاس داده نشدن پراپ items)
+export const DEFAULT_ADMIN_ITEMS: readonly NavItem[] = [
   { id: 'finance', label: 'مالی', icon: Wallet },
   { id: 'orders', label: 'سفارشات', icon: ShoppingBag },
   { id: 'users', label: 'کاربران', icon: Users },
   { id: 'dashboard', label: 'پیشخوان', icon: LayoutDashboard },
 ] as const;
 
-// ابعاد استاندارد برای هماهنگی کامل فرورفتگی با دکمه دایره‌ای ۵۶ پیکسلی
+// ابعاد استاندارد برای هماهنگی فرورفتگی با دکمه شناور ۵۶ پیکسلی
 const NAV_CONFIG = {
   height: 68,
   cornerRadius: 20,
-  dipWidth: 80, // عرض فرورفتگی کاهش یافته برای انطباق ۴ پیکسلی با دکمه ۵۶ پیکسلی
-  dipDepth: 32, // عمق فرورفتگی (شعاع ۲۸ پیکسل + ۴ پیکسل فاصله)
   buttonRadius: 28,
-  sidePadding: 20,
 };
 
 // تابع محاسبات دقیق هندسه منحنی بزیه برای رسم فرورفتگی مایع شیشه‌ای
@@ -35,7 +39,6 @@ function generatePillPath(
   if (w <= 0) return '';
 
   const halfBw = bw / 2;
-  // محدود کردن مرکز فرورفتگی به گونه‌ای که هرگز با گوشه‌های گرد تداخل نکند
   const minCenter = r + halfBw;
   const maxCenter = w - r - halfBw;
   const a = Math.max(minCenter, Math.min(maxCenter, bx));
@@ -62,29 +65,46 @@ function generatePillPath(
   );
 }
 
-interface TelegramBottomNavProps {
-  activeTab?: TelegramTabId;
-  onChange?: (tab: TelegramTabId) => void;
+export interface LiquidBottomNavProps<T extends string = string> {
+  items?: readonly NavItem[] | NavItem[];
+  activeTab?: T;
+  onChange?: (tab: T) => void;
+  defaultIndex?: number;
 }
 
-export default function TelegramBottomNav({ activeTab, onChange }: TelegramBottomNavProps) {
-  const [active, setActive] = useState(3); // پیش‌فرض: پیشخوان (تب راست)
+export default function TelegramBottomNav<T extends string = string>({
+  items,
+  activeTab,
+  onChange,
+  defaultIndex,
+}: LiquidBottomNavProps<T>) {
+  const currentItems: readonly NavItem[] = items && items.length > 0 ? items : DEFAULT_ADMIN_ITEMS;
+
+  // تعیین ایندکس اولیه: در صورت عدم ارسال، برای ۴ تایی ایندکس ۳ (پیشخوان) و برای ۵ تایی ایندکس ۲ (افزودن)
+  const initialIdx =
+    defaultIndex !== undefined
+      ? defaultIndex
+      : currentItems.length === 5
+      ? 2
+      : currentItems.length - 1;
+
+  const [active, setActive] = useState(initialIdx);
   const navRef = useRef<HTMLElement>(null);
   const [navWidth, setNavWidth] = useState(0);
   const [pathD, setPathD] = useState('');
 
-  // فیزیک فنری دقیق برای حرکت روان و بدون لرزش
+  // فیزیک فنری دقیق برای حرکت روان و بدون لرزش دکمه شناور
   const springX = useSpring(0, { stiffness: 380, damping: 32 });
 
-  // همگام‌سازی استیت محلی با تب اکتیو پاس داده شده
+  // همگام‌سازی استیت محلی با مقدار تب فعال پاس داده شده
   useEffect(() => {
     if (activeTab) {
-      const idx = NAV_ITEMS.findIndex((item) => item.id === activeTab);
+      const idx = currentItems.findIndex((item) => item.id === activeTab);
       if (idx !== -1) {
         setActive(idx);
       }
     }
-  }, [activeTab]);
+  }, [activeTab, currentItems]);
 
   useEffect(() => {
     const updateWidth = () => {
@@ -97,47 +117,51 @@ export default function TelegramBottomNav({ activeTab, onChange }: TelegramBotto
     return () => window.removeEventListener('resize', updateWidth);
   }, []);
 
-  // محاسبه مکان دکمه شناور به همراه Clamping برای جلوگیری از برخورد به لبه‌ها
+  // ابعاد فرورفتگی متناسب با تعداد تب‌ها
+  const dipWidth = currentItems.length >= 5 ? 76 : 80;
+  const dipDepth = 32;
+  const sidePadding = currentItems.length >= 5 ? 12 : 20;
+
+  // محاسبه داینامیک موقعیت دکمه شناور بر اساس تعداد تب‌ها
   useEffect(() => {
-    if (navWidth > 0) {
-      const { cornerRadius, dipWidth, sidePadding, buttonRadius } = NAV_CONFIG;
+    if (navWidth > 0 && currentItems.length > 0) {
       const innerWidth = navWidth - sidePadding * 2;
-      const itemWidth = innerWidth / NAV_ITEMS.length;
+      const itemWidth = innerWidth / currentItems.length;
       const rawTargetX = sidePadding + (active + 0.5) * itemWidth;
 
-      // کلمپ کردن targetX تا مرکز دکمه هرگز از شعاع خود و فرورفتگی به لبه‌ها نزدیک‌تر نشود
-      const minX = Math.max(cornerRadius + dipWidth / 2, buttonRadius + 8);
+      // کلمپ کردن targetX برای جلوگیری از بیرون‌زدگی دکمه و منحنی
+      const minX = Math.max(NAV_CONFIG.cornerRadius + dipWidth / 2, NAV_CONFIG.buttonRadius + 4);
       const maxX = navWidth - minX;
       const targetX = Math.max(minX, Math.min(maxX, rawTargetX));
 
       springX.set(targetX);
     }
-  }, [active, navWidth, springX]);
+  }, [active, navWidth, currentItems.length, sidePadding, dipWidth, springX]);
 
-  // به‌روزرسانی مداوم مسیر SVG با تغییرات فنری
+  // به‌روزرسانی مداوم مسیر منحنی SVG
   useEffect(() => {
-    const unsubscribe = springX.on('change', (latestX) => {
-      if (navWidth > 0) {
+    if (navWidth > 0) {
+      const unsubscribe = springX.on('change', (latestX) => {
         setPathD(
           generatePillPath(
             navWidth,
             NAV_CONFIG.height,
             NAV_CONFIG.cornerRadius,
             latestX,
-            NAV_CONFIG.dipWidth,
-            NAV_CONFIG.dipDepth
+            dipWidth,
+            dipDepth
           )
         );
-      }
-    });
-    return () => unsubscribe();
-  }, [springX, navWidth]);
+      });
+      return () => unsubscribe();
+    }
+  }, [springX, navWidth, dipWidth]);
 
   const handleSelect = (index: number) => {
     setActive(index);
-    const item = NAV_ITEMS[index];
+    const item = currentItems[index];
     if (item && onChange) {
-      onChange(item.id as TelegramTabId);
+      onChange(item.id as T);
     }
     if (typeof window !== 'undefined') {
       const tg = (window as any).Telegram?.WebApp;
@@ -145,16 +169,16 @@ export default function TelegramBottomNav({ activeTab, onChange }: TelegramBotto
     }
   };
 
-  const ActiveIcon = NAV_ITEMS[active]?.icon || LayoutDashboard;
+  const ActiveIcon = currentItems[active]?.icon || LayoutDashboard;
 
   return (
-    <div className="fixed bottom-6 left-4 right-4 z-50 max-w-md mx-auto pointer-events-auto" dir="ltr">
+    <div className="fixed bottom-6 left-3 right-3 z-50 max-w-md mx-auto pointer-events-auto" dir="ltr">
       <nav
         ref={navRef}
         className="relative h-[68px] w-full flex items-center select-none"
         style={{
-          paddingLeft: `${NAV_CONFIG.sidePadding}px`,
-          paddingRight: `${NAV_CONFIG.sidePadding}px`,
+          paddingLeft: `${sidePadding}px`,
+          paddingRight: `${sidePadding}px`,
         }}
       >
         {/* پس‌زمینه شیشه‌ای بلور شده */}
@@ -179,7 +203,7 @@ export default function TelegramBottomNav({ activeTab, onChange }: TelegramBotto
           </svg>
         </div>
 
-        {/* دکمه شناور فیروزه‌ای (Floating Button) با افکت Glow و انیمیشن آیکون */}
+        {/* دکمه شناور فیروزه‌ای (Floating Button) */}
         <motion.div
           className="absolute top-0 -mt-[24px] w-[56px] h-[56px] rounded-full flex items-center justify-center bg-gradient-to-br from-cyan-400 via-cyan-500 to-teal-600 shadow-[0_8px_24px_rgba(6,182,212,0.55)] border-2 border-cyan-200/60 z-20 cursor-pointer"
           style={{ x: springX, left: -28 }}
@@ -191,7 +215,7 @@ export default function TelegramBottomNav({ activeTab, onChange }: TelegramBotto
           {/* ترنزیشن نرم تغییر آیکون درون دکمه شناور */}
           <AnimatePresence mode="wait">
             <motion.div
-              key={NAV_ITEMS[active]?.id}
+              key={currentItems[active]?.id || 'active-icon'}
               initial={{ scale: 0.5, opacity: 0, rotate: -20 }}
               animate={{ scale: 1, opacity: 1, rotate: 0 }}
               exit={{ scale: 0.5, opacity: 0, rotate: 20 }}
@@ -202,8 +226,8 @@ export default function TelegramBottomNav({ activeTab, onChange }: TelegramBotto
           </AnimatePresence>
         </motion.div>
 
-        {/* دکمه‌های ناوبری چهارگانه */}
-        {NAV_ITEMS.map((item, index) => {
+        {/* دکمه‌های ناوبری داینامیک */}
+        {currentItems.map((item, index) => {
           const Icon = item.icon;
           const isActive = index === active;
 
@@ -212,17 +236,17 @@ export default function TelegramBottomNav({ activeTab, onChange }: TelegramBotto
               key={item.id}
               type="button"
               onClick={() => handleSelect(index)}
-              className="flex-1 flex flex-col items-center justify-center gap-1 z-10 relative h-full cursor-pointer select-none group"
+              className="flex-1 min-w-0 flex flex-col items-center justify-center gap-1 z-10 relative h-full cursor-pointer select-none group"
             >
               <Icon
-                className={`w-[22px] h-[22px] transition-all duration-300 ${
+                className={`w-[20px] h-[20px] transition-all duration-300 ${
                   isActive
                     ? 'opacity-0 scale-50 -translate-y-2'
                     : 'opacity-100 text-slate-400 group-hover:text-slate-200'
                 }`}
               />
               <span
-                className={`text-[11px] font-medium tracking-wide transition-colors duration-300 ${
+                className={`text-[10px] sm:text-[11px] font-medium tracking-tight truncate max-w-full transition-colors duration-300 ${
                   isActive
                     ? 'text-cyan-400 font-bold'
                     : 'text-slate-400 group-hover:text-slate-200'
@@ -237,3 +261,5 @@ export default function TelegramBottomNav({ activeTab, onChange }: TelegramBotto
     </div>
   );
 }
+
+export const LiquidBottomNav = TelegramBottomNav;
