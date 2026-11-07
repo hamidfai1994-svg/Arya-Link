@@ -1318,10 +1318,16 @@ export const LivePreview: React.FC = () => {
                 <select
                   disabled
                   defaultValue="+93"
-                  className={`p-1.5 border rounded-xl text-xs font-mono bg-transparent ${isLight ? 'border-slate-200 text-slate-800' : 'border-white/10 text-white'}`}
+                  style={{ fontFamily: 'var(--font-vazirmatn), var(--font-inter), sans-serif' }}
+                  className={`w-[110px] shrink-0 p-1.5 border rounded-xl text-xs font-sans font-medium bg-transparent ${isLight ? 'border-slate-200 text-slate-800' : 'border-white/10 text-white'}`}
                 >
                   {ALL_COUNTRIES.map((c) => (
-                    <option key={c.code} value={c.dialCode} className="bg-slate-900 text-white">
+                    <option
+                      key={c.code}
+                      value={c.dialCode}
+                      className="bg-slate-900 text-white font-sans"
+                      style={{ fontFamily: 'var(--font-vazirmatn), var(--font-inter), sans-serif' }}
+                    >
                       {c.flag} {c.dialCode} ({c.nameFa})
                     </option>
                   ))}
@@ -1331,7 +1337,7 @@ export const LivePreview: React.FC = () => {
                   placeholder="782698484"
                   readOnly
                   dir="ltr"
-                  className={`flex-1 ${cardRadius} px-3 py-1.5 text-xs font-sans text-left border focus:outline-none ${isLight ? 'bg-slate-50 border-slate-200 text-slate-800 placeholder-slate-400' : 'bg-white/5 border-white/10 text-white placeholder-slate-500'}`}
+                  className={`flex-1 min-w-0 ${cardRadius} px-3 py-1.5 text-xs font-sans text-left border focus:outline-none ${isLight ? 'bg-slate-50 border-slate-200 text-slate-800 placeholder-slate-400' : 'bg-white/5 border-white/10 text-white placeholder-slate-500'}`}
                 />
               </div>
             </div>

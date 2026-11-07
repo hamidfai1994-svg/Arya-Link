@@ -3428,21 +3428,15 @@ const SortableSidebarModuleItem: React.FC<SortableSidebarModuleItemProps> = ({
             {getModuleIcon(link.moduleType)}
           </div>
 
-          {/* Module Title */}
-          <div className="flex-1 min-w-0 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-            {link.moduleType === 'divider_heading' ? (
-              <span className="text-xs font-bold text-foreground">خط جداکننده</span>
-            ) : link.moduleType === 'spacer_divider' ? (
-              <span className="text-xs font-bold text-foreground">فاصله خالی</span>
-            ) : (
-              <input
-                type="text"
-                value={link.title}
-                onChange={(e) => updateLink(link.id, { title: e.target.value })}
-                className="bg-transparent border-0 text-xs font-bold text-foreground focus:outline-none focus:ring-0 p-0 font-sans w-full truncate"
-                placeholder="عنوان ماژول..."
-              />
-            )}
+          {/* Module Title (Read-only display; clicking anywhere on header row expands/collapses accordion) */}
+          <div className="flex-1 min-w-0 flex items-center gap-2">
+            <span className="text-xs font-bold text-foreground truncate select-none">
+              {link.moduleType === 'divider_heading'
+                ? 'خط جداکننده'
+                : link.moduleType === 'spacer_divider'
+                ? 'فاصله خالی'
+                : link.title || 'بدون عنوان'}
+            </span>
             {isUnconfirmed && (
               <span className="text-[10px] bg-amber-500/15 text-amber-600 dark:text-amber-400 font-bold px-2 py-0.5 rounded-full border border-amber-500/30 shrink-0">
                 تاییدنشده

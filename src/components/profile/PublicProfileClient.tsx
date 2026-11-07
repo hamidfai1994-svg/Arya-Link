@@ -1093,13 +1093,19 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
                   <select
                     value={formCountryCode}
                     onChange={(e) => setFormCountryCode(e.target.value)}
-                    className={`p-2 border rounded-xl text-xs font-mono focus:outline-none focus:border-cyan-500 transition-all cursor-pointer ${isLight
+                    style={{ fontFamily: 'var(--font-vazirmatn), var(--font-inter), sans-serif' }}
+                    className={`w-[110px] shrink-0 p-2 border rounded-xl text-xs font-sans font-medium focus:outline-none focus:border-cyan-500 transition-all cursor-pointer ${isLight
                         ? 'bg-slate-50 border-slate-200 text-slate-800'
                         : 'bg-white/5 border-white/10 text-white'
                       }`}
                   >
                     {ALL_COUNTRIES.map((c) => (
-                      <option key={c.code} value={c.dialCode} className="bg-slate-900 text-white">
+                      <option
+                        key={c.code}
+                        value={c.dialCode}
+                        className="bg-slate-900 text-white font-sans"
+                        style={{ fontFamily: 'var(--font-vazirmatn), var(--font-inter), sans-serif' }}
+                      >
                         {c.flag} {c.dialCode} ({c.nameFa})
                       </option>
                     ))}
@@ -1115,7 +1121,7 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
                       setFormPhone(raw);
                     }}
                     placeholder="782698484"
-                    className={`p-2 border rounded-xl flex-1 text-xs font-sans text-left focus:outline-none focus:border-cyan-500 transition-all ${isLight
+                    className={`p-2 border rounded-xl flex-1 min-w-0 text-xs font-sans text-left focus:outline-none focus:border-cyan-500 transition-all ${isLight
                         ? 'bg-slate-50 border-slate-200 text-slate-800 placeholder-slate-400'
                         : 'bg-white/5 border-white/10 text-white placeholder-slate-500'
                       }`}

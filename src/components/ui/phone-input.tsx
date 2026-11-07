@@ -132,7 +132,8 @@ export function PhoneInput({
         {/* Countries Dropdown Content with Search */}
         <DropdownMenuContent
           align="start"
-          className="w-80 p-2 rounded-2xl border border-border shadow-2xl max-h-80 overflow-y-auto z-50 bg-popover text-popover-foreground"
+          className="w-80 p-2 rounded-2xl border border-border shadow-2xl max-h-80 overflow-y-auto z-50 bg-popover text-popover-foreground font-sans"
+          style={{ fontFamily: 'var(--font-vazirmatn), var(--font-inter), sans-serif' }}
         >
           {/* Search Box */}
           <div className="relative mb-2 px-1">
@@ -143,6 +144,7 @@ export function PhoneInput({
               onChange={(e) => setSearchQuery(e.target.value)}
               className="h-9 text-xs rounded-xl pr-8 pl-2 bg-muted/50 text-right font-sans"
               dir="rtl"
+              style={{ fontFamily: 'var(--font-vazirmatn), var(--font-inter), sans-serif' }}
               autoFocus
             />
             <Search className="w-3.5 h-3.5 text-muted-foreground absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -151,7 +153,10 @@ export function PhoneInput({
           {/* Countries List */}
           <div className="space-y-0.5">
             {filteredCountries.length === 0 ? (
-              <div className="p-3 text-center text-xs text-muted-foreground font-sans">
+              <div
+                className="p-3 text-center text-xs text-muted-foreground font-sans"
+                style={{ fontFamily: 'var(--font-vazirmatn), var(--font-inter), sans-serif' }}
+              >
                 کشوری با این مشخصات یافت نشد
               </div>
             ) : (
@@ -162,6 +167,7 @@ export function PhoneInput({
                     key={country.code}
                     onClick={() => handleCountrySelect(country)}
                     className="flex items-center justify-between px-2.5 py-2 rounded-xl text-xs cursor-pointer hover:bg-muted font-sans"
+                    style={{ fontFamily: 'var(--font-vazirmatn), var(--font-inter), sans-serif' }}
                   >
                     <div className="flex items-center gap-2">
                       <span className="text-base">{country.flag}</span>
