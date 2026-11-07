@@ -129,23 +129,23 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
             </div>
           </div>
 
-          {/* 3 Tabs Bar (Strictly Link-Specific) */}
-          <div className="pt-3">
-            <Tabs value={activeTab} onValueChange={(val: any) => setActiveTab(val)}>
-              <TabsList className="grid grid-cols-4 w-full bg-muted/80 p-1 rounded-xl">
-                <TabsTrigger value="general" className="text-xs font-semibold gap-1.5 data-[state=active]:font-bold">
+          {/* Tabs Bar (RTL Orientation: عمومی و زبان on far right, اتصال تلگرام on far left) */}
+          <div className="pt-3 w-full" dir="rtl">
+            <Tabs value={activeTab} onValueChange={(val: any) => setActiveTab(val)} dir="rtl" className="w-full">
+              <TabsList className="flex flex-row w-full bg-muted/80 p-1 rounded-xl" dir="rtl">
+                <TabsTrigger value="general" className="flex-1 text-xs font-semibold gap-1.5 data-[state=active]:font-bold cursor-pointer">
                   <Globe className="w-3.5 h-3.5" />
                   <span>عمومی و زبان</span>
                 </TabsTrigger>
-                <TabsTrigger value="seo" className="text-xs font-semibold gap-1.5 data-[state=active]:font-bold">
+                <TabsTrigger value="seo" className="flex-1 text-xs font-semibold gap-1.5 data-[state=active]:font-bold cursor-pointer">
                   <Search className="w-3.5 h-3.5" />
                   <span>سئو و متاتگ</span>
                 </TabsTrigger>
-                <TabsTrigger value="access" className="text-xs font-semibold gap-1.5 data-[state=active]:font-bold">
+                <TabsTrigger value="access" className="flex-1 text-xs font-semibold gap-1.5 data-[state=active]:font-bold cursor-pointer">
                   <Lock className="w-3.5 h-3.5" />
                   <span>دسترسی و هدایت</span>
                 </TabsTrigger>
-                <TabsTrigger value="crm_integration" className="text-xs font-semibold gap-1.5 data-[state=active]:font-bold">
+                <TabsTrigger value="crm_integration" className="flex-1 text-xs font-semibold gap-1.5 data-[state=active]:font-bold cursor-pointer">
                   <Send className="w-3.5 h-3.5 text-sky-500" />
                   <span>اتصال تلگرام</span>
                 </TabsTrigger>

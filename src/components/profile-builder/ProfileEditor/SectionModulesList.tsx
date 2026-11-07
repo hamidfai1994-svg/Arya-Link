@@ -3449,9 +3449,33 @@ const SortableSidebarModuleItem: React.FC<SortableSidebarModuleItemProps> = ({
               </span>
             )}
             {link.advancedSettings?.monetization?.isLocked && (
-              <span className="text-[10px] bg-amber-500/15 text-amber-500 font-bold px-2 py-0.5 rounded-full border border-amber-500/30 flex items-center gap-1 shrink-0 font-sans">
+              <span className="text-[10px] bg-amber-500/15 text-amber-500 font-bold px-2 py-0.5 rounded-full border border-amber-500/30 flex items-center gap-1 shrink-0 font-sans" title="قفل پولی / VIP">
                 <Lock className="w-2.5 h-2.5" />
                 پولی
+              </span>
+            )}
+            {Boolean(link.hasPassword || link.passwordHash || link.advancedSettings?.passwordHash || link.advancedSettings?.hasPassword) && (
+              <span className="text-[10px] bg-purple-500/15 text-purple-400 font-bold px-2 py-0.5 rounded-full border border-purple-500/30 flex items-center gap-1 shrink-0 font-sans" title="محافظت با رمز عبور">
+                <KeyRound className="w-2.5 h-2.5" />
+                رمزدار
+              </span>
+            )}
+            {Boolean(link.expiresAt || link.advancedSettings?.expiresAt) && (
+              <span className="text-[10px] bg-rose-500/15 text-rose-400 font-bold px-2 py-0.5 rounded-full border border-rose-500/30 flex items-center gap-1 shrink-0 font-sans" title="دارای زمان انقضا">
+                <Hourglass className="w-2.5 h-2.5" />
+                انقضا
+              </span>
+            )}
+            {typeof (link.maxClicks ?? link.advancedSettings?.maxClicks) === 'number' && (link.maxClicks ?? link.advancedSettings?.maxClicks)! > 0 && (
+              <span className="text-[10px] bg-cyan-500/15 text-cyan-400 font-bold px-2 py-0.5 rounded-full border border-cyan-500/30 flex items-center gap-1 shrink-0 font-sans" title="محدودیت تعداد کلیک">
+                <MousePointerClick className="w-2.5 h-2.5" />
+                سقف کلیک
+              </span>
+            )}
+            {link.advancedSettings?.scheduling?.enabled && (
+              <span className="text-[10px] bg-sky-500/15 text-sky-400 font-bold px-2 py-0.5 rounded-full border border-sky-500/30 flex items-center gap-1 shrink-0 font-sans" title="زمان‌بندی ساعات نمایش روزانه">
+                <Clock className="w-2.5 h-2.5" />
+                زمان‌بندی
               </span>
             )}
             {link.advancedSettings?.buttonAnimation && link.advancedSettings.buttonAnimation !== 'none' && (

@@ -17,6 +17,9 @@ import {
   Wand2,
   Sparkles,
   Upload,
+  Link as LinkIcon,
+  Clipboard,
+  ChevronDown,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -90,7 +93,94 @@ export default function AdminKycPage() {
   });
   const [isAiExtracting, setIsAiExtracting] = useState(false);
   const [customDocBase64, setCustomDocBase64] = useState<string | null>(null);
+  const [isUploadMenuOpen, setIsUploadMenuOpen] = useState(false);
   const docFileInputRef = useRef<HTMLInputElement>(null);
+  const uploadMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close upload menu on outside click
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (uploadMenuRef.current && !uploadMenuRef.current.contains(event.target as Node)) {
+        setIsUploadMenuOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Listen for Ctrl+V paste event to immediately process document image
+  useEffect(() => {
+    if (!reviewingKyc) return;
+
+    const handlePaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items || items.length === 0) return;
+
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          e.preventDefault();
+          const file = items[i].getAsFile();
+          if (file) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+              const base64 = event.target?.result as string;
+              if (base64) {
+                setCustomDocBase64(base64);
+                handleAiExtractKyc(undefined, base64);
+                toast.success('تصویر مدرک از کلیپ‌بورد الصاق شد و هوش مصنوعی استخراج را آغاز کرد!');
+              }
+            };
+            reader.readAsDataURL(file);
+            break;
+          }
+        }
+      }
+    };
+
+    window.addEventListener('paste', handlePaste);
+    return () => window.removeEventListener('paste', handlePaste);
+  }, [reviewingKyc]);
+
+  const handleClipboardReadKyc = async () => {
+    setIsUploadMenuOpen(false);
+    try {
+      if (!navigator.clipboard?.read) {
+        toast.info('مرورگر از خواندن خودکار کلیپ‌بورد پشتیبانی نمی‌کند؛ لطفاً با زدن Ctrl+V تصویر را جایگذاری کنید.');
+        return;
+      }
+      const clipboardItems = await navigator.clipboard.read();
+      for (const item of clipboardItems) {
+        const imageType = item.types.find((t) => t.startsWith('image/'));
+        if (imageType) {
+          const blob = await item.getType(imageType);
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const base64 = e.target?.result as string;
+            if (base64) {
+              setCustomDocBase64(base64);
+              handleAiExtractKyc(undefined, base64);
+              toast.success('تصویر مدرک از کلیپ‌بورد دریافت شد!');
+            }
+          };
+          reader.readAsDataURL(blob);
+          return;
+        }
+      }
+      toast.info('تصویری در کلیپ‌بورد یافت نشد. عکسی را Copy کنید و دوباره کلیک کنید.');
+    } catch {
+      toast.error('دسترسی به کلیپ‌بورد امکان‌پذیر نشد. لطفاً از آپلود فایل یا کلید Ctrl+V استفاده نمایید.');
+    }
+  };
+
+  const handleUrlPromptKyc = () => {
+    setIsUploadMenuOpen(false);
+    const url = window.prompt('آدرس اینترنتی (URL) عکس مدرک یا پاسپورت را وارد کنید:');
+    if (url && url.trim().startsWith('http')) {
+      handleAiExtractKyc(url.trim());
+    } else if (url) {
+      toast.error('آدرس وارد شده نامعتبر است. آدرس باید با http یا https آغاز شود.');
+    }
+  };
 
   const openReviewModal = (req: KycRequest) => {
     setReviewingKyc(req);
@@ -527,34 +617,84 @@ export default function AdminKycPage() {
                       <FileText className="w-3.5 h-3.5 text-blue-500" />
                       <span>تصویر مدرک هویتی</span>
                     </span>
-                    <div className="flex items-center gap-1.5">
-                      <Button
-                        type="button"
-                        size="sm"
-                        disabled={isAiExtracting}
-                        onClick={() => handleAiExtractKyc()}
-                        className="h-7 px-2.5 rounded-lg bg-gradient-to-r from-purple-500/20 to-cyan-500/20 hover:from-purple-500/30 hover:to-cyan-500/30 text-purple-300 font-bold text-[11px] border border-purple-500/30 flex items-center gap-1 shadow-xs cursor-pointer disabled:opacity-50"
-                        title="استخراج خودکار تمام مشخصات تذکره/پاسپورت با هوش مصنوعی"
-                      >
-                        {isAiExtracting ? (
-                          <Loader2 className="w-3 h-3 animate-spin text-cyan-400" />
-                        ) : (
-                          <Wand2 className="w-3 h-3 text-purple-400" />
-                        )}
-                        <span>استخراج هوشمند اطلاعات</span>
-                      </Button>
+                    {/* Advanced 3-Option Upload Menu & AI Trigger */}
+                    <div className="relative" ref={uploadMenuRef}>
+                      <div className="flex items-center rounded-xl border border-purple-500/40 bg-gradient-to-r from-purple-500/20 via-cyan-500/15 to-slate-900 text-purple-200 shadow-sm overflow-hidden">
+                        <button
+                          type="button"
+                          disabled={isAiExtracting}
+                          onClick={() => handleAiExtractKyc()}
+                          className="h-8 px-2.5 text-xs font-bold flex items-center gap-1.5 hover:bg-purple-500/20 transition-all cursor-pointer disabled:opacity-50"
+                          title="استخراج خودکار تمام مشخصات تذکره/پاسپورت با هوش مصنوعی (کلید میانبر Ctrl+V)"
+                        >
+                          {isAiExtracting ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin text-cyan-400" />
+                          ) : (
+                            <Wand2 className="w-3.5 h-3.5 text-purple-400" />
+                          )}
+                          <span>استخراج هوشمند اطلاعات</span>
+                          <span className="text-[9px] font-sans font-bold bg-slate-950/80 text-cyan-300 px-1 py-0.5 rounded border border-cyan-500/30">
+                            Ctrl+V
+                          </span>
+                        </button>
 
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={() => docFileInputRef.current?.click()}
-                        className="h-7 px-2 rounded-lg text-[11px] flex items-center gap-1 border-white/10"
-                        title="آپلود تصویر جایگزین یا مدرک جدید"
-                      >
-                        <Upload className="w-3 h-3 text-slate-400" />
-                        <span>آپلود تصویر</span>
-                      </Button>
+                        <button
+                          type="button"
+                          onClick={() => setIsUploadMenuOpen(!isUploadMenuOpen)}
+                          className="h-8 px-2 border-r border-purple-500/30 hover:bg-purple-500/25 transition-all text-purple-300 cursor-pointer"
+                          title="۳ روش ارسال تصویر مدرک"
+                        >
+                          <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isUploadMenuOpen ? 'rotate-180' : ''}`} />
+                        </button>
+                      </div>
+
+                      {/* Dropdown with 3 Advanced Upload Options */}
+                      {isUploadMenuOpen && (
+                        <div className="absolute left-0 top-full mt-1.5 w-64 rounded-2xl bg-slate-950 border border-purple-500/30 shadow-2xl z-50 p-1.5 space-y-1 animate-in fade-in slide-in-from-top-1 text-right">
+                          {/* Option 1: Upload File */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsUploadMenuOpen(false);
+                              docFileInputRef.current?.click();
+                            }}
+                            className="w-full text-right p-2.5 rounded-xl hover:bg-purple-500/15 text-xs text-slate-200 hover:text-purple-300 transition-colors flex items-center gap-2.5 cursor-pointer"
+                          >
+                            <Upload className="w-4 h-4 text-purple-400 shrink-0" />
+                            <div>
+                              <span className="font-semibold block">۱. آپلود فایل مدرک</span>
+                              <span className="text-[10px] text-slate-400 block font-normal">انتخاب تصویر پاسپورت/تذکره از دستگاه</span>
+                            </div>
+                          </button>
+
+                          {/* Option 2: Image URL */}
+                          <button
+                            type="button"
+                            onClick={handleUrlPromptKyc}
+                            className="w-full text-right p-2.5 rounded-xl hover:bg-cyan-500/15 text-xs text-slate-200 hover:text-cyan-300 transition-colors flex items-center gap-2.5 cursor-pointer"
+                          >
+                            <LinkIcon className="w-4 h-4 text-cyan-400 shrink-0" />
+                            <div>
+                              <span className="font-semibold block">۲. لینک اینترنتی تصویر</span>
+                              <span className="text-[10px] text-slate-400 block font-normal">ورود آدرس اینترنتی (URL) عکس مدرک</span>
+                            </div>
+                          </button>
+
+                          {/* Option 3: Read from Clipboard */}
+                          <button
+                            type="button"
+                            onClick={handleClipboardReadKyc}
+                            className="w-full text-right p-2.5 rounded-xl hover:bg-emerald-500/15 text-xs text-slate-200 hover:text-emerald-300 transition-colors flex items-center gap-2.5 cursor-pointer"
+                          >
+                            <Clipboard className="w-4 h-4 text-emerald-400 shrink-0" />
+                            <div>
+                              <span className="font-semibold block">۳. خواندن از کلیپ‌بورد</span>
+                              <span className="text-[10px] text-slate-400 block font-normal">استخراج مستقیم تصویر کپی‌شده (Ctrl+V)</span>
+                            </div>
+                          </button>
+                        </div>
+                      )}
+
                       <input
                         ref={docFileInputRef}
                         type="file"

@@ -34,6 +34,7 @@ import {
 } from '@/components/icons';
 import { getSmartLink, formatDisplayValue } from '@/lib/smart-link';
 import { downloadVCard, convertToEnglishDigits } from '@/lib/generateVCard';
+import { ALL_COUNTRIES } from '@/constants/countries';
 import { LiveCountdown } from '@/components/ui/live-countdown';
 import { LiveBusinessHours } from '@/components/profile/LiveBusinessHours';
 import { PRESET_PATTERNS } from '@/lib/backgrounds';
@@ -1097,17 +1098,22 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
                         : 'bg-white/5 border-white/10 text-white'
                       }`}
                   >
-                    <option value="+93" className="bg-slate-900 text-white">🇦🇫 +93</option>
-                    <option value="+98" className="bg-slate-900 text-white">🇮🇷 +98</option>
-                    <option value="+971" className="bg-slate-900 text-white">🇦🇪 +971</option>
-                    <option value="+1" className="bg-slate-900 text-white">🇺🇸 +1</option>
+                    {ALL_COUNTRIES.map((c) => (
+                      <option key={c.code} value={c.dialCode} className="bg-slate-900 text-white">
+                        {c.flag} {c.dialCode} ({c.nameFa})
+                      </option>
+                    ))}
                   </select>
                   <input
                     type="tel"
                     required
                     name="phone"
                     value={formPhone}
-                    onChange={(e) => setFormPhone(convertToEnglishDigits(e.target.value))}
+                    onChange={(e) => {
+                      let raw = convertToEnglishDigits(e.target.value).replace(/[^0-9]/g, '');
+                      if (raw.startsWith('0')) raw = raw.replace(/^0+/, '');
+                      setFormPhone(raw);
+                    }}
                     placeholder="782698484"
                     className={`p-2 border rounded-xl flex-1 text-xs font-sans text-left focus:outline-none focus:border-cyan-500 transition-all ${isLight
                         ? 'bg-slate-50 border-slate-200 text-slate-800 placeholder-slate-400'

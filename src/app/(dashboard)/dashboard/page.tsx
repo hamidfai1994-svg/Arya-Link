@@ -24,7 +24,13 @@ import {
   ShieldCheck,
   Building2,
   User as UserIcon,
+  Scan,
+  Upload,
+  Link as LinkIcon,
+  Clipboard,
+  ChevronDown,
 } from 'lucide-react';
+import { CardOcrScannerModal, ScannedContactData } from '@/components/common/CardOcrScannerModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -87,6 +93,59 @@ export default function UserDashboardPage() {
   const [newHeadline, setNewHeadline] = useState('');
   const [newRoleType, setNewRoleType] = useState<'personal' | 'business'>('personal');
   const [isCreating, setIsCreating] = useState(false);
+
+  // Business Card OCR Scanner Modal & Dropdown States
+  const [isOcrOpen, setIsOcrOpen] = useState(false);
+  const [ocrInitialMode, setOcrInitialMode] = useState<'upload' | 'url' | 'clipboard' | 'camera'>('upload');
+  const [pastedImageSrc, setPastedImageSrc] = useState<string | null>(null);
+  const [isUploadDropdownOpen, setIsUploadDropdownOpen] = useState(false);
+  const ocrDropdownRef = React.useRef<HTMLDivElement>(null);
+  const ocrFileInputRef = React.useRef<HTMLInputElement>(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (ocrDropdownRef.current && !ocrDropdownRef.current.contains(event.target as Node)) {
+        setIsUploadDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Global Ctrl+V Paste listener on dashboard
+  useEffect(() => {
+    const handleGlobalPaste = (e: ClipboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+        return;
+      }
+      const items = e.clipboardData?.items;
+      if (!items || items.length === 0) return;
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.type.indexOf('image') !== -1) {
+          e.preventDefault();
+          const file = item.getAsFile();
+          if (file) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+              const base64 = event.target?.result as string;
+              if (base64) {
+                setPastedImageSrc(base64);
+                setIsOcrOpen(true);
+                toast.success('تصویر کارت ویزیت از کلیپ‌بورد دریافت و پنجره اسکن باز شد!');
+              }
+            };
+            reader.readAsDataURL(file);
+            break;
+          }
+        }
+      }
+    };
+    window.addEventListener('paste', handleGlobalPaste);
+    return () => window.removeEventListener('paste', handleGlobalPaste);
+  }, []);
 
   // Delete Confirmation State
   const [profileToDelete, setProfileToDelete] = useState<ProfileItem | null>(null);
@@ -276,15 +335,122 @@ export default function UserDashboardPage() {
           </p>
         </div>
 
-        {/* Big Prominent Action Button: + ساخت کارت/لینک جدید */}
-        <Button
-          onClick={() => setIsCreateOpen(true)}
-          size="lg"
-          className="h-12 px-6 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-sm shadow-xl shadow-cyan-500/25 flex items-center gap-2 active:scale-95 transition-all self-start md:self-auto shrink-0 cursor-pointer"
-        >
-          <Plus className="w-5 h-5" />
-          <span>+ ساخت کارت/لینک جدید</span>
-        </Button>
+        <div className="flex items-center gap-2.5 self-start md:self-auto shrink-0 flex-wrap">
+          {/* Advanced OCR Scanner Button with 3 Upload Options */}
+          <div className="relative" ref={ocrDropdownRef}>
+            <div className="flex items-center rounded-2xl border border-cyan-500/40 bg-gradient-to-r from-cyan-500/15 via-purple-500/15 to-slate-900 text-cyan-300 shadow-lg shadow-cyan-500/10 overflow-hidden h-12">
+              <button
+                type="button"
+                onClick={() => {
+                  setPastedImageSrc(null);
+                  setOcrInitialMode('upload');
+                  setIsOcrOpen(true);
+                }}
+                className="h-full px-4 text-xs sm:text-sm font-bold flex items-center gap-2 hover:bg-cyan-500/20 transition-all cursor-pointer"
+                title="اسکن هوشمند کارت ویزیت با هوش مصنوعی (کلید میانبر Ctrl+V)"
+              >
+                <Scan className="w-4 h-4 text-cyan-400 animate-pulse" />
+                <span>اسکن کارت ویزیت</span>
+                <span className="text-[10px] font-sans font-bold bg-slate-950/80 text-cyan-300 px-1.5 py-0.5 rounded border border-cyan-500/30">
+                  Ctrl+V
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsUploadDropdownOpen(!isUploadDropdownOpen)}
+                className="h-full px-3 border-r border-cyan-500/30 hover:bg-cyan-500/25 transition-all text-cyan-300 cursor-pointer"
+                title="۳ روش ارسال تصویر کارت"
+              >
+                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isUploadDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+            </div>
+
+            {/* 3 Upload Options Menu */}
+            {isUploadDropdownOpen && (
+              <div className="absolute left-0 top-full mt-2 w-64 rounded-2xl bg-slate-950 border border-cyan-500/30 shadow-2xl z-50 p-1.5 space-y-1 animate-in fade-in slide-in-from-top-1 text-right">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsUploadDropdownOpen(false);
+                    ocrFileInputRef.current?.click();
+                  }}
+                  className="w-full text-right p-2.5 rounded-xl hover:bg-cyan-500/10 text-xs text-slate-200 hover:text-cyan-300 transition-colors flex items-center gap-2.5 cursor-pointer"
+                >
+                  <Upload className="w-4 h-4 text-cyan-400 shrink-0" />
+                  <div>
+                    <span className="font-semibold block">۱. آپلود از دستگاه</span>
+                    <span className="text-[10px] text-slate-400 block font-normal">انتخاب تصویر از گالری/کامپیوتر</span>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsUploadDropdownOpen(false);
+                    setPastedImageSrc(null);
+                    setOcrInitialMode('url');
+                    setIsOcrOpen(true);
+                  }}
+                  className="w-full text-right p-2.5 rounded-xl hover:bg-purple-500/10 text-xs text-slate-200 hover:text-purple-300 transition-colors flex items-center gap-2.5 cursor-pointer"
+                >
+                  <LinkIcon className="w-4 h-4 text-purple-400 shrink-0" />
+                  <div>
+                    <span className="font-semibold block">۲. جایگذاری لینک عکس</span>
+                    <span className="text-[10px] text-slate-400 block font-normal">ورود URL اینترنتی تصویر</span>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsUploadDropdownOpen(false);
+                    setPastedImageSrc(null);
+                    setOcrInitialMode('clipboard');
+                    setIsOcrOpen(true);
+                  }}
+                  className="w-full text-right p-2.5 rounded-xl hover:bg-emerald-500/10 text-xs text-slate-200 hover:text-emerald-300 transition-colors flex items-center gap-2.5 cursor-pointer"
+                >
+                  <Clipboard className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <div>
+                    <span className="font-semibold block">۳. خواندن از کلیپ‌بورد</span>
+                    <span className="text-[10px] text-slate-400 block font-normal">استخراج مستقیم تصویر کپی‌شده (Ctrl+V)</span>
+                  </div>
+                </button>
+              </div>
+            )}
+
+            <input
+              ref={ocrFileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                  const base64 = event.target?.result as string;
+                  if (base64) {
+                    setPastedImageSrc(base64);
+                    setIsOcrOpen(true);
+                  }
+                };
+                reader.readAsDataURL(file);
+                e.target.value = '';
+              }}
+            />
+          </div>
+
+          {/* Big Prominent Action Button: + ساخت کارت/لینک جدید */}
+          <Button
+            onClick={() => setIsCreateOpen(true)}
+            size="lg"
+            className="h-12 px-6 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-sm shadow-xl shadow-cyan-500/25 flex items-center gap-2 active:scale-95 transition-all cursor-pointer"
+          >
+            <Plus className="w-5 h-5" />
+            <span>+ ساخت کارت/لینک جدید</span>
+          </Button>
+        </div>
       </div>
 
       {/* Aggregated Overview Section (مجموع آمار کل لینک‌های این کاربر - Strictly English Numbers) */}
@@ -794,6 +960,35 @@ export default function UserDashboardPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {/* Business Card OCR Scanner Modal */}
+      <CardOcrScannerModal
+        isOpen={isOcrOpen}
+        onClose={() => setIsOcrOpen(false)}
+        initialImageSrc={pastedImageSrc}
+        initialMode={ocrInitialMode}
+        onScanComplete={async (contact) => {
+          try {
+            const res = await fetch('/api/messages', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                profileAlias: profiles[0]?.alias || 'crm',
+                name: contact.name,
+                phone: contact.phone,
+                email: contact.email,
+                message: contact.notes || 'مخاطب اسکن‌شده از کارت ویزیت (Gemini Vision)',
+              }),
+            });
+            if (res.ok) {
+              toast.success(`مخاطب «${contact.name || contact.phone}» با موفقیت در CRM ثبت شد!`);
+            } else {
+              toast.success(`مخاطب «${contact.name || contact.phone}» با موفقیت اسکن شد.`);
+            }
+          } catch {
+            toast.success(`مخاطب «${contact.name || contact.phone}» با موفقیت استخراج شد.`);
+          }
+        }}
+      />
     </div>
   );
 }

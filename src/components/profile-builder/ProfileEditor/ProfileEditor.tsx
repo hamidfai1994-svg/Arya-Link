@@ -392,9 +392,10 @@ export const ProfileEditor: React.FC = () => {
       });
 
       const data = await res.json();
-      if (data.success && data.data) {
+      const outputText = typeof data.data === 'string' ? data.data : (data.data?.text || data.text || '');
+      if (data.success && outputText) {
         toast.success('متن هوش مصنوعی آماده شد!');
-        runTypewriter(data.data, (chunk) => {
+        runTypewriter(outputText, (chunk) => {
           if (targetField === 'bio') {
             updateBasicInfo({ bio: chunk });
           } else {
@@ -579,7 +580,7 @@ export const ProfileEditor: React.FC = () => {
     bioPlaceholder: isLangEn ? 'Write about your background, company or services...' : isLangPs ? 'د خپلو خدماتو او تجربې په اړه ولیکئ...' : 'درباره خدمات، شرکت یا سوابق کاری خود بنویسید...',
     headerLayout: isLangEn ? 'Header Layout' : isLangPs ? 'د سرپاڼې بڼه' : 'حالت نمایش هدر و چیدمان پروفایل',
     profileSettingsBtn: isLangEn ? 'Profile Settings' : isLangPs ? 'د پروفایل تنظیمات' : 'تنظیمات پروفایل',
-    crmTab: isLangEn ? 'Messages' : isLangPs ? 'پیغامونه' : 'پیام‌ها',
+    crmTab: isLangEn ? 'Contacts' : isLangPs ? 'مخاطبین' : 'مخاطبین',
   };
 
   // Only fetch profiles list if no profile is loaded yet
@@ -689,7 +690,7 @@ export const ProfileEditor: React.FC = () => {
             : 'text-muted-foreground hover:text-foreground hover:bg-muted/80'
             }`}
         >
-          <Mail className="w-3.5 h-3.5" />
+          <Users className="w-3.5 h-3.5" />
           <span className="truncate">{t.crmTab}</span>
           {unreadLeadsCount > 0 && (
             <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse shrink-0"></span>

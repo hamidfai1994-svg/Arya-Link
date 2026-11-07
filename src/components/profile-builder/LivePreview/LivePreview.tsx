@@ -24,6 +24,7 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { ALL_COUNTRIES } from '@/constants/countries';
 import {
   WhatsAppIcon,
   TelegramIcon,
@@ -1319,10 +1320,11 @@ export const LivePreview: React.FC = () => {
                   defaultValue="+93"
                   className={`p-1.5 border rounded-xl text-xs font-mono bg-transparent ${isLight ? 'border-slate-200 text-slate-800' : 'border-white/10 text-white'}`}
                 >
-                  <option value="+93">🇦🇫 +93</option>
-                  <option value="+98">🇮🇷 +98</option>
-                  <option value="+971">🇦🇪 +971</option>
-                  <option value="+1">🇺🇸 +1</option>
+                  {ALL_COUNTRIES.map((c) => (
+                    <option key={c.code} value={c.dialCode} className="bg-slate-900 text-white">
+                      {c.flag} {c.dialCode} ({c.nameFa})
+                    </option>
+                  ))}
                 </select>
                 <input
                   type="tel"

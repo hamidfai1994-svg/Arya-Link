@@ -294,13 +294,13 @@ export const CrmLeadsTable: React.FC<CrmLeadsTableProps> = ({ profileAlias }) =>
       <div className="bg-muted/30 border border-border rounded-2xl p-4 sm:p-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 shadow-sm shrink-0">
-              <Mail className="w-5 h-5" />
+            <div className="w-10 h-10 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 shadow-sm shrink-0">
+              <Users className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-foreground">پیام‌های دریافتی</h3>
+              <h3 className="text-sm font-bold text-foreground">مدیریت مخاطبین و لیدها (Contacts &amp; CRM)</h3>
               <p className="text-xs text-muted-foreground mt-0.5">
-                پیام‌ها و اطلاعات تماسی که مخاطبان از طریق فرم تماس برای شما ارسال کرده‌اند.
+                مخاطبین اسکن‌شده از کارت ویزیت و پیام‌هایی که کاربران از طریق فرم تماس ارسال کرده‌اند.
               </p>
             </div>
           </div>
