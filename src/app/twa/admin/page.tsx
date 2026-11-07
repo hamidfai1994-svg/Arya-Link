@@ -23,6 +23,7 @@ import {
   Truck,
 } from 'lucide-react';
 import { formatSmartDate } from '@/lib/utils/date';
+import TelegramBottomNav from '@/components/navigation/TelegramBottomNav';
 
 interface AdminStats {
   totalProfiles: number;
@@ -67,12 +68,6 @@ interface AdminTransaction {
   createdAt: string;
 }
 
-const navItems = [
-  { id: 'dashboard' as const, label: 'پیشخوان', icon: BarChart3, emoji: '📊' },
-  { id: 'users' as const, label: 'کاربران', icon: Users, emoji: '👥' },
-  { id: 'orders' as const, label: 'سفارشات', icon: ShoppingCart, emoji: '🛒' },
-  { id: 'finance' as const, label: 'مالی', icon: CreditCard, emoji: '💳' },
-];
 
 export default function AdminTWA() {
   const [authStatus, setAuthStatus] = useState<'loading' | 'success' | 'error'>('loading');
@@ -297,7 +292,7 @@ export default function AdminTWA() {
   }
 
   return (
-    <div className="p-4 pb-24 space-y-4 font-sans select-none max-w-md mx-auto" dir="rtl">
+    <div className="p-4 pb-32 space-y-4 font-sans select-none max-w-md mx-auto" dir="rtl">
       {/* Top Bar Header */}
       <div className="flex items-center justify-between pb-1">
         <div className="flex items-center gap-2">
@@ -1035,44 +1030,8 @@ export default function AdminTWA() {
         </div>
       )}
 
-      {/* Bottom Navigation Bar */}
-      <nav
-        className="fixed bottom-0 left-0 right-0 z-50 border-t backdrop-blur-md"
-        style={{
-          backgroundColor: 'var(--tg-theme-secondary-bg-color, rgba(15, 23, 42, 0.95))',
-          borderColor: 'rgba(255, 255, 255, 0.08)',
-        }}
-      >
-        <div className="max-w-md mx-auto grid grid-cols-4 px-2 py-2">
-          {navItems.map((tab) => {
-            const isActive = activeTab === tab.id;
-            const Icon = tab.icon;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => {
-                  setActiveTab(tab.id);
-                  const tg = (window as any).Telegram?.WebApp;
-                  tg?.HapticFeedback?.selectionChanged();
-                }}
-                className="flex flex-col items-center justify-center gap-1 py-1 px-1 rounded-xl transition-all cursor-pointer select-none active:scale-95"
-                style={{
-                  color: isActive
-                    ? 'var(--tg-theme-button-color, #0ea5e9)'
-                    : 'var(--tg-theme-hint-color, #94a3b8)',
-                }}
-              >
-                <Icon className={`w-4 h-4 transition-transform ${isActive ? 'scale-110' : ''}`} />
-                <span className={`text-[10px] flex items-center gap-1 ${isActive ? 'font-black' : 'font-medium'}`}>
-                  <span>{tab.emoji}</span>
-                  <span>{tab.label}</span>
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </nav>
+      {/* Liquid Glass Floating Telegram Bottom Navigation */}
+      <TelegramBottomNav activeTab={activeTab} onChange={setActiveTab} />
     </div>
   );
 }
