@@ -34,6 +34,9 @@ import {
   Camera,
   Bookmark,
   Scan,
+  ChevronDown,
+  ChevronUp,
+  Code,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
@@ -184,10 +187,10 @@ function AdvancedQrMakerContent() {
   // Top-Level Mode Tab: Generator vs Scanner
   const [mainViewMode, setMainViewMode] = useState<'generator' | 'scanner'>('generator');
 
-  // Handle URL query parameter ?tab=scanner
+  // Handle URL query parameter ?tab=scanner or ?tab=scan (Stage 6)
   useEffect(() => {
     const tabParam = searchParams.get('tab');
-    if (tabParam === 'scanner') {
+    if (tabParam === 'scanner' || tabParam === 'scan') {
       setMainViewMode('scanner');
     } else if (tabParam === 'generator') {
       setMainViewMode('generator');
@@ -195,6 +198,9 @@ function AdvancedQrMakerContent() {
   }, [searchParams]);
 
   const [isSavingToHistory, setIsSavingToHistory] = useState(false);
+  const [isEmbedOpen, setIsEmbedOpen] = useState(false);
+  const [qrEmbedDataUrl, setQrEmbedDataUrl] = useState<string>('');
+  const [embedCopied, setEmbedCopied] = useState(false);
 
   // Active Tab
   const [activeTab, setActiveTab] = useState<ContentTab>('url');
@@ -389,9 +395,8 @@ function AdvancedQrMakerContent() {
           qParams.push(`subject=${encodeURIComponent(emailData.subject)}`);
         if (emailData.body)
           qParams.push(`body=${encodeURIComponent(emailData.body)}`);
-        return `mailto:${emailData.to || ''}${
-          qParams.length ? '?' + qParams.join('&') : ''
-        }`;
+        return `mailto:${emailData.to || ''}${qParams.length ? '?' + qParams.join('&') : ''
+          }`;
       }
       case 'sms': {
         const p = smsData.phone ? encodeURIComponent(smsData.phone) : '';
@@ -475,13 +480,13 @@ function AdvancedQrMakerContent() {
 
     const dotsGradient = isGrad
       ? {
-          type: gradientType,
-          rotation: (gradientRotation * Math.PI) / 180,
-          colorStops: [
-            { offset: 0, color: gradientColor1 },
-            { offset: 1, color: gradientColor2 },
-          ],
-        }
+        type: gradientType,
+        rotation: (gradientRotation * Math.PI) / 180,
+        colorStops: [
+          { offset: 0, color: gradientColor1 },
+          { offset: 1, color: gradientColor2 },
+        ],
+      }
       : undefined;
 
     return {
@@ -512,60 +517,76 @@ function AdvancedQrMakerContent() {
         color: customEyeColors
           ? eyeSquareColor
           : !isGrad
-          ? singleColor
-          : gradientColor1,
+            ? singleColor
+            : gradientColor1,
       },
       cornersDotOptions: {
         type: mapCornerDotStyle(cornerDotStyle),
         color: customEyeColors
           ? eyeDotColor
           : !isGrad
-          ? singleColor
-          : gradientColor2,
+            ? singleColor
+            : gradientColor2,
       },
     };
   };
 
-  // Initialize qr-code-styling on mount in browser
+  // Initialize and update qr-code-styling in browser whenever config changes
   useEffect(() => {
     setIsClientReady(true);
     let isMounted = true;
 
-    async function initQr() {
+    async function syncQr() {
       if (typeof window === 'undefined') return;
       try {
         const QRCodeStylingClass = (await import('qr-code-styling')).default;
-        if (!isMounted) return;
+        if (!isMounted || !qrContainerRef.current) return;
 
-        const initialOptions = buildQrOptions(300);
-        const qrInstance = new QRCodeStylingClass(initialOptions);
-        qrCodeInstanceRef.current = qrInstance;
+        const updatedOpts = buildQrOptions(300);
 
-        if (qrContainerRef.current) {
+        if (!qrCodeInstanceRef.current) {
+          const qrInstance = new QRCodeStylingClass(updatedOpts);
+          qrCodeInstanceRef.current = qrInstance;
           qrContainerRef.current.innerHTML = '';
           qrInstance.append(qrContainerRef.current);
+        } else {
+          qrCodeInstanceRef.current.update(updatedOpts);
+          if (qrContainerRef.current.children.length === 0) {
+            qrCodeInstanceRef.current.append(qrContainerRef.current);
+          }
         }
+
+        // Extract base64 image dataUrl for HTML Embed Accordion snippet
+        setTimeout(async () => {
+          if (!isMounted) return;
+          try {
+            const canvas = qrContainerRef.current?.querySelector('canvas');
+            if (canvas) {
+              setQrEmbedDataUrl(canvas.toDataURL('image/png'));
+            } else if (qrCodeInstanceRef.current) {
+              const rawBlob = (await qrCodeInstanceRef.current.getRawData('png')) as Blob | null;
+              if (rawBlob && isMounted) {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                  if (isMounted && reader.result) {
+                    setQrEmbedDataUrl(reader.result as string);
+                  }
+                };
+                reader.readAsDataURL(rawBlob);
+              }
+            }
+          } catch (e) { }
+        }, 80);
       } catch (err) {
-        console.error('Failed to initialize QRCodeStyling:', err);
+        console.error('Failed to update QR Code:', err);
       }
     }
 
-    initQr();
+    syncQr();
 
     return () => {
       isMounted = false;
     };
-  }, []);
-
-  // Update QR code whenever config changes
-  useEffect(() => {
-    if (!qrCodeInstanceRef.current || !qrContainerRef.current) return;
-    try {
-      const updatedOpts = buildQrOptions(300);
-      qrCodeInstanceRef.current.update(updatedOpts);
-    } catch (err) {
-      console.error('Failed to update QR Code:', err);
-    }
   }, [
     computedPayload,
     dotStyle,
@@ -825,6 +846,19 @@ function AdvancedQrMakerContent() {
     }
   };
 
+  // HTML Embed Snippet & Backlink (Stage 3)
+  const embedHtmlCode = useMemo(() => {
+    const src = qrEmbedDataUrl || 'data:image/png;base64,...';
+    return `<!-- QR Code generated by AryaLink (https://aryalink.com/tools/qr-maker) -->\n<a href="https://aryalink.com/tools/qr-maker" target="_blank" rel="noopener noreferrer">\n  <img src="${src}" alt="AryaLink QR Code" />\n</a>`;
+  }, [qrEmbedDataUrl]);
+
+  const handleCopyEmbedCode = () => {
+    navigator.clipboard.writeText(embedHtmlCode);
+    setEmbedCopied(true);
+    toast.success('کد جاسازی HTML با موفقیت کپی شد.');
+    setTimeout(() => setEmbedCopied(false), 2000);
+  };
+
   // Preset Colors
   const colorPresets = [
     { name: 'Cyan', hex: '#06b6d4' },
@@ -840,7 +874,7 @@ function AdvancedQrMakerContent() {
   return (
     <div
       dir={dir}
-      className="min-h-screen bg-slate-950 text-slate-100 selection:bg-cyan-500/30 selection:text-cyan-200"
+      className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 selection:bg-cyan-500/30 selection:text-cyan-200 transition-colors duration-200"
     >
       {/* Background radial glow */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
@@ -851,68 +885,68 @@ function AdvancedQrMakerContent() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-16">
         {/* Breadcrumb & Navigation */}
-        <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-400 mb-6">
+        <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-500 dark:text-slate-400 mb-6">
           <Link
             href="/"
-            className="hover:text-cyan-400 transition-colors flex items-center gap-1"
+            className="hover:text-cyan-500 transition-colors flex items-center gap-1"
           >
             {language === 'en' ? 'Home' : 'صفحه اصلی'}
           </Link>
           {isRtl ? (
-            <ChevronLeft className="w-3.5 h-3.5 text-slate-600" />
+            <ChevronLeft className="w-3.5 h-3.5 text-slate-400 dark:text-slate-600" />
           ) : (
-            <ChevronRight className="w-3.5 h-3.5 text-slate-600" />
+            <ChevronRight className="w-3.5 h-3.5 text-slate-400 dark:text-slate-600" />
           )}
-          <span className="text-slate-300 font-medium">
+          <span className="text-slate-700 dark:text-slate-300 font-medium">
             {language === 'en'
               ? 'Digital Toolbox'
               : language === 'ps'
-              ? 'ډیجیټل اوزار بکس'
-              : 'جعبه ابزار دیجیتال'}
+                ? 'ډیجیټل اوزار بکس'
+                : 'جعبه ابزار دیجیتال'}
           </span>
           {isRtl ? (
-            <ChevronLeft className="w-3.5 h-3.5 text-slate-600" />
+            <ChevronLeft className="w-3.5 h-3.5 text-slate-400 dark:text-slate-600" />
           ) : (
-            <ChevronRight className="w-3.5 h-3.5 text-slate-600" />
+            <ChevronRight className="w-3.5 h-3.5 text-slate-400 dark:text-slate-600" />
           )}
-          <span className="text-cyan-400 font-semibold">
+          <span className="text-cyan-600 dark:text-cyan-400 font-semibold">
             {language === 'en'
               ? 'Advanced QR Code Generator'
               : language === 'ps'
-              ? 'پرمختللی QR کوډ جوړونکی'
-              : 'کیوآر کد ساز پیشرفته'}
+                ? 'پرمختللی QR کوډ جوړونکی'
+                : 'کیوآر کد ساز پیشرفته'}
           </span>
         </div>
 
         {/* Page Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-8 border-b border-slate-800/80 mb-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-8 border-b border-slate-200 dark:border-slate-800/80 mb-8">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-xs font-semibold mb-3">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-600 dark:text-cyan-400 text-xs font-semibold mb-3">
               <Sparkles className="w-3.5 h-3.5" />
               <span>
                 {language === 'en'
                   ? 'Ultra HD & Vector Vector Graphics'
                   : language === 'ps'
-                  ? 'لوړ کیفیت او مسلکي ډیزاین'
-                  : 'کیفیت فوق‌العاده چاپی و گرافیک برداری'}
+                    ? 'لوړ کیفیت او مسلکي ډیزاین'
+                    : 'کیفیت فوق‌العاده چاپی و گرافیک برداری'}
               </span>
             </div>
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-white tracking-tight flex items-center gap-3">
-              <div className="p-2.5 rounded-2xl bg-gradient-to-tr from-cyan-500/20 to-blue-500/20 border border-cyan-500/40 text-cyan-400 shadow-lg shadow-cyan-500/10">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
+              <div className="p-2.5 rounded-2xl bg-gradient-to-tr from-cyan-500/20 to-blue-500/20 border border-cyan-500/40 text-cyan-500 shadow-lg shadow-cyan-500/10">
                 <QrCode className="w-7 h-7 sm:w-8 sm:h-8" />
               </div>
               {language === 'en'
                 ? 'Advanced QR Code Generator'
                 : language === 'ps'
-                ? 'د مسلکي او پرمختللو QR کوډونو جوړول'
-                : 'کیوآر کد ساز فوق پیشرفته'}
+                  ? 'د مسلکي او پرمختللو QR کوډونو جوړول'
+                  : 'کیوآر کد ساز فوق پیشرفته'}
             </h1>
-            <p className="mt-2 text-sm sm:text-base text-slate-400 max-w-2xl leading-relaxed">
+            <p className="mt-2 text-sm sm:text-base text-slate-600 dark:text-slate-400 max-w-2xl leading-relaxed">
               {language === 'en'
                 ? 'Create custom, high-resolution QR codes with custom gradients, shapes, center logo upload, and vector export (SVG, PNG, JPG).'
                 : language === 'ps'
-                ? 'د رنګین ګریډینټ، ځانګړو اشکالو، لوګو او لوړ کیفیت سره د ټولو بڼو (وېب پاڼه، اړیکه، وای فای او نور) لپاره مسلکي QR کوډ جوړ کړئ.'
-                : 'ساخت کدهای QR با گرادیان‌های رنگی، اشکال هندسی مدرن، قرار دادن لوگو در مرکز و دانلود وکتور با کیفیت چاپی بالا (SVG، PNG و JPG).'}
+                  ? 'د رنګین ګریډینټ، ځانګړو اشکالو، لوګو او لوړ کیفیت سره د ټولو بڼو (وېب پاڼه، اړیکه، وای فای او نور) لپاره مسلکي QR کوډ جوړ کړئ.'
+                  : 'ساخت کدهای QR با گرادیان‌های رنگی، اشکال هندسی مدرن، قرار دادن لوگو در مرکز و دانلود وکتور با کیفیت چاپی بالا (SVG، PNG و JPG).'}
             </p>
           </div>
 
@@ -931,10 +965,10 @@ function AdvancedQrMakerContent() {
                     ? 'Loading...'
                     : 'در حال فراخوانی...'
                   : language === 'en'
-                  ? 'Load My Profile'
-                  : language === 'ps'
-                  ? 'زما د پروفایل معلومات'
-                  : 'فراخوانی اطلاعات من'}
+                    ? 'Load My Profile'
+                    : language === 'ps'
+                      ? 'زما د پروفایل معلومات'
+                      : 'فراخوانی اطلاعات من'}
               </span>
             </Button>
 
@@ -942,7 +976,7 @@ function AdvancedQrMakerContent() {
               type="button"
               variant="outline"
               onClick={handleReset}
-              className="border-slate-700/80 hover:bg-slate-800 text-slate-300 rounded-xl px-3.5"
+              className="border-slate-300 dark:border-slate-700/80 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl px-3.5"
               title={language === 'en' ? 'Reset styles' : 'بازنشانی استایل'}
             >
               <RotateCcw className="w-4 h-4" />
@@ -951,41 +985,39 @@ function AdvancedQrMakerContent() {
         </div>
 
         {/* Top-Level Mode Navigation: Generator vs Scanner */}
-        <div className="flex items-center gap-3 p-1.5 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-xl mb-8 max-w-md">
+        <div className="flex items-center gap-3 p-1.5 rounded-2xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 shadow-xl mb-8 max-w-md">
           <button
             type="button"
             onClick={() => setMainViewMode('generator')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold transition-all ${
-              mainViewMode === 'generator'
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold transition-all ${mainViewMode === 'generator'
                 ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg shadow-cyan-500/25 border border-cyan-400/30'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
-            }`}
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/50'
+              }`}
           >
             <QrCode className="w-4 h-4" />
             <span>
               {language === 'en'
                 ? 'QR Generator'
                 : language === 'ps'
-                ? 'QR جوړونکی'
-                : 'سازنده کیوآر کد'}
+                  ? 'QR جوړونکی'
+                  : 'سازنده کیوآر کد'}
             </span>
           </button>
           <button
             type="button"
             onClick={() => setMainViewMode('scanner')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold transition-all ${
-              mainViewMode === 'scanner'
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold transition-all ${mainViewMode === 'scanner'
                 ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg shadow-cyan-500/25 border border-cyan-400/30'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
-            }`}
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/50'
+              }`}
           >
             <Camera className="w-4 h-4" />
             <span>
               {language === 'en'
                 ? 'QR Scanner'
                 : language === 'ps'
-                ? 'QR سکینر'
-                : 'اسکنر کیوآر کد'}
+                  ? 'QR سکینر'
+                  : 'اسکنر کیوآر کد'}
             </span>
           </button>
         </div>
@@ -993,1758 +1025,1737 @@ function AdvancedQrMakerContent() {
         {mainViewMode === 'generator' ? (
           /* Main Grid: Left Config Tabs & Form | Right Sticky Live Preview */
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* Left Column (8 cols): Content Tabs + Design Customizers */}
-          <div className="lg:col-span-7 space-y-6">
-            {/* Step 1: Content Type Tabs */}
-            <div className="bg-slate-900/60 backdrop-blur-xl border border-slate-800 rounded-2xl p-5 shadow-xl">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-bold tracking-wider uppercase text-cyan-400 flex items-center gap-1.5">
-                  <Layers className="w-4 h-4" />
-                  {language === 'en'
-                    ? 'Step 1: Choose Content Type'
-                    : language === 'ps'
-                    ? 'لومړی ګام: د کوډ محتوا وټاکئ'
-                    : 'مرحله 1: نوع محتوا را انتخاب کنید'}
-                </span>
-                <span className="text-xs text-slate-400">
-                  {activeTab.toUpperCase()}
-                </span>
-              </div>
+            {/* Left Column (8 cols): Content Tabs + Design Customizers */}
+            <div className="lg:col-span-7 space-y-6">
+              {/* Step 1: Content Type Tabs */}
+              <div className="bg-slate-900/60 backdrop-blur-xl border border-slate-800 rounded-2xl p-5 shadow-xl">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-xs font-bold tracking-wider uppercase text-cyan-400 flex items-center gap-1.5">
+                    <Layers className="w-4 h-4" />
+                    {language === 'en'
+                      ? 'Step 1: Choose Content Type'
+                      : language === 'ps'
+                        ? 'لومړی ګام: د کوډ محتوا وټاکئ'
+                        : 'مرحله 1: نوع محتوا را انتخاب کنید'}
+                  </span>
+                  <span className="text-xs text-slate-400">
+                    {activeTab.toUpperCase()}
+                  </span>
+                </div>
 
-              {/* Tabs Bar */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {[
-                  {
-                    id: 'url' as ContentTab,
-                    label: language === 'en' ? 'Website' : 'لینک وب‌سایت',
-                    icon: Link2,
-                  },
-                  {
-                    id: 'vcard' as ContentTab,
-                    label: language === 'en' ? 'vCard Contact' : 'کارت مخاطب (vCard)',
-                    icon: User,
-                  },
-                  {
-                    id: 'text' as ContentTab,
-                    label: language === 'en' ? 'Text' : 'متن ساده',
-                    icon: FileText,
-                  },
-                  {
-                    id: 'email' as ContentTab,
-                    label: language === 'en' ? 'Email' : 'ارسال ایمیل',
-                    icon: Mail,
-                  },
-                  {
-                    id: 'sms' as ContentTab,
-                    label: language === 'en' ? 'SMS' : 'پیامک (SMS)',
-                    icon: MessageSquare,
-                  },
-                  {
-                    id: 'phone' as ContentTab,
-                    label: language === 'en' ? 'Call' : 'تماس تلفنی',
-                    icon: Phone,
-                  },
-                  {
-                    id: 'wifi' as ContentTab,
-                    label: language === 'en' ? 'Wi-Fi' : 'اتصال وای‌فای',
-                    icon: Wifi,
-                  },
-                  {
-                    id: 'location' as ContentTab,
-                    label: language === 'en' ? 'Location' : 'موقعیت مکانی',
-                    icon: MapPin,
-                  },
-                ].map((tab) => {
-                  const Icon = tab.icon;
-                  const isActive = activeTab === tab.id;
-                  return (
-                    <button
-                      key={tab.id}
-                      type="button"
-                      onClick={() => setActiveTab(tab.id)}
-                      className={`flex items-center justify-center gap-2 p-2.5 rounded-xl border text-xs sm:text-sm font-medium transition-all ${
-                        isActive
-                          ? 'bg-cyan-500/15 border-cyan-500/60 text-cyan-300 shadow-md shadow-cyan-500/10'
-                          : 'bg-slate-950/40 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
-                      }`}
-                    >
-                      <Icon className="w-4 h-4 shrink-0" />
-                      <span className="truncate">{tab.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
+                {/* Tabs Bar */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {[
+                    {
+                      id: 'url' as ContentTab,
+                      label: language === 'en' ? 'Website' : 'لینک وب‌سایت',
+                      icon: Link2,
+                    },
+                    {
+                      id: 'vcard' as ContentTab,
+                      label: language === 'en' ? 'vCard Contact' : 'کارت مخاطب (vCard)',
+                      icon: User,
+                    },
+                    {
+                      id: 'text' as ContentTab,
+                      label: language === 'en' ? 'Text' : 'متن ساده',
+                      icon: FileText,
+                    },
+                    {
+                      id: 'email' as ContentTab,
+                      label: language === 'en' ? 'Email' : 'ارسال ایمیل',
+                      icon: Mail,
+                    },
+                    {
+                      id: 'sms' as ContentTab,
+                      label: language === 'en' ? 'SMS' : 'پیامک (SMS)',
+                      icon: MessageSquare,
+                    },
+                    {
+                      id: 'phone' as ContentTab,
+                      label: language === 'en' ? 'Call' : 'تماس تلفنی',
+                      icon: Phone,
+                    },
+                    {
+                      id: 'wifi' as ContentTab,
+                      label: language === 'en' ? 'Wi-Fi' : 'اتصال وای‌فای',
+                      icon: Wifi,
+                    },
+                    {
+                      id: 'location' as ContentTab,
+                      label: language === 'en' ? 'Location' : 'موقعیت مکانی',
+                      icon: MapPin,
+                    },
+                  ].map((tab) => {
+                    const Icon = tab.icon;
+                    const isActive = activeTab === tab.id;
+                    return (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        onClick={() => setActiveTab(tab.id)}
+                        className={`flex items-center justify-center gap-2 p-2.5 rounded-xl border text-xs sm:text-sm font-medium transition-all ${isActive
+                            ? 'bg-cyan-500/15 border-cyan-500/60 text-cyan-300 shadow-md shadow-cyan-500/10'
+                            : 'bg-slate-950/40 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
+                          }`}
+                      >
+                        <Icon className="w-4 h-4 shrink-0" />
+                        <span className="truncate">{tab.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
 
-              {/* Dynamic Form Content */}
-              <div className="mt-6 pt-6 border-t border-slate-800/80">
-                {/* 1. URL TAB */}
-                {activeTab === 'url' && (
-                  <div className="space-y-3">
-                    <label className="block text-xs font-medium text-slate-300">
-                      {language === 'en'
-                        ? 'Target Web Address (URL)'
-                        : 'آدرس اینترنتی (URL)'}
-                    </label>
-                    <div className="relative">
-                      <Link2 className="absolute top-3 start-3.5 w-4 h-4 text-slate-500" />
-                      <input
-                        type="url"
-                        value={url}
-                        onChange={(e) => setUrl(e.target.value)}
-                        placeholder="https://aryalink.com/your-name"
-                        className="w-full ps-10 pe-4 py-2.5 bg-slate-950/70 border border-slate-800 focus:border-cyan-500 rounded-xl text-sm text-white placeholder-slate-600 focus:outline-none transition-colors"
+                {/* Dynamic Form Content */}
+                <div className="mt-6 pt-6 border-t border-slate-800/80">
+                  {/* 1. URL TAB */}
+                  {activeTab === 'url' && (
+                    <div className="space-y-3">
+                      <label className="block text-xs font-medium text-slate-300">
+                        {language === 'en'
+                          ? 'Target Web Address (URL)'
+                          : 'آدرس اینترنتی (URL)'}
+                      </label>
+                      <div className="relative">
+                        <Link2 className="absolute top-3 start-3.5 w-4 h-4 text-slate-500" />
+                        <input
+                          type="url"
+                          value={url}
+                          onChange={(e) => setUrl(e.target.value)}
+                          placeholder="https://aryalink.com/your-name"
+                          className="w-full ps-10 pe-4 py-2.5 bg-slate-950/70 border border-slate-800 focus:border-cyan-500 rounded-xl text-sm text-white placeholder-slate-600 focus:outline-none transition-colors"
+                        />
+                      </div>
+                      <p className="text-xs text-slate-500">
+                        {language === 'en'
+                          ? 'Anyone scanning this QR code will directly open this page in their browser.'
+                          : 'اسکن این کد، کاربر را مستقیماً به آدرس فوق در مرورگر هدایت می‌کند.'}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* 2. VCARD TAB */}
+                  {activeTab === 'vcard' && (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-slate-300">
+                          {language === 'en'
+                            ? 'Contact Card Information (vCard 3.0)'
+                            : 'اطلاعات کارت مخاطب الکترونیکی'}
+                        </span>
+                        <span className="text-xs text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded-md">
+                          {language === 'en' ? 'Direct phone import' : 'ذخیره خودکار در دفترچه تلفن'}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs text-slate-400 mb-1">
+                            {language === 'en' ? 'First Name' : 'نام'}
+                          </label>
+                          <input
+                            type="text"
+                            value={vcard.firstName}
+                            onChange={(e) =>
+                              setVcard({ ...vcard, firstName: e.target.value })
+                            }
+                            className="w-full px-3 py-2 bg-slate-950/70 border border-slate-800 focus:border-cyan-500 rounded-xl text-sm text-white focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-slate-400 mb-1">
+                            {language === 'en' ? 'Last Name' : 'نام خانوادگی'}
+                          </label>
+                          <input
+                            type="text"
+                            value={vcard.lastName}
+                            onChange={(e) =>
+                              setVcard({ ...vcard, lastName: e.target.value })
+                            }
+                            className="w-full px-3 py-2 bg-slate-950/70 border border-slate-800 focus:border-cyan-500 rounded-xl text-sm text-white focus:outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs text-slate-400 mb-1">
+                            {language === 'en' ? 'Company / Organization' : 'نام سازمان یا شرکت'}
+                          </label>
+                          <input
+                            type="text"
+                            value={vcard.org}
+                            onChange={(e) =>
+                              setVcard({ ...vcard, org: e.target.value })
+                            }
+                            className="w-full px-3 py-2 bg-slate-950/70 border border-slate-800 focus:border-cyan-500 rounded-xl text-sm text-white focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-slate-400 mb-1">
+                            {language === 'en' ? 'Job Title' : 'عنوان شغلی'}
+                          </label>
+                          <input
+                            type="text"
+                            value={vcard.title}
+                            onChange={(e) =>
+                              setVcard({ ...vcard, title: e.target.value })
+                            }
+                            className="w-full px-3 py-2 bg-slate-950/70 border border-slate-800 focus:border-cyan-500 rounded-xl text-sm text-white focus:outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs text-slate-400 mb-1">
+                            {language === 'en' ? 'Work Phone' : 'تلفن ثابت یا کار'}
+                          </label>
+                          <input
+                            type="tel"
+                            value={vcard.phone}
+                            onChange={(e) =>
+                              setVcard({ ...vcard, phone: e.target.value })
+                            }
+                            placeholder="+93..."
+                            className="w-full px-3 py-2 bg-slate-950/70 border border-slate-800 focus:border-cyan-500 rounded-xl text-sm text-white focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-slate-400 mb-1">
+                            {language === 'en' ? 'Mobile / WhatsApp' : 'شماره موبایل یا واتساپ'}
+                          </label>
+                          <input
+                            type="tel"
+                            value={vcard.mobile}
+                            onChange={(e) =>
+                              setVcard({ ...vcard, mobile: e.target.value })
+                            }
+                            placeholder="+93..."
+                            className="w-full px-3 py-2 bg-slate-950/70 border border-slate-800 focus:border-cyan-500 rounded-xl text-sm text-white focus:outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs text-slate-400 mb-1">
+                            {language === 'en' ? 'Email Address' : 'آدرس ایمیل'}
+                          </label>
+                          <input
+                            type="email"
+                            value={vcard.email}
+                            onChange={(e) =>
+                              setVcard({ ...vcard, email: e.target.value })
+                            }
+                            className="w-full px-3 py-2 bg-slate-950/70 border border-slate-800 focus:border-cyan-500 rounded-xl text-sm text-white focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-slate-400 mb-1">
+                            {language === 'en' ? 'Website or Bio Link' : 'وب‌سایت یا لینک کارت دیجیتال'}
+                          </label>
+                          <input
+                            type="url"
+                            value={vcard.website}
+                            onChange={(e) =>
+                              setVcard({ ...vcard, website: e.target.value })
+                            }
+                            className="w-full px-3 py-2 bg-slate-950/70 border border-slate-800 focus:border-cyan-500 rounded-xl text-sm text-white focus:outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs text-slate-400 mb-1">
+                          {language === 'en' ? 'Address / Location' : 'آدرس دفتر یا محل کار'}
+                        </label>
+                        <input
+                          type="text"
+                          value={vcard.address}
+                          onChange={(e) =>
+                            setVcard({ ...vcard, address: e.target.value })
+                          }
+                          className="w-full px-3 py-2 bg-slate-950/70 border border-slate-800 focus:border-cyan-500 rounded-xl text-sm text-white focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 3. TEXT TAB */}
+                  {activeTab === 'text' && (
+                    <div className="space-y-3">
+                      <label className="block text-xs font-medium text-slate-300">
+                        {language === 'en' ? 'Plain Text Message' : 'متن پیام یا توضیحات'}
+                      </label>
+                      <textarea
+                        rows={4}
+                        value={plainText}
+                        onChange={(e) => setPlainText(e.target.value)}
+                        placeholder="متن دلخواه خود را بنویسید..."
+                        className="w-full p-3 bg-slate-950/70 border border-slate-800 focus:border-cyan-500 rounded-xl text-sm text-white focus:outline-none"
                       />
                     </div>
-                    <p className="text-xs text-slate-500">
-                      {language === 'en'
-                        ? 'Anyone scanning this QR code will directly open this page in their browser.'
-                        : 'اسکن این کد، کاربر را مستقیماً به آدرس فوق در مرورگر هدایت می‌کند.'}
-                    </p>
-                  </div>
-                )}
+                  )}
 
-                {/* 2. VCARD TAB */}
-                {activeTab === 'vcard' && (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-slate-300">
-                        {language === 'en'
-                          ? 'Contact Card Information (vCard 3.0)'
-                          : 'اطلاعات کارت مخاطب الکترونیکی'}
-                      </span>
-                      <span className="text-xs text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded-md">
-                        {language === 'en' ? 'Direct phone import' : 'ذخیره خودکار در دفترچه تلفن'}
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* 4. EMAIL TAB */}
+                  {activeTab === 'email' && (
+                    <div className="space-y-3">
                       <div>
                         <label className="block text-xs text-slate-400 mb-1">
-                          {language === 'en' ? 'First Name' : 'نام'}
-                        </label>
-                        <input
-                          type="text"
-                          value={vcard.firstName}
-                          onChange={(e) =>
-                            setVcard({ ...vcard, firstName: e.target.value })
-                          }
-                          className="w-full px-3 py-2 bg-slate-950/70 border border-slate-800 focus:border-cyan-500 rounded-xl text-sm text-white focus:outline-none"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs text-slate-400 mb-1">
-                          {language === 'en' ? 'Last Name' : 'نام خانوادگی'}
-                        </label>
-                        <input
-                          type="text"
-                          value={vcard.lastName}
-                          onChange={(e) =>
-                            setVcard({ ...vcard, lastName: e.target.value })
-                          }
-                          className="w-full px-3 py-2 bg-slate-950/70 border border-slate-800 focus:border-cyan-500 rounded-xl text-sm text-white focus:outline-none"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-xs text-slate-400 mb-1">
-                          {language === 'en' ? 'Company / Organization' : 'نام سازمان یا شرکت'}
-                        </label>
-                        <input
-                          type="text"
-                          value={vcard.org}
-                          onChange={(e) =>
-                            setVcard({ ...vcard, org: e.target.value })
-                          }
-                          className="w-full px-3 py-2 bg-slate-950/70 border border-slate-800 focus:border-cyan-500 rounded-xl text-sm text-white focus:outline-none"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs text-slate-400 mb-1">
-                          {language === 'en' ? 'Job Title' : 'عنوان شغلی'}
-                        </label>
-                        <input
-                          type="text"
-                          value={vcard.title}
-                          onChange={(e) =>
-                            setVcard({ ...vcard, title: e.target.value })
-                          }
-                          className="w-full px-3 py-2 bg-slate-950/70 border border-slate-800 focus:border-cyan-500 rounded-xl text-sm text-white focus:outline-none"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-xs text-slate-400 mb-1">
-                          {language === 'en' ? 'Work Phone' : 'تلفن ثابت یا کار'}
-                        </label>
-                        <input
-                          type="tel"
-                          value={vcard.phone}
-                          onChange={(e) =>
-                            setVcard({ ...vcard, phone: e.target.value })
-                          }
-                          placeholder="+93..."
-                          className="w-full px-3 py-2 bg-slate-950/70 border border-slate-800 focus:border-cyan-500 rounded-xl text-sm text-white focus:outline-none"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs text-slate-400 mb-1">
-                          {language === 'en' ? 'Mobile / WhatsApp' : 'شماره موبایل یا واتساپ'}
-                        </label>
-                        <input
-                          type="tel"
-                          value={vcard.mobile}
-                          onChange={(e) =>
-                            setVcard({ ...vcard, mobile: e.target.value })
-                          }
-                          placeholder="+93..."
-                          className="w-full px-3 py-2 bg-slate-950/70 border border-slate-800 focus:border-cyan-500 rounded-xl text-sm text-white focus:outline-none"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-xs text-slate-400 mb-1">
-                          {language === 'en' ? 'Email Address' : 'آدرس ایمیل'}
+                          {language === 'en' ? 'Recipient Email' : 'ایمیل دریافت‌کننده'}
                         </label>
                         <input
                           type="email"
-                          value={vcard.email}
+                          value={emailData.to}
                           onChange={(e) =>
-                            setVcard({ ...vcard, email: e.target.value })
+                            setEmailData({ ...emailData, to: e.target.value })
                           }
                           className="w-full px-3 py-2 bg-slate-950/70 border border-slate-800 focus:border-cyan-500 rounded-xl text-sm text-white focus:outline-none"
                         />
                       </div>
                       <div>
                         <label className="block text-xs text-slate-400 mb-1">
-                          {language === 'en' ? 'Website or Bio Link' : 'وب‌سایت یا لینک کارت دیجیتال'}
-                        </label>
-                        <input
-                          type="url"
-                          value={vcard.website}
-                          onChange={(e) =>
-                            setVcard({ ...vcard, website: e.target.value })
-                          }
-                          className="w-full px-3 py-2 bg-slate-950/70 border border-slate-800 focus:border-cyan-500 rounded-xl text-sm text-white focus:outline-none"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs text-slate-400 mb-1">
-                        {language === 'en' ? 'Address / Location' : 'آدرس دفتر یا محل کار'}
-                      </label>
-                      <input
-                        type="text"
-                        value={vcard.address}
-                        onChange={(e) =>
-                          setVcard({ ...vcard, address: e.target.value })
-                        }
-                        className="w-full px-3 py-2 bg-slate-950/70 border border-slate-800 focus:border-cyan-500 rounded-xl text-sm text-white focus:outline-none"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* 3. TEXT TAB */}
-                {activeTab === 'text' && (
-                  <div className="space-y-3">
-                    <label className="block text-xs font-medium text-slate-300">
-                      {language === 'en' ? 'Plain Text Message' : 'متن پیام یا توضیحات'}
-                    </label>
-                    <textarea
-                      rows={4}
-                      value={plainText}
-                      onChange={(e) => setPlainText(e.target.value)}
-                      placeholder="متن دلخواه خود را بنویسید..."
-                      className="w-full p-3 bg-slate-950/70 border border-slate-800 focus:border-cyan-500 rounded-xl text-sm text-white focus:outline-none"
-                    />
-                  </div>
-                )}
-
-                {/* 4. EMAIL TAB */}
-                {activeTab === 'email' && (
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-xs text-slate-400 mb-1">
-                        {language === 'en' ? 'Recipient Email' : 'ایمیل دریافت‌کننده'}
-                      </label>
-                      <input
-                        type="email"
-                        value={emailData.to}
-                        onChange={(e) =>
-                          setEmailData({ ...emailData, to: e.target.value })
-                        }
-                        className="w-full px-3 py-2 bg-slate-950/70 border border-slate-800 focus:border-cyan-500 rounded-xl text-sm text-white focus:outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-slate-400 mb-1">
-                        {language === 'en' ? 'Subject' : 'موضوع ایمیل'}
-                      </label>
-                      <input
-                        type="text"
-                        value={emailData.subject}
-                        onChange={(e) =>
-                          setEmailData({ ...emailData, subject: e.target.value })
-                        }
-                        className="w-full px-3 py-2 bg-slate-950/70 border border-slate-800 focus:border-cyan-500 rounded-xl text-sm text-white focus:outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-slate-400 mb-1">
-                        {language === 'en' ? 'Pre-filled Body' : 'متن پیش‌فرض ایمیل'}
-                      </label>
-                      <textarea
-                        rows={3}
-                        value={emailData.body}
-                        onChange={(e) =>
-                          setEmailData({ ...emailData, body: e.target.value })
-                        }
-                        className="w-full p-3 bg-slate-950/70 border border-slate-800 focus:border-cyan-500 rounded-xl text-sm text-white focus:outline-none"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* 5. SMS TAB */}
-                {activeTab === 'sms' && (
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-xs text-slate-400 mb-1">
-                        {language === 'en' ? 'Phone Number' : 'شماره دریافت‌کننده پیامک'}
-                      </label>
-                      <input
-                        type="tel"
-                        value={smsData.phone}
-                        onChange={(e) =>
-                          setSmsData({ ...smsData, phone: e.target.value })
-                        }
-                        placeholder="+93..."
-                        className="w-full px-3 py-2 bg-slate-950/70 border border-slate-800 focus:border-cyan-500 rounded-xl text-sm text-white focus:outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-slate-400 mb-1">
-                        {language === 'en' ? 'SMS Body' : 'متن پیامک'}
-                      </label>
-                      <textarea
-                        rows={3}
-                        value={smsData.message}
-                        onChange={(e) =>
-                          setSmsData({ ...smsData, message: e.target.value })
-                        }
-                        className="w-full p-3 bg-slate-950/70 border border-slate-800 focus:border-cyan-500 rounded-xl text-sm text-white focus:outline-none"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* 6. PHONE TAB */}
-                {activeTab === 'phone' && (
-                  <div className="space-y-3">
-                    <label className="block text-xs font-medium text-slate-300">
-                      {language === 'en' ? 'Phone Number' : 'شماره تماس مستقیم'}
-                    </label>
-                    <div className="relative">
-                      <Phone className="absolute top-3 start-3.5 w-4 h-4 text-slate-500" />
-                      <input
-                        type="tel"
-                        value={phoneNumber}
-                        onChange={(e) => setPhoneNumber(e.target.value)}
-                        placeholder="+93700123456"
-                        className="w-full ps-10 pe-4 py-2.5 bg-slate-950/70 border border-slate-800 focus:border-cyan-500 rounded-xl text-sm text-white focus:outline-none"
-                      />
-                    </div>
-                    <p className="text-xs text-slate-500">
-                      {language === 'en'
-                        ? 'Scanning instantly opens the dialer with this number.'
-                        : 'پس از اسکن، صفحه شماره‌گیر گوشی کاربر به طور خودکار باز می‌شود.'}
-                    </p>
-                  </div>
-                )}
-
-                {/* 7. WIFI TAB */}
-                {activeTab === 'wifi' && (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-xs text-slate-400 mb-1">
-                          {language === 'en' ? 'Network Name (SSID)' : 'نام شبکه (SSID)'}
+                          {language === 'en' ? 'Subject' : 'موضوع ایمیل'}
                         </label>
                         <input
                           type="text"
-                          value={wifiData.ssid}
+                          value={emailData.subject}
                           onChange={(e) =>
-                            setWifiData({ ...wifiData, ssid: e.target.value })
+                            setEmailData({ ...emailData, subject: e.target.value })
                           }
                           className="w-full px-3 py-2 bg-slate-950/70 border border-slate-800 focus:border-cyan-500 rounded-xl text-sm text-white focus:outline-none"
                         />
                       </div>
                       <div>
                         <label className="block text-xs text-slate-400 mb-1">
-                          {language === 'en' ? 'Password' : 'رمز عبور وای‌فای'}
+                          {language === 'en' ? 'Pre-filled Body' : 'متن پیش‌فرض ایمیل'}
                         </label>
-                        <input
-                          type="text"
-                          value={wifiData.password}
+                        <textarea
+                          rows={3}
+                          value={emailData.body}
                           onChange={(e) =>
-                            setWifiData({ ...wifiData, password: e.target.value })
+                            setEmailData({ ...emailData, body: e.target.value })
                           }
-                          className="w-full px-3 py-2 bg-slate-950/70 border border-slate-800 focus:border-cyan-500 rounded-xl text-sm text-white focus:outline-none"
+                          className="w-full p-3 bg-slate-950/70 border border-slate-800 focus:border-cyan-500 rounded-xl text-sm text-white focus:outline-none"
                         />
                       </div>
                     </div>
+                  )}
 
-                    <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
-                      <div className="flex items-center gap-2">
-                        <label className="text-xs text-slate-400">
-                          {language === 'en' ? 'Security:' : 'نوع رمزنگاری:'}
+                  {/* 5. SMS TAB */}
+                  {activeTab === 'sms' && (
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-xs text-slate-400 mb-1">
+                          {language === 'en' ? 'Phone Number' : 'شماره دریافت‌کننده پیامک'}
                         </label>
-                        {(['WPA', 'WEP', 'nopass'] as const).map((enc) => (
-                          <button
-                            key={enc}
-                            type="button"
-                            onClick={() =>
-                              setWifiData({ ...wifiData, encryption: enc })
-                            }
-                            className={`px-3 py-1 rounded-lg text-xs font-medium border transition-colors ${
-                              wifiData.encryption === enc
-                                ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300'
-                                : 'bg-slate-950/50 border-slate-800 text-slate-400 hover:text-slate-200'
-                            }`}
-                          >
-                            {enc === 'nopass' ? 'None (Open)' : enc}
-                          </button>
-                        ))}
-                      </div>
-
-                      <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-300">
                         <input
-                          type="checkbox"
-                          checked={wifiData.hidden}
+                          type="tel"
+                          value={smsData.phone}
                           onChange={(e) =>
-                            setWifiData({ ...wifiData, hidden: e.target.checked })
+                            setSmsData({ ...smsData, phone: e.target.value })
                           }
-                          className="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-cyan-500"
+                          placeholder="+93..."
+                          className="w-full px-3 py-2 bg-slate-950/70 border border-slate-800 focus:border-cyan-500 rounded-xl text-sm text-white focus:outline-none"
                         />
-                        <span>
-                          {language === 'en' ? 'Hidden Network' : 'شبکه پنهان (Hidden SSID)'}
-                        </span>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-slate-400 mb-1">
+                          {language === 'en' ? 'SMS Body' : 'متن پیامک'}
+                        </label>
+                        <textarea
+                          rows={3}
+                          value={smsData.message}
+                          onChange={(e) =>
+                            setSmsData({ ...smsData, message: e.target.value })
+                          }
+                          className="w-full p-3 bg-slate-950/70 border border-slate-800 focus:border-cyan-500 rounded-xl text-sm text-white focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 6. PHONE TAB */}
+                  {activeTab === 'phone' && (
+                    <div className="space-y-3">
+                      <label className="block text-xs font-medium text-slate-300">
+                        {language === 'en' ? 'Phone Number' : 'شماره تماس مستقیم'}
                       </label>
-                    </div>
-                  </div>
-                )}
-
-                {/* 8. LOCATION TAB */}
-                {activeTab === 'location' && (
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-xs text-slate-400 mb-1">
-                          {language === 'en' ? 'Latitude' : 'عرض جغرافیایی (Latitude)'}
-                        </label>
+                      <div className="relative">
+                        <Phone className="absolute top-3 start-3.5 w-4 h-4 text-slate-500" />
                         <input
-                          type="text"
-                          value={locationData.lat}
-                          onChange={(e) =>
-                            setLocationData({
-                              ...locationData,
-                              lat: e.target.value,
-                            })
-                          }
-                          placeholder="34.5281"
-                          className="w-full px-3 py-2 bg-slate-950/70 border border-slate-800 focus:border-cyan-500 rounded-xl text-sm text-white focus:outline-none"
+                          type="tel"
+                          value={phoneNumber}
+                          onChange={(e) => setPhoneNumber(e.target.value)}
+                          placeholder="+93700123456"
+                          className="w-full ps-10 pe-4 py-2.5 bg-slate-950/70 border border-slate-800 focus:border-cyan-500 rounded-xl text-sm text-white focus:outline-none"
                         />
                       </div>
-                      <div>
-                        <label className="block text-xs text-slate-400 mb-1">
-                          {language === 'en' ? 'Longitude' : 'طول جغرافیایی (Longitude)'}
-                        </label>
-                        <input
-                          type="text"
-                          value={locationData.lng}
-                          onChange={(e) =>
-                            setLocationData({
-                              ...locationData,
-                              lng: e.target.value,
-                            })
-                          }
-                          placeholder="69.1723"
-                          className="w-full px-3 py-2 bg-slate-950/70 border border-slate-800 focus:border-cyan-500 rounded-xl text-sm text-white focus:outline-none"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-xs text-slate-400 mb-1">
+                      <p className="text-xs text-slate-500">
                         {language === 'en'
-                          ? 'Or Search Address / Title'
-                          : 'یا آدرس / نام مکان در نقشه'}
-                      </label>
-                      <input
-                        type="text"
-                        value={locationData.address}
-                        onChange={(e) =>
-                          setLocationData({
-                            ...locationData,
-                            address: e.target.value,
-                          })
-                        }
-                        className="w-full px-3 py-2 bg-slate-950/70 border border-slate-800 focus:border-cyan-500 rounded-xl text-sm text-white focus:outline-none"
-                      />
+                          ? 'Scanning instantly opens the dialer with this number.'
+                          : 'پس از اسکن، صفحه شماره‌گیر گوشی کاربر به طور خودکار باز می‌شود.'}
+                      </p>
                     </div>
-                  </div>
-                )}
-              </div>
-            </div>
+                  )}
 
-            {/* Step 2: Visual Styling & Design System - Exact Match to Screenshots */}
-            <div className="rounded-3xl border border-slate-200 bg-white shadow-xl overflow-hidden text-slate-800">
-              {/* Tabs Bar: Frame | Shape | Logo */}
-              <div className="flex items-center border-b border-slate-200 bg-slate-50/70 px-4 pt-3 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setDesignTab('frame')}
-                  className={`px-6 py-2.5 rounded-t-xl font-medium text-sm transition-all border border-b-0 relative ${
-                    designTab === 'frame'
-                      ? 'bg-white text-teal-600 font-semibold border-slate-200 shadow-xs -mb-px z-10'
-                      : 'bg-transparent text-slate-500 hover:text-slate-800 border-transparent'
-                  }`}
-                >
-                  Frame
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDesignTab('shape')}
-                  className={`px-6 py-2.5 rounded-t-xl font-medium text-sm transition-all border border-b-0 relative ${
-                    designTab === 'shape'
-                      ? 'bg-white text-teal-600 font-semibold border-slate-200 shadow-xs -mb-px z-10'
-                      : 'bg-transparent text-slate-500 hover:text-slate-800 border-transparent'
-                  }`}
-                >
-                  Shape
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDesignTab('logo')}
-                  className={`px-6 py-2.5 rounded-t-xl font-medium text-sm transition-all border border-b-0 relative ${
-                    designTab === 'logo'
-                      ? 'bg-white text-teal-600 font-semibold border-slate-200 shadow-xs -mb-px z-10'
-                      : 'bg-transparent text-slate-500 hover:text-slate-800 border-transparent'
-                  }`}
-                >
-                  Logo
-                </button>
-              </div>
-
-              <div className="p-5 sm:p-6 space-y-6">
-
-              {/* TAB 1: FRAME */}
-              {designTab === 'frame' && (
-                <div className="space-y-5 animate-in fade-in duration-200">
-                  <div className="relative">
-                    <div className="flex items-center gap-3 overflow-x-auto pb-4 pt-1 px-1 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100">
-                      {/* Frame 1: None (X) */}
-                      <button
-                        type="button"
-                        onClick={() => setFrameStyle('none')}
-                        className={`shrink-0 w-20 h-20 rounded-2xl border flex flex-col items-center justify-center transition-all ${
-                          frameStyle === 'none'
-                            ? 'border-blue-500 bg-sky-50 text-slate-800 ring-2 ring-blue-300/60 shadow-xs'
-                            : 'border-slate-200 bg-white text-slate-400 hover:border-slate-300 hover:text-slate-700 shadow-2xs'
-                        }`}
-                        title="No Frame"
-                      >
-                        <X className="w-7 h-7 stroke-[2.5]" />
-                      </button>
-
-                      {/* Frame 2: Bottom Banner (scan me pill) */}
-                      <button
-                        type="button"
-                        onClick={() => setFrameStyle('bottom-banner')}
-                        className={`shrink-0 w-20 h-20 rounded-2xl border flex flex-col items-center justify-center p-1.5 transition-all ${
-                          frameStyle === 'bottom-banner'
-                            ? 'border-blue-500 bg-sky-50 text-slate-800 ring-2 ring-blue-300/60 shadow-xs'
-                            : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
-                        }`}
-                        title="Bottom Banner"
-                      >
-                        <svg viewBox="0 0 50 60" className="w-12 h-14">
-                          <rect x="4" y="4" width="42" height="52" rx="4" stroke="#000000" strokeWidth="2.5" fill="none" />
-                          <rect x="10" y="8" width="30" height="30" rx="1" fill="#000000" fillOpacity="0.85" />
-                          <rect x="8" y="42" width="34" height="10" rx="5" fill="#000000" />
-                          <circle cx="14" cy="47" r="2.5" fill="#ffffff" />
-                          <text x="28" y="49.5" fontSize="4.5" fill="#ffffff" fontWeight="bold" textAnchor="middle">SCAN ME</text>
-                        </svg>
-                      </button>
-
-                      {/* Frame 3: Black Banner */}
-                      <button
-                        type="button"
-                        onClick={() => setFrameStyle('black-banner')}
-                        className={`shrink-0 w-20 h-20 rounded-2xl border flex flex-col items-center justify-center p-1.5 transition-all ${
-                          frameStyle === 'black-banner'
-                            ? 'border-blue-500 bg-sky-50 text-slate-800 ring-2 ring-blue-300/60 shadow-xs'
-                            : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
-                        }`}
-                        title="Solid Black Banner"
-                      >
-                        <svg viewBox="0 0 50 60" className="w-12 h-14">
-                          <rect x="4" y="4" width="42" height="52" rx="4" stroke="#000000" strokeWidth="2.5" fill="none" />
-                          <rect x="10" y="8" width="30" height="30" rx="1" fill="#000000" fillOpacity="0.85" />
-                          <rect x="4" y="42" width="42" height="14" rx="2" fill="#000000" />
-                          <text x="25" y="51" fontSize="5.5" fill="#ffffff" fontWeight="bold" textAnchor="middle">SCAN ME</text>
-                        </svg>
-                      </button>
-
-                      {/* Frame 4: Hanging Tab */}
-                      <button
-                        type="button"
-                        onClick={() => setFrameStyle('hanging-tab')}
-                        className={`shrink-0 w-20 h-20 rounded-2xl border flex flex-col items-center justify-center p-1.5 transition-all ${
-                          frameStyle === 'hanging-tab'
-                            ? 'border-blue-500 bg-sky-50 text-slate-800 ring-2 ring-blue-300/60 shadow-xs'
-                            : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
-                        }`}
-                        title="Hanging Tab"
-                      >
-                        <svg viewBox="0 0 50 60" className="w-12 h-14">
-                          <rect x="4" y="4" width="42" height="42" rx="3" stroke="#000000" strokeWidth="2.5" fill="none" />
-                          <rect x="10" y="8" width="30" height="30" rx="1" fill="#000000" fillOpacity="0.85" />
-                          <path d="M10 46h30v10a2 2 0 0 1-2 2H12a2 2 0 0 1-2-2V46z" fill="#000000" />
-                          <text x="25" y="53.5" fontSize="4.5" fill="#ffffff" fontWeight="bold" textAnchor="middle">SCAN ME</text>
-                        </svg>
-                      </button>
-
-                      {/* Frame 5: Circle */}
-                      <button
-                        type="button"
-                        onClick={() => setFrameStyle('circle')}
-                        className={`shrink-0 w-20 h-20 rounded-2xl border flex flex-col items-center justify-center p-1.5 transition-all ${
-                          frameStyle === 'circle'
-                            ? 'border-blue-500 bg-sky-50 text-slate-800 ring-2 ring-blue-300/60 shadow-xs'
-                            : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
-                        }`}
-                        title="Circle Frame"
-                      >
-                        <svg viewBox="0 0 50 60" className="w-12 h-14">
-                          <circle cx="25" cy="24" r="20" stroke="#000000" strokeWidth="2" fill="none" />
-                          <rect x="13" y="12" width="24" height="24" rx="1" fill="#000000" fillOpacity="0.85" />
-                          <text x="25" y="52" fontSize="5.5" fill="#000000" fontWeight="bold" textAnchor="middle">SCAN ME</text>
-                        </svg>
-                      </button>
-
-                      {/* Frame 6: Phone */}
-                      <button
-                        type="button"
-                        onClick={() => setFrameStyle('phone')}
-                        className={`shrink-0 w-20 h-20 rounded-2xl border flex flex-col items-center justify-center p-1.5 transition-all ${
-                          frameStyle === 'phone'
-                            ? 'border-blue-500 bg-sky-50 text-slate-800 ring-2 ring-blue-300/60 shadow-xs'
-                            : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
-                        }`}
-                        title="Phone Mockup"
-                      >
-                        <svg viewBox="0 0 50 60" className="w-12 h-14">
-                          <rect x="8" y="3" width="34" height="54" rx="7" stroke="#000000" strokeWidth="2" fill="none" />
-                          <rect x="20" y="6" width="10" height="2" rx="1" fill="#000000" />
-                          <circle cx="25" cy="10" r="0.8" fill="#000000" />
-                          <rect x="12" y="13" width="26" height="26" rx="1" fill="#000000" fillOpacity="0.85" />
-                          <rect x="10" y="42" width="30" height="10" rx="2" fill="#000000" />
-                          <text x="25" y="49" fontSize="4.5" fill="#ffffff" fontWeight="bold" textAnchor="middle">SCAN ME</text>
-                        </svg>
-                      </button>
-
-                      {/* Frame 7: Clipboard */}
-                      <button
-                        type="button"
-                        onClick={() => setFrameStyle('clipboard')}
-                        className={`shrink-0 w-20 h-20 rounded-2xl border flex flex-col items-center justify-center p-1.5 transition-all ${
-                          frameStyle === 'clipboard'
-                            ? 'border-blue-500 bg-sky-50 text-slate-800 ring-2 ring-blue-300/60 shadow-xs'
-                            : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
-                        }`}
-                        title="Clipboard Mockup"
-                      >
-                        <svg viewBox="0 0 50 60" className="w-12 h-14">
-                          <rect x="7" y="8" width="36" height="48" rx="4" stroke="#000000" strokeWidth="2" fill="none" />
-                          <rect x="17" y="4" width="16" height="6" rx="2" fill="#000000" />
-                          <rect x="12" y="14" width="26" height="26" rx="1" fill="#000000" fillOpacity="0.85" />
-                          <rect x="9" y="43" width="32" height="9" rx="2" fill="#000000" />
-                          <text x="25" y="50" fontSize="4.5" fill="#ffffff" fontWeight="bold" textAnchor="middle">SCAN ME</text>
-                        </svg>
-                      </button>
-
-                      {/* Frame 8: Screen / Monitor */}
-                      <button
-                        type="button"
-                        onClick={() => setFrameStyle('screen')}
-                        className={`shrink-0 w-20 h-20 rounded-2xl border flex flex-col items-center justify-center p-1.5 transition-all ${
-                          frameStyle === 'screen'
-                            ? 'border-blue-500 bg-sky-50 text-slate-800 ring-2 ring-blue-300/60 shadow-xs'
-                            : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
-                        }`}
-                        title="Screen / Monitor"
-                      >
-                        <svg viewBox="0 0 50 60" className="w-12 h-14">
-                          <rect x="5" y="6" width="40" height="44" rx="4" stroke="#000000" strokeWidth="2" fill="none" />
-                          <rect x="11" y="10" width="28" height="28" rx="1" fill="#000000" fillOpacity="0.85" />
-                          <rect x="10" y="41" width="30" height="8" rx="4" fill="#000000" />
-                          <text x="25" y="47" fontSize="4.5" fill="#ffffff" fontWeight="bold" textAnchor="middle">SCAN ME</text>
-                        </svg>
-                      </button>
-
-                      {/* Frame 9: Shopping Bag */}
-                      <button
-                        type="button"
-                        onClick={() => setFrameStyle('bag')}
-                        className={`shrink-0 w-20 h-20 rounded-2xl border flex flex-col items-center justify-center p-1.5 transition-all ${
-                          frameStyle === 'bag'
-                            ? 'border-blue-500 bg-sky-50 text-slate-800 ring-2 ring-blue-300/60 shadow-xs'
-                            : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
-                        }`}
-                        title="Shopping Bag"
-                      >
-                        <svg viewBox="0 0 50 60" className="w-12 h-14">
-                          <path d="M19 14V8a6 6 0 0 1 12 0v6" stroke="#000000" strokeWidth="2" fill="none" />
-                          <rect x="6" y="14" width="38" height="42" rx="4" stroke="#000000" strokeWidth="2" fill="none" />
-                          <rect x="12" y="18" width="26" height="26" fill="#000000" fillOpacity="0.85" />
-                          <rect x="9" y="46" width="32" height="7" rx="1" fill="#000000" />
-                          <text x="25" y="51.5" fontSize="4.5" fill="#ffffff" fontWeight="bold" textAnchor="middle">SCAN ME</text>
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Frame Customization when active */}
-                  {frameStyle !== 'none' && (
-                    <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs text-slate-600 font-medium mb-1.5">
-                          Frame Text:
-                        </label>
-                        <input
-                          type="text"
-                          value={frameText}
-                          onChange={(e) => setFrameText(e.target.value)}
-                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold uppercase text-slate-800 focus:outline-none focus:border-cyan-500 shadow-xs"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs text-slate-600 font-medium mb-1.5">
-                          Frame Color:
-                        </label>
-                        <div className="flex items-center gap-2">
+                  {/* 7. WIFI TAB */}
+                  {activeTab === 'wifi' && (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs text-slate-400 mb-1">
+                            {language === 'en' ? 'Network Name (SSID)' : 'نام شبکه (SSID)'}
+                          </label>
                           <input
                             type="text"
-                            value={frameColor}
-                            onChange={(e) => setFrameColor(e.target.value)}
-                            className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-mono uppercase text-slate-800 focus:outline-none focus:border-cyan-500 shadow-xs"
+                            value={wifiData.ssid}
+                            onChange={(e) =>
+                              setWifiData({ ...wifiData, ssid: e.target.value })
+                            }
+                            className="w-full px-3 py-2 bg-slate-950/70 border border-slate-800 focus:border-cyan-500 rounded-xl text-sm text-white focus:outline-none"
                           />
-                          <div className="relative w-9 h-9 rounded-lg border border-slate-200 shadow-xs overflow-hidden shrink-0 cursor-pointer">
+                        </div>
+                        <div>
+                          <label className="block text-xs text-slate-400 mb-1">
+                            {language === 'en' ? 'Password' : 'رمز عبور وای‌فای'}
+                          </label>
+                          <input
+                            type="text"
+                            value={wifiData.password}
+                            onChange={(e) =>
+                              setWifiData({ ...wifiData, password: e.target.value })
+                            }
+                            className="w-full px-3 py-2 bg-slate-950/70 border border-slate-800 focus:border-cyan-500 rounded-xl text-sm text-white focus:outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
+                        <div className="flex items-center gap-2">
+                          <label className="text-xs text-slate-400">
+                            {language === 'en' ? 'Security:' : 'نوع رمزنگاری:'}
+                          </label>
+                          {(['WPA', 'WEP', 'nopass'] as const).map((enc) => (
+                            <button
+                              key={enc}
+                              type="button"
+                              onClick={() =>
+                                setWifiData({ ...wifiData, encryption: enc })
+                              }
+                              className={`px-3 py-1 rounded-lg text-xs font-medium border transition-colors ${wifiData.encryption === enc
+                                  ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300'
+                                  : 'bg-slate-950/50 border-slate-800 text-slate-400 hover:text-slate-200'
+                                }`}
+                            >
+                              {enc === 'nopass' ? 'None (Open)' : enc}
+                            </button>
+                          ))}
+                        </div>
+
+                        <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-300">
+                          <input
+                            type="checkbox"
+                            checked={wifiData.hidden}
+                            onChange={(e) =>
+                              setWifiData({ ...wifiData, hidden: e.target.checked })
+                            }
+                            className="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-cyan-500"
+                          />
+                          <span>
+                            {language === 'en' ? 'Hidden Network' : 'شبکه پنهان (Hidden SSID)'}
+                          </span>
+                        </label>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 8. LOCATION TAB */}
+                  {activeTab === 'location' && (
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs text-slate-400 mb-1">
+                            {language === 'en' ? 'Latitude' : 'عرض جغرافیایی (Latitude)'}
+                          </label>
+                          <input
+                            type="text"
+                            value={locationData.lat}
+                            onChange={(e) =>
+                              setLocationData({
+                                ...locationData,
+                                lat: e.target.value,
+                              })
+                            }
+                            placeholder="34.5281"
+                            className="w-full px-3 py-2 bg-slate-950/70 border border-slate-800 focus:border-cyan-500 rounded-xl text-sm text-white focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-slate-400 mb-1">
+                            {language === 'en' ? 'Longitude' : 'طول جغرافیایی (Longitude)'}
+                          </label>
+                          <input
+                            type="text"
+                            value={locationData.lng}
+                            onChange={(e) =>
+                              setLocationData({
+                                ...locationData,
+                                lng: e.target.value,
+                              })
+                            }
+                            placeholder="69.1723"
+                            className="w-full px-3 py-2 bg-slate-950/70 border border-slate-800 focus:border-cyan-500 rounded-xl text-sm text-white focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-slate-400 mb-1">
+                          {language === 'en'
+                            ? 'Or Search Address / Title'
+                            : 'یا آدرس / نام مکان در نقشه'}
+                        </label>
+                        <input
+                          type="text"
+                          value={locationData.address}
+                          onChange={(e) =>
+                            setLocationData({
+                              ...locationData,
+                              address: e.target.value,
+                            })
+                          }
+                          className="w-full px-3 py-2 bg-slate-950/70 border border-slate-800 focus:border-cyan-500 rounded-xl text-sm text-white focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Step 2: Visual Styling & Design System - Exact Match to Screenshots */}
+              <div className="rounded-3xl border border-slate-200 bg-white shadow-xl overflow-hidden text-slate-800">
+                {/* Tabs Bar: Frame | Shape | Logo */}
+                <div className="flex items-center border-b border-slate-200 bg-slate-50/70 px-4 pt-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setDesignTab('frame')}
+                    className={`px-6 py-2.5 rounded-t-xl font-medium text-sm transition-all border border-b-0 relative ${designTab === 'frame'
+                        ? 'bg-white text-teal-600 font-semibold border-slate-200 shadow-xs -mb-px z-10'
+                        : 'bg-transparent text-slate-500 hover:text-slate-800 border-transparent'
+                      }`}
+                  >
+                    {language === 'en' ? 'Frame' : language === 'ps' ? 'د سترګو چوکاټ' : 'فریم چشم‌ها'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDesignTab('shape')}
+                    className={`px-6 py-2.5 rounded-t-xl font-medium text-sm transition-all border border-b-0 relative ${designTab === 'shape'
+                        ? 'bg-white text-teal-600 font-semibold border-slate-200 shadow-xs -mb-px z-10'
+                        : 'bg-transparent text-slate-500 hover:text-slate-800 border-transparent'
+                      }`}
+                  >
+                    {language === 'en' ? 'Shape' : language === 'ps' ? 'شکل او بڼه' : 'شکل و ظاهر'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDesignTab('logo')}
+                    className={`px-6 py-2.5 rounded-t-xl font-medium text-sm transition-all border border-b-0 relative ${designTab === 'logo'
+                        ? 'bg-white text-teal-600 font-semibold border-slate-200 shadow-xs -mb-px z-10'
+                        : 'bg-transparent text-slate-500 hover:text-slate-800 border-transparent'
+                      }`}
+                  >
+                    {language === 'en' ? 'Logo' : language === 'ps' ? 'لوګو' : 'لوگو'}
+                  </button>
+                </div>
+
+                <div className="p-5 sm:p-6 space-y-6">
+
+                  {/* TAB 1: FRAME */}
+                  {designTab === 'frame' && (
+                    <div className="space-y-5 animate-in fade-in duration-200">
+                      <div className="relative">
+                        <div className="flex items-center gap-3 overflow-x-auto pb-4 pt-1 px-1 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100">
+                          {/* Frame 1: None (X) */}
+                          <button
+                            type="button"
+                            onClick={() => setFrameStyle('none')}
+                            className={`shrink-0 w-20 h-20 rounded-2xl border flex flex-col items-center justify-center transition-all ${frameStyle === 'none'
+                                ? 'border-blue-500 bg-sky-50 text-slate-800 ring-2 ring-blue-300/60 shadow-xs'
+                                : 'border-slate-200 bg-white text-slate-400 hover:border-slate-300 hover:text-slate-700 shadow-2xs'
+                              }`}
+                            title="No Frame"
+                          >
+                            <X className="w-7 h-7 stroke-[2.5]" />
+                          </button>
+
+                          {/* Frame 2: Bottom Banner (scan me pill) */}
+                          <button
+                            type="button"
+                            onClick={() => setFrameStyle('bottom-banner')}
+                            className={`shrink-0 w-20 h-20 rounded-2xl border flex flex-col items-center justify-center p-1.5 transition-all ${frameStyle === 'bottom-banner'
+                                ? 'border-blue-500 bg-sky-50 text-slate-800 ring-2 ring-blue-300/60 shadow-xs'
+                                : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
+                              }`}
+                            title="Bottom Banner"
+                          >
+                            <svg viewBox="0 0 50 60" className="w-12 h-14">
+                              <rect x="4" y="4" width="42" height="52" rx="4" stroke="#000000" strokeWidth="2.5" fill="none" />
+                              <rect x="10" y="8" width="30" height="30" rx="1" fill="#000000" fillOpacity="0.85" />
+                              <rect x="8" y="42" width="34" height="10" rx="5" fill="#000000" />
+                              <circle cx="14" cy="47" r="2.5" fill="#ffffff" />
+                              <text x="28" y="49.5" fontSize="4.5" fill="#ffffff" fontWeight="bold" textAnchor="middle">SCAN ME</text>
+                            </svg>
+                          </button>
+
+                          {/* Frame 3: Black Banner */}
+                          <button
+                            type="button"
+                            onClick={() => setFrameStyle('black-banner')}
+                            className={`shrink-0 w-20 h-20 rounded-2xl border flex flex-col items-center justify-center p-1.5 transition-all ${frameStyle === 'black-banner'
+                                ? 'border-blue-500 bg-sky-50 text-slate-800 ring-2 ring-blue-300/60 shadow-xs'
+                                : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
+                              }`}
+                            title="Solid Black Banner"
+                          >
+                            <svg viewBox="0 0 50 60" className="w-12 h-14">
+                              <rect x="4" y="4" width="42" height="52" rx="4" stroke="#000000" strokeWidth="2.5" fill="none" />
+                              <rect x="10" y="8" width="30" height="30" rx="1" fill="#000000" fillOpacity="0.85" />
+                              <rect x="4" y="42" width="42" height="14" rx="2" fill="#000000" />
+                              <text x="25" y="51" fontSize="5.5" fill="#ffffff" fontWeight="bold" textAnchor="middle">SCAN ME</text>
+                            </svg>
+                          </button>
+
+                          {/* Frame 4: Hanging Tab */}
+                          <button
+                            type="button"
+                            onClick={() => setFrameStyle('hanging-tab')}
+                            className={`shrink-0 w-20 h-20 rounded-2xl border flex flex-col items-center justify-center p-1.5 transition-all ${frameStyle === 'hanging-tab'
+                                ? 'border-blue-500 bg-sky-50 text-slate-800 ring-2 ring-blue-300/60 shadow-xs'
+                                : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
+                              }`}
+                            title="Hanging Tab"
+                          >
+                            <svg viewBox="0 0 50 60" className="w-12 h-14">
+                              <rect x="4" y="4" width="42" height="42" rx="3" stroke="#000000" strokeWidth="2.5" fill="none" />
+                              <rect x="10" y="8" width="30" height="30" rx="1" fill="#000000" fillOpacity="0.85" />
+                              <path d="M10 46h30v10a2 2 0 0 1-2 2H12a2 2 0 0 1-2-2V46z" fill="#000000" />
+                              <text x="25" y="53.5" fontSize="4.5" fill="#ffffff" fontWeight="bold" textAnchor="middle">SCAN ME</text>
+                            </svg>
+                          </button>
+
+                          {/* Frame 5: Circle */}
+                          <button
+                            type="button"
+                            onClick={() => setFrameStyle('circle')}
+                            className={`shrink-0 w-20 h-20 rounded-2xl border flex flex-col items-center justify-center p-1.5 transition-all ${frameStyle === 'circle'
+                                ? 'border-blue-500 bg-sky-50 text-slate-800 ring-2 ring-blue-300/60 shadow-xs'
+                                : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
+                              }`}
+                            title="Circle Frame"
+                          >
+                            <svg viewBox="0 0 50 60" className="w-12 h-14">
+                              <circle cx="25" cy="24" r="20" stroke="#000000" strokeWidth="2" fill="none" />
+                              <rect x="13" y="12" width="24" height="24" rx="1" fill="#000000" fillOpacity="0.85" />
+                              <text x="25" y="52" fontSize="5.5" fill="#000000" fontWeight="bold" textAnchor="middle">SCAN ME</text>
+                            </svg>
+                          </button>
+
+                          {/* Frame 6: Phone */}
+                          <button
+                            type="button"
+                            onClick={() => setFrameStyle('phone')}
+                            className={`shrink-0 w-20 h-20 rounded-2xl border flex flex-col items-center justify-center p-1.5 transition-all ${frameStyle === 'phone'
+                                ? 'border-blue-500 bg-sky-50 text-slate-800 ring-2 ring-blue-300/60 shadow-xs'
+                                : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
+                              }`}
+                            title="Phone Mockup"
+                          >
+                            <svg viewBox="0 0 50 60" className="w-12 h-14">
+                              <rect x="8" y="3" width="34" height="54" rx="7" stroke="#000000" strokeWidth="2" fill="none" />
+                              <rect x="20" y="6" width="10" height="2" rx="1" fill="#000000" />
+                              <circle cx="25" cy="10" r="0.8" fill="#000000" />
+                              <rect x="12" y="13" width="26" height="26" rx="1" fill="#000000" fillOpacity="0.85" />
+                              <rect x="10" y="42" width="30" height="10" rx="2" fill="#000000" />
+                              <text x="25" y="49" fontSize="4.5" fill="#ffffff" fontWeight="bold" textAnchor="middle">SCAN ME</text>
+                            </svg>
+                          </button>
+
+                          {/* Frame 7: Clipboard */}
+                          <button
+                            type="button"
+                            onClick={() => setFrameStyle('clipboard')}
+                            className={`shrink-0 w-20 h-20 rounded-2xl border flex flex-col items-center justify-center p-1.5 transition-all ${frameStyle === 'clipboard'
+                                ? 'border-blue-500 bg-sky-50 text-slate-800 ring-2 ring-blue-300/60 shadow-xs'
+                                : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
+                              }`}
+                            title="Clipboard Mockup"
+                          >
+                            <svg viewBox="0 0 50 60" className="w-12 h-14">
+                              <rect x="7" y="8" width="36" height="48" rx="4" stroke="#000000" strokeWidth="2" fill="none" />
+                              <rect x="17" y="4" width="16" height="6" rx="2" fill="#000000" />
+                              <rect x="12" y="14" width="26" height="26" rx="1" fill="#000000" fillOpacity="0.85" />
+                              <rect x="9" y="43" width="32" height="9" rx="2" fill="#000000" />
+                              <text x="25" y="50" fontSize="4.5" fill="#ffffff" fontWeight="bold" textAnchor="middle">SCAN ME</text>
+                            </svg>
+                          </button>
+
+                          {/* Frame 8: Screen / Monitor */}
+                          <button
+                            type="button"
+                            onClick={() => setFrameStyle('screen')}
+                            className={`shrink-0 w-20 h-20 rounded-2xl border flex flex-col items-center justify-center p-1.5 transition-all ${frameStyle === 'screen'
+                                ? 'border-blue-500 bg-sky-50 text-slate-800 ring-2 ring-blue-300/60 shadow-xs'
+                                : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
+                              }`}
+                            title="Screen / Monitor"
+                          >
+                            <svg viewBox="0 0 50 60" className="w-12 h-14">
+                              <rect x="5" y="6" width="40" height="44" rx="4" stroke="#000000" strokeWidth="2" fill="none" />
+                              <rect x="11" y="10" width="28" height="28" rx="1" fill="#000000" fillOpacity="0.85" />
+                              <rect x="10" y="41" width="30" height="8" rx="4" fill="#000000" />
+                              <text x="25" y="47" fontSize="4.5" fill="#ffffff" fontWeight="bold" textAnchor="middle">SCAN ME</text>
+                            </svg>
+                          </button>
+
+                          {/* Frame 9: Shopping Bag */}
+                          <button
+                            type="button"
+                            onClick={() => setFrameStyle('bag')}
+                            className={`shrink-0 w-20 h-20 rounded-2xl border flex flex-col items-center justify-center p-1.5 transition-all ${frameStyle === 'bag'
+                                ? 'border-blue-500 bg-sky-50 text-slate-800 ring-2 ring-blue-300/60 shadow-xs'
+                                : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
+                              }`}
+                            title="Shopping Bag"
+                          >
+                            <svg viewBox="0 0 50 60" className="w-12 h-14">
+                              <path d="M19 14V8a6 6 0 0 1 12 0v6" stroke="#000000" strokeWidth="2" fill="none" />
+                              <rect x="6" y="14" width="38" height="42" rx="4" stroke="#000000" strokeWidth="2" fill="none" />
+                              <rect x="12" y="18" width="26" height="26" fill="#000000" fillOpacity="0.85" />
+                              <rect x="9" y="46" width="32" height="7" rx="1" fill="#000000" />
+                              <text x="25" y="51.5" fontSize="4.5" fill="#ffffff" fontWeight="bold" textAnchor="middle">SCAN ME</text>
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Frame Customization when active */}
+                      {frameStyle !== 'none' && (
+                        <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-xs text-slate-600 font-medium mb-1.5">
+                              Frame Text:
+                            </label>
                             <input
-                              type="color"
-                              value={frameColor}
-                              onChange={(e) => setFrameColor(e.target.value)}
-                              className="absolute -inset-2 w-14 h-14 cursor-pointer opacity-0"
+                              type="text"
+                              value={frameText}
+                              onChange={(e) => setFrameText(e.target.value)}
+                              className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold uppercase text-slate-800 focus:outline-none focus:border-cyan-500 shadow-xs"
                             />
-                            <div
-                              className="w-full h-full"
-                              style={{ backgroundColor: frameColor }}
+                          </div>
+                          <div>
+                            <label className="block text-xs text-slate-600 font-medium mb-1.5">
+                              Frame Color:
+                            </label>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="text"
+                                value={frameColor}
+                                onChange={(e) => setFrameColor(e.target.value)}
+                                className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-mono uppercase text-slate-800 focus:outline-none focus:border-cyan-500 shadow-xs"
+                              />
+                              <div className="relative w-9 h-9 rounded-lg border border-slate-200 shadow-xs overflow-hidden shrink-0 cursor-pointer">
+                                <input
+                                  type="color"
+                                  value={frameColor}
+                                  onChange={(e) => setFrameColor(e.target.value)}
+                                  className="absolute -inset-2 w-14 h-14 cursor-pointer opacity-0"
+                                />
+                                <div
+                                  className="w-full h-full"
+                                  style={{ backgroundColor: frameColor }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* TAB 2: SHAPE (Exact match to Reference Screenshot 2) */}
+                  {designTab === 'shape' && (
+                    <div className="space-y-6 animate-in fade-in duration-200">
+                      <div className="text-sm font-bold text-slate-800">
+                        Shape & Color
+                      </div>
+
+                      {/* 1. Shape Style (Dots) */}
+                      <div className="space-y-2">
+                        <label className="block text-xs font-medium text-slate-600">
+                          Shape style
+                        </label>
+                        <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
+                          {(
+                            [
+                              { id: 'square', label: 'Square' },
+                              { id: 'rounded', label: 'Rounded' },
+                              { id: 'stripes', label: 'Stripes' },
+                              { id: 'diamond', label: 'Diamond' },
+                              { id: 'cross', label: 'Cross' },
+                              { id: 'classy', label: 'Classy' },
+                              { id: 'classy-rounded', label: 'Classy-R' },
+                              { id: 'dots', label: 'Dots' },
+                            ] as const
+                          ).map((pattern) => {
+                            const isSelected = dotStyle === pattern.id;
+                            return (
+                              <button
+                                key={pattern.id}
+                                type="button"
+                                onClick={() => setDotStyle(pattern.id)}
+                                className={`h-14 rounded-xl border flex items-center justify-center p-1.5 transition-all ${isSelected
+                                    ? 'border-blue-500 bg-sky-50 text-slate-900 ring-2 ring-blue-300/60 shadow-xs'
+                                    : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
+                                  }`}
+                                title={pattern.label}
+                              >
+                                {pattern.id === 'square' ? (
+                                  <svg viewBox="0 0 40 40" className="w-8 h-8">
+                                    <rect x="5" y="5" width="8" height="8" fill="#000000" />
+                                    <rect x="16" y="5" width="8" height="8" fill="#000000" />
+                                    <rect x="27" y="5" width="8" height="8" fill="#000000" />
+                                    <rect x="5" y="16" width="8" height="8" fill="#000000" />
+                                    <rect x="16" y="16" width="8" height="8" fill="#000000" />
+                                    <rect x="27" y="16" width="8" height="8" fill="#000000" />
+                                    <rect x="5" y="27" width="8" height="8" fill="#000000" />
+                                    <rect x="16" y="27" width="8" height="8" fill="#000000" />
+                                    <rect x="27" y="27" width="8" height="8" fill="#000000" />
+                                  </svg>
+                                ) : pattern.id === 'rounded' ? (
+                                  <svg viewBox="0 0 40 40" className="w-8 h-8">
+                                    <rect x="5" y="5" width="8" height="8" rx="2.5" fill="#000000" />
+                                    <rect x="16" y="5" width="8" height="8" rx="2.5" fill="#000000" />
+                                    <rect x="27" y="5" width="8" height="8" rx="2.5" fill="#000000" />
+                                    <rect x="5" y="16" width="8" height="8" rx="2.5" fill="#000000" />
+                                    <rect x="16" y="16" width="8" height="8" rx="2.5" fill="#000000" />
+                                    <rect x="27" y="16" width="8" height="8" rx="2.5" fill="#000000" />
+                                    <rect x="5" y="27" width="8" height="8" rx="2.5" fill="#000000" />
+                                    <rect x="16" y="27" width="8" height="8" rx="2.5" fill="#000000" />
+                                    <rect x="27" y="27" width="8" height="8" rx="2.5" fill="#000000" />
+                                  </svg>
+                                ) : pattern.id === 'stripes' ? (
+                                  <svg viewBox="0 0 40 40" className="w-8 h-8">
+                                    <rect x="5" y="7" width="12" height="4" rx="1.5" fill="#000000" />
+                                    <rect x="21" y="7" width="14" height="4" rx="1.5" fill="#000000" />
+                                    <rect x="5" y="14" width="18" height="4" rx="1.5" fill="#000000" />
+                                    <rect x="27" y="14" width="8" height="4" rx="1.5" fill="#000000" />
+                                    <rect x="8" y="21" width="10" height="4" rx="1.5" fill="#000000" />
+                                    <rect x="22" y="21" width="13" height="4" rx="1.5" fill="#000000" />
+                                    <rect x="5" y="28" width="16" height="4" rx="1.5" fill="#000000" />
+                                    <rect x="25" y="28" width="10" height="4" rx="1.5" fill="#000000" />
+                                  </svg>
+                                ) : pattern.id === 'diamond' ? (
+                                  <svg viewBox="0 0 40 40" className="w-8 h-8">
+                                    <polygon points="10,6 14,10 10,14 6,10" fill="#000000" />
+                                    <polygon points="20,6 24,10 20,14 16,10" fill="#000000" />
+                                    <polygon points="30,6 34,10 30,14 26,10" fill="#000000" />
+                                    <polygon points="10,16 14,20 10,24 6,20" fill="#000000" />
+                                    <polygon points="20,16 24,20 20,24 16,20" fill="#000000" />
+                                    <polygon points="30,16 34,20 30,24 26,20" fill="#000000" />
+                                    <polygon points="10,26 14,30 10,34 6,30" fill="#000000" />
+                                    <polygon points="20,26 24,30 20,34 16,30" fill="#000000" />
+                                    <polygon points="30,26 34,30 30,34 26,30" fill="#000000" />
+                                  </svg>
+                                ) : pattern.id === 'cross' ? (
+                                  <svg viewBox="0 0 40 40" className="w-8 h-8">
+                                    <path d="M 8 7 h 4 v 2 h 2 v 4 h -2 v 2 h -4 v -2 h -2 v -4 h 2 z" fill="#000000" />
+                                    <path d="M 26 7 h 4 v 2 h 2 v 4 h -2 v 2 h -4 v -2 h -2 v -4 h 2 z" fill="#000000" />
+                                    <path d="M 17 16 h 4 v 2 h 2 v 4 h -2 v 2 h -4 v -2 h -2 v -4 h 2 z" fill="#000000" />
+                                    <path d="M 8 25 h 4 v 2 h 2 v 4 h -2 v 2 h -4 v -2 h -2 v -4 h 2 z" fill="#000000" />
+                                    <path d="M 26 25 h 4 v 2 h 2 v 4 h -2 v 2 h -4 v -2 h -2 v -4 h 2 z" fill="#000000" />
+                                  </svg>
+                                ) : pattern.id === 'classy' ? (
+                                  <svg viewBox="0 0 40 40" className="w-8 h-8">
+                                    <rect x="6" y="6" width="7" height="7" rx="3.5" fill="currentColor" />
+                                    <rect x="17" y="6" width="7" height="7" fill="currentColor" />
+                                    <rect x="28" y="6" width="7" height="7" rx="3.5" fill="currentColor" />
+                                    <rect x="6" y="17" width="7" height="7" fill="currentColor" />
+                                    <rect x="17" y="17" width="7" height="7" rx="3.5" fill="currentColor" />
+                                    <rect x="28" y="17" width="7" height="7" fill="currentColor" />
+                                    <rect x="6" y="28" width="7" height="7" rx="3.5" fill="currentColor" />
+                                    <rect x="17" y="28" width="7" height="7" fill="currentColor" />
+                                    <rect x="28" y="28" width="7" height="7" rx="3.5" fill="currentColor" />
+                                  </svg>
+                                ) : pattern.id === 'classy-rounded' ? (
+                                  <svg viewBox="0 0 40 40" className="w-8 h-8">
+                                    <rect x="6" y="6" width="7" height="7" rx="3" fill="currentColor" />
+                                    <circle cx="20.5" cy="9.5" r="3.5" fill="currentColor" />
+                                    <rect x="28" y="6" width="7" height="7" rx="3" fill="currentColor" />
+                                    <circle cx="9.5" cy="20.5" r="3.5" fill="currentColor" />
+                                    <rect x="17" y="17" width="7" height="7" rx="3" fill="currentColor" />
+                                    <circle cx="31.5" cy="20.5" r="3.5" fill="currentColor" />
+                                    <rect x="6" y="28" width="7" height="7" rx="3" fill="currentColor" />
+                                    <circle cx="20.5" cy="31.5" r="3.5" fill="currentColor" />
+                                    <rect x="28" y="28" width="7" height="7" rx="3" fill="currentColor" />
+                                  </svg>
+                                ) : (
+                                  <svg viewBox="0 0 40 40" className="w-8 h-8">
+                                    <circle cx="7" cy="7" r="2" fill="#000000" />
+                                    <circle cx="15" cy="7" r="2" fill="#000000" />
+                                    <circle cx="23" cy="7" r="2" fill="#000000" />
+                                    <circle cx="31" cy="7" r="2" fill="#000000" />
+                                    <circle cx="7" cy="15" r="2" fill="#000000" />
+                                    <circle cx="15" cy="15" r="2" fill="#000000" />
+                                    <circle cx="23" cy="15" r="2" fill="#000000" />
+                                    <circle cx="31" cy="15" r="2" fill="#000000" />
+                                    <circle cx="7" cy="23" r="2" fill="#000000" />
+                                    <circle cx="15" cy="23" r="2" fill="#000000" />
+                                    <circle cx="23" cy="23" r="2" fill="#000000" />
+                                    <circle cx="31" cy="23" r="2" fill="#000000" />
+                                    <circle cx="7" cy="31" r="2" fill="#000000" />
+                                    <circle cx="15" cy="31" r="2" fill="#000000" />
+                                    <circle cx="23" cy="31" r="2" fill="#000000" />
+                                    <circle cx="31" cy="31" r="2" fill="#000000" />
+                                  </svg>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* 2. Colors Box (2 columns) */}
+                      <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                          {/* Left: Background color */}
+                          <div className="space-y-2.5">
+                            <label className="block text-xs font-medium text-slate-600">
+                              Background color
+                            </label>
+                            <div className="flex items-center gap-3">
+                              <input
+                                type="text"
+                                value={isTransparentBg ? 'TRANSPARENT' : bgColor.toUpperCase()}
+                                onChange={(e) => {
+                                  if (!isTransparentBg) setBgColor(e.target.value);
+                                }}
+                                disabled={isTransparentBg}
+                                className="w-32 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono text-slate-800 focus:outline-none focus:border-cyan-500 uppercase shadow-2xs"
+                              />
+                              <div className="relative w-8 h-8 rounded-lg border border-slate-300 shadow-2xs overflow-hidden shrink-0 cursor-pointer">
+                                <input
+                                  type="color"
+                                  value={bgColor}
+                                  onChange={(e) => {
+                                    setBgColor(e.target.value);
+                                    setIsTransparentBg(false);
+                                  }}
+                                  disabled={isTransparentBg}
+                                  className="absolute -inset-2 w-12 h-12 cursor-pointer opacity-0"
+                                />
+                                <div
+                                  className="w-full h-full"
+                                  style={{
+                                    backgroundColor: isTransparentBg ? 'transparent' : bgColor,
+                                    backgroundImage: isTransparentBg
+                                      ? 'linear-gradient(45deg, #cbd5e1 25%, transparent 25%), linear-gradient(-45deg, #cbd5e1 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #cbd5e1 75%), linear-gradient(-45deg, transparent 75%, #cbd5e1 75%)'
+                                      : undefined,
+                                    backgroundSize: '8px 8px',
+                                    backgroundPosition: '0 0, 0 4px, 4px -4px, -4px 0px',
+                                  }}
+                                />
+                              </div>
+                            </div>
+                            {/* Toggle: Transparent background */}
+                            <div className="pt-1">
+                              <label className="inline-flex items-center gap-2.5 cursor-pointer select-none">
+                                <div className="relative">
+                                  <input
+                                    type="checkbox"
+                                    checked={isTransparentBg}
+                                    onChange={(e) => setIsTransparentBg(e.target.checked)}
+                                    className="sr-only peer"
+                                  />
+                                  <div className="w-8 h-4 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-cyan-600"></div>
+                                </div>
+                                <span className="text-xs text-slate-600 font-medium">Transparent background</span>
+                              </label>
+                            </div>
+                          </div>
+
+                          {/* Right: Shape color */}
+                          <div className="space-y-2.5">
+                            <label className="block text-xs font-medium text-slate-600">
+                              Shape color
+                            </label>
+                            <div className="flex items-center gap-3">
+                              <input
+                                type="text"
+                                value={singleColor.toUpperCase()}
+                                onChange={(e) => {
+                                  setSingleColor(e.target.value);
+                                  setGradientColor1(e.target.value);
+                                }}
+                                className="w-32 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono text-slate-800 focus:outline-none focus:border-cyan-500 uppercase shadow-2xs"
+                              />
+                              <div className="relative w-8 h-8 rounded-lg border border-slate-300 shadow-2xs overflow-hidden shrink-0 cursor-pointer">
+                                <input
+                                  type="color"
+                                  value={singleColor}
+                                  onChange={(e) => {
+                                    setSingleColor(e.target.value);
+                                    setGradientColor1(e.target.value);
+                                  }}
+                                  className="absolute -inset-2 w-12 h-12 cursor-pointer opacity-0"
+                                />
+                                <div
+                                  className="w-full h-full"
+                                  style={{ backgroundColor: singleColor }}
+                                />
+                              </div>
+                            </div>
+                            {/* Toggle: Gradient */}
+                            <div className="pt-1">
+                              <label className="inline-flex items-center gap-2.5 cursor-pointer select-none">
+                                <div className="relative">
+                                  <input
+                                    type="checkbox"
+                                    checked={colorMode === 'gradient'}
+                                    onChange={(e) => setColorMode(e.target.checked ? 'gradient' : 'single')}
+                                    className="sr-only peer"
+                                  />
+                                  <div className="w-8 h-4 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-cyan-600"></div>
+                                </div>
+                                <span className="text-xs text-slate-600 font-medium">Gradient</span>
+                              </label>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Gradient Extra Settings */}
+                        {colorMode === 'gradient' && (
+                          <div className="mt-4 pt-3 border-t border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-[11px] text-slate-600 mb-1 font-medium">
+                                End Color (رنگ دوم گرادیان):
+                              </label>
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="text"
+                                  value={gradientColor2.toUpperCase()}
+                                  onChange={(e) => setGradientColor2(e.target.value)}
+                                  className="w-32 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono text-slate-800 uppercase shadow-2xs"
+                                />
+                                <div className="relative w-8 h-8 rounded-lg border border-slate-300 shadow-2xs overflow-hidden shrink-0 cursor-pointer">
+                                  <input
+                                    type="color"
+                                    value={gradientColor2}
+                                    onChange={(e) => setGradientColor2(e.target.value)}
+                                    className="absolute -inset-2 w-12 h-12 cursor-pointer opacity-0"
+                                  />
+                                  <div className="w-full h-full" style={{ backgroundColor: gradientColor2 }} />
+                                </div>
+                              </div>
+                            </div>
+                            <div>
+                              <div className="flex justify-between text-[11px] text-slate-600 mb-1 font-medium">
+                                <span>Gradient Angle</span>
+                                <span className="font-mono text-cyan-600">{gradientRotation}°</span>
+                              </div>
+                              <input
+                                type="range"
+                                min="0"
+                                max="360"
+                                step="15"
+                                value={gradientRotation}
+                                onChange={(e) => setGradientRotation(Number(e.target.value))}
+                                className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-cyan-600 mt-2"
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* 3. Border style (Corner Squares) */}
+                      <div className="space-y-2">
+                        <label className="block text-xs font-medium text-slate-600">
+                          Border style
+                        </label>
+                        <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
+                          {(
+                            [
+                              { id: 'square', label: 'Square' },
+                              { id: 'rounded-square', label: 'Rounded Square' },
+                              { id: 'circle', label: 'Circle' },
+                              { id: 'leaf-left', label: 'Leaf Left' },
+                              { id: 'leaf-right', label: 'Leaf Right' },
+                              { id: 'leaf-both', label: 'Leaf Both' },
+                              { id: 'square-cutout', label: 'Square Cutout' },
+                              { id: 'teardrop', label: 'Teardrop' },
+                            ] as const
+                          ).map((b) => {
+                            const isSelected = cornerSquareStyle === b.id;
+                            return (
+                              <button
+                                key={b.id}
+                                type="button"
+                                onClick={() => setCornerSquareStyle(b.id)}
+                                className={`h-14 rounded-xl border flex items-center justify-center p-1.5 transition-all ${isSelected
+                                    ? 'border-blue-500 bg-sky-50 text-slate-900 ring-2 ring-blue-300/60 shadow-xs'
+                                    : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
+                                  }`}
+                                title={b.label}
+                              >
+                                {b.id === 'square' ? (
+                                  <svg viewBox="0 0 40 40" className="w-8 h-8">
+                                    <rect x="6" y="6" width="28" height="28" stroke="#1e293b" strokeWidth="4.5" fill="none" />
+                                  </svg>
+                                ) : b.id === 'rounded-square' ? (
+                                  <svg viewBox="0 0 40 40" className="w-8 h-8">
+                                    <rect x="6" y="6" width="28" height="28" rx="8" stroke="#1e293b" strokeWidth="4.5" fill="none" />
+                                  </svg>
+                                ) : b.id === 'circle' ? (
+                                  <svg viewBox="0 0 40 40" className="w-8 h-8">
+                                    <circle cx="20" cy="20" r="14" stroke="#1e293b" strokeWidth="4.5" fill="none" />
+                                  </svg>
+                                ) : b.id === 'leaf-left' ? (
+                                  <svg viewBox="0 0 40 40" className="w-8 h-8">
+                                    <path d="M 20 6 C 12 6 6 12 6 20 L 6 34 L 20 34 C 28 34 34 28 34 20 L 34 6 Z" stroke="#1e293b" strokeWidth="4" fill="none" />
+                                  </svg>
+                                ) : b.id === 'leaf-right' ? (
+                                  <svg viewBox="0 0 40 40" className="w-8 h-8">
+                                    <path d="M 6 6 L 20 6 C 28 6 34 12 34 20 L 34 34 L 20 34 C 12 34 6 28 6 20 Z" stroke="#1e293b" strokeWidth="4" fill="none" />
+                                  </svg>
+                                ) : b.id === 'leaf-both' ? (
+                                  <svg viewBox="0 0 40 40" className="w-8 h-8">
+                                    <path d="M 20 6 C 12 6 6 12 6 20 L 6 20 C 6 28 12 34 20 34 C 28 34 34 28 34 20 C 34 12 28 6 20 6 Z" stroke="#1e293b" strokeWidth="4" fill="none" />
+                                  </svg>
+                                ) : b.id === 'square-cutout' ? (
+                                  <svg viewBox="0 0 40 40" className="w-8 h-8">
+                                    <rect x="6" y="6" width="28" height="28" rx="4" fill="#1e293b" />
+                                    <circle cx="20" cy="20" r="8" fill="#ffffff" />
+                                  </svg>
+                                ) : (
+                                  <svg viewBox="0 0 40 40" className="w-8 h-8">
+                                    <path d="M 20 6 L 33 20 C 33 27.2 27.2 33 20 33 C 12.8 33 7 27.2 7 20 Z" stroke="#1e293b" strokeWidth="4" fill="none" />
+                                  </svg>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {/* Border Color */}
+                        <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+                          <label className="block text-xs font-medium text-slate-600 mb-1.5">
+                            Border color
+                          </label>
+                          <div className="flex items-center gap-3">
+                            <input
+                              type="text"
+                              value={(customEyeColors ? eyeSquareColor : singleColor).toUpperCase()}
+                              onChange={(e) => {
+                                setEyeSquareColor(e.target.value);
+                                setCustomEyeColors(true);
+                              }}
+                              className="flex-1 max-w-[280px] px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono text-slate-800 uppercase shadow-2xs"
                             />
+                            <div className="relative w-14 h-8 rounded-lg border border-slate-300 shadow-2xs overflow-hidden shrink-0 cursor-pointer">
+                              <input
+                                type="color"
+                                value={customEyeColors ? eyeSquareColor : singleColor}
+                                onChange={(e) => {
+                                  setEyeSquareColor(e.target.value);
+                                  setCustomEyeColors(true);
+                                }}
+                                className="absolute -inset-2 w-20 h-14 cursor-pointer opacity-0"
+                              />
+                              <div
+                                className="w-full h-full"
+                                style={{ backgroundColor: customEyeColors ? eyeSquareColor : singleColor }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 4. Center style (Corner Dots) */}
+                      <div className="space-y-2">
+                        <label className="block text-xs font-medium text-slate-600">
+                          Center style
+                        </label>
+                        <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
+                          {(
+                            [
+                              { id: 'square', label: 'Square' },
+                              { id: 'rounded-square', label: 'Rounded Square' },
+                              { id: 'circle', label: 'Circle' },
+                              { id: 'leaf', label: 'Leaf' },
+                              { id: 'sunburst', label: 'Sunburst' },
+                              { id: 'star', label: 'Star' },
+                              { id: 'diamond', label: 'Diamond' },
+                              { id: 'cross', label: 'Cross' },
+                            ] as const
+                          ).map((c) => {
+                            const isSelected = cornerDotStyle === c.id;
+                            return (
+                              <button
+                                key={c.id}
+                                type="button"
+                                onClick={() => setCornerDotStyle(c.id)}
+                                className={`h-14 rounded-xl border flex items-center justify-center p-1.5 transition-all ${isSelected
+                                    ? 'border-blue-500 bg-sky-50 text-slate-900 ring-2 ring-blue-300/60 shadow-xs'
+                                    : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
+                                  }`}
+                                title={c.label}
+                              >
+                                {c.id === 'square' ? (
+                                  <svg viewBox="0 0 40 40" className="w-8 h-8">
+                                    <rect x="9" y="9" width="22" height="22" fill="#1e293b" />
+                                  </svg>
+                                ) : c.id === 'rounded-square' ? (
+                                  <svg viewBox="0 0 40 40" className="w-8 h-8">
+                                    <rect x="9" y="9" width="22" height="22" rx="6" fill="#1e293b" />
+                                  </svg>
+                                ) : c.id === 'circle' ? (
+                                  <svg viewBox="0 0 40 40" className="w-8 h-8">
+                                    <circle cx="20" cy="20" r="11" fill="#1e293b" />
+                                  </svg>
+                                ) : c.id === 'leaf' ? (
+                                  <svg viewBox="0 0 40 40" className="w-8 h-8">
+                                    <path d="M 20 8 C 27 8 32 13 32 20 C 32 27 27 32 20 32 L 8 32 L 8 20 C 8 13 13 8 20 8 Z" fill="#1e293b" />
+                                  </svg>
+                                ) : c.id === 'sunburst' ? (
+                                  <svg viewBox="0 0 40 40" className="w-8 h-8">
+                                    <path d="M 20 8 l 3 2 l 3.5 -1 l 1.5 3.5 l 3.5 1 l -0.5 3.5 l 3 2 l -2 3 l 2 3 l -3 2 l 0.5 3.5 l -3.5 1 l -1.5 3.5 l -3.5 -1 l -3 2 l -3 -2 l -3.5 1 l -1.5 -3.5 l -3.5 -1 l 0.5 -3.5 l -3 -2 l 2 -3 l -2 -3 l 3 -2 l -0.5 -3.5 l 3.5 -1 l 1.5 -3.5 l 3.5 1 z" fill="#1e293b" />
+                                  </svg>
+                                ) : c.id === 'star' ? (
+                                  <svg viewBox="0 0 40 40" className="w-8 h-8">
+                                    <polygon points="20,7 23.8,15.2 32.8,16.2 26.2,22.2 28,31 20,26.4 12,31 13.8,22.2 7.2,16.2 16.2,15.2" fill="#1e293b" />
+                                  </svg>
+                                ) : c.id === 'diamond' ? (
+                                  <svg viewBox="0 0 40 40" className="w-8 h-8">
+                                    <polygon points="20,7 33,20 20,33 7,20" fill="#1e293b" />
+                                  </svg>
+                                ) : (
+                                  <svg viewBox="0 0 40 40" className="w-8 h-8">
+                                    <path d="M 16 8 h 8 v 8 h 8 v 8 h -8 v 8 h -8 v -8 h -8 v -8 h 8 z" fill="#1e293b" />
+                                  </svg>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {/* Center Color */}
+                        <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+                          <label className="block text-xs font-medium text-slate-600 mb-1.5">
+                            Center color
+                          </label>
+                          <div className="flex items-center gap-3">
+                            <input
+                              type="text"
+                              value={(customEyeColors ? eyeDotColor : singleColor).toUpperCase()}
+                              onChange={(e) => {
+                                setEyeDotColor(e.target.value);
+                                setCustomEyeColors(true);
+                              }}
+                              className="flex-1 max-w-[280px] px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono text-slate-800 uppercase shadow-2xs"
+                            />
+                            <div className="relative w-14 h-8 rounded-lg border border-slate-300 shadow-2xs overflow-hidden shrink-0 cursor-pointer">
+                              <input
+                                type="color"
+                                value={customEyeColors ? eyeDotColor : singleColor}
+                                onChange={(e) => {
+                                  setEyeDotColor(e.target.value);
+                                  setCustomEyeColors(true);
+                                }}
+                                className="absolute -inset-2 w-20 h-14 cursor-pointer opacity-0"
+                              />
+                              <div
+                                className="w-full h-full"
+                                style={{ backgroundColor: customEyeColors ? eyeDotColor : singleColor }}
+                              />
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
                   )}
-                </div>
-              )}
 
-              {/* TAB 2: SHAPE (Exact match to Reference Screenshot 2) */}
-              {designTab === 'shape' && (
-                <div className="space-y-6 animate-in fade-in duration-200">
-                  <div className="text-sm font-bold text-slate-800">
-                    Shape & Color
-                  </div>
+                  {/* TAB 3: LOGO (Exact match to Reference Screenshot 1) */}
+                  {designTab === 'logo' && (
+                    <div className="space-y-6 animate-in fade-in duration-200">
+                      {/* Upload Logo Section */}
+                      <div className="space-y-2">
+                        <label className="block text-sm font-semibold text-slate-700">
+                          Upload Logo
+                        </label>
+                        <div
+                          onClick={() => fileInputRef.current?.click()}
+                          className="flex items-center justify-between px-4 py-2.5 border border-slate-200 rounded-xl bg-white hover:border-slate-300 cursor-pointer transition-colors shadow-2xs group"
+                        >
+                          <span className="text-xs text-slate-400 group-hover:text-slate-600 truncate">
+                            {logoDataUrl ? 'فایل لوگو انتخاب شده است (کلیک برای تغییر)' : 'Choose file'}
+                          </span>
+                          <span className="text-xs font-semibold text-slate-500 group-hover:text-cyan-600 transition-colors">
+                            Browse
+                          </span>
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*"
+                            onChange={handleLogoFile}
+                            className="hidden"
+                          />
+                        </div>
+                      </div>
 
-                  {/* 1. Shape Style (Dots) */}
-                  <div className="space-y-2">
-                    <label className="block text-xs font-medium text-slate-600">
-                      Shape style
-                    </label>
-                    <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
-                      {(
-                        [
-                          { id: 'square', label: 'Square' },
-                          { id: 'rounded', label: 'Rounded' },
-                          { id: 'stripes', label: 'Stripes' },
-                          { id: 'diamond', label: 'Diamond' },
-                          { id: 'cross', label: 'Cross' },
-                          { id: 'classy', label: 'Classy' },
-                          { id: 'classy-rounded', label: 'Classy-R' },
-                          { id: 'dots', label: 'Dots' },
-                        ] as const
-                      ).map((pattern) => {
-                        const isSelected = dotStyle === pattern.id;
-                        return (
+                      {/* Or choose from here Section (Preset Icons & Badges) */}
+                      <div className="space-y-3">
+                        <label className="block text-sm font-semibold text-slate-700">
+                          Or choose from here
+                        </label>
+
+                        {/* Row 1: 9 preset circular / branded logos */}
+                        <div className="flex items-center gap-2.5 overflow-x-auto pb-1">
+                          {/* X Clear Button */}
                           <button
-                            key={pattern.id}
                             type="button"
-                            onClick={() => setDotStyle(pattern.id)}
-                            className={`h-14 rounded-xl border flex items-center justify-center p-1.5 transition-all ${
-                              isSelected
+                            onClick={() => setLogoDataUrl(null)}
+                            className={`w-12 h-12 rounded-xl border shrink-0 flex items-center justify-center transition-all ${!logoDataUrl
                                 ? 'border-blue-500 bg-sky-50 text-slate-900 ring-2 ring-blue-300/60 shadow-xs'
-                                : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
-                            }`}
-                            title={pattern.label}
+                                : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 shadow-2xs'
+                              }`}
+                            title="Clear Logo"
                           >
-                            {pattern.id === 'square' ? (
-                              <svg viewBox="0 0 40 40" className="w-8 h-8">
-                                <rect x="5" y="5" width="8" height="8" fill="#000000" />
-                                <rect x="16" y="5" width="8" height="8" fill="#000000" />
-                                <rect x="27" y="5" width="8" height="8" fill="#000000" />
-                                <rect x="5" y="16" width="8" height="8" fill="#000000" />
-                                <rect x="16" y="16" width="8" height="8" fill="#000000" />
-                                <rect x="27" y="16" width="8" height="8" fill="#000000" />
-                                <rect x="5" y="27" width="8" height="8" fill="#000000" />
-                                <rect x="16" y="27" width="8" height="8" fill="#000000" />
-                                <rect x="27" y="27" width="8" height="8" fill="#000000" />
-                              </svg>
-                            ) : pattern.id === 'rounded' ? (
-                              <svg viewBox="0 0 40 40" className="w-8 h-8">
-                                <rect x="5" y="5" width="8" height="8" rx="2.5" fill="#000000" />
-                                <rect x="16" y="5" width="8" height="8" rx="2.5" fill="#000000" />
-                                <rect x="27" y="5" width="8" height="8" rx="2.5" fill="#000000" />
-                                <rect x="5" y="16" width="8" height="8" rx="2.5" fill="#000000" />
-                                <rect x="16" y="16" width="8" height="8" rx="2.5" fill="#000000" />
-                                <rect x="27" y="16" width="8" height="8" rx="2.5" fill="#000000" />
-                                <rect x="5" y="27" width="8" height="8" rx="2.5" fill="#000000" />
-                                <rect x="16" y="27" width="8" height="8" rx="2.5" fill="#000000" />
-                                <rect x="27" y="27" width="8" height="8" rx="2.5" fill="#000000" />
-                              </svg>
-                            ) : pattern.id === 'stripes' ? (
-                              <svg viewBox="0 0 40 40" className="w-8 h-8">
-                                <rect x="5" y="7" width="12" height="4" rx="1.5" fill="#000000" />
-                                <rect x="21" y="7" width="14" height="4" rx="1.5" fill="#000000" />
-                                <rect x="5" y="14" width="18" height="4" rx="1.5" fill="#000000" />
-                                <rect x="27" y="14" width="8" height="4" rx="1.5" fill="#000000" />
-                                <rect x="8" y="21" width="10" height="4" rx="1.5" fill="#000000" />
-                                <rect x="22" y="21" width="13" height="4" rx="1.5" fill="#000000" />
-                                <rect x="5" y="28" width="16" height="4" rx="1.5" fill="#000000" />
-                                <rect x="25" y="28" width="10" height="4" rx="1.5" fill="#000000" />
-                              </svg>
-                            ) : pattern.id === 'diamond' ? (
-                              <svg viewBox="0 0 40 40" className="w-8 h-8">
-                                <polygon points="10,6 14,10 10,14 6,10" fill="#000000" />
-                                <polygon points="20,6 24,10 20,14 16,10" fill="#000000" />
-                                <polygon points="30,6 34,10 30,14 26,10" fill="#000000" />
-                                <polygon points="10,16 14,20 10,24 6,20" fill="#000000" />
-                                <polygon points="20,16 24,20 20,24 16,20" fill="#000000" />
-                                <polygon points="30,16 34,20 30,24 26,20" fill="#000000" />
-                                <polygon points="10,26 14,30 10,34 6,30" fill="#000000" />
-                                <polygon points="20,26 24,30 20,34 16,30" fill="#000000" />
-                                <polygon points="30,26 34,30 30,34 26,30" fill="#000000" />
-                              </svg>
-                            ) : pattern.id === 'cross' ? (
-                              <svg viewBox="0 0 40 40" className="w-8 h-8">
-                                <path d="M 8 7 h 4 v 2 h 2 v 4 h -2 v 2 h -4 v -2 h -2 v -4 h 2 z" fill="#000000" />
-                                <path d="M 26 7 h 4 v 2 h 2 v 4 h -2 v 2 h -4 v -2 h -2 v -4 h 2 z" fill="#000000" />
-                                <path d="M 17 16 h 4 v 2 h 2 v 4 h -2 v 2 h -4 v -2 h -2 v -4 h 2 z" fill="#000000" />
-                                <path d="M 8 25 h 4 v 2 h 2 v 4 h -2 v 2 h -4 v -2 h -2 v -4 h 2 z" fill="#000000" />
-                                <path d="M 26 25 h 4 v 2 h 2 v 4 h -2 v 2 h -4 v -2 h -2 v -4 h 2 z" fill="#000000" />
-                              </svg>
-                            ) : pattern.id === 'classy' ? (
-                              <svg viewBox="0 0 40 40" className="w-8 h-8">
-                                <rect x="6" y="6" width="7" height="7" rx="3.5" fill="currentColor" />
-                                <rect x="17" y="6" width="7" height="7" fill="currentColor" />
-                                <rect x="28" y="6" width="7" height="7" rx="3.5" fill="currentColor" />
-                                <rect x="6" y="17" width="7" height="7" fill="currentColor" />
-                                <rect x="17" y="17" width="7" height="7" rx="3.5" fill="currentColor" />
-                                <rect x="28" y="17" width="7" height="7" fill="currentColor" />
-                                <rect x="6" y="28" width="7" height="7" rx="3.5" fill="currentColor" />
-                                <rect x="17" y="28" width="7" height="7" fill="currentColor" />
-                                <rect x="28" y="28" width="7" height="7" rx="3.5" fill="currentColor" />
-                              </svg>
-                            ) : pattern.id === 'classy-rounded' ? (
-                              <svg viewBox="0 0 40 40" className="w-8 h-8">
-                                <rect x="6" y="6" width="7" height="7" rx="3" fill="currentColor" />
-                                <circle cx="20.5" cy="9.5" r="3.5" fill="currentColor" />
-                                <rect x="28" y="6" width="7" height="7" rx="3" fill="currentColor" />
-                                <circle cx="9.5" cy="20.5" r="3.5" fill="currentColor" />
-                                <rect x="17" y="17" width="7" height="7" rx="3" fill="currentColor" />
-                                <circle cx="31.5" cy="20.5" r="3.5" fill="currentColor" />
-                                <rect x="6" y="28" width="7" height="7" rx="3" fill="currentColor" />
-                                <circle cx="20.5" cy="31.5" r="3.5" fill="currentColor" />
-                                <rect x="28" y="28" width="7" height="7" rx="3" fill="currentColor" />
-                              </svg>
-                            ) : (
-                              <svg viewBox="0 0 40 40" className="w-8 h-8">
-                                <circle cx="7" cy="7" r="2" fill="#000000" />
-                                <circle cx="15" cy="7" r="2" fill="#000000" />
-                                <circle cx="23" cy="7" r="2" fill="#000000" />
-                                <circle cx="31" cy="7" r="2" fill="#000000" />
-                                <circle cx="7" cy="15" r="2" fill="#000000" />
-                                <circle cx="15" cy="15" r="2" fill="#000000" />
-                                <circle cx="23" cy="15" r="2" fill="#000000" />
-                                <circle cx="31" cy="15" r="2" fill="#000000" />
-                                <circle cx="7" cy="23" r="2" fill="#000000" />
-                                <circle cx="15" cy="23" r="2" fill="#000000" />
-                                <circle cx="23" cy="23" r="2" fill="#000000" />
-                                <circle cx="31" cy="23" r="2" fill="#000000" />
-                                <circle cx="7" cy="31" r="2" fill="#000000" />
-                                <circle cx="15" cy="31" r="2" fill="#000000" />
-                                <circle cx="23" cy="31" r="2" fill="#000000" />
-                                <circle cx="31" cy="31" r="2" fill="#000000" />
-                              </svg>
-                            )}
+                            <X className="w-5 h-5 stroke-[2.5]" />
                           </button>
-                        );
-                      })}
-                    </div>
-                  </div>
 
-                  {/* 2. Colors Box (2 columns) */}
-                  <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                      {/* Left: Background color */}
-                      <div className="space-y-2.5">
-                        <label className="block text-xs font-medium text-slate-600">
-                          Background color
-                        </label>
-                        <div className="flex items-center gap-3">
-                          <input
-                            type="text"
-                            value={isTransparentBg ? 'TRANSPARENT' : bgColor.toUpperCase()}
-                            onChange={(e) => {
-                              if (!isTransparentBg) setBgColor(e.target.value);
-                            }}
-                            disabled={isTransparentBg}
-                            className="w-32 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono text-slate-800 focus:outline-none focus:border-cyan-500 uppercase shadow-2xs"
-                          />
-                          <div className="relative w-8 h-8 rounded-lg border border-slate-300 shadow-2xs overflow-hidden shrink-0 cursor-pointer">
-                            <input
-                              type="color"
-                              value={bgColor}
-                              onChange={(e) => {
-                                setBgColor(e.target.value);
-                                setIsTransparentBg(false);
+                          {/* 8 preset logos */}
+                          {PRESET_LOGOS.map((item) => (
+                            <button
+                              key={item.id}
+                              type="button"
+                              onClick={() => {
+                                setLogoDataUrl(toSvgDataUrl(item.svg));
+                                setErrorCorrectionLevel('H');
+                                toast.success(`Logo ${item.label} selected.`);
                               }}
-                              disabled={isTransparentBg}
-                              className="absolute -inset-2 w-12 h-12 cursor-pointer opacity-0"
-                            />
-                            <div
-                              className="w-full h-full"
-                              style={{
-                                backgroundColor: isTransparentBg ? 'transparent' : bgColor,
-                                backgroundImage: isTransparentBg
-                                  ? 'linear-gradient(45deg, #cbd5e1 25%, transparent 25%), linear-gradient(-45deg, #cbd5e1 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #cbd5e1 75%), linear-gradient(-45deg, transparent 75%, #cbd5e1 75%)'
-                                  : undefined,
-                                backgroundSize: '8px 8px',
-                                backgroundPosition: '0 0, 0 4px, 4px -4px, -4px 0px',
-                              }}
-                            />
-                          </div>
-                        </div>
-                        {/* Toggle: Transparent background */}
-                        <div className="pt-1">
-                          <label className="inline-flex items-center gap-2.5 cursor-pointer select-none">
-                            <div className="relative">
-                              <input
-                                type="checkbox"
-                                checked={isTransparentBg}
-                                onChange={(e) => setIsTransparentBg(e.target.checked)}
-                                className="sr-only peer"
+                              className="w-12 h-12 rounded-xl border border-slate-200 bg-white hover:border-slate-300 hover:scale-105 transition-all p-1.5 flex items-center justify-center shadow-2xs shrink-0"
+                              title={item.label}
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={toSvgDataUrl(item.svg)}
+                                alt={item.label}
+                                className="w-full h-full object-contain"
                               />
-                              <div className="w-8 h-4 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-cyan-600"></div>
-                            </div>
-                            <span className="text-xs text-slate-600 font-medium">Transparent background</span>
-                          </label>
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Row 2: 5 preset badges */}
+                        <div className="grid grid-cols-5 gap-2.5 pt-1">
+                          {PRESET_BADGES.map((badge) => (
+                            <button
+                              key={badge.id}
+                              type="button"
+                              onClick={() => {
+                                setLogoDataUrl(toSvgDataUrl(badge.svg));
+                                setErrorCorrectionLevel('H');
+                                toast.success(`Badge ${badge.label} selected.`);
+                              }}
+                              className="h-12 rounded-xl border border-slate-200 bg-white hover:border-slate-300 hover:scale-105 transition-all p-1.5 flex items-center justify-center shadow-2xs"
+                              title={badge.label}
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={toSvgDataUrl(badge.svg)}
+                                alt={badge.label}
+                                className="h-full object-contain"
+                              />
+                            </button>
+                          ))}
                         </div>
                       </div>
 
-                      {/* Right: Shape color */}
-                      <div className="space-y-2.5">
-                        <label className="block text-xs font-medium text-slate-600">
-                          Shape color
-                        </label>
-                        <div className="flex items-center gap-3">
-                          <input
-                            type="text"
-                            value={singleColor.toUpperCase()}
-                            onChange={(e) => {
-                              setSingleColor(e.target.value);
-                              setGradientColor1(e.target.value);
-                            }}
-                            className="w-32 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono text-slate-800 focus:outline-none focus:border-cyan-500 uppercase shadow-2xs"
-                          />
-                          <div className="relative w-8 h-8 rounded-lg border border-slate-300 shadow-2xs overflow-hidden shrink-0 cursor-pointer">
-                            <input
-                              type="color"
-                              value={singleColor}
-                              onChange={(e) => {
-                                setSingleColor(e.target.value);
-                                setGradientColor1(e.target.value);
-                              }}
-                              className="absolute -inset-2 w-12 h-12 cursor-pointer opacity-0"
-                            />
-                            <div
-                              className="w-full h-full"
-                              style={{ backgroundColor: singleColor }}
-                            />
-                          </div>
-                        </div>
-                        {/* Toggle: Gradient */}
-                        <div className="pt-1">
-                          <label className="inline-flex items-center gap-2.5 cursor-pointer select-none">
-                            <div className="relative">
-                              <input
-                                type="checkbox"
-                                checked={colorMode === 'gradient'}
-                                onChange={(e) => setColorMode(e.target.checked ? 'gradient' : 'single')}
-                                className="sr-only peer"
-                              />
-                              <div className="w-8 h-4 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-cyan-600"></div>
-                            </div>
-                            <span className="text-xs text-slate-600 font-medium">Gradient</span>
-                          </label>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Gradient Extra Settings */}
-                    {colorMode === 'gradient' && (
-                      <div className="mt-4 pt-3 border-t border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-[11px] text-slate-600 mb-1 font-medium">
-                            End Color (رنگ دوم گرادیان):
-                          </label>
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="text"
-                              value={gradientColor2.toUpperCase()}
-                              onChange={(e) => setGradientColor2(e.target.value)}
-                              className="w-32 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono text-slate-800 uppercase shadow-2xs"
-                            />
-                            <div className="relative w-8 h-8 rounded-lg border border-slate-300 shadow-2xs overflow-hidden shrink-0 cursor-pointer">
-                              <input
-                                type="color"
-                                value={gradientColor2}
-                                onChange={(e) => setGradientColor2(e.target.value)}
-                                className="absolute -inset-2 w-12 h-12 cursor-pointer opacity-0"
-                              />
-                              <div className="w-full h-full" style={{ backgroundColor: gradientColor2 }} />
-                            </div>
-                          </div>
-                        </div>
-                        <div>
-                          <div className="flex justify-between text-[11px] text-slate-600 mb-1 font-medium">
-                            <span>Gradient Angle</span>
-                            <span className="font-mono text-cyan-600">{gradientRotation}°</span>
+                      {/* Logo Options (if logo selected) */}
+                      {logoDataUrl && (
+                        <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-slate-700 font-medium">
+                              Logo Size (اندازه لوگو در مرکز):
+                            </span>
+                            <span className="text-xs font-mono font-bold text-cyan-600">
+                              {Math.round(logoSize * 100)}%
+                            </span>
                           </div>
                           <input
                             type="range"
-                            min="0"
-                            max="360"
-                            step="15"
-                            value={gradientRotation}
-                            onChange={(e) => setGradientRotation(Number(e.target.value))}
-                            className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-cyan-600 mt-2"
+                            min="0.15"
+                            max="0.45"
+                            step="0.05"
+                            value={logoSize}
+                            onChange={(e) => setLogoSize(Number(e.target.value))}
+                            className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-cyan-600"
                           />
+
+                          <div className="pt-1 flex items-center justify-between">
+                            <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+                              <input
+                                type="checkbox"
+                                checked={hideBehindLogo}
+                                onChange={(e) => setHideBehindLogo(e.target.checked)}
+                                className="rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
+                              />
+                              <span className="text-xs text-slate-600 font-medium">Hide dots behind logo (پنهان کردن نقاط زیر لوگو)</span>
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => setLogoDataUrl(null)}
+                              className="text-xs text-rose-500 hover:text-rose-600 font-medium"
+                            >
+                              حذف لوگو
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* 3. Border style (Corner Squares) */}
-                  <div className="space-y-2">
-                    <label className="block text-xs font-medium text-slate-600">
-                      Border style
-                    </label>
-                    <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
-                      {(
-                        [
-                          { id: 'square', label: 'Square' },
-                          { id: 'rounded-square', label: 'Rounded Square' },
-                          { id: 'circle', label: 'Circle' },
-                          { id: 'leaf-left', label: 'Leaf Left' },
-                          { id: 'leaf-right', label: 'Leaf Right' },
-                          { id: 'leaf-both', label: 'Leaf Both' },
-                          { id: 'square-cutout', label: 'Square Cutout' },
-                          { id: 'teardrop', label: 'Teardrop' },
-                        ] as const
-                      ).map((b) => {
-                        const isSelected = cornerSquareStyle === b.id;
-                        return (
-                          <button
-                            key={b.id}
-                            type="button"
-                            onClick={() => setCornerSquareStyle(b.id)}
-                            className={`h-14 rounded-xl border flex items-center justify-center p-1.5 transition-all ${
-                              isSelected
-                                ? 'border-blue-500 bg-sky-50 text-slate-900 ring-2 ring-blue-300/60 shadow-xs'
-                                : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
-                            }`}
-                            title={b.label}
-                          >
-                            {b.id === 'square' ? (
-                              <svg viewBox="0 0 40 40" className="w-8 h-8">
-                                <rect x="6" y="6" width="28" height="28" stroke="#1e293b" strokeWidth="4.5" fill="none" />
-                              </svg>
-                            ) : b.id === 'rounded-square' ? (
-                              <svg viewBox="0 0 40 40" className="w-8 h-8">
-                                <rect x="6" y="6" width="28" height="28" rx="8" stroke="#1e293b" strokeWidth="4.5" fill="none" />
-                              </svg>
-                            ) : b.id === 'circle' ? (
-                              <svg viewBox="0 0 40 40" className="w-8 h-8">
-                                <circle cx="20" cy="20" r="14" stroke="#1e293b" strokeWidth="4.5" fill="none" />
-                              </svg>
-                            ) : b.id === 'leaf-left' ? (
-                              <svg viewBox="0 0 40 40" className="w-8 h-8">
-                                <path d="M 20 6 C 12 6 6 12 6 20 L 6 34 L 20 34 C 28 34 34 28 34 20 L 34 6 Z" stroke="#1e293b" strokeWidth="4" fill="none" />
-                              </svg>
-                            ) : b.id === 'leaf-right' ? (
-                              <svg viewBox="0 0 40 40" className="w-8 h-8">
-                                <path d="M 6 6 L 20 6 C 28 6 34 12 34 20 L 34 34 L 20 34 C 12 34 6 28 6 20 Z" stroke="#1e293b" strokeWidth="4" fill="none" />
-                              </svg>
-                            ) : b.id === 'leaf-both' ? (
-                              <svg viewBox="0 0 40 40" className="w-8 h-8">
-                                <path d="M 20 6 C 12 6 6 12 6 20 L 6 20 C 6 28 12 34 20 34 C 28 34 34 28 34 20 C 34 12 28 6 20 6 Z" stroke="#1e293b" strokeWidth="4" fill="none" />
-                              </svg>
-                            ) : b.id === 'square-cutout' ? (
-                              <svg viewBox="0 0 40 40" className="w-8 h-8">
-                                <rect x="6" y="6" width="28" height="28" rx="4" fill="#1e293b" />
-                                <circle cx="20" cy="20" r="8" fill="#ffffff" />
-                              </svg>
-                            ) : (
-                              <svg viewBox="0 0 40 40" className="w-8 h-8">
-                                <path d="M 20 6 L 33 20 C 33 27.2 27.2 33 20 33 C 12.8 33 7 27.2 7 20 Z" stroke="#1e293b" strokeWidth="4" fill="none" />
-                              </svg>
-                            )}
-                          </button>
-                        );
-                      })}
+                      )}
                     </div>
+                  )}
 
-                    {/* Border Color */}
-                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
-                      <label className="block text-xs font-medium text-slate-600 mb-1.5">
-                        Border color
+                  {/* Advanced General Settings (Error Correction & Margin) */}
+                  <div className="pt-4 border-t border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                        {language === 'en'
+                          ? 'Error Correction Level'
+                          : 'سطح تصحیح خطا (Error Correction)'}
                       </label>
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="text"
-                          value={(customEyeColors ? eyeSquareColor : singleColor).toUpperCase()}
-                          onChange={(e) => {
-                            setEyeSquareColor(e.target.value);
-                            setCustomEyeColors(true);
-                          }}
-                          className="flex-1 max-w-[280px] px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono text-slate-800 uppercase shadow-2xs"
-                        />
-                        <div className="relative w-14 h-8 rounded-lg border border-slate-300 shadow-2xs overflow-hidden shrink-0 cursor-pointer">
-                          <input
-                            type="color"
-                            value={customEyeColors ? eyeSquareColor : singleColor}
-                            onChange={(e) => {
-                              setEyeSquareColor(e.target.value);
-                              setCustomEyeColors(true);
-                            }}
-                            className="absolute -inset-2 w-20 h-14 cursor-pointer opacity-0"
-                          />
-                          <div
-                            className="w-full h-full"
-                            style={{ backgroundColor: customEyeColors ? eyeSquareColor : singleColor }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 4. Center style (Corner Dots) */}
-                  <div className="space-y-2">
-                    <label className="block text-xs font-medium text-slate-600">
-                      Center style
-                    </label>
-                    <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
-                      {(
-                        [
-                          { id: 'square', label: 'Square' },
-                          { id: 'rounded-square', label: 'Rounded Square' },
-                          { id: 'circle', label: 'Circle' },
-                          { id: 'leaf', label: 'Leaf' },
-                          { id: 'sunburst', label: 'Sunburst' },
-                          { id: 'star', label: 'Star' },
-                          { id: 'diamond', label: 'Diamond' },
-                          { id: 'cross', label: 'Cross' },
-                        ] as const
-                      ).map((c) => {
-                        const isSelected = cornerDotStyle === c.id;
-                        return (
+                      <div className="grid grid-cols-4 gap-1.5">
+                        {(
+                          [
+                            { id: 'L', label: 'L (7%)' },
+                            { id: 'M', label: 'M (15%)' },
+                            { id: 'Q', label: 'Q (25%)' },
+                            { id: 'H', label: 'H (30%)' },
+                          ] as const
+                        ).map((lvl) => (
                           <button
-                            key={c.id}
+                            key={lvl.id}
                             type="button"
-                            onClick={() => setCornerDotStyle(c.id)}
-                            className={`h-14 rounded-xl border flex items-center justify-center p-1.5 transition-all ${
-                              isSelected
-                                ? 'border-blue-500 bg-sky-50 text-slate-900 ring-2 ring-blue-300/60 shadow-xs'
-                                : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
-                            }`}
-                            title={c.label}
+                            onClick={() => setErrorCorrectionLevel(lvl.id)}
+                            className={`py-1.5 rounded-lg text-xs font-medium border text-center transition-colors ${errorCorrectionLevel === lvl.id
+                                ? 'bg-sky-50 border-blue-500 text-slate-900 font-bold ring-1 ring-blue-300'
+                                : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-white'
+                              }`}
                           >
-                            {c.id === 'square' ? (
-                              <svg viewBox="0 0 40 40" className="w-8 h-8">
-                                <rect x="9" y="9" width="22" height="22" fill="#1e293b" />
-                              </svg>
-                            ) : c.id === 'rounded-square' ? (
-                              <svg viewBox="0 0 40 40" className="w-8 h-8">
-                                <rect x="9" y="9" width="22" height="22" rx="6" fill="#1e293b" />
-                              </svg>
-                            ) : c.id === 'circle' ? (
-                              <svg viewBox="0 0 40 40" className="w-8 h-8">
-                                <circle cx="20" cy="20" r="11" fill="#1e293b" />
-                              </svg>
-                            ) : c.id === 'leaf' ? (
-                              <svg viewBox="0 0 40 40" className="w-8 h-8">
-                                <path d="M 20 8 C 27 8 32 13 32 20 C 32 27 27 32 20 32 L 8 32 L 8 20 C 8 13 13 8 20 8 Z" fill="#1e293b" />
-                              </svg>
-                            ) : c.id === 'sunburst' ? (
-                              <svg viewBox="0 0 40 40" className="w-8 h-8">
-                                <path d="M 20 8 l 3 2 l 3.5 -1 l 1.5 3.5 l 3.5 1 l -0.5 3.5 l 3 2 l -2 3 l 2 3 l -3 2 l 0.5 3.5 l -3.5 1 l -1.5 3.5 l -3.5 -1 l -3 2 l -3 -2 l -3.5 1 l -1.5 -3.5 l -3.5 -1 l 0.5 -3.5 l -3 -2 l 2 -3 l -2 -3 l 3 -2 l -0.5 -3.5 l 3.5 -1 l 1.5 -3.5 l 3.5 1 z" fill="#1e293b" />
-                              </svg>
-                            ) : c.id === 'star' ? (
-                              <svg viewBox="0 0 40 40" className="w-8 h-8">
-                                <polygon points="20,7 23.8,15.2 32.8,16.2 26.2,22.2 28,31 20,26.4 12,31 13.8,22.2 7.2,16.2 16.2,15.2" fill="#1e293b" />
-                              </svg>
-                            ) : c.id === 'diamond' ? (
-                              <svg viewBox="0 0 40 40" className="w-8 h-8">
-                                <polygon points="20,7 33,20 20,33 7,20" fill="#1e293b" />
-                              </svg>
-                            ) : (
-                              <svg viewBox="0 0 40 40" className="w-8 h-8">
-                                <path d="M 16 8 h 8 v 8 h 8 v 8 h -8 v 8 h -8 v -8 h -8 v -8 h 8 z" fill="#1e293b" />
-                              </svg>
-                            )}
+                            {lvl.label}
                           </button>
-                        );
-                      })}
-                    </div>
-
-                    {/* Center Color */}
-                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
-                      <label className="block text-xs font-medium text-slate-600 mb-1.5">
-                        Center color
-                      </label>
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="text"
-                          value={(customEyeColors ? eyeDotColor : singleColor).toUpperCase()}
-                          onChange={(e) => {
-                            setEyeDotColor(e.target.value);
-                            setCustomEyeColors(true);
-                          }}
-                          className="flex-1 max-w-[280px] px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono text-slate-800 uppercase shadow-2xs"
-                        />
-                        <div className="relative w-14 h-8 rounded-lg border border-slate-300 shadow-2xs overflow-hidden shrink-0 cursor-pointer">
-                          <input
-                            type="color"
-                            value={customEyeColors ? eyeDotColor : singleColor}
-                            onChange={(e) => {
-                              setEyeDotColor(e.target.value);
-                              setCustomEyeColors(true);
-                            }}
-                            className="absolute -inset-2 w-20 h-14 cursor-pointer opacity-0"
-                          />
-                          <div
-                            className="w-full h-full"
-                            style={{ backgroundColor: customEyeColors ? eyeDotColor : singleColor }}
-                          />
-                        </div>
+                        ))}
                       </div>
                     </div>
-                  </div>
-                </div>
-              )}
 
-              {/* TAB 3: LOGO (Exact match to Reference Screenshot 1) */}
-              {designTab === 'logo' && (
-                <div className="space-y-6 animate-in fade-in duration-200">
-                  {/* Upload Logo Section */}
-                  <div className="space-y-2">
-                    <label className="block text-sm font-semibold text-slate-700">
-                      Upload Logo
-                    </label>
-                    <div
-                      onClick={() => fileInputRef.current?.click()}
-                      className="flex items-center justify-between px-4 py-2.5 border border-slate-200 rounded-xl bg-white hover:border-slate-300 cursor-pointer transition-colors shadow-2xs group"
-                    >
-                      <span className="text-xs text-slate-400 group-hover:text-slate-600 truncate">
-                        {logoDataUrl ? 'فایل لوگو انتخاب شده است (کلیک برای تغییر)' : 'Choose file'}
-                      </span>
-                      <span className="text-xs font-semibold text-slate-500 group-hover:text-cyan-600 transition-colors">
-                        Browse
-                      </span>
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        onChange={handleLogoFile}
-                        className="hidden"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Or choose from here Section (Preset Icons & Badges) */}
-                  <div className="space-y-3">
-                    <label className="block text-sm font-semibold text-slate-700">
-                      Or choose from here
-                    </label>
-
-                    {/* Row 1: 9 preset circular / branded logos */}
-                    <div className="flex items-center gap-2.5 overflow-x-auto pb-1">
-                      {/* X Clear Button */}
-                      <button
-                        type="button"
-                        onClick={() => setLogoDataUrl(null)}
-                        className={`w-12 h-12 rounded-xl border shrink-0 flex items-center justify-center transition-all ${
-                          !logoDataUrl
-                            ? 'border-blue-500 bg-sky-50 text-slate-900 ring-2 ring-blue-300/60 shadow-xs'
-                            : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 shadow-2xs'
-                        }`}
-                        title="Clear Logo"
-                      >
-                        <X className="w-5 h-5 stroke-[2.5]" />
-                      </button>
-
-                      {/* 8 preset logos */}
-                      {PRESET_LOGOS.map((item) => (
-                        <button
-                          key={item.id}
-                          type="button"
-                          onClick={() => {
-                            setLogoDataUrl(toSvgDataUrl(item.svg));
-                            setErrorCorrectionLevel('H');
-                            toast.success(`Logo ${item.label} selected.`);
-                          }}
-                          className="w-12 h-12 rounded-xl border border-slate-200 bg-white hover:border-slate-300 hover:scale-105 transition-all p-1.5 flex items-center justify-center shadow-2xs shrink-0"
-                          title={item.label}
-                        >
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={toSvgDataUrl(item.svg)}
-                            alt={item.label}
-                            className="w-full h-full object-contain"
-                          />
-                        </button>
-                      ))}
-                    </div>
-
-                    {/* Row 2: 5 preset badges */}
-                    <div className="grid grid-cols-5 gap-2.5 pt-1">
-                      {PRESET_BADGES.map((badge) => (
-                        <button
-                          key={badge.id}
-                          type="button"
-                          onClick={() => {
-                            setLogoDataUrl(toSvgDataUrl(badge.svg));
-                            setErrorCorrectionLevel('H');
-                            toast.success(`Badge ${badge.label} selected.`);
-                          }}
-                          className="h-12 rounded-xl border border-slate-200 bg-white hover:border-slate-300 hover:scale-105 transition-all p-1.5 flex items-center justify-center shadow-2xs"
-                          title={badge.label}
-                        >
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={toSvgDataUrl(badge.svg)}
-                            alt={badge.label}
-                            className="h-full object-contain"
-                          />
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Logo Options (if logo selected) */}
-                  {logoDataUrl && (
-                    <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-slate-700 font-medium">
-                          Logo Size (اندازه لوگو در مرکز):
+                    <div>
+                      <div className="flex justify-between text-xs text-slate-600 mb-1.5 font-medium">
+                        <span>
+                          {language === 'en' ? 'Outer Margin' : 'حاشیه بیرونی'}
                         </span>
-                        <span className="text-xs font-mono font-bold text-cyan-600">
-                          {Math.round(logoSize * 100)}%
-                        </span>
+                        <span className="font-mono text-cyan-600">{margin}px</span>
                       </div>
                       <input
                         type="range"
-                        min="0.15"
-                        max="0.45"
-                        step="0.05"
-                        value={logoSize}
-                        onChange={(e) => setLogoSize(Number(e.target.value))}
-                        className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-cyan-600"
+                        min="0"
+                        max="30"
+                        step="2"
+                        value={margin}
+                        onChange={(e) => setMargin(Number(e.target.value))}
+                        className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-cyan-600 mt-2"
                       />
-
-                      <div className="pt-1 flex items-center justify-between">
-                        <label className="inline-flex items-center gap-2 cursor-pointer select-none">
-                          <input
-                            type="checkbox"
-                            checked={hideBehindLogo}
-                            onChange={(e) => setHideBehindLogo(e.target.checked)}
-                            className="rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
-                          />
-                          <span className="text-xs text-slate-600 font-medium">Hide dots behind logo (پنهان کردن نقاط زیر لوگو)</span>
-                        </label>
-                        <button
-                          type="button"
-                          onClick={() => setLogoDataUrl(null)}
-                          className="text-xs text-rose-500 hover:text-rose-600 font-medium"
-                        >
-                          حذف لوگو
-                        </button>
-                      </div>
                     </div>
-                  )}
+                  </div>
                 </div>
-              )}
+              </div>
+            </div>
 
-              {/* Advanced General Settings (Error Correction & Margin) */}
-              <div className="pt-4 border-t border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+            {/* Right Column (5 cols): Sticky Live Render & High-Res Download Card */}
+            <div className="lg:col-span-5 lg:sticky lg:top-24 space-y-6">
+              <div className="bg-gradient-to-b from-slate-900/90 to-slate-950/90 backdrop-blur-2xl border border-slate-800/90 rounded-3xl p-6 shadow-2xl relative overflow-hidden">
+                {/* Subtle top ambient indicator */}
+                <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500" />
+
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-xs font-bold text-slate-400 tracking-wider uppercase flex items-center gap-1.5">
+                    <Eye className="w-4 h-4 text-cyan-400" />
                     {language === 'en'
-                      ? 'Error Correction Level'
-                      : 'سطح تصحیح خطا (Error Correction)'}
-                  </label>
-                  <div className="grid grid-cols-4 gap-1.5">
-                    {(
-                      [
-                        { id: 'L', label: 'L (7%)' },
-                        { id: 'M', label: 'M (15%)' },
-                        { id: 'Q', label: 'Q (25%)' },
-                        { id: 'H', label: 'H (30%)' },
-                      ] as const
-                    ).map((lvl) => (
-                      <button
-                        key={lvl.id}
-                        type="button"
-                        onClick={() => setErrorCorrectionLevel(lvl.id)}
-                        className={`py-1.5 rounded-lg text-xs font-medium border text-center transition-colors ${
-                          errorCorrectionLevel === lvl.id
-                            ? 'bg-sky-50 border-blue-500 text-slate-900 font-bold ring-1 ring-blue-300'
-                            : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-white'
-                        }`}
+                      ? 'Live Real-Time Preview'
+                      : language === 'ps'
+                        ? 'د ژوندۍ کتلو ساحه'
+                        : 'پیش‌نمایش زنده و آماده اسکن'}
+                  </span>
+                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+                    <ShieldCheck className="w-3 h-3" />
+                    {language === 'en' ? 'Active' : 'فعال'}
+                  </span>
+                </div>
+
+                {/* QR Render Box with Live Frame Preview */}
+                <div className="relative flex items-center justify-center p-6 rounded-2xl bg-slate-950/80 border border-slate-800 shadow-inner min-h-[360px] overflow-hidden">
+                  {/* Visual checkboard pattern behind transparent QR */}
+                  {isTransparentBg && (
+                    <div
+                      className="absolute inset-4 rounded-xl opacity-20 pointer-events-none"
+                      style={{
+                        backgroundImage:
+                          'radial-gradient(#94a3b8 1px, transparent 1px)',
+                        backgroundSize: '12px 12px',
+                      }}
+                    />
+                  )}
+
+                  {/* Single outer card containing qrContainerRef (prevents unmount / canvas detachment) */}
+                  <div
+                    className={`relative flex flex-col items-center justify-center transition-all ${frameStyle === 'none'
+                        ? 'hover:scale-105'
+                        : frameStyle === 'bottom-banner' || frameStyle === 'black-banner'
+                          ? 'rounded-2xl overflow-hidden shadow-2xl bg-white p-3 pb-0'
+                          : frameStyle === 'hanging-tab'
+                            ? 'rounded-2xl shadow-2xl bg-white p-3 pb-2'
+                            : frameStyle === 'screen'
+                              ? 'rounded-2xl shadow-2xl bg-white p-3 pb-0'
+                              : frameStyle === 'circle'
+                                ? 'rounded-full shadow-2xl bg-white p-7'
+                                : frameStyle === 'phone'
+                                  ? 'rounded-[32px] shadow-2xl bg-white p-3 pt-4 min-w-[260px]'
+                                  : frameStyle === 'clipboard'
+                                    ? 'rounded-2xl shadow-2xl bg-white p-4 pt-6'
+                                    : 'rounded-2xl shadow-2xl bg-white p-4 pt-7'
+                      }`}
+                    style={
+                      frameStyle !== 'none'
+                        ? {
+                          border: `${frameStyle === 'phone' ? '6px' : '4px'} solid ${frameColor}`,
+                        }
+                        : undefined
+                    }
+                  >
+                    {/* Top Frame Elements */}
+                    {frameStyle === 'phone' && (
+                      <div
+                        className="w-16 h-1.5 rounded-full mb-2.5"
+                        style={{ backgroundColor: frameColor }}
+                      />
+                    )}
+
+                    {frameStyle === 'clipboard' && (
+                      <div
+                        className="absolute -top-3.5 px-6 py-1 rounded-md font-bold text-[9px] uppercase tracking-wider text-white shadow-md"
+                        style={{ backgroundColor: frameColor }}
                       >
-                        {lvl.label}
+                        AryaLink
+                      </div>
+                    )}
+
+                    {frameStyle === 'bag' && (
+                      <div
+                        className="absolute -top-5 w-14 h-8 rounded-t-full border-4 border-b-0"
+                        style={{ borderColor: frameColor }}
+                      />
+                    )}
+
+                    {/* QR Canvas Container (Always Mounted) */}
+                    <div
+                      ref={qrContainerRef}
+                      className="flex items-center justify-center"
+                    />
+
+                    {/* Bottom Frame Elements */}
+                    {(frameStyle === 'bottom-banner' || frameStyle === 'black-banner') && (
+                      <div
+                        className="w-[calc(100%+24px)] -mx-3 py-2 px-6 text-center font-black text-xs uppercase tracking-widest text-white shadow-sm mt-2 flex items-center justify-center gap-1.5"
+                        style={{ backgroundColor: frameColor }}
+                      >
+                        {frameStyle === 'bottom-banner' && (
+                          <Scan className="w-3.5 h-3.5 stroke-[2.5]" />
+                        )}
+                        <span>{frameText || 'SCAN ME'}</span>
+                      </div>
+                    )}
+
+                    {frameStyle === 'hanging-tab' && (
+                      <div
+                        className="w-[calc(100%-20px)] mx-auto py-1.5 px-4 text-center font-black text-[11px] uppercase tracking-wider text-white shadow-md rounded-b-xl mt-1 -mb-2"
+                        style={{ backgroundColor: frameColor }}
+                      >
+                        {frameText || 'SCAN ME'}
+                      </div>
+                    )}
+
+                    {frameStyle === 'screen' && (
+                      <div
+                        className="w-[calc(100%+24px)] -mx-3 py-2 px-4 text-center font-black text-[11px] uppercase tracking-wider text-white shadow-sm mt-2"
+                        style={{ backgroundColor: frameColor }}
+                      >
+                        {frameText || 'SCAN ME'}
+                      </div>
+                    )}
+
+                    {frameStyle === 'circle' && (
+                      <div
+                        className="absolute -bottom-3 px-5 py-0.5 rounded-full font-black text-[11px] uppercase tracking-widest text-white shadow-md border-2 border-white"
+                        style={{ backgroundColor: frameColor }}
+                      >
+                        {frameText || 'SCAN ME'}
+                      </div>
+                    )}
+
+                    {frameStyle === 'phone' && (
+                      <>
+                        <div className="mt-2 text-center font-black text-[10px] tracking-wider uppercase text-slate-800">
+                          {frameText || 'SCAN ME'}
+                        </div>
+                        <div
+                          className="w-10 h-1 rounded-full mt-1 mb-0.5"
+                          style={{ backgroundColor: frameColor }}
+                        />
+                      </>
+                    )}
+
+                    {(frameStyle === 'clipboard' || frameStyle === 'bag') && (
+                      <div
+                        className="w-full mt-2 py-1.5 px-4 rounded-lg text-center font-black text-xs uppercase tracking-wider text-white"
+                        style={{ backgroundColor: frameColor }}
+                      >
+                        {frameText || 'SCAN ME'}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Payload Summary Info */}
+                <div className="mt-4 p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 text-xs text-slate-400 flex items-center justify-between gap-3">
+                  <div className="min-w-0 flex-1 truncate">
+                    <span className="text-slate-500 block text-[10px] uppercase font-mono">
+                      {language === 'en' ? 'Payload Target' : 'محتوای خروجی'}
+                    </span>
+                    <span className="text-slate-200 font-mono truncate block text-xs">
+                      {computedPayload}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCopyPayload}
+                    className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors shrink-0"
+                    title={language === 'en' ? 'Copy payload' : 'کپی متن محتوا'}
+                  >
+                    {copied ? (
+                      <Check className="w-4 h-4 text-emerald-400" />
+                    ) : (
+                      <Copy className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
+
+                {/* Export Resolution Selector */}
+                <div className="mt-5 space-y-2">
+                  <div className="flex items-center justify-between text-xs text-slate-400">
+                    <span className="font-medium">
+                      {language === 'en'
+                        ? 'Download Resolution (Raster)'
+                        : 'کیفیت دانلود (PNG / JPG):'}
+                    </span>
+                    <span className="font-mono text-cyan-400 font-semibold">
+                      {downloadSize} x {downloadSize} px
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { size: 500, label: '500px (Web)' },
+                      { size: 1000, label: '1000px (HD)' },
+                      { size: 2000, label: '2000px (Print)' },
+                    ].map((item) => (
+                      <button
+                        key={item.size}
+                        type="button"
+                        onClick={() => setDownloadSize(item.size)}
+                        className={`py-1.5 px-2 rounded-xl text-xs font-mono font-medium border transition-colors ${downloadSize === item.size
+                            ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300'
+                            : 'bg-slate-950/40 border-slate-800 text-slate-400 hover:text-slate-200'
+                          }`}
+                      >
+                        {item.label}
                       </button>
                     ))}
                   </div>
                 </div>
 
-                <div>
-                  <div className="flex justify-between text-xs text-slate-600 mb-1.5 font-medium">
+                {/* Download Buttons: SVG (Vector) + PNG + JPG */}
+                <div className="mt-5 space-y-2.5">
+                  {/* SVG Vector (Primary for Designers / Print) */}
+                  <Button
+                    type="button"
+                    onClick={() => handleDownload('svg')}
+                    className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold shadow-lg shadow-cyan-500/20 transition-all flex items-center justify-center gap-2"
+                  >
+                    <Download className="w-4 h-4" />
                     <span>
-                      {language === 'en' ? 'Outer Margin' : 'حاشیه بیرونی'}
+                      {language === 'en'
+                        ? 'Download SVG (Vector Graphics)'
+                        : language === 'ps'
+                          ? 'د SVG برداري بڼه ډاونلوډ'
+                          : 'دانلود وکتور SVG (بدون افت کیفیت جهت چاپ)'}
                     </span>
-                    <span className="font-mono text-cyan-600">{margin}px</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="30"
-                    step="2"
-                    value={margin}
-                    onChange={(e) => setMargin(Number(e.target.value))}
-                    className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-cyan-600 mt-2"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+                  </Button>
 
-        {/* Right Column (5 cols): Sticky Live Render & High-Res Download Card */}
-          <div className="lg:col-span-5 lg:sticky lg:top-24 space-y-6">
-            <div className="bg-gradient-to-b from-slate-900/90 to-slate-950/90 backdrop-blur-2xl border border-slate-800/90 rounded-3xl p-6 shadow-2xl relative overflow-hidden">
-              {/* Subtle top ambient indicator */}
-              <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500" />
-
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-bold text-slate-400 tracking-wider uppercase flex items-center gap-1.5">
-                  <Eye className="w-4 h-4 text-cyan-400" />
-                  {language === 'en'
-                    ? 'Live Real-Time Preview'
-                    : language === 'ps'
-                    ? 'د ژوندۍ کتلو ساحه'
-                    : 'پیش‌نمایش زنده و آماده اسکن'}
-                </span>
-                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
-                  <ShieldCheck className="w-3 h-3" />
-                  {language === 'en' ? 'Active' : 'فعال'}
-                </span>
-              </div>
-
-              {/* QR Render Box with Live Frame Preview */}
-              <div className="relative flex items-center justify-center p-6 rounded-2xl bg-slate-950/80 border border-slate-800 shadow-inner min-h-[360px] overflow-hidden">
-                {/* Visual checkboard pattern behind transparent QR */}
-                {isTransparentBg && (
-                  <div
-                    className="absolute inset-4 rounded-xl opacity-20 pointer-events-none"
-                    style={{
-                      backgroundImage:
-                        'radial-gradient(#94a3b8 1px, transparent 1px)',
-                      backgroundSize: '12px 12px',
-                    }}
-                  />
-                )}
-
-                {/* Single outer card containing qrContainerRef (prevents unmount / canvas detachment) */}
-                <div
-                  className={`relative flex flex-col items-center justify-center transition-all ${
-                    frameStyle === 'none'
-                      ? 'hover:scale-105'
-                      : frameStyle === 'bottom-banner' || frameStyle === 'black-banner'
-                      ? 'rounded-2xl overflow-hidden shadow-2xl bg-white p-3 pb-0'
-                      : frameStyle === 'hanging-tab'
-                      ? 'rounded-2xl shadow-2xl bg-white p-3 pb-2'
-                      : frameStyle === 'screen'
-                      ? 'rounded-2xl shadow-2xl bg-white p-3 pb-0'
-                      : frameStyle === 'circle'
-                      ? 'rounded-full shadow-2xl bg-white p-7'
-                      : frameStyle === 'phone'
-                      ? 'rounded-[32px] shadow-2xl bg-white p-3 pt-4 min-w-[260px]'
-                      : frameStyle === 'clipboard'
-                      ? 'rounded-2xl shadow-2xl bg-white p-4 pt-6'
-                      : 'rounded-2xl shadow-2xl bg-white p-4 pt-7'
-                  }`}
-                  style={
-                    frameStyle !== 'none'
-                      ? {
-                          border: `${frameStyle === 'phone' ? '6px' : '4px'} solid ${frameColor}`,
-                        }
-                      : undefined
-                  }
-                >
-                  {/* Top Frame Elements */}
-                  {frameStyle === 'phone' && (
-                    <div
-                      className="w-16 h-1.5 rounded-full mb-2.5"
-                      style={{ backgroundColor: frameColor }}
-                    />
-                  )}
-
-                  {frameStyle === 'clipboard' && (
-                    <div
-                      className="absolute -top-3.5 px-6 py-1 rounded-md font-bold text-[9px] uppercase tracking-wider text-white shadow-md"
-                      style={{ backgroundColor: frameColor }}
-                    >
-                      AryaLink
-                    </div>
-                  )}
-
-                  {frameStyle === 'bag' && (
-                    <div
-                      className="absolute -top-5 w-14 h-8 rounded-t-full border-4 border-b-0"
-                      style={{ borderColor: frameColor }}
-                    />
-                  )}
-
-                  {/* QR Canvas Container (Always Mounted) */}
-                  <div
-                    ref={qrContainerRef}
-                    className="flex items-center justify-center"
-                  />
-
-                  {/* Bottom Frame Elements */}
-                  {(frameStyle === 'bottom-banner' || frameStyle === 'black-banner') && (
-                    <div
-                      className="w-[calc(100%+24px)] -mx-3 py-2 px-6 text-center font-black text-xs uppercase tracking-widest text-white shadow-sm mt-2 flex items-center justify-center gap-1.5"
-                      style={{ backgroundColor: frameColor }}
-                    >
-                      {frameStyle === 'bottom-banner' && (
-                        <Scan className="w-3.5 h-3.5 stroke-[2.5]" />
-                      )}
-                      <span>{frameText || 'SCAN ME'}</span>
-                    </div>
-                  )}
-
-                  {frameStyle === 'hanging-tab' && (
-                    <div
-                      className="w-[calc(100%-20px)] mx-auto py-1.5 px-4 text-center font-black text-[11px] uppercase tracking-wider text-white shadow-md rounded-b-xl mt-1 -mb-2"
-                      style={{ backgroundColor: frameColor }}
-                    >
-                      {frameText || 'SCAN ME'}
-                    </div>
-                  )}
-
-                  {frameStyle === 'screen' && (
-                    <div
-                      className="w-[calc(100%+24px)] -mx-3 py-2 px-4 text-center font-black text-[11px] uppercase tracking-wider text-white shadow-sm mt-2"
-                      style={{ backgroundColor: frameColor }}
-                    >
-                      {frameText || 'SCAN ME'}
-                    </div>
-                  )}
-
-                  {frameStyle === 'circle' && (
-                    <div
-                      className="absolute -bottom-3 px-5 py-0.5 rounded-full font-black text-[11px] uppercase tracking-widest text-white shadow-md border-2 border-white"
-                      style={{ backgroundColor: frameColor }}
-                    >
-                      {frameText || 'SCAN ME'}
-                    </div>
-                  )}
-
-                  {frameStyle === 'phone' && (
-                    <>
-                      <div className="mt-2 text-center font-black text-[10px] tracking-wider uppercase text-slate-800">
-                        {frameText || 'SCAN ME'}
-                      </div>
-                      <div
-                        className="w-10 h-1 rounded-full mt-1 mb-0.5"
-                        style={{ backgroundColor: frameColor }}
-                      />
-                    </>
-                  )}
-
-                  {(frameStyle === 'clipboard' || frameStyle === 'bag') && (
-                    <div
-                      className="w-full mt-2 py-1.5 px-4 rounded-lg text-center font-black text-xs uppercase tracking-wider text-white"
-                      style={{ backgroundColor: frameColor }}
-                    >
-                      {frameText || 'SCAN ME'}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Payload Summary Info */}
-              <div className="mt-4 p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 text-xs text-slate-400 flex items-center justify-between gap-3">
-                <div className="min-w-0 flex-1 truncate">
-                  <span className="text-slate-500 block text-[10px] uppercase font-mono">
-                    {language === 'en' ? 'Payload Target' : 'محتوای خروجی'}
-                  </span>
-                  <span className="text-slate-200 font-mono truncate block text-xs">
-                    {computedPayload}
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleCopyPayload}
-                  className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors shrink-0"
-                  title={language === 'en' ? 'Copy payload' : 'کپی متن محتوا'}
-                >
-                  {copied ? (
-                    <Check className="w-4 h-4 text-emerald-400" />
-                  ) : (
-                    <Copy className="w-4 h-4" />
-                  )}
-                </button>
-              </div>
-
-              {/* Export Resolution Selector */}
-              <div className="mt-5 space-y-2">
-                <div className="flex items-center justify-between text-xs text-slate-400">
-                  <span className="font-medium">
-                    {language === 'en'
-                      ? 'Download Resolution (Raster)'
-                      : 'کیفیت دانلود (PNG / JPG):'}
-                  </span>
-                  <span className="font-mono text-cyan-400 font-semibold">
-                    {downloadSize} x {downloadSize} px
-                  </span>
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  {[
-                    { size: 500, label: '500px (Web)' },
-                    { size: 1000, label: '1000px (HD)' },
-                    { size: 2000, label: '2000px (Print)' },
-                  ].map((item) => (
-                    <button
-                      key={item.size}
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
                       type="button"
-                      onClick={() => setDownloadSize(item.size)}
-                      className={`py-1.5 px-2 rounded-xl text-xs font-mono font-medium border transition-colors ${
-                        downloadSize === item.size
-                          ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300'
-                          : 'bg-slate-950/40 border-slate-800 text-slate-400 hover:text-slate-200'
-                      }`}
+                      variant="outline"
+                      onClick={() => handleDownload('png')}
+                      className="py-2.5 rounded-xl border-slate-700 hover:bg-slate-800 text-slate-200 font-medium flex items-center justify-center gap-2"
                     >
-                      {item.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
+                      <Download className="w-4 h-4 text-cyan-400" />
+                      <span>PNG (شفاف / HD)</span>
+                    </Button>
 
-              {/* Download Buttons: SVG (Vector) + PNG + JPG */}
-              <div className="mt-5 space-y-2.5">
-                {/* SVG Vector (Primary for Designers / Print) */}
-                <Button
-                  type="button"
-                  onClick={() => handleDownload('svg')}
-                  className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold shadow-lg shadow-cyan-500/20 transition-all flex items-center justify-center gap-2"
-                >
-                  <Download className="w-4 h-4" />
-                  <span>
-                    {language === 'en'
-                      ? 'Download SVG (Vector Graphics)'
-                      : language === 'ps'
-                      ? 'د SVG برداري بڼه ډاونلوډ'
-                      : 'دانلود وکتور SVG (بدون افت کیفیت جهت چاپ)'}
-                  </span>
-                </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => handleDownload('jpeg')}
+                      className="py-2.5 rounded-xl border-slate-700 hover:bg-slate-800 text-slate-200 font-medium flex items-center justify-center gap-2"
+                    >
+                      <Download className="w-4 h-4 text-blue-400" />
+                      <span>JPG (استاندارد)</span>
+                    </Button>
+                  </div>
 
-                <div className="grid grid-cols-2 gap-2">
+                  {/* Save to History Button */}
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => handleDownload('png')}
-                    className="py-2.5 rounded-xl border-slate-700 hover:bg-slate-800 text-slate-200 font-medium flex items-center justify-center gap-2"
+                    onClick={handleSaveToHistory}
+                    disabled={isSavingToHistory}
+                    className="w-full py-2.5 rounded-xl border-cyan-500/40 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 font-bold text-xs transition-all flex items-center justify-center gap-2"
                   >
-                    <Download className="w-4 h-4 text-cyan-400" />
-                    <span>PNG (شفاف / HD)</span>
-                  </Button>
-
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => handleDownload('jpeg')}
-                    className="py-2.5 rounded-xl border-slate-700 hover:bg-slate-800 text-slate-200 font-medium flex items-center justify-center gap-2"
-                  >
-                    <Download className="w-4 h-4 text-blue-400" />
-                    <span>JPG (استاندارد)</span>
+                    <Bookmark className="w-4 h-4 text-cyan-400" />
+                    <span>
+                      {isSavingToHistory
+                        ? 'در حال ذخیره...'
+                        : 'ذخیره در تاریخچه ابزارهای من'}
+                    </span>
                   </Button>
                 </div>
 
-                {/* Save to History Button */}
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleSaveToHistory}
-                  disabled={isSavingToHistory}
-                  className="w-full py-2.5 rounded-xl border-cyan-500/40 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 font-bold text-xs transition-all flex items-center justify-center gap-2"
-                >
-                  <Bookmark className="w-4 h-4 text-cyan-400" />
-                  <span>
-                    {isSavingToHistory
-                      ? 'در حال ذخیره...'
-                      : 'ذخیره در تاریخچه ابزارهای من'}
-                  </span>
-                </Button>
+                {/* Security & Standard Note */}
+                <p className="mt-4 text-[11px] text-slate-500 text-center leading-relaxed">
+                  {language === 'en'
+                    ? 'All QR codes generated here are 100% static and private. They function forever without expiration or third-party redirection.'
+                    : 'تمام کدهای تولیدشده 100% استاتیک و ایمن هستند؛ بدون تاریخ انقضا و بدون وابستگی به هیچ سرور واسطه‌ای همیشه کار می‌کنند.'}
+                </p>
               </div>
-
-              {/* Security & Standard Note */}
-              <p className="mt-4 text-[11px] text-slate-500 text-center leading-relaxed">
-                {language === 'en'
-                  ? 'All QR codes generated here are 100% static and private. They function forever without expiration or third-party redirection.'
-                  : 'تمام کدهای تولیدشده 100% استاتیک و ایمن هستند؛ بدون تاریخ انقضا و بدون وابستگی به هیچ سرور واسطه‌ای همیشه کار می‌کنند.'}
-              </p>
             </div>
           </div>
-        </div>
         ) : (
           /* Scanner View (Stage 2, 3, 4) */
           <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl">
@@ -2754,15 +2765,15 @@ function AdvancedQrMakerContent() {
                 language === 'en'
                   ? 'QR Code Smart Scanner'
                   : language === 'ps'
-                  ? 'ځیرک QR سکینر'
-                  : 'اسکنر هوشمند کیوآر کد'
+                    ? 'ځیرک QR سکینر'
+                    : 'اسکنر هوشمند کیوآر کد'
               }
               subtitle={
                 language === 'en'
                   ? 'Scan QR codes instantly using your device camera or upload image files'
                   : language === 'ps'
-                  ? 'د خپلې کمیرې له لارې سمدستي QR کوډونه سکین کړئ یا عکس پورته کړئ'
-                  : 'اسکن سریع کدهای QR با وب‌کم، دوربین تلفن همراه یا بارگذاری مستقیم فایل عکس'
+                    ? 'د خپلې کمیرې له لارې سمدستي QR کوډونه سکین کړئ یا عکس پورته کړئ'
+                    : 'اسکن سریع کدهای QR با وب‌کم، دوربین تلفن همراه یا بارگذاری مستقیم فایل عکس'
               }
               onRecreate={(decodedText) => {
                 const trimmed = decodedText.trim();
@@ -2801,6 +2812,76 @@ function AdvancedQrMakerContent() {
                 );
               }}
             />
+          </div>
+        )}
+
+        {/* Stage 3: Collapsible HTML Embed Accordion Section */}
+        {mainViewMode === 'generator' && (
+          <div className="bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-xl overflow-hidden my-8 transition-all">
+            <button
+              type="button"
+              onClick={() => setIsEmbedOpen((prev) => !prev)}
+              className="w-full p-6 sm:p-7 flex items-center justify-between gap-4 text-start hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors cursor-pointer select-none"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-500 shrink-0">
+                  <Code className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 text-[10px] font-bold mb-1">
+                    HTML Embed Code
+                  </div>
+                  <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
+                    کد جاسازی در سایت (HTML Embed Code)
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    تگ آماده HTML تصویر کیوآر کد برای قرار دادن در وب‌سایت‌ها، فاکتورها و امضای ایمیل
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-xs font-semibold text-cyan-500 hidden sm:inline">
+                  {isEmbedOpen ? 'بستن' : 'مشاهده کد'}
+                </span>
+                <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-400">
+                  {isEmbedOpen ? (
+                    <ChevronUp className="w-4 h-4" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4" />
+                  )}
+                </div>
+              </div>
+            </button>
+
+            {isEmbedOpen && (
+              <div className="p-6 sm:p-7 pt-0 border-t border-slate-200 dark:border-slate-800 space-y-4 animate-in fade-in duration-200">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-4">
+                  <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                    تگ HTML زیر حاوی تصویر Base64 کیوآر کد تولیدشده است. برای استفاده در صفحات وب، فاکتورهای آنلاین یا نرم‌افزارها، آن را با یک کلیک کپی کنید:
+                  </p>
+
+                  <Button
+                    type="button"
+                    onClick={handleCopyEmbedCode}
+                    className="rounded-xl bg-cyan-500 hover:bg-cyan-400 text-white font-bold text-xs flex items-center gap-2 shrink-0 self-start sm:self-center"
+                  >
+                    {embedCopied ? (
+                      <Check className="w-4 h-4 text-white" />
+                    ) : (
+                      <Copy className="w-4 h-4" />
+                    )}
+                    <span>{embedCopied ? 'کد کپی شد!' : 'کپی کد HTML Embed'}</span>
+                  </Button>
+                </div>
+
+                <div className="relative rounded-2xl bg-slate-950 p-4 border border-slate-800 font-mono text-xs text-slate-300 overflow-x-auto text-left" dir="ltr">
+                  <pre className="whitespace-pre-wrap break-all leading-relaxed">
+                    {embedHtmlCode}
+                  </pre>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

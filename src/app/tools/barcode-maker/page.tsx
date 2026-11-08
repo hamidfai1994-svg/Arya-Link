@@ -24,6 +24,8 @@ import {
   Filter,
   Code,
   Bookmark,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -465,7 +467,7 @@ function MegaBarcodeGeneratorContent() {
   const searchParams = useSearchParams();
   useEffect(() => {
     const tabParam = searchParams.get('tab');
-    if (tabParam === 'scanner') {
+    if (tabParam === 'scanner' || tabParam === 'scan') {
       setActiveToolTab('scanner');
     } else if (tabParam === 'generator') {
       setActiveToolTab('generator');
@@ -519,6 +521,7 @@ function MegaBarcodeGeneratorContent() {
   // HTML Embed & Cloud History States (Stage 2 & 5)
   const [barcodeDataUrl, setBarcodeDataUrl] = useState<string>('');
   const [embedCopied, setEmbedCopied] = useState<boolean>(false);
+  const [isEmbedOpen, setIsEmbedOpen] = useState<boolean>(false);
   const [isSavingToHistory, setIsSavingToHistory] = useState<boolean>(false);
 
   // Group 11: Business Card State
@@ -1069,7 +1072,7 @@ function MegaBarcodeGeneratorContent() {
   return (
     <div
       dir={dir}
-      className="min-h-screen bg-background text-foreground transition-colors duration-200"
+      className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         {/* Page Header */}
@@ -1290,39 +1293,28 @@ function MegaBarcodeGeneratorContent() {
                 </div>
               ) : (
                 <>
-                  {/* Cascade 1: 13 Independent Categories */}
-                  <div className="space-y-2.5">
+                  {/* Cascade 1: Category Selector (Sleek Styled Select) */}
+                  <div className="space-y-2">
                     <label className="text-xs font-bold text-foreground flex items-center justify-between">
                       <span className="flex items-center gap-1.5">
                         <Layers className="w-3.5 h-3.5 text-cyan-500" />
                         <span>1. انتخاب دسته‌بندی بارکد (13 گروه مستقل):</span>
                       </span>
-                      <span className="text-[11px] font-mono text-cyan-500">
+                      <span className="text-[11px] font-mono text-cyan-500 font-medium">
                         {BARCODE_CATEGORIES.length} دسته اصلی
                       </span>
                     </label>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">
-                      {BARCODE_CATEGORIES.map((cat) => {
-                        const active = cat.id === selectedCategory;
-                        return (
-                          <button
-                            key={cat.id}
-                            type="button"
-                            onClick={() => handleCategoryChange(cat.id)}
-                            className={`text-start px-3 py-2.5 rounded-xl border text-xs font-semibold transition-all flex items-center justify-between ${active
-                              ? 'border-cyan-500 bg-cyan-500/15 text-cyan-400 shadow-md shadow-cyan-500/10 font-bold'
-                              : 'border-border/60 hover:bg-muted text-muted-foreground hover:text-foreground'
-                              }`}
-                          >
-                            <span className="truncate">{cat.title}</span>
-                            {active && (
-                              <Check className="w-3.5 h-3.5 text-cyan-400 shrink-0 ms-1" />
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
+                    <select
+                      value={selectedCategory}
+                      onChange={(e) => handleCategoryChange(e.target.value)}
+                      className="w-full h-11 px-3.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-all cursor-pointer shadow-xs"
+                    >
+                      {BARCODE_CATEGORIES.map((cat) => (
+                        <option key={cat.id} value={cat.id} className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white py-1">
+                          {cat.title}
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
                   {/* Cascade 2: Subtype Selector */}
@@ -1339,10 +1331,10 @@ function MegaBarcodeGeneratorContent() {
                     <select
                       value={selectedSubtypeId}
                       onChange={(e) => handleSubtypeChange(e.target.value)}
-                      className="w-full h-11 px-3.5 rounded-xl border border-border bg-background text-foreground text-xs font-medium focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-all cursor-pointer"
+                      className="w-full h-11 px-3.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-all cursor-pointer shadow-xs"
                     >
                       {currentCategory.subtypes.map((sub) => (
-                        <option key={sub.id} value={sub.id}>
+                        <option key={sub.id} value={sub.id} className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white py-1">
                           {sub.name}
                         </option>
                       ))}
@@ -2206,42 +2198,73 @@ function MegaBarcodeGeneratorContent() {
           </div>
         )}
 
-        {/* Stage 2: Backlinking & HTML Embed Section */}
+        {/* Stage 3: Collapsible HTML Embed Accordion Section */}
         {activeToolTab === 'generator' && (
-          <div className="bg-card border border-border/70 rounded-3xl p-6 sm:p-8 shadow-xl space-y-4 my-8">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/50 pb-4">
-              <div>
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 text-xs font-bold mb-1.5">
-                  <Code className="w-3.5 h-3.5" />
-                  <span>کد جاسازی در سایت (HTML Embed)</span>
+          <div className="bg-card border border-border/70 rounded-3xl shadow-xl overflow-hidden my-8 transition-all">
+            <button
+              type="button"
+              onClick={() => setIsEmbedOpen((prev) => !prev)}
+              className="w-full p-6 sm:p-7 flex items-center justify-between gap-4 text-start hover:bg-muted/30 transition-colors cursor-pointer select-none"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-500 shrink-0">
+                  <Code className="w-5 h-5" />
                 </div>
-                <h3 className="text-base sm:text-lg font-bold text-foreground">
-                  جاسازی مستقیم بارکد در وب‌سایت‌ها و نرم‌افزارها
-                </h3>
-                <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-                  تگ HTML زیر حاوی تصویر Base64 بارکد تولیدشده است. برای استفاده در صفحات وب، فاکتورهای آنلاین یا نرم‌افزارها، آن را با یک کلیک کپی کنید:
-                </p>
+                <div>
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-500 text-[10px] font-bold mb-1">
+                    HTML Embed Code
+                  </div>
+                  <h3 className="text-sm sm:text-base font-bold text-foreground">
+                    کد جاسازی در سایت (HTML Embed Code)
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    تگ آماده HTML تصویر بارکد برای قرار دادن در وب‌سایت‌ها، فاکتورها و ایمیل
+                  </p>
+                </div>
               </div>
 
-              <Button
-                type="button"
-                onClick={handleCopyEmbedCode}
-                className="rounded-xl bg-cyan-500 hover:bg-cyan-400 text-white font-bold text-xs flex items-center gap-2 shrink-0 self-start sm:self-center"
-              >
-                {embedCopied ? (
-                  <Check className="w-4 h-4 text-white" />
-                ) : (
-                  <Copy className="w-4 h-4" />
-                )}
-                <span>{embedCopied ? 'کد کپی شد!' : 'کپی کد HTML Embed'}</span>
-              </Button>
-            </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-xs font-semibold text-cyan-500 hidden sm:inline">
+                  {isEmbedOpen ? 'بستن' : 'مشاهده کد'}
+                </span>
+                <div className="w-8 h-8 rounded-xl bg-muted/60 flex items-center justify-center text-muted-foreground">
+                  {isEmbedOpen ? (
+                    <ChevronUp className="w-4 h-4" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4" />
+                  )}
+                </div>
+              </div>
+            </button>
 
-            <div className="relative rounded-2xl bg-slate-950 p-4 border border-slate-800 font-mono text-xs text-slate-300 overflow-x-auto text-left" dir="ltr">
-              <pre className="whitespace-pre-wrap break-all leading-relaxed">
-                {embedHtmlCode}
-              </pre>
-            </div>
+            {isEmbedOpen && (
+              <div className="p-6 sm:p-7 pt-0 border-t border-border/60 space-y-4 animate-in fade-in duration-200">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-4">
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    تگ HTML زیر حاوی تصویر Base64 بارکد تولیدشده است. برای استفاده در صفحات وب، فاکتورهای آنلاین یا نرم‌افزارها، آن را با یک کلیک کپی کنید:
+                  </p>
+
+                  <Button
+                    type="button"
+                    onClick={handleCopyEmbedCode}
+                    className="rounded-xl bg-cyan-500 hover:bg-cyan-400 text-white font-bold text-xs flex items-center gap-2 shrink-0 self-start sm:self-center"
+                  >
+                    {embedCopied ? (
+                      <Check className="w-4 h-4 text-white" />
+                    ) : (
+                      <Copy className="w-4 h-4" />
+                    )}
+                    <span>{embedCopied ? 'کد کپی شد!' : 'کپی کد HTML Embed'}</span>
+                  </Button>
+                </div>
+
+                <div className="relative rounded-2xl bg-slate-950 p-4 border border-slate-800 font-mono text-xs text-slate-300 overflow-x-auto text-left" dir="ltr">
+                  <pre className="whitespace-pre-wrap break-all leading-relaxed">
+                    {embedHtmlCode}
+                  </pre>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

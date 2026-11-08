@@ -404,7 +404,7 @@ export default function EmailSignatureBuilderPage() {
   return (
     <div
       dir={dir}
-      className="min-h-screen bg-slate-950 text-slate-100 selection:bg-cyan-500/30 selection:text-cyan-200"
+      className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 selection:bg-cyan-500/30 selection:text-cyan-200 transition-colors duration-200"
     >
       {/* Background radial glow */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
@@ -415,19 +415,19 @@ export default function EmailSignatureBuilderPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-16">
         {/* Breadcrumb */}
-        <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-400 mb-6">
+        <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-500 dark:text-slate-400 mb-6">
           <Link
             href="/"
-            className="hover:text-cyan-400 transition-colors flex items-center gap-1"
+            className="hover:text-cyan-500 transition-colors flex items-center gap-1"
           >
             {language === 'en' ? 'Home' : 'صفحه اصلی'}
           </Link>
           {isRtl ? (
-            <ChevronLeft className="w-3.5 h-3.5 text-slate-600" />
+            <ChevronLeft className="w-3.5 h-3.5 text-slate-400 dark:text-slate-600" />
           ) : (
-            <ChevronRight className="w-3.5 h-3.5 text-slate-600" />
+            <ChevronRight className="w-3.5 h-3.5 text-slate-400 dark:text-slate-600" />
           )}
-          <span className="text-slate-300 font-medium">
+          <span className="text-slate-700 dark:text-slate-300 font-medium">
             {language === 'en'
               ? 'Digital Toolbox'
               : language === 'ps'
@@ -435,11 +435,11 @@ export default function EmailSignatureBuilderPage() {
               : 'جعبه ابزار دیجیتال'}
           </span>
           {isRtl ? (
-            <ChevronLeft className="w-3.5 h-3.5 text-slate-600" />
+            <ChevronLeft className="w-3.5 h-3.5 text-slate-400 dark:text-slate-600" />
           ) : (
-            <ChevronRight className="w-3.5 h-3.5 text-slate-600" />
+            <ChevronRight className="w-3.5 h-3.5 text-slate-400 dark:text-slate-600" />
           )}
-          <span className="text-cyan-400 font-semibold">
+          <span className="text-cyan-600 dark:text-cyan-400 font-semibold">
             {language === 'en'
               ? 'Email Signature Builder'
               : language === 'ps'
@@ -449,9 +449,9 @@ export default function EmailSignatureBuilderPage() {
         </div>
 
         {/* Page Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-8 border-b border-slate-800/80 mb-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-8 border-b border-slate-200 dark:border-slate-800/80 mb-8">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-xs font-semibold mb-3">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-600 dark:text-cyan-400 text-xs font-semibold mb-3">
               <Sparkles className="w-3.5 h-3.5" />
               <span>
                 {language === 'en'
@@ -461,8 +461,8 @@ export default function EmailSignatureBuilderPage() {
                   : 'سازگار با جیمیل، اوت‌لوک، اپل میل و وب‌میل'}
               </span>
             </div>
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-white tracking-tight flex items-center gap-3">
-              <div className="p-2.5 rounded-2xl bg-gradient-to-tr from-cyan-500/20 to-blue-500/20 border border-cyan-500/40 text-cyan-400 shadow-lg shadow-cyan-500/10">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
+              <div className="p-2.5 rounded-2xl bg-gradient-to-tr from-cyan-500/20 to-blue-500/20 border border-cyan-500/40 text-cyan-500 shadow-lg shadow-cyan-500/10">
                 <Mail className="w-7 h-7 sm:w-8 sm:h-8" />
               </div>
               {language === 'en'
@@ -471,7 +471,7 @@ export default function EmailSignatureBuilderPage() {
                 ? 'د مسلکي بریښنالیک لاسلیک جوړول'
                 : 'سازنده امضای دیجیتال ایمیل'}
             </h1>
-            <p className="mt-2 text-sm sm:text-base text-slate-400 max-w-2xl leading-relaxed">
+            <p className="mt-2 text-sm sm:text-base text-slate-600 dark:text-slate-400 max-w-2xl leading-relaxed">
               {language === 'en'
                 ? 'Design modern, professional HTML email signatures for your corporate communications. Copy with one click and paste directly into your email settings.'
                 : language === 'ps'
@@ -506,7 +506,7 @@ export default function EmailSignatureBuilderPage() {
               type="button"
               variant="outline"
               onClick={handleReset}
-              className="border-slate-700/80 hover:bg-slate-800 text-slate-300 rounded-xl px-3.5"
+              className="border-slate-300 dark:border-slate-700/80 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl px-3.5"
               title={language === 'en' ? 'Reset styles' : 'بازنشانی'}
             >
               <RotateCcw className="w-4 h-4" />
@@ -519,9 +519,9 @@ export default function EmailSignatureBuilderPage() {
           {/* Left Column (7 cols): Data Entry & Customization Form */}
           <div className="lg:col-span-7 space-y-6">
             {/* Step 1: Template Selection */}
-            <div className="bg-slate-900/60 backdrop-blur-xl border border-slate-800 rounded-2xl p-5 shadow-xl">
+            <div className="bg-white dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xl">
               <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-bold tracking-wider uppercase text-cyan-400 flex items-center gap-1.5">
+                <span className="text-xs font-bold tracking-wider uppercase text-cyan-600 dark:text-cyan-400 flex items-center gap-1.5">
                   <Layout className="w-4 h-4" />
                   {language === 'en'
                     ? 'Step 1: Choose Layout Template'
@@ -529,7 +529,7 @@ export default function EmailSignatureBuilderPage() {
                     ? 'لومړی ګام: د لاسلیک بڼه'
                     : 'مرحله 1: انتخاب قالب و سبک امضا'}
                 </span>
-                <span className="text-xs text-slate-400 capitalize">
+                <span className="text-xs text-slate-500 dark:text-slate-400 capitalize">
                   {template}
                 </span>
               </div>
@@ -558,14 +558,14 @@ export default function EmailSignatureBuilderPage() {
                     onClick={() => setTemplate(item.id)}
                     className={`p-3.5 rounded-xl border text-start transition-all ${
                       template === item.id
-                        ? 'bg-cyan-500/15 border-cyan-500/80 text-white shadow-md shadow-cyan-500/10'
-                        : 'bg-slate-950/40 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
+                        ? 'bg-cyan-500/15 border-cyan-500/80 text-cyan-700 dark:text-white shadow-md shadow-cyan-500/10'
+                        : 'bg-slate-50 dark:bg-slate-950/40 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-slate-700'
                     }`}
                   >
-                    <span className="block text-xs font-bold text-white mb-1">
+                    <span className="block text-xs font-bold text-slate-900 dark:text-white mb-1">
                       {item.title}
                     </span>
-                    <span className="block text-[11px] text-slate-400 leading-snug">
+                    <span className="block text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
                       {item.desc}
                     </span>
                   </button>
@@ -574,8 +574,8 @@ export default function EmailSignatureBuilderPage() {
             </div>
 
             {/* Step 2: Personal & Corporate Information */}
-            <div className="bg-slate-900/60 backdrop-blur-xl border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
-              <span className="text-xs font-bold tracking-wider uppercase text-cyan-400 flex items-center gap-1.5 pb-2 border-b border-slate-800">
+            <div className="bg-white dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+              <span className="text-xs font-bold tracking-wider uppercase text-cyan-600 dark:text-cyan-400 flex items-center gap-1.5 pb-2 border-b border-slate-200 dark:border-slate-800">
                 <User className="w-4 h-4" />
                 {language === 'en'
                   ? 'Step 2: Personal & Contact Information'
@@ -876,8 +876,8 @@ export default function EmailSignatureBuilderPage() {
             </div>
 
             {/* Step 4: Social Links & Disclaimer */}
-            <div className="bg-slate-900/60 backdrop-blur-xl border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
-              <span className="text-xs font-bold tracking-wider uppercase text-cyan-400 flex items-center gap-1.5 pb-2 border-b border-slate-800">
+            <div className="bg-white dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+              <span className="text-xs font-bold tracking-wider uppercase text-cyan-600 dark:text-cyan-400 flex items-center gap-1.5 pb-2 border-b border-slate-200 dark:border-slate-800">
                 <Globe className="w-4 h-4" />
                 {language === 'en'
                   ? 'Step 4: Social Profiles & Legal Disclaimer'
@@ -982,12 +982,12 @@ export default function EmailSignatureBuilderPage() {
 
           {/* Right Column (5 cols): Live Email Mockup & Copy Center */}
           <div className="lg:col-span-5 lg:sticky lg:top-24 space-y-6">
-            <div className="bg-gradient-to-b from-slate-900/90 to-slate-950/90 backdrop-blur-2xl border border-slate-800/90 rounded-3xl p-6 shadow-2xl relative overflow-hidden">
+            <div className="bg-white dark:bg-gradient-to-b dark:from-slate-900/90 dark:to-slate-950/90 backdrop-blur-2xl border border-slate-200 dark:border-slate-800/90 rounded-3xl p-6 shadow-2xl relative overflow-hidden">
               <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500" />
 
               <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-bold text-slate-400 tracking-wider uppercase flex items-center gap-1.5">
-                  <Mail className="w-4 h-4 text-cyan-400" />
+                <span className="text-xs font-bold text-slate-600 dark:text-slate-400 tracking-wider uppercase flex items-center gap-1.5">
+                  <Mail className="w-4 h-4 text-cyan-500" />
                   {language === 'en'
                     ? 'Interactive Email Client Preview'
                     : language === 'ps'

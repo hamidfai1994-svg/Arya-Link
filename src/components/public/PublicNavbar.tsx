@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
@@ -13,6 +13,8 @@ import {
   ArrowRight,
   ArrowLeft,
   ChevronDown,
+  ChevronRight,
+  ChevronLeft,
   Barcode,
   QrCode,
   Mail,
@@ -40,6 +42,24 @@ export function PublicNavbar() {
   const { data: session } = useSession();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [toolsDropdownOpen, setToolsDropdownOpen] = useState(false);
+  const toolsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleToolsMouseEnter = () => {
+    if (toolsTimeoutRef.current) {
+      clearTimeout(toolsTimeoutRef.current);
+      toolsTimeoutRef.current = null;
+    }
+    setToolsDropdownOpen(true);
+  };
+
+  const handleToolsMouseLeave = () => {
+    if (toolsTimeoutRef.current) {
+      clearTimeout(toolsTimeoutRef.current);
+    }
+    toolsTimeoutRef.current = setTimeout(() => {
+      setToolsDropdownOpen(false);
+    }, 220);
+  };
 
   const navLinks = [
     { title: t('nav.home', 'صفحه اصلی'), href: '/' },
@@ -55,7 +75,7 @@ export function PublicNavbar() {
     {
       title: t('nav.barcode', 'بارکد ساز جامع'),
       href: '/tools/barcode-maker',
-      desc: language === 'en' ? 'Linear, 2D, EAN, GS1 & Postal codes' : language === 'ps' ? 'د ۲۲ څخه زیاتو فارمټونو سره د بارکوډ جوړونکی' : 'تولید ده‌ها نوع بارکد میله‌ای، دوبعدی، پستی و بانکی',
+      desc: language === 'en' ? 'Linear, 2D, EAN, GS1 & Postal codes' : language === 'ps' ? 'د 116 څخه زیاتو فارمټونو سره د بارکوډ جوړونکی' : 'تولید ده‌ها نوع بارکد میله‌ای، دوبعدی، پستی و بانکی',
       icon: Barcode,
       badge: 'PRO',
     },
@@ -124,10 +144,10 @@ export function PublicNavbar() {
             );
           })}
 
-          {/* Tools Dropdown Menu with Hover */}
+          {/* Tools Dropdown Menu with Hover & Flyout Submenu */}
           <div
-            onMouseEnter={() => setToolsDropdownOpen(true)}
-            onMouseLeave={() => setToolsDropdownOpen(false)}
+            onMouseEnter={handleToolsMouseEnter}
+            onMouseLeave={handleToolsMouseLeave}
             className="relative"
           >
             <DropdownMenu open={toolsDropdownOpen} onOpenChange={setToolsDropdownOpen}>
@@ -155,7 +175,9 @@ export function PublicNavbar() {
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 align={dir === 'rtl' ? 'start' : 'end'}
-                className="w-80 p-2.5 rounded-2xl bg-white/95 dark:bg-zinc-950/95 backdrop-blur-xl border border-border shadow-2xl z-50 animate-in fade-in-50 zoom-in-95 space-y-2.5"
+                onMouseEnter={handleToolsMouseEnter}
+                onMouseLeave={handleToolsMouseLeave}
+                className="w-72 p-2 rounded-2xl bg-white/95 dark:bg-zinc-950/95 backdrop-blur-xl border border-border shadow-2xl z-50 animate-in fade-in-50 zoom-in-95 space-y-1.5"
               >
                 {/* Header */}
                 <div className="px-2 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center justify-between border-b border-border/50 pb-1.5">
@@ -168,126 +190,142 @@ export function PublicNavbar() {
                   </span>
                 </div>
 
-                {/* Group 1: کیو آر کد */}
-                <div className="space-y-1">
-                  <span className="text-[10px] font-bold text-cyan-500 px-2 flex items-center gap-1">
-                    <QrCode className="w-3 h-3" />
-                    <span>کیوآر کد (QR Code)</span>
-                  </span>
-                  <div className="grid grid-cols-2 gap-1.5 pt-0.5">
-                    <Link
-                      href="/tools/qr-maker"
-                      onClick={() => setToolsDropdownOpen(false)}
-                      className="p-2 rounded-xl hover:bg-cyan-500/10 transition-colors flex items-center gap-2 group border border-transparent hover:border-cyan-500/20"
-                    >
-                      <div className="w-7 h-7 rounded-lg bg-cyan-500/10 text-cyan-500 group-hover:bg-cyan-500 group-hover:text-white flex items-center justify-center transition-colors">
+                {/* Item 1: کیوآر کد با Flyout Submenu */}
+                <div className="relative group/qr">
+                  <div className="p-2 rounded-xl hover:bg-cyan-500/10 transition-colors flex items-center justify-between cursor-pointer border border-transparent hover:border-cyan-500/20 text-foreground group-hover/qr:text-cyan-500">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-7 h-7 rounded-lg bg-cyan-500/10 text-cyan-500 flex items-center justify-center shrink-0">
                         <QrCode className="w-3.5 h-3.5" />
                       </div>
                       <div className="min-w-0">
-                        <span className="text-xs font-bold block text-foreground group-hover:text-cyan-500 truncate">
-                          ساخت QR
-                        </span>
-                        <span className="text-[9px] text-muted-foreground block truncate">
-                          طراحی با لوگو
-                        </span>
+                        <span className="text-xs font-bold block truncate">کیوآر کد (QR Code)</span>
+                        <span className="text-[10px] text-muted-foreground block truncate">ساخت و اسکن کدهای هوشمند</span>
+                      </div>
+                    </div>
+                    {dir === 'rtl' ? (
+                      <ChevronLeft className="w-4 h-4 text-muted-foreground group-hover/qr:text-cyan-500 shrink-0" />
+                    ) : (
+                      <ChevronRight className="w-4 h-4 text-muted-foreground group-hover/qr:text-cyan-500 shrink-0" />
+                    )}
+                  </div>
+
+                  {/* Flyout Submenu for QR Code */}
+                  <div
+                    className="absolute top-0 rtl:right-full rtl:mr-1.5 ltr:left-full ltr:ml-1.5 w-52 p-2 rounded-2xl bg-white dark:bg-zinc-950 backdrop-blur-xl border border-border shadow-2xl z-50 opacity-0 pointer-events-none group-hover/qr:opacity-100 group-hover/qr:pointer-events-auto transition-all duration-150 space-y-1 before:absolute rtl:before:-right-3 ltr:before:-left-3 before:top-0 before:w-4 before:h-full"
+                  >
+                    <div className="px-2 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider border-b border-border/40 pb-1">
+                      گزینه‌های کیوآر کد
+                    </div>
+                    <Link
+                      href="/tools/qr-maker"
+                      onClick={() => setToolsDropdownOpen(false)}
+                      className="p-2 rounded-xl hover:bg-cyan-500/10 transition-colors flex items-center gap-2 text-foreground hover:text-cyan-500"
+                    >
+                      <div className="w-6 h-6 rounded-md bg-cyan-500/10 text-cyan-500 flex items-center justify-center shrink-0">
+                        <QrCode className="w-3.5 h-3.5" />
+                      </div>
+                      <div>
+                        <span className="text-xs font-bold block">ساختن کیوآر کد</span>
+                        <span className="text-[10px] text-muted-foreground block">طراحی با لوگو و اشکال</span>
                       </div>
                     </Link>
                     <Link
-                      href="/tools/qr-maker?tab=scanner"
+                      href="/tools/qr-maker?tab=scan"
                       onClick={() => setToolsDropdownOpen(false)}
-                      className="p-2 rounded-xl hover:bg-cyan-500/10 transition-colors flex items-center gap-2 group border border-transparent hover:border-cyan-500/20"
+                      className="p-2 rounded-xl hover:bg-cyan-500/10 transition-colors flex items-center gap-2 text-foreground hover:text-cyan-500"
                     >
-                      <div className="w-7 h-7 rounded-lg bg-cyan-500/10 text-cyan-500 group-hover:bg-cyan-500 group-hover:text-white flex items-center justify-center transition-colors">
+                      <div className="w-6 h-6 rounded-md bg-cyan-500/10 text-cyan-500 flex items-center justify-center shrink-0">
                         <Camera className="w-3.5 h-3.5" />
                       </div>
-                      <div className="min-w-0">
-                        <span className="text-xs font-bold block text-foreground group-hover:text-cyan-500 truncate">
-                          اسکنر QR
-                        </span>
-                        <span className="text-[9px] text-muted-foreground block truncate">
-                          اسکن با دوربین
-                        </span>
+                      <div>
+                        <span className="text-xs font-bold block">اسکن کیوآر کد</span>
+                        <span className="text-[10px] text-muted-foreground block">اسکن با دوربین / فایل</span>
                       </div>
                     </Link>
                   </div>
                 </div>
 
-                {/* Group 2: بارکد */}
-                <div className="space-y-1 pt-1 border-t border-border/40">
-                  <span className="text-[10px] font-bold text-emerald-500 px-2 flex items-center gap-1">
-                    <Barcode className="w-3 h-3" />
-                    <span>بارکد ساز جامع (Barcode)</span>
-                  </span>
-                  <div className="grid grid-cols-2 gap-1.5 pt-0.5">
-                    <Link
-                      href="/tools/barcode-maker"
-                      onClick={() => setToolsDropdownOpen(false)}
-                      className="p-2 rounded-xl hover:bg-emerald-500/10 transition-colors flex items-center gap-2 group border border-transparent hover:border-emerald-500/20"
-                    >
-                      <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-500 group-hover:bg-emerald-500 group-hover:text-white flex items-center justify-center transition-colors">
+                {/* Item 2: بارکد ساز جامع با Flyout Submenu */}
+                <div className="relative group/barcode">
+                  <div className="p-2 rounded-xl hover:bg-emerald-500/10 transition-colors flex items-center justify-between cursor-pointer border border-transparent hover:border-emerald-500/20 text-foreground group-hover/barcode:text-emerald-500">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
                         <Barcode className="w-3.5 h-3.5" />
                       </div>
                       <div className="min-w-0">
-                        <span className="text-xs font-bold block text-foreground group-hover:text-emerald-500 truncate">
-                          ساخت بارکد
-                        </span>
-                        <span className="text-[9px] text-muted-foreground block truncate">
-                          116 مدل استاندارد
-                        </span>
+                        <span className="text-xs font-bold block truncate">بارکد ساز جامع (Barcode)</span>
+                        <span className="text-[10px] text-muted-foreground block truncate">116 مدل استاندارد بین‌المللی</span>
+                      </div>
+                    </div>
+                    {dir === 'rtl' ? (
+                      <ChevronLeft className="w-4 h-4 text-muted-foreground group-hover/barcode:text-emerald-500 shrink-0" />
+                    ) : (
+                      <ChevronRight className="w-4 h-4 text-muted-foreground group-hover/barcode:text-emerald-500 shrink-0" />
+                    )}
+                  </div>
+
+                  {/* Flyout Submenu for Barcode */}
+                  <div
+                    className="absolute top-0 rtl:right-full rtl:mr-1.5 ltr:left-full ltr:ml-1.5 w-52 p-2 rounded-2xl bg-white dark:bg-zinc-950 backdrop-blur-xl border border-border shadow-2xl z-50 opacity-0 pointer-events-none group-hover/barcode:opacity-100 group-hover/barcode:pointer-events-auto transition-all duration-150 space-y-1 before:absolute rtl:before:-right-3 ltr:before:-left-3 before:top-0 before:w-4 before:h-full"
+                  >
+                    <div className="px-2 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider border-b border-border/40 pb-1">
+                      گزینه‌های بارکد ساز
+                    </div>
+                    <Link
+                      href="/tools/barcode-maker"
+                      onClick={() => setToolsDropdownOpen(false)}
+                      className="p-2 rounded-xl hover:bg-emerald-500/10 transition-colors flex items-center gap-2 text-foreground hover:text-emerald-500"
+                    >
+                      <div className="w-6 h-6 rounded-md bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
+                        <Barcode className="w-3.5 h-3.5" />
+                      </div>
+                      <div>
+                        <span className="text-xs font-bold block">ساختن بارکد</span>
+                        <span className="text-[10px] text-muted-foreground block">116 مدل در 13 دسته</span>
                       </div>
                     </Link>
                     <Link
-                      href="/tools/barcode-maker?tab=scanner"
+                      href="/tools/barcode-maker?tab=scan"
                       onClick={() => setToolsDropdownOpen(false)}
-                      className="p-2 rounded-xl hover:bg-emerald-500/10 transition-colors flex items-center gap-2 group border border-transparent hover:border-emerald-500/20"
+                      className="p-2 rounded-xl hover:bg-emerald-500/10 transition-colors flex items-center gap-2 text-foreground hover:text-emerald-500"
                     >
-                      <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-500 group-hover:bg-emerald-500 group-hover:text-white flex items-center justify-center transition-colors">
+                      <div className="w-6 h-6 rounded-md bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
                         <Scan className="w-3.5 h-3.5" />
                       </div>
-                      <div className="min-w-0">
-                        <span className="text-xs font-bold block text-foreground group-hover:text-emerald-500 truncate">
-                          اسکنر بارکد
-                        </span>
-                        <span className="text-[9px] text-muted-foreground block truncate">
-                          دوربین و تصویر
-                        </span>
+                      <div>
+                        <span className="text-xs font-bold block">اسکن بارکد</span>
+                        <span className="text-[10px] text-muted-foreground block">اسکن خطوط و کدهای 2D</span>
                       </div>
                     </Link>
                   </div>
                 </div>
 
-                {/* Group 3: امضای ایمیل */}
-                <div className="space-y-1 pt-1 border-t border-border/40">
-                  <span className="text-[10px] font-bold text-amber-500 px-2 flex items-center gap-1">
-                    <Mail className="w-3 h-3" />
-                    <span>امضای ایمیل سازمانی</span>
-                  </span>
-                  <Link
-                    href="/tools/email-signature"
-                    onClick={() => setToolsDropdownOpen(false)}
-                    className="p-2 rounded-xl hover:bg-amber-500/10 transition-colors flex items-center gap-2.5 group border border-transparent hover:border-amber-500/20"
-                  >
+                {/* Item 3: امضای ایمیل سازمانی */}
+                <Link
+                  href="/tools/email-signature"
+                  onClick={() => setToolsDropdownOpen(false)}
+                  className="p-2 rounded-xl hover:bg-amber-500/10 transition-colors flex items-center justify-between border border-transparent hover:border-amber-500/20 text-foreground hover:text-amber-500 group"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
                     <div className="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-500 group-hover:bg-amber-500 group-hover:text-white flex items-center justify-center transition-colors shrink-0">
                       <Mail className="w-3.5 h-3.5" />
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-foreground group-hover:text-amber-500 truncate">
-                          ساخت امضای رسمی ایمیل
-                        </span>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-bold truncate">امضای ایمیل رسمی</span>
                         <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-amber-500/15 text-amber-500 font-mono">
                           NEW
                         </span>
                       </div>
                       <span className="text-[10px] text-muted-foreground block truncate">
-                        قالب‌های استاندارد HTML برای جیمیل و اوت‌لوک
+                        قالب‌های استاندارد HTML
                       </span>
                     </div>
-                  </Link>
-                </div>
+                  </div>
+                </Link>
 
-                {/* Footer: تاریخچه ابزارهای من */}
-                <div className="pt-1.5 border-t border-border/60">
+                {/* Item 4: تاریخچه ابزارهای من */}
+                <div className="pt-1.5 border-t border-border/50">
                   <Link
                     href="/tools/history"
                     onClick={() => setToolsDropdownOpen(false)}
@@ -408,7 +446,7 @@ export function PublicNavbar() {
                   <span>ساخت QR کد</span>
                 </Link>
                 <Link
-                  href="/tools/qr-maker?tab=scanner"
+                  href="/tools/qr-maker?tab=scan"
                   onClick={() => setMobileMenuOpen(false)}
                   className="flex items-center gap-2 p-2 rounded-xl bg-muted/40 hover:bg-cyan-500/10 text-xs font-semibold text-foreground transition-colors"
                 >
@@ -424,7 +462,7 @@ export function PublicNavbar() {
                   <span>ساخت بارکد</span>
                 </Link>
                 <Link
-                  href="/tools/barcode-maker?tab=scanner"
+                  href="/tools/barcode-maker?tab=scan"
                   onClick={() => setMobileMenuOpen(false)}
                   className="flex items-center gap-2 p-2 rounded-xl bg-muted/40 hover:bg-emerald-500/10 text-xs font-semibold text-foreground transition-colors"
                 >

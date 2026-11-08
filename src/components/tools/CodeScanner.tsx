@@ -62,23 +62,36 @@ export function CodeScanner({
   const isMountedRef = useRef<boolean>(true);
   const scannerContainerId = 'code-scanner-camera-viewport';
 
-  // Helper to immediately kill all MediaStream tracks and turn off webcam LED
+  // Helper to immediately kill all MediaStream tracks and turn off webcam LED synchronously
   const killAllMediaTracks = useCallback(() => {
     try {
+      const videos = document.querySelectorAll<HTMLVideoElement>('video');
+      videos.forEach((video) => {
+        const stream = video.srcObject as MediaStream | null;
+        if (stream && stream.getTracks) {
+          stream.getTracks().forEach((track) => {
+            try {
+              track.stop();
+            } catch (e) {}
+          });
+        }
+        video.srcObject = null;
+      });
+
       const container = document.getElementById(scannerContainerId);
       if (container) {
-        const videos = container.getElementsByTagName('video');
-        for (let i = 0; i < videos.length; i++) {
-          const video = videos[i];
-          const stream = video.srcObject as MediaStream | null;
-          if (stream && stream.getTracks) {
-            stream.getTracks().forEach((track) => {
+        const cVideos = container.getElementsByTagName('video');
+        for (let i = 0; i < cVideos.length; i++) {
+          const v = cVideos[i];
+          const st = v.srcObject as MediaStream | null;
+          if (st && st.getTracks) {
+            st.getTracks().forEach((tr) => {
               try {
-                track.stop();
+                tr.stop();
               } catch (e) {}
             });
           }
-          video.srcObject = null;
+          v.srcObject = null;
         }
       }
     } catch (err) {}
@@ -145,6 +158,7 @@ export function CodeScanner({
 
   // Stop camera helper
   const stopCamera = useCallback(async () => {
+    killAllMediaTracks();
     const scanner = html5QrCodeRef.current;
     if (scanner) {
       try {
@@ -339,23 +353,28 @@ export function CodeScanner({
 
     return () => {
       isMountedRef.current = false;
+      killAllMediaTracks();
       const scanner = html5QrCodeRef.current;
       if (scanner) {
         try {
           if (scanner.isScanning) {
-            scanner.stop().catch(() => {}).then(() => {
-              try {
-                scanner.clear();
-              } catch (e) {}
-            });
+            scanner
+              .stop()
+              .catch(() => {})
+              .finally(() => {
+                try {
+                  scanner.clear();
+                } catch (e) {}
+                killAllMediaTracks();
+              });
           } else {
             try {
               scanner.clear();
             } catch (e) {}
+            killAllMediaTracks();
           }
         } catch (err) {}
       }
-      killAllMediaTracks();
       setIsCameraActive(false);
     };
   }, [scanMode, decodedResult, startCamera, stopCamera, killAllMediaTracks]);
@@ -366,23 +385,28 @@ export function CodeScanner({
 
     return () => {
       isMountedRef.current = false;
+      killAllMediaTracks();
       const scanner = html5QrCodeRef.current;
       if (scanner) {
         try {
           if (scanner.isScanning) {
-            scanner.stop().catch(() => {}).then(() => {
-              try {
-                scanner.clear();
-              } catch (e) {}
-            });
+            scanner
+              .stop()
+              .catch(() => {})
+              .finally(() => {
+                try {
+                  scanner.clear();
+                } catch (e) {}
+                killAllMediaTracks();
+              });
           } else {
             try {
               scanner.clear();
             } catch (e) {}
+            killAllMediaTracks();
           }
         } catch (err) {}
       }
-      killAllMediaTracks();
       setIsCameraActive(false);
     };
   }, [killAllMediaTracks]);
