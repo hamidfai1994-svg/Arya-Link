@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import OpenAI from 'openai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,14 +42,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const rawApiKey = process.env.OPENROUTER_API_KEY || '';
+    const rawApiKey = process.env.GEMINI_API_KEY || '';
     const apiKey = rawApiKey.replace(/["'\r\n]/g, '').trim();
 
     if (!apiKey) {
       return NextResponse.json(
         {
           success: false,
-          message: 'کلید وب‌سرویس هوش مصنوعی (OPENROUTER_API_KEY) در متغیرهای سرور تنظیم نشده است.',
+          message: 'کلید وب‌سرویس هوش مصنوعی (GEMINI_API_KEY) در متغیرهای سرور تنظیم نشده است.',
         },
         { status: 503 }
       );
@@ -104,14 +104,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const openai = new OpenAI({
-      baseURL: 'https://openrouter.ai/api/v1',
-      apiKey: apiKey,
-      defaultHeaders: {
-        'HTTP-Referer': 'https://aryalink.com',
-        'X-Title': 'AryaLink KYC Assistant',
-      },
-    });
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
     const prompt = `شما یک دستیار هوشمند و بسیار دقیق در زمینه استخراج اطلاعات از مدارک هویتی (تذکره الکترونیکی یا کاغذی افغانستان، پاسپورت، گواهینامه و کارت ملی) هستید.
 زبان متن سند ممکن است فارسی، دری، پشتو یا انگلیسی باشد.
@@ -131,38 +125,25 @@ export async function POST(req: NextRequest) {
 ۳. در صورت نبود یا ناخوانا بودن هر مورد، مقدار آن را یک رشته خالی "" قرار بده.
 ۴. شما به هیچ وجه حق تصمیم‌گیری، تایید یا رد هویت کاربر را ندارید؛ وظیفه شما صرفاً استخراج دقیق حروف و ارقام مندرج روی مدرک برای پیش‌نویس کردن فیلدها جهت بررسی توسط مدیر است.`;
 
-    const imageUrlData = `data:${mimeType};base64,${base64Data}`;
-
-    const completion = await openai.chat.completions.create({
-      model: 'google/gemini-1.5-flash:free',
-      temperature: 0.1,
-      messages: [
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'text',
-              text: prompt,
-            },
-            {
-              type: 'image_url',
-              image_url: {
-                url: imageUrlData,
-              },
-            },
-          ],
+    const result = await model.generateContent([
+      prompt,
+      {
+        inlineData: {
+          data: base64Data,
+          mimeType: 'image/jpeg',
         },
-      ],
-    });
+      },
+    ]);
 
-    const rawText = completion.choices[0]?.message?.content?.trim() || '{}';
+    const response = await result.response;
+    const rawText = response.text()?.trim() || '{}';
     const cleanedText = cleanJsonOutput(rawText);
 
     let parsedResult: any = {};
     try {
       parsedResult = JSON.parse(cleanedText);
     } catch {
-      console.warn('[OpenRouter KYC] JSON parse fallback via regex:', rawText);
+      console.warn('[Gemini KYC] JSON parse fallback via regex:', rawText);
       const fnMatch = rawText.match(/"firstName"\s*:\s*"([^"]*)"/);
       const lnMatch = rawText.match(/"lastName"\s*:\s*"([^"]*)"/);
       const faMatch = rawText.match(/"fatherName"\s*:\s*"([^"]*)"/);
@@ -199,15 +180,15 @@ export async function POST(req: NextRequest) {
       message: 'اطلاعات هویتی با موفقیت توسط هوش مصنوعی استخراج شد.',
     });
   } catch (error: any) {
-    console.error('OpenRouter KYC Assistant error:', error);
+    console.error('Gemini KYC Assistant error:', error);
 
     const errMsg = error?.message || (typeof error === 'string' ? error : '');
     const status = error?.status;
 
-    let userFriendlyMessage = 'خطا در تحلیل تصویر مدرک با هوش مصنوعی OpenRouter.';
-    if (status === 401 || errMsg.includes('401') || errMsg.includes('invalid_api_key')) {
+    let userFriendlyMessage = 'خطا در تحلیل تصویر مدرک با هوش مصنوعی جمنای.';
+    if (status === 401 || errMsg.includes('401') || errMsg.includes('API_KEY_INVALID') || errMsg.includes('API key not valid')) {
       userFriendlyMessage = 'کلید API هوش مصنوعی در سرور نامعتبر است.';
-    } else if (status === 429 || errMsg.includes('429') || errMsg.includes('rate limit')) {
+    } else if (status === 429 || errMsg.includes('429') || errMsg.includes('RESOURCE_EXHAUSTED')) {
       userFriendlyMessage = 'سقف مجاز درخواست‌های مدل هوش مصنوعی در این لحظه تکمیل شده است. لطفاً دقایقی دیگر تلاش فرمایید.';
     } else if (errMsg) {
       userFriendlyMessage = `خطا در استخراج اطلاعات مدرک: ${errMsg}`;

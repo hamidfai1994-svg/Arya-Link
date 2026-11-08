@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import OpenAI from 'openai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,23 +41,23 @@ export async function POST(req: NextRequest) {
 
     // Allow authenticated web users, Telegram mini-app requests, or local development
     if (!session?.user && !authHeader && !initDataHeader && !isDev) {
-      console.warn('[OpenRouter OCR] Unauthenticated request rejected.');
+      console.warn('[Gemini OCR] Unauthenticated request rejected.');
       return NextResponse.json(
         { success: false, data: null, message: 'لطفاً ابتدا وارد حساب کاربری خود شوید.' },
         { status: 401 }
       );
     }
 
-    const rawApiKey = process.env.OPENROUTER_API_KEY || '';
+    const rawApiKey = process.env.GEMINI_API_KEY || '';
     const apiKey = rawApiKey.replace(/["'\r\n]/g, '').trim();
 
     if (!apiKey) {
-      console.error('[OpenRouter OCR Error] OPENROUTER_API_KEY is not defined in environment variables.');
+      console.error('[Gemini OCR Error] GEMINI_API_KEY is not defined in environment variables.');
       return NextResponse.json(
         {
           success: false,
           data: null,
-          message: 'کلید وب‌سرویس هوش مصنوعی (OPENROUTER_API_KEY) در سرور تنظیم نشده است.',
+          message: 'کلید وب‌سرویس هوش مصنوعی (GEMINI_API_KEY) در سرور تنظیم نشده است.',
         },
         { status: 503 }
       );
@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
         const buffer = await imageRes.arrayBuffer();
         base64Data = Buffer.from(buffer).toString('base64');
       } catch (err: any) {
-        console.error('[OpenRouter OCR Error] Failed to fetch image URL:', err);
+        console.error('[Gemini OCR Error] Failed to fetch image URL:', err);
         return NextResponse.json(
           { success: false, data: null, message: 'خطا در بارگیری آدرس اینترنتی تصویر کارت.', error: err?.message },
           { status: 400 }
@@ -113,15 +113,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Initialize OpenAI Client for OpenRouter
-    const openai = new OpenAI({
-      baseURL: 'https://openrouter.ai/api/v1',
-      apiKey: apiKey,
-      defaultHeaders: {
-        'HTTP-Referer': 'https://aryalink.com',
-        'X-Title': 'AryaLink OCR Scanner',
-      },
-    });
+    // Initialize Google Generative AI Client
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
     const prompt = `شما یک مدل هوش مصنوعی بینایی ماشین با دقت ۱۰۰٪ برای خواندن و استخراج اطلاعات از کارت‌های ویزیت هستید.
 متن این کارت ویزیت را بخوان و فقط یک آبجکت JSON با کلیدهای name, phone, email, website, company, job_title, socials برگردان. زبان کارت ممکن است فارسی، دری، پشتو یا انگلیسی باشد.
@@ -153,38 +147,25 @@ export async function POST(req: NextRequest) {
   }
 }`;
 
-    const imageUrlData = `data:${mimeType};base64,${base64Data}`;
-
-    const completion = await openai.chat.completions.create({
-      model: 'google/gemini-1.5-flash:free',
-      temperature: 0.1,
-      messages: [
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'text',
-              text: prompt,
-            },
-            {
-              type: 'image_url',
-              image_url: {
-                url: imageUrlData,
-              },
-            },
-          ],
+    const result = await model.generateContent([
+      prompt,
+      {
+        inlineData: {
+          data: base64Data,
+          mimeType: 'image/jpeg',
         },
-      ],
-    });
+      },
+    ]);
 
-    const rawText = completion.choices[0]?.message?.content?.trim() || '{}';
+    const response = await result.response;
+    const rawText = response.text()?.trim() || '{}';
     const cleanedText = cleanJsonOutput(rawText);
 
     let parsedResult: any = {};
     try {
       parsedResult = JSON.parse(cleanedText);
     } catch {
-      console.warn('[OpenRouter OCR] JSON parse fallback via regex:', rawText);
+      console.warn('[Gemini OCR] JSON parse fallback via regex:', rawText);
       const nameMatch = rawText.match(/"name"\s*:\s*"([^"]*)"/);
       const phoneMatch = rawText.match(/"phone"\s*:\s*"([^"]*)"/);
       const emailMatch = rawText.match(/"email"\s*:\s*"([^"]*)"/);
@@ -221,10 +202,10 @@ export async function POST(req: NextRequest) {
         job_title,
         socials,
       },
-      message: 'کارت ویزیت با موفقیت توسط هوش مصنوعی OpenRouter تحلیل شد.',
+      message: 'کارت ویزیت با موفقیت توسط هوش مصنوعی تحلیل شد.',
     });
   } catch (error: any) {
-    console.error('[OpenRouter OCR Error Detailed Log]:', {
+    console.error('[Gemini OCR Error Detailed Log]:', {
       message: error?.message,
       status: error?.status,
       stack: error?.stack,
@@ -233,13 +214,13 @@ export async function POST(req: NextRequest) {
     const errMsg = error?.message || (typeof error === 'string' ? error : '');
     const status = error?.status;
 
-    let userFriendlyMessage = 'خطا در تحلیل تصویر کارت ویزیت با هوش مصنوعی OpenRouter.';
-    if (status === 401 || errMsg.includes('401') || errMsg.includes('User key not found') || errMsg.includes('invalid_api_key')) {
-      userFriendlyMessage = 'کلید وب‌سرویس OpenRouter نامعتبر است. لطفاً کلید معتبر در فایل env تنظیم نمایید.';
-    } else if (status === 429 || errMsg.includes('429') || errMsg.includes('rate limit')) {
-      userFriendlyMessage = 'سقف مجاز درخواست‌های مدل رایگان OpenRouter در این لحظه تکمیل شده است. لطفاً دقایقی دیگر مجدداً تلاش کنید.';
-    } else if (status === 403 || errMsg.includes('403')) {
-      userFriendlyMessage = 'دسترسی به این مدل در OpenRouter مسدود است.';
+    let userFriendlyMessage = 'خطا در تحلیل تصویر کارت ویزیت با هوش مصنوعی جمنای.';
+    if (status === 401 || errMsg.includes('401') || errMsg.includes('API_KEY_INVALID') || errMsg.includes('API key not valid')) {
+      userFriendlyMessage = 'کلید وب‌سرویس گوگل جمنای نامعتبر است. لطفاً کلید معتبر را در فایل env تنظیم نمایید.';
+    } else if (status === 429 || errMsg.includes('429') || errMsg.includes('RESOURCE_EXHAUSTED')) {
+      userFriendlyMessage = 'سقف مجاز درخواست‌های مدل جمنای در این لحظه تکمیل شده است. لطفاً دقایقی دیگر مجدداً تلاش کنید.';
+    } else if (status === 403 || errMsg.includes('403') || errMsg.includes('PERMISSION_DENIED')) {
+      userFriendlyMessage = 'دسترسی به سرویس جمنای با محدودیت مواجه شده است.';
     } else if (errMsg) {
       userFriendlyMessage = `خطا در اسکن تصویر کارت ویزیت: ${errMsg}`;
     }

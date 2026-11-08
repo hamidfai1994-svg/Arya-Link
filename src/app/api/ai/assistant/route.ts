@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import OpenAI from 'openai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,23 +13,23 @@ export async function POST(req: NextRequest) {
     const isDev = process.env.NODE_ENV !== 'production';
 
     if (!session?.user && !authHeader && !initDataHeader && !isDev) {
-      console.warn('[OpenRouter Assistant] Unauthenticated request rejected.');
+      console.warn('[Gemini Assistant] Unauthenticated request rejected.');
       return NextResponse.json(
         { success: false, data: null, message: 'لطفاً ابتدا وارد حساب کاربری خود شوید.' },
         { status: 401 }
       );
     }
 
-    const rawApiKey = process.env.OPENROUTER_API_KEY || '';
+    const rawApiKey = process.env.GEMINI_API_KEY || '';
     const apiKey = rawApiKey.replace(/["'\r\n]/g, '').trim();
 
     if (!apiKey) {
-      console.error('[OpenRouter Assistant Error] OPENROUTER_API_KEY is not configured.');
+      console.error('[Gemini Assistant Error] GEMINI_API_KEY is not configured.');
       return NextResponse.json(
         {
           success: false,
           data: null,
-          message: 'کلید وب‌سرویس هوش مصنوعی (OPENROUTER_API_KEY) در متغیرهای محیطی سیستم تنظیم نشده است.',
+          message: 'کلید وب‌سرویس هوش مصنوعی (GEMINI_API_KEY) در متغیرهای محیطی سیستم تنظیم نشده است.',
         },
         { status: 503 }
       );
@@ -38,14 +38,8 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => ({}));
     const { action, headline, currentText, displayName } = body;
 
-    const openai = new OpenAI({
-      baseURL: 'https://openrouter.ai/api/v1',
-      apiKey: apiKey,
-      defaultHeaders: {
-        'HTTP-Referer': 'https://aryalink.com',
-        'X-Title': 'AryaLink',
-      },
-    });
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
     let prompt = '';
 
@@ -83,23 +77,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const completion = await openai.chat.completions.create({
-      model: 'google/gemini-1.5-flash:free',
-      temperature: 0.7,
-      max_tokens: 350,
-      messages: [
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-    });
-
-    const generatedText = completion.choices[0]?.message?.content?.trim() || '';
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const generatedText = response.text()?.trim() || '';
 
     // Remove code block markers or wrapping quotes if AI included them
     const cleanText = generatedText
-      .replace(/^```[a-z]*\s*/i, '')
+      .replace(/^```(?:json|[a-z]*)\s*/i, '')
       .replace(/\s*```$/i, '')
       .replace(/^["'«]+|["'»]+$/g, '')
       .trim();
@@ -111,7 +95,7 @@ export async function POST(req: NextRequest) {
       message: 'متن با موفقیت توسط هوش مصنوعی تولید شد.',
     });
   } catch (error: any) {
-    console.error('[OpenRouter AI Assistant Error Detailed Log]:', {
+    console.error('[Gemini AI Assistant Error Detailed Log]:', {
       message: error?.message,
       status: error?.status,
       stack: error?.stack,
@@ -120,13 +104,13 @@ export async function POST(req: NextRequest) {
     const errMsg = error?.message || (typeof error === 'string' ? error : '');
     const status = error?.status;
 
-    let userFriendlyMessage = 'خطا در ارتباط با سرویس هوش مصنوعی OpenRouter.';
-    if (status === 401 || errMsg.includes('401') || errMsg.includes('User key not found') || errMsg.includes('invalid_api_key')) {
-      userFriendlyMessage = 'کلید API هوش مصنوعی در سرور نامعتبر است. لطفاً کلید OpenRouter را در تنظیمات بررسی کنید.';
-    } else if (status === 429 || errMsg.includes('429') || errMsg.includes('rate limit')) {
+    let userFriendlyMessage = 'خطا در ارتباط با سرویس هوش مصنوعی گوگل جمنای.';
+    if (status === 401 || errMsg.includes('401') || errMsg.includes('API_KEY_INVALID') || errMsg.includes('API key not valid')) {
+      userFriendlyMessage = 'کلید API هوش مصنوعی در سرور نامعتبر است. لطفاً کلید GEMINI_API_KEY را در تنظیمات بررسی کنید.';
+    } else if (status === 429 || errMsg.includes('429') || errMsg.includes('RESOURCE_EXHAUSTED')) {
       userFriendlyMessage = 'محدودیت تعداد درخواست هوش مصنوعی تکمیل شده است. لطفاً دقایقی دیگر مجدداً تلاش کنید.';
-    } else if (status === 403 || errMsg.includes('403')) {
-      userFriendlyMessage = 'دسترسی به این مدل هوش مصنوعی در OpenRouter مسدود است.';
+    } else if (status === 403 || errMsg.includes('403') || errMsg.includes('PERMISSION_DENIED')) {
+      userFriendlyMessage = 'دسترسی به سرویس جمنای با محدودیت مواجه شده است.';
     } else if (errMsg) {
       userFriendlyMessage = `خطا در پردازش هوش مصنوعی: ${errMsg}`;
     }
