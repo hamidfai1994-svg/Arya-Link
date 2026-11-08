@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,54 +31,6 @@ function cleanJsonOutput(rawText: string): string {
   return rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
 }
 
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-function isServerError(error: any): boolean {
-  const status = error?.status || error?.statusCode;
-  const msg = (error?.message || '').toLowerCase();
-
-  if (typeof status === 'number' && status >= 500 && status < 600) {
-    return true;
-  }
-
-  return (
-    msg.includes('503') ||
-    msg.includes('500') ||
-    msg.includes('502') ||
-    msg.includes('504') ||
-    msg.includes('service unavailable') ||
-    msg.includes('overloaded') ||
-    msg.includes('high demand') ||
-    msg.includes('unavailable') ||
-    msg.includes('resource_exhausted') ||
-    msg.includes('resource exhausted') ||
-    msg.includes('rate limit')
-  );
-}
-
-async function generateWithRetry<T>(fn: () => Promise<T>, maxRetries = 2, delayMs = 500): Promise<T> {
-  let lastError: any = null;
-
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      return await fn();
-    } catch (err: any) {
-      lastError = err;
-      console.warn(`[Gemini KYC] Attempt ${attempt}/${maxRetries} failed with error:`, err?.message || err);
-
-      if (attempt < maxRetries && isServerError(err)) {
-        console.info(`[Gemini KYC] Retrying in ${delayMs}ms (attempt ${attempt + 1}/${maxRetries})...`);
-        await sleep(delayMs);
-        continue;
-      }
-
-      throw err;
-    }
-  }
-
-  throw lastError;
-}
-
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -90,16 +41,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const rawApiKey = process.env.GEMINI_API_KEY || '';
+    const rawApiKey = process.env.OPENROUTER_API_KEY || '';
     const apiKey = rawApiKey.replace(/["'\r\n]/g, '').trim();
 
     if (!apiKey) {
       return NextResponse.json(
         {
           success: false,
-          message: 'کلید وب‌سرویس هوش مصنوعی (GEMINI_API_KEY) در متغیرهای سرور تنظیم نشده است.',
+          message: 'کلید وب‌سرویس هوش مصنوعی (OPENROUTER_API_KEY) در متغیرهای سرور تنظیم نشده است.',
         },
-        { status: 503 }
+        { status: 500 }
       );
     }
 
@@ -125,6 +76,7 @@ export async function POST(req: NextRequest) {
         const buffer = await imageRes.arrayBuffer();
         base64Data = Buffer.from(buffer).toString('base64');
       } catch (err: any) {
+        console.error('[OpenRouter KYC Error] Failed to fetch image URL:', err);
         return NextResponse.json(
           { success: false, message: 'خطا در بارگیری آدرس اینترنتی تصویر مدرک.', error: err?.message },
           { status: 400 }
@@ -152,18 +104,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-flash',
-      generationConfig: {
-        maxOutputTokens: 800,
-        temperature: 0.1,
-      },
-    });
-
     const prompt = `شما یک دستیار هوشمند و بسیار دقیق در زمینه استخراج اطلاعات از مدارک هویتی (تذکره الکترونیکی یا کاغذی افغانستان، پاسپورت، گواهینامه و کارت ملی) هستید.
 زبان متن سند ممکن است فارسی، دری، پشتو یا انگلیسی باشد.
-تصویر این مدرک هویتی را بخوان و فقط و فقط یک آبجکت JSON معتبر شامل دقیقاً این ۶ کلید برگردان:
+تصویر این مدرک هویتی را بخوان و فقط و فقط یک آبجکت JSON معتبر شامل دقیقاً این 6 کلید برگردان:
 {
   "firstName": "",
   "lastName": "",
@@ -174,32 +117,60 @@ export async function POST(req: NextRequest) {
 }
 
 قوانین امنیتی و حیاتی:
-۱. خروجی باید منحصراً یک JSON معتبر باشد بدون علامت نقل‌قول مارک‌داون یا توضیحات جانبی.
-۲. تمام اعداد، شماره تذکره/پاسپورت و تاریخ‌ها باید صرفاً با ارقام انگلیسی (0123456789) نوشته شوند.
-۳. در صورت نبود یا ناخوانا بودن هر مورد، مقدار آن را یک رشته خالی "" قرار بده.
-۴. شما به هیچ وجه حق تصمیم‌گیری، تایید یا رد هویت کاربر را ندارید؛ وظیفه شما صرفاً استخراج دقیق حروف و ارقام مندرج روی مدرک برای پیش‌نویس کردن فیلدها جهت بررسی توسط مدیر است.`;
+1. خروجی باید منحصراً یک JSON معتبر باشد بدون علامت نقل‌قول مارک‌داون یا توضیحات جانبی.
+2. تمام اعداد، شماره تذکره/پاسپورت و تاریخ‌ها باید صرفاً با ارقام انگلیسی (0123456789) نوشته شوند.
+3. در صورت نبود یا ناخوانا بودن هر مورد، مقدار آن را یک رشته خالی "" قرار بده.
+4. شما به هیچ وجه حق تصمیم‌گیری، تایید یا رد هویت کاربر را ندارید؛ وظیفه شما صرفاً استخراج دقیق حروف و ارقام مندرج روی مدرک برای پیش‌نویس کردن فیلدها جهت بررسی توسط مدیر است.`;
 
-    const result = await generateWithRetry(() =>
-      model.generateContent([
-        prompt,
-        {
-          inlineData: {
-            data: base64Data,
-            mimeType: 'image/jpeg',
+    const formattedImageDataUrl = `data:${mimeType || 'image/jpeg'};base64,${base64Data}`;
+
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'HTTP-Referer': 'https://aryalink.com',
+        'X-Title': 'Arya Link',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-1.5-flash',
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: prompt,
+              },
+              {
+                type: 'image_url',
+                image_url: {
+                  url: formattedImageDataUrl,
+                },
+              },
+            ],
           },
-        },
-      ])
-    );
+        ],
+        temperature: 0.1,
+        max_tokens: 800,
+      }),
+    });
 
-    const response = await result.response;
-    const rawText = response.text()?.trim() || '{}';
+    if (!response.ok) {
+      const errBody = await response.json().catch(() => ({}));
+      const errMsg = errBody?.error?.message || `OpenRouter API error: HTTP ${response.status} ${response.statusText}`;
+      throw new Error(errMsg);
+    }
+
+    const result = await response.json();
+    const rawText = result?.choices?.[0]?.message?.content?.trim() || '{}';
     const cleanedText = cleanJsonOutput(rawText);
 
     let parsedResult: any = {};
     try {
       parsedResult = JSON.parse(cleanedText);
     } catch {
-      console.warn('[Gemini KYC] JSON parse fallback via regex:', rawText);
+      console.warn('[OpenRouter KYC] JSON parse fallback via regex:', rawText);
       const fnMatch = rawText.match(/"firstName"\s*:\s*"([^"]*)"/);
       const lnMatch = rawText.match(/"lastName"\s*:\s*"([^"]*)"/);
       const faMatch = rawText.match(/"fatherName"\s*:\s*"([^"]*)"/);
@@ -236,30 +207,11 @@ export async function POST(req: NextRequest) {
       message: 'اطلاعات هویتی با موفقیت توسط هوش مصنوعی استخراج شد.',
     });
   } catch (error: any) {
-    console.error('Gemini KYC Assistant error:', error);
-
-    const errMsg = error?.message || (typeof error === 'string' ? error : '');
-    const status = error?.status;
-
-    let userFriendlyMessage = 'خطا در تحلیل تصویر مدرک با هوش مصنوعی جمنای.';
-    if (isServerError(error)) {
-      userFriendlyMessage = 'سرورهای هوش مصنوعی در حال حاضر شلوغ هستند. لطفاً چند لحظه دیگر دوباره امتحان کنید.';
-    } else if (status === 401 || errMsg.includes('401') || errMsg.includes('API_KEY_INVALID') || errMsg.includes('API key not valid')) {
-      userFriendlyMessage = 'کلید API هوش مصنوعی در سرور نامعتبر است.';
-    } else if (status === 429 || errMsg.includes('429') || errMsg.includes('RESOURCE_EXHAUSTED')) {
-      userFriendlyMessage = 'سقف مجاز درخواست‌های مدل هوش مصنوعی در این لحظه تکمیل شده است. لطفاً دقایقی دیگر تلاش فرمایید.';
-    } else if (errMsg) {
-      userFriendlyMessage = `خطا در استخراج اطلاعات مدرک: ${errMsg}`;
-    }
+    console.error('RAW_OPENROUTER_ERROR:', error);
 
     return NextResponse.json(
-      {
-        success: false,
-        message: userFriendlyMessage,
-        error: errMsg || 'KYC extraction failed',
-      },
-      { status: typeof status === 'number' && status >= 400 && status < 600 ? status : (isServerError(error) ? 503 : 500) }
+      { success: false, message: error instanceof Error ? error.message : String(error) },
+      { status: 500 }
     );
   }
 }
-

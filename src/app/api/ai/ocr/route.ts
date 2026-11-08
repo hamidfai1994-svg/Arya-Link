@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,63 +31,14 @@ function cleanJsonOutput(rawText: string): string {
   return rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
 }
 
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-function isServerError(error: any): boolean {
-  const status = error?.status || error?.statusCode;
-  const msg = (error?.message || '').toLowerCase();
-
-  if (typeof status === 'number' && status >= 500 && status < 600) {
-    return true;
-  }
-
-  return (
-    msg.includes('503') ||
-    msg.includes('500') ||
-    msg.includes('502') ||
-    msg.includes('504') ||
-    msg.includes('service unavailable') ||
-    msg.includes('overloaded') ||
-    msg.includes('high demand') ||
-    msg.includes('unavailable') ||
-    msg.includes('resource_exhausted') ||
-    msg.includes('resource exhausted') ||
-    msg.includes('rate limit')
-  );
-}
-
-async function generateWithRetry<T>(fn: () => Promise<T>, maxRetries = 2, delayMs = 500): Promise<T> {
-  let lastError: any = null;
-
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      return await fn();
-    } catch (err: any) {
-      lastError = err;
-      console.warn(`[Gemini OCR] Attempt ${attempt}/${maxRetries} failed with error:`, err?.message || err);
-
-      if (attempt < maxRetries && isServerError(err)) {
-        console.info(`[Gemini OCR] Retrying in ${delayMs}ms (attempt ${attempt + 1}/${maxRetries})...`);
-        await sleep(delayMs);
-        continue;
-      }
-
-      throw err;
-    }
-  }
-
-  throw lastError;
-}
-
 export async function POST(req: NextRequest) {
-  console.log("Checking API Key in Backend:", !!process.env.GEMINI_API_KEY);
-
-  const rawApiKey = process.env.GEMINI_API_KEY || '';
+  const rawApiKey = process.env.OPENROUTER_API_KEY || '';
   const apiKey = rawApiKey.replace(/["'\r\n]/g, '').trim();
 
-  if (!process.env.GEMINI_API_KEY || !apiKey) {
+  if (!process.env.OPENROUTER_API_KEY || !apiKey) {
+    console.error('[OpenRouter OCR] OPENROUTER_API_KEY is not defined in environment variables.');
     return NextResponse.json(
-      { success: false, data: null, message: "API Key is missing in server environment" },
+      { success: false, data: null, message: 'OPENROUTER_API_KEY is missing in server environment' },
       { status: 500 }
     );
   }
@@ -101,7 +51,7 @@ export async function POST(req: NextRequest) {
 
     // Allow authenticated web users, Telegram mini-app requests, or local development
     if (!session?.user && !authHeader && !initDataHeader && !isDev) {
-      console.warn('[Gemini OCR] Unauthenticated request rejected.');
+      console.warn('[OpenRouter OCR] Unauthenticated request rejected.');
       return NextResponse.json(
         { success: false, data: null, message: 'لطفاً ابتدا وارد حساب کاربری خود شوید.' },
         { status: 401 }
@@ -130,7 +80,7 @@ export async function POST(req: NextRequest) {
         const buffer = await imageRes.arrayBuffer();
         base64Data = Buffer.from(buffer).toString('base64');
       } catch (err: any) {
-        console.error('[Gemini OCR Error] Failed to fetch image URL:', err);
+        console.error('[OpenRouter OCR Error] Failed to fetch image URL:', err);
         return NextResponse.json(
           { success: false, data: null, message: 'خطا در بارگیری آدرس اینترنتی تصویر کارت.', error: err?.message },
           { status: 400 }
@@ -157,16 +107,6 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-
-    // Initialize Google Generative AI Client
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-flash',
-      generationConfig: {
-        maxOutputTokens: 800,
-        temperature: 0.1,
-      },
-    });
 
     const prompt = `شما یک مدل هوش مصنوعی بینایی ماشین با دقت 100% برای خواندن و استخراج اطلاعات از کارت‌های ویزیت هستید.
 متن این کارت ویزیت را بخوان و فقط یک آبجکت JSON با کلیدهای name, phone, email, website, company, job_title, socials برگردان. زبان کارت ممکن است فارسی، دری، پشتو یا انگلیسی باشد.
@@ -198,27 +138,55 @@ export async function POST(req: NextRequest) {
   }
 }`;
 
-    const result = await generateWithRetry(() =>
-      model.generateContent([
-        prompt,
-        {
-          inlineData: {
-            data: base64Data,
-            mimeType: 'image/jpeg',
-          },
-        },
-      ])
-    );
+    const formattedImageDataUrl = `data:${mimeType || 'image/jpeg'};base64,${base64Data}`;
 
-    const response = await result.response;
-    const rawText = response.text()?.trim() || '{}';
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'HTTP-Referer': 'https://aryalink.com',
+        'X-Title': 'Arya Link',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-1.5-flash',
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: prompt,
+              },
+              {
+                type: 'image_url',
+                image_url: {
+                  url: formattedImageDataUrl,
+                },
+              },
+            ],
+          },
+        ],
+        temperature: 0.1,
+        max_tokens: 1000,
+      }),
+    });
+
+    if (!response.ok) {
+      const errBody = await response.json().catch(() => ({}));
+      const errMsg = errBody?.error?.message || `OpenRouter API error: HTTP ${response.status} ${response.statusText}`;
+      throw new Error(errMsg);
+    }
+
+    const result = await response.json();
+    const rawText = result?.choices?.[0]?.message?.content?.trim() || '{}';
     const cleanedText = cleanJsonOutput(rawText);
 
     let parsedResult: any = {};
     try {
       parsedResult = JSON.parse(cleanedText);
     } catch {
-      console.warn('[Gemini OCR] JSON parse fallback via regex:', rawText);
+      console.warn('[OpenRouter OCR] JSON parse fallback via regex:', rawText);
       const nameMatch = rawText.match(/"name"\s*:\s*"([^"]*)"/);
       const phoneMatch = rawText.match(/"phone"\s*:\s*"([^"]*)"/);
       const emailMatch = rawText.match(/"email"\s*:\s*"([^"]*)"/);
@@ -258,36 +226,11 @@ export async function POST(req: NextRequest) {
       message: 'کارت ویزیت با موفقیت توسط هوش مصنوعی تحلیل شد.',
     });
   } catch (error: any) {
-    console.error('[Gemini OCR Error Detailed Log]:', {
-      message: error?.message,
-      status: error?.status,
-      stack: error?.stack,
-    });
-
-    const errMsg = error?.message || (typeof error === 'string' ? error : '');
-    const status = error?.status;
-
-    let userFriendlyMessage = 'خطا در تحلیل تصویر کارت ویزیت با هوش مصنوعی جمنای.';
-    if (isServerError(error)) {
-      userFriendlyMessage = 'سرورهای هوش مصنوعی در حال حاضر شلوغ هستند. لطفاً چند لحظه دیگر دوباره امتحان کنید.';
-    } else if (status === 401 || errMsg.includes('401') || errMsg.includes('API_KEY_INVALID') || errMsg.includes('API key not valid')) {
-      userFriendlyMessage = 'کلید وب‌سرویس گوگل جمنای نامعتبر است. لطفاً کلید معتبر را در فایل env تنظیم نمایید.';
-    } else if (status === 429 || errMsg.includes('429') || errMsg.includes('RESOURCE_EXHAUSTED')) {
-      userFriendlyMessage = 'سقف مجاز درخواست‌های مدل جمنای در این لحظه تکمیل شده است. لطفاً دقایقی دیگر مجدداً تلاش کنید.';
-    } else if (status === 403 || errMsg.includes('403') || errMsg.includes('PERMISSION_DENIED')) {
-      userFriendlyMessage = 'دسترسی به سرویس جمنای با محدودیت مواجه شده است.';
-    } else if (errMsg) {
-      userFriendlyMessage = `خطا در اسکن تصویر کارت ویزیت: ${errMsg}`;
-    }
+    console.error('RAW_OPENROUTER_ERROR:', error);
 
     return NextResponse.json(
-      {
-        success: false,
-        data: null,
-        message: userFriendlyMessage,
-        error: errMsg || 'OCR processing failed',
-      },
-      { status: typeof status === 'number' && status >= 400 && status < 600 ? status : (isServerError(error) ? 503 : 500) }
+      { success: false, message: error instanceof Error ? error.message : String(error) },
+      { status: 500 }
     );
   }
 }

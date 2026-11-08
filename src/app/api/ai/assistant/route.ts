@@ -1,67 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 
 export const dynamic = 'force-dynamic';
 
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-function isServerError(error: any): boolean {
-  const status = error?.status || error?.statusCode;
-  const msg = (error?.message || '').toLowerCase();
-
-  if (typeof status === 'number' && status >= 500 && status < 600) {
-    return true;
-  }
-
-  return (
-    msg.includes('503') ||
-    msg.includes('500') ||
-    msg.includes('502') ||
-    msg.includes('504') ||
-    msg.includes('service unavailable') ||
-    msg.includes('overloaded') ||
-    msg.includes('high demand') ||
-    msg.includes('unavailable') ||
-    msg.includes('resource_exhausted') ||
-    msg.includes('resource exhausted') ||
-    msg.includes('rate limit')
-  );
-}
-
-async function generateWithRetry<T>(fn: () => Promise<T>, maxRetries = 2, delayMs = 500): Promise<T> {
-  let lastError: any = null;
-
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      return await fn();
-    } catch (err: any) {
-      lastError = err;
-      console.warn(`[Gemini Assistant] Attempt ${attempt}/${maxRetries} failed with error:`, err?.message || err);
-
-      if (attempt < maxRetries && isServerError(err)) {
-        console.info(`[Gemini Assistant] Retrying in ${delayMs}ms (attempt ${attempt + 1}/${maxRetries})...`);
-        await sleep(delayMs);
-        continue;
-      }
-
-      throw err;
-    }
-  }
-
-  throw lastError;
-}
-
 export async function POST(req: NextRequest) {
-  console.log("Checking API Key in Backend:", !!process.env.GEMINI_API_KEY);
-
-  const rawApiKey = process.env.GEMINI_API_KEY || '';
+  const rawApiKey = process.env.OPENROUTER_API_KEY || '';
   const apiKey = rawApiKey.replace(/["'\r\n]/g, '').trim();
 
-  if (!process.env.GEMINI_API_KEY || !apiKey) {
+  if (!process.env.OPENROUTER_API_KEY || !apiKey) {
+    console.error('[OpenRouter Assistant] OPENROUTER_API_KEY is not defined in environment variables.');
     return NextResponse.json(
-      { success: false, data: null, message: "API Key is missing in server environment" },
+      { success: false, data: null, message: 'OPENROUTER_API_KEY is missing in server environment' },
       { status: 500 }
     );
   }
@@ -73,7 +23,7 @@ export async function POST(req: NextRequest) {
     const isDev = process.env.NODE_ENV !== 'production';
 
     if (!session?.user && !authHeader && !initDataHeader && !isDev) {
-      console.warn('[Gemini Assistant] Unauthenticated request rejected.');
+      console.warn('[OpenRouter Assistant] Unauthenticated request rejected.');
       return NextResponse.json(
         { success: false, data: null, message: 'لطفاً ابتدا وارد حساب کاربری خود شوید.' },
         { status: 401 }
@@ -82,15 +32,6 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json().catch(() => ({}));
     const { action, headline, currentText, displayName } = body;
-
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-flash',
-      generationConfig: {
-        maxOutputTokens: 250,
-        temperature: 0.7,
-      },
-    });
 
     let prompt = '';
 
@@ -128,9 +69,35 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const result = await generateWithRetry(() => model.generateContent(prompt));
-    const response = await result.response;
-    const generatedText = response.text()?.trim() || '';
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'HTTP-Referer': 'https://aryalink.com',
+        'X-Title': 'Arya Link',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-1.5-flash',
+        messages: [
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+        temperature: 0.7,
+        max_tokens: 300,
+      }),
+    });
+
+    if (!response.ok) {
+      const errBody = await response.json().catch(() => ({}));
+      const errMsg = errBody?.error?.message || `OpenRouter API error: HTTP ${response.status} ${response.statusText}`;
+      throw new Error(errMsg);
+    }
+
+    const result = await response.json();
+    const generatedText = result?.choices?.[0]?.message?.content?.trim() || '';
 
     // Remove code block markers or wrapping quotes if AI included them
     const cleanText = generatedText
@@ -146,36 +113,11 @@ export async function POST(req: NextRequest) {
       message: 'متن با موفقیت توسط هوش مصنوعی تولید شد.',
     });
   } catch (error: any) {
-    console.error('[Gemini AI Assistant Error Detailed Log]:', {
-      message: error?.message,
-      status: error?.status,
-      stack: error?.stack,
-    });
-
-    const errMsg = error?.message || (typeof error === 'string' ? error : '');
-    const status = error?.status;
-
-    let userFriendlyMessage = 'خطا در ارتباط با سرویس هوش مصنوعی گوگل جمنای.';
-    if (isServerError(error)) {
-      userFriendlyMessage = 'سرورهای هوش مصنوعی در حال حاضر شلوغ هستند. لطفاً چند لحظه دیگر دوباره امتحان کنید.';
-    } else if (status === 401 || errMsg.includes('401') || errMsg.includes('API_KEY_INVALID') || errMsg.includes('API key not valid')) {
-      userFriendlyMessage = 'کلید API هوش مصنوعی در سرور نامعتبر است. لطفاً کلید GEMINI_API_KEY را در تنظیمات بررسی کنید.';
-    } else if (status === 429 || errMsg.includes('429') || errMsg.includes('RESOURCE_EXHAUSTED')) {
-      userFriendlyMessage = 'محدودیت تعداد درخواست هوش مصنوعی تکمیل شده است. لطفاً دقایقی دیگر مجدداً تلاش کنید.';
-    } else if (status === 403 || errMsg.includes('403') || errMsg.includes('PERMISSION_DENIED')) {
-      userFriendlyMessage = 'دسترسی به سرویس جمنای با محدودیت مواجه شده است.';
-    } else if (errMsg) {
-      userFriendlyMessage = `خطا در پردازش هوش مصنوعی: ${errMsg}`;
-    }
+    console.error('RAW_OPENROUTER_ERROR:', error);
 
     return NextResponse.json(
-      {
-        success: false,
-        data: null,
-        message: userFriendlyMessage,
-        error: errMsg || 'AI Generation Failed',
-      },
-      { status: typeof status === 'number' && status >= 400 && status < 600 ? status : (isServerError(error) ? 503 : 500) }
+      { success: false, message: error instanceof Error ? error.message : String(error) },
+      { status: 500 }
     );
   }
 }
