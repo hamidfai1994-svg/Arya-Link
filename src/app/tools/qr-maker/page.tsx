@@ -65,8 +65,10 @@ export type FrameStyle =
   | 'bottom-banner'
   | 'top-banner'
   | 'rounded-banner'
+  | 'circle'
   | 'phone'
-  | 'clipboard';
+  | 'clipboard'
+  | 'bag';
 
 const toSvgDataUrl = (svgStr: string) =>
   `data:image/svg+xml;utf8,${encodeURIComponent(svgStr)}`;
@@ -143,6 +145,11 @@ const PRESET_BADGES = [
     label: 'Barcode',
     svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100"><rect width="100" height="100" fill="#ffffff" rx="10"/><path d="M20 30v40M27 30v40M37 30v40M42 30v40M49 30v40M59 30v40M64 30v40M74 30v40M80 30v40" stroke="#000000" stroke-width="4" stroke-linecap="square"/></svg>`,
   },
+  {
+    id: 'menu_badge',
+    label: 'Menu',
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100"><rect width="100" height="100" fill="#ffffff" rx="10"/><path d="M24 25v50M76 25v50" stroke="#000000" stroke-width="6" stroke-linecap="round"/><path d="M36 38h28M36 50h28M36 62h28" stroke="#000000" stroke-width="5" stroke-linecap="round"/></svg>`,
+  },
 ];
 
 export default function AdvancedQrMakerPage() {
@@ -216,9 +223,7 @@ export default function AdvancedQrMakerPage() {
   const [cornerDotStyle, setCornerDotStyle] = useState<CornerDotStyle>('square');
 
   // Frame States
-  const [frameStyle, setFrameStyle] = useState<
-    'none' | 'bottom-banner' | 'top-banner' | 'rounded-banner' | 'phone' | 'clipboard'
-  >('none');
+  const [frameStyle, setFrameStyle] = useState<FrameStyle>('none');
   const [frameText, setFrameText] = useState('SCAN ME');
   const [frameColor, setFrameColor] = useState('#000000');
 
@@ -530,10 +535,111 @@ export default function AdvancedQrMakerPage() {
         buildQrOptions(ext === 'svg' ? 800 : downloadSize)
       );
 
-      await exportInstance.download({
-        name: `aryalink-qr-${activeTab}-${Date.now()}`,
-        extension: ext,
-      });
+      if (frameStyle === 'none' || ext === 'svg') {
+        await exportInstance.download({
+          name: `aryalink-qr-${activeTab}-${Date.now()}`,
+          extension: ext,
+        });
+      } else {
+        // Frame compositing on canvas for PNG and JPEG
+        try {
+          const rawBlob = await exportInstance.getRawData(ext === 'jpeg' ? 'jpeg' : 'png') as Blob | null;
+          if (!rawBlob) {
+            await exportInstance.download({
+              name: `aryalink-qr-${activeTab}-${Date.now()}`,
+              extension: ext,
+            });
+            return;
+          }
+
+          const img = new Image();
+          const url = URL.createObjectURL(rawBlob);
+          await new Promise((resolve, reject) => {
+            img.onload = resolve;
+            img.onerror = reject;
+            img.src = url;
+          });
+
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          if (!ctx) throw new Error('Could not get 2d canvas context');
+
+          const qrW = downloadSize;
+          const qrH = downloadSize;
+          const bannerH = Math.round(downloadSize * 0.16);
+          const pad = Math.round(downloadSize * 0.06);
+
+          if (frameStyle === 'bottom-banner') {
+            canvas.width = qrW + pad * 2;
+            canvas.height = qrH + pad + bannerH;
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, pad, pad, qrW, qrH);
+            ctx.fillStyle = frameColor;
+            ctx.fillRect(0, qrH + pad, canvas.width, bannerH);
+            ctx.lineWidth = Math.round(downloadSize * 0.02);
+            ctx.strokeStyle = frameColor;
+            ctx.strokeRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#ffffff';
+            ctx.font = `bold ${Math.round(bannerH * 0.48)}px sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText((frameText || 'SCAN ME').toUpperCase(), canvas.width / 2, qrH + pad + bannerH / 2);
+          } else if (frameStyle === 'top-banner') {
+            canvas.width = qrW + pad * 2;
+            canvas.height = qrH + pad + bannerH;
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = frameColor;
+            ctx.fillRect(0, 0, canvas.width, bannerH);
+            ctx.drawImage(img, pad, bannerH, qrW, qrH);
+            ctx.lineWidth = Math.round(downloadSize * 0.02);
+            ctx.strokeStyle = frameColor;
+            ctx.strokeRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#ffffff';
+            ctx.font = `bold ${Math.round(bannerH * 0.48)}px sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText((frameText || 'SCAN ME').toUpperCase(), canvas.width / 2, bannerH / 2);
+          } else {
+            // rounded-banner, phone, clipboard, circle, bag
+            canvas.width = qrW + pad * 2;
+            canvas.height = qrH + pad * 2 + bannerH;
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, pad, pad, qrW, qrH);
+            ctx.fillStyle = frameColor;
+            ctx.fillRect(pad, qrH + pad, qrW, bannerH);
+            ctx.lineWidth = Math.round(downloadSize * 0.02);
+            ctx.strokeStyle = frameColor;
+            ctx.strokeRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#ffffff';
+            ctx.font = `bold ${Math.round(bannerH * 0.45)}px sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText((frameText || 'SCAN ME').toUpperCase(), canvas.width / 2, qrH + pad + bannerH / 2);
+          }
+
+          canvas.toBlob((blob) => {
+            if (!blob) return;
+            const blobUrl = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = `aryalink-qr-${activeTab}-${Date.now()}.${ext}`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(blobUrl);
+            URL.revokeObjectURL(url);
+          }, ext === 'jpeg' ? 'image/jpeg' : 'image/png');
+        } catch (frameErr) {
+          console.warn('Frame compositing fallback:', frameErr);
+          await exportInstance.download({
+            name: `aryalink-qr-${activeTab}-${Date.now()}`,
+            extension: ext,
+          });
+        }
+      }
 
       toast.success(
         language === 'en'
@@ -1307,7 +1413,7 @@ export default function AdvancedQrMakerPage() {
                     <label className="block text-xs font-semibold text-slate-300 mb-3">
                       انتخاب قالب و فریم کیوآر کد (Frame Style):
                     </label>
-                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2.5">
+                    <div className="grid grid-cols-4 sm:grid-cols-8 gap-2.5">
                       {/* Frame 1: None (X) */}
                       <button
                         type="button"
@@ -1383,7 +1489,27 @@ export default function AdvancedQrMakerPage() {
                         <span className="text-[10px] font-medium">Badge</span>
                       </button>
 
-                      {/* Frame 5: Phone */}
+                      {/* Frame 5: Circle */}
+                      <button
+                        type="button"
+                        onClick={() => setFrameStyle('circle')}
+                        className={`aspect-square p-2.5 rounded-2xl border flex flex-col items-center justify-center gap-1 transition-all ${
+                          frameStyle === 'circle'
+                            ? 'border-cyan-500 bg-cyan-500/20 text-cyan-300 ring-2 ring-cyan-500/30'
+                            : 'border-slate-800 bg-slate-950/50 text-slate-400 hover:border-slate-700 hover:text-white'
+                        }`}
+                        title="دایره‌ای"
+                      >
+                        <svg viewBox="0 0 40 40" className="w-8 h-8">
+                          <circle cx="20" cy="20" r="16" stroke="currentColor" strokeWidth="1.5" fill="none" />
+                          <rect x="12" y="10" width="16" height="15" rx="1" fill="currentColor" fillOpacity="0.4" />
+                          <rect x="11" y="27" width="18" height="6" rx="3" fill="currentColor" />
+                          <text x="20" y="31.5" fontSize="3.5" fill="#ffffff" fontWeight="bold" textAnchor="middle">SCAN</text>
+                        </svg>
+                        <span className="text-[10px] font-medium">Circle</span>
+                      </button>
+
+                      {/* Frame 6: Phone */}
                       <button
                         type="button"
                         onClick={() => setFrameStyle('phone')}
@@ -1403,7 +1529,7 @@ export default function AdvancedQrMakerPage() {
                         <span className="text-[10px] font-medium">Phone</span>
                       </button>
 
-                      {/* Frame 6: Clipboard */}
+                      {/* Frame 7: Clipboard */}
                       <button
                         type="button"
                         onClick={() => setFrameStyle('clipboard')}
@@ -1420,6 +1546,27 @@ export default function AdvancedQrMakerPage() {
                           <rect x="10" y="11" width="20" height="20" rx="1" fill="currentColor" fillOpacity="0.4" />
                         </svg>
                         <span className="text-[10px] font-medium">Clip</span>
+                      </button>
+
+                      {/* Frame 8: Bag */}
+                      <button
+                        type="button"
+                        onClick={() => setFrameStyle('bag')}
+                        className={`aspect-square p-2.5 rounded-2xl border flex flex-col items-center justify-center gap-1 transition-all ${
+                          frameStyle === 'bag'
+                            ? 'border-cyan-500 bg-cyan-500/20 text-cyan-300 ring-2 ring-cyan-500/30'
+                            : 'border-slate-800 bg-slate-950/50 text-slate-400 hover:border-slate-700 hover:text-white'
+                        }`}
+                        title="ساک خرید"
+                      >
+                        <svg viewBox="0 0 40 40" className="w-8 h-8">
+                          <path d="M15 10V6a5 5 0 0 1 10 0v4" stroke="currentColor" strokeWidth="1.5" fill="none" />
+                          <rect x="6" y="10" width="28" height="26" rx="3" stroke="currentColor" strokeWidth="1.5" fill="none" />
+                          <rect x="11" y="14" width="18" height="15" fill="currentColor" fillOpacity="0.4" />
+                          <rect x="9" y="30" width="22" height="5" fill="currentColor" />
+                          <text x="20" y="34" fontSize="3.5" fill="#ffffff" fontWeight="bold" textAnchor="middle">SCAN</text>
+                        </svg>
+                        <span className="text-[10px] font-medium">Bag</span>
                       </button>
                     </div>
                   </div>
@@ -2051,8 +2198,8 @@ export default function AdvancedQrMakerPage() {
                 </span>
               </div>
 
-              {/* QR Render Box */}
-              <div className="relative flex items-center justify-center p-6 rounded-2xl bg-slate-950/80 border border-slate-800 shadow-inner min-h-[340px]">
+              {/* QR Render Box with Live Frame Preview */}
+              <div className="relative flex items-center justify-center p-6 rounded-2xl bg-slate-950/80 border border-slate-800 shadow-inner min-h-[360px] overflow-hidden">
                 {/* Visual checkboard pattern behind transparent QR */}
                 {isTransparentBg && (
                   <div
@@ -2065,10 +2212,121 @@ export default function AdvancedQrMakerPage() {
                   />
                 )}
 
+                {/* Single outer card containing qrContainerRef (prevents unmount / canvas detachment) */}
                 <div
-                  ref={qrContainerRef}
-                  className="transition-transform duration-200 hover:scale-105 flex items-center justify-center"
-                />
+                  className={`relative flex flex-col items-center justify-center transition-all ${
+                    frameStyle === 'none'
+                      ? 'hover:scale-105'
+                      : frameStyle === 'bottom-banner'
+                      ? 'rounded-2xl overflow-hidden shadow-2xl bg-white p-3 pb-0'
+                      : frameStyle === 'top-banner'
+                      ? 'rounded-2xl overflow-hidden shadow-2xl bg-white p-3 pt-0'
+                      : frameStyle === 'rounded-banner'
+                      ? 'rounded-3xl shadow-2xl bg-white p-4 pb-7'
+                      : frameStyle === 'circle'
+                      ? 'rounded-full shadow-2xl bg-white p-7'
+                      : frameStyle === 'phone'
+                      ? 'rounded-[32px] shadow-2xl bg-white p-3 pt-4 min-w-[260px]'
+                      : frameStyle === 'clipboard'
+                      ? 'rounded-2xl shadow-2xl bg-white p-4 pt-6'
+                      : 'rounded-2xl shadow-2xl bg-white p-4 pt-7'
+                  }`}
+                  style={
+                    frameStyle !== 'none'
+                      ? {
+                          border: `${frameStyle === 'phone' ? '6px' : '4px'} solid ${frameColor}`,
+                        }
+                      : undefined
+                  }
+                >
+                  {/* Top Frame Elements */}
+                  {frameStyle === 'top-banner' && (
+                    <div
+                      className="w-[calc(100%+24px)] -mx-3 py-2 px-6 text-center font-black text-xs uppercase tracking-widest text-white shadow-sm mb-2"
+                      style={{ backgroundColor: frameColor }}
+                    >
+                      {frameText || 'SCAN ME'}
+                    </div>
+                  )}
+
+                  {frameStyle === 'phone' && (
+                    <div
+                      className="w-16 h-1.5 rounded-full mb-2.5"
+                      style={{ backgroundColor: frameColor }}
+                    />
+                  )}
+
+                  {frameStyle === 'clipboard' && (
+                    <div
+                      className="absolute -top-3.5 px-6 py-1 rounded-md font-bold text-[9px] uppercase tracking-wider text-white shadow-md"
+                      style={{ backgroundColor: frameColor }}
+                    >
+                      AryaLink
+                    </div>
+                  )}
+
+                  {frameStyle === 'bag' && (
+                    <div
+                      className="absolute -top-5 w-14 h-8 rounded-t-full border-4 border-b-0"
+                      style={{ borderColor: frameColor }}
+                    />
+                  )}
+
+                  {/* QR Canvas Container (Always Mounted) */}
+                  <div
+                    ref={qrContainerRef}
+                    className="flex items-center justify-center"
+                  />
+
+                  {/* Bottom Frame Elements */}
+                  {frameStyle === 'bottom-banner' && (
+                    <div
+                      className="w-[calc(100%+24px)] -mx-3 py-2 px-6 text-center font-black text-xs uppercase tracking-widest text-white shadow-sm mt-2"
+                      style={{ backgroundColor: frameColor }}
+                    >
+                      {frameText || 'SCAN ME'}
+                    </div>
+                  )}
+
+                  {frameStyle === 'rounded-banner' && (
+                    <div
+                      className="absolute -bottom-4 px-6 py-1 rounded-full font-black text-xs uppercase tracking-widest text-white shadow-lg border-2 border-white"
+                      style={{ backgroundColor: frameColor }}
+                    >
+                      {frameText || 'SCAN ME'}
+                    </div>
+                  )}
+
+                  {frameStyle === 'circle' && (
+                    <div
+                      className="absolute -bottom-3 px-5 py-0.5 rounded-full font-black text-[11px] uppercase tracking-widest text-white shadow-md border-2 border-white"
+                      style={{ backgroundColor: frameColor }}
+                    >
+                      {frameText || 'SCAN ME'}
+                    </div>
+                  )}
+
+                  {frameStyle === 'phone' && (
+                    <>
+                      <div className="mt-2 text-center font-black text-[10px] tracking-wider uppercase text-slate-800">
+                        {frameText || 'SCAN ME'}
+                      </div>
+                      <div
+                        className="w-10 h-1 rounded-full mt-1 mb-0.5"
+                        style={{ backgroundColor: frameColor }}
+                      />
+                    </>
+                  )}
+
+                  {(frameStyle === 'clipboard' || frameStyle === 'bag') && (
+                    <div
+                      className="w-full mt-2 py-1.5 px-4 rounded-lg text-center font-black text-xs uppercase tracking-wider text-white"
+                      style={{ backgroundColor: frameColor }}
+                    >
+                      {frameText || 'SCAN ME'}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Payload Summary Info */}
