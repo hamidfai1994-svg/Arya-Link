@@ -149,7 +149,8 @@ export async function POST(req: NextRequest) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-1.5-flash',
+        model: 'google/gemini-flash-1.5',
+        models: ['google/gemini-flash-1.5', 'google/gemini-2.0-flash-001'],
         messages: [
           {
             role: 'user',
@@ -178,8 +179,8 @@ export async function POST(req: NextRequest) {
       throw new Error(errMsg);
     }
 
-    const result = await response.json();
-    const rawText = result?.choices?.[0]?.message?.content?.trim() || '{}';
+    const data = await response.json();
+    const rawText = data?.choices?.[0]?.message?.content?.trim() || '{}';
     const cleanedText = cleanJsonOutput(rawText);
 
     let parsedResult: any = {};
