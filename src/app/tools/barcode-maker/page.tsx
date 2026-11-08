@@ -17,6 +17,10 @@ import {
   Layers,
   Calendar,
   Wifi,
+  Search,
+  Camera,
+  X,
+  Filter,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,6 +29,7 @@ import { toast } from 'sonner';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { ToolsCtaBanner } from '@/components/tools/ToolsCtaBanner';
 import { useProfileLoader } from '@/components/tools/useProfileLoader';
+import { CodeScanner } from '@/components/tools/CodeScanner';
 
 export interface BarcodeSubtype {
   id: string;
@@ -33,6 +38,8 @@ export interface BarcodeSubtype {
   defaultText: string;
   placeholder: string;
   hint: string;
+  features?: string;
+  guide?: string;
   opts?: Record<string, any>;
 }
 
@@ -424,10 +431,34 @@ export const BARCODE_SMART_GUIDES: Record<string, string> = {
   wifi_barcodes: "راهنما: استانداردهای اشتراک‌گذاری ایمن اتصال اینترنت بی‌سیم جهت اتصال خودکار دستگاه‌های هوشمند به شبکه Wi-Fi بدون نیاز به تایپ رمز عبور."
 };
 
+// Ensure every subtype across all 116 items has explicit name, features, and guide fields populated
+BARCODE_CATEGORIES.forEach((cat) => {
+  cat.subtypes.forEach((sub) => {
+    if (!sub.features) {
+      sub.features = sub.hint;
+    }
+    if (!sub.guide) {
+      sub.guide =
+        BARCODE_SMART_GUIDES[sub.id] ||
+        BARCODE_SMART_GUIDES[cat.id] ||
+        sub.hint;
+    }
+  });
+});
+
 export default function MegaBarcodeGeneratorPage() {
   const { dir, language, t } = useLanguage();
   const isRtl = dir === 'rtl';
   const { loadProfile, isLoading: isProfileLoading } = useProfileLoader();
+
+  // Top-Level Tab State (Generator vs Scanner)
+  const [activeToolTab, setActiveToolTab] = useState<'generator' | 'scanner'>('generator');
+
+  // Search & Filter States
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [searchInName, setSearchInName] = useState<boolean>(true);
+  const [searchInFeatures, setSearchInFeatures] = useState<boolean>(true);
+  const [searchInGuide, setSearchInGuide] = useState<boolean>(true);
 
   // Cascade State
   const [selectedCategory, setSelectedCategory] = useState<string>('linear');
@@ -487,6 +518,44 @@ export default function MegaBarcodeGeneratorPage() {
     BARCODE_SMART_GUIDES[currentCategory.id] ||
     currentSubtype.hint;
 
+  // Case-insensitive Real-time Search across 116 Barcode Models (Stage 1)
+  const searchResults = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return [];
+
+    const results: Array<{
+      category: BarcodeCategory;
+      subtype: BarcodeSubtype;
+      features: string;
+      guide: string;
+    }> = [];
+
+    for (const cat of BARCODE_CATEGORIES) {
+      for (const sub of cat.subtypes) {
+        const feat = sub.features || sub.hint || '';
+        const gd =
+          sub.guide ||
+          BARCODE_SMART_GUIDES[sub.id] ||
+          BARCODE_SMART_GUIDES[cat.id] ||
+          feat;
+
+        const matchName = searchInName && sub.name.toLowerCase().includes(q);
+        const matchFeat = searchInFeatures && feat.toLowerCase().includes(q);
+        const matchGuide = searchInGuide && gd.toLowerCase().includes(q);
+
+        if (matchName || matchFeat || matchGuide) {
+          results.push({
+            category: cat,
+            subtype: sub,
+            features: feat,
+            guide: gd,
+          });
+        }
+      }
+    }
+    return results;
+  }, [searchQuery, searchInName, searchInFeatures, searchInGuide]);
+
   // String formatting for Group 11, 12, 13
   const computedPayload = useMemo(() => {
     if (selectedCategory === 'business_cards') {
@@ -530,9 +599,8 @@ export default function MegaBarcodeGeneratorPage() {
     }
 
     if (selectedCategory === 'wifi_barcodes') {
-      return `WIFI:T:${wifiAuth};S:${wifiSsid};P:${wifiPassword};H:${
-        wifiHidden ? 'true' : 'false'
-      };;`;
+      return `WIFI:T:${wifiAuth};S:${wifiSsid};P:${wifiPassword};H:${wifiHidden ? 'true' : 'false'
+        };;`;
     }
 
     return textValue;
@@ -617,36 +685,37 @@ export default function MegaBarcodeGeneratorPage() {
         currentSubtype.bcid === 'gs1dlqrcode' ||
         currentSubtype.bcid === 'gs1dldatamatrix';
 
-      const isEanUpc =
-        selectedCategory === 'ean_upc' ||
-        ['ean13', 'ean8', 'upca', 'upce', 'ean14', 'isbn', 'issn', 'ismn'].includes(
-          currentSubtype.bcid
-        );
+      // Conditional Options Configuration (Step 1):
+      // Differentiate Retail Codes from regular Linear and 2D codes
+      const barcodeType = currentSubtype.bcid;
+      const isRetailCode = ['ean13', 'ean8', 'upca', 'upce', 'isbn', 'ismn', 'issn'].some(
+        (t) => barcodeType.toLowerCase().includes(t)
+      );
 
-      // Build options according to Step 1:
-      // Remove textyoffset. Use textxalign: 'center', textgaps: 2, paddingbottom: 10
-      // For EAN, UPC, and ISBN: guardwhitespace: true, includetext: true
       const bwipOptions: any = {
         bcid: currentSubtype.bcid,
         text: computedPayload,
         scale: scale,
-        includetext: isEanUpc ? true : includeText,
-        textxalign: 'center',
-        paddingbottom: 10,
         barcolor: barcolorClean,
         backgroundcolor: backgroundcolorClean,
       };
 
-      if (!is2dCode) {
-        bwipOptions.height = 10;
-        if (bwipOptions.includetext) {
-          bwipOptions.textgaps = 2;
-        }
-      }
-
-      if (isEanUpc) {
+      if (isRetailCode) {
+        // Retail barcodes: only guardwhitespace and includetext so guard bars descend correctly
         bwipOptions.guardwhitespace = true;
         bwipOptions.includetext = true;
+      } else if (!is2dCode) {
+        // Normal linear barcode: apply centering, textgaps, and bottom padding
+        bwipOptions.height = 10;
+        bwipOptions.includetext = includeText;
+        if (includeText) {
+          bwipOptions.textxalign = 'center';
+          bwipOptions.textgaps = 2;
+          bwipOptions.paddingbottom = 10;
+        }
+      } else {
+        // 2D barcode (QR, DataMatrix, Aztec, etc.)
+        bwipOptions.includetext = includeText;
       }
 
       if (
@@ -798,649 +867,827 @@ export default function MegaBarcodeGeneratorPage() {
             {language === 'en'
               ? 'Generate ultra high-resolution 1D & 2D barcodes across 116 international standards with vector SVG, PNG, and JPG export.'
               : language === 'ps'
-              ? 'په 116 نړیوالو او صنعتي معیارونو کې باکیفیته بارکوډونه جوړ کړئ او په وړیا ډول یې ډاونلوډ کړئ.'
-              : 'تولید 116 مدل بارکد خطی، دوبعدی، گمرکی، کالا (EAN/UPC)، صنایع دارویی، پستی و بانکی با بالاترین کیفیت و خروجی وکتور SVG.'}
+                ? 'په 116 نړیوالو او صنعتي معیارونو کې باکیفیته بارکوډونه جوړ کړئ او په وړیا ډول یې ډاونلوډ کړئ.'
+                : 'تولید 116 مدل بارکد خطی، دوبعدی، گمرکی، کالا (EAN/UPC)، صنایع دارویی، پستی و بانکی با بالاترین کیفیت و خروجی وکتور SVG.'}
           </p>
         </div>
 
-        {/* Main Grid: Controls (Left/Right) & Live Preview */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* Controls Column */}
-          <div className="lg:col-span-7 space-y-6 bg-card border border-border/70 rounded-3xl p-6 sm:p-8 shadow-xl">
-            {/* Header & Load My Profile Button */}
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-5">
-              <div className="flex items-center gap-2">
-                <Sliders className="w-5 h-5 text-cyan-500" />
-                <h2 className="text-base font-bold text-foreground">
-                  تنظیمات و انتخاب استاندارد بارکد (116 مدل بین‌المللی)
-                </h2>
-              </div>
+        {/* Top-Level Mode Navigation: Generator vs Scanner */}
+        <div className="flex items-center gap-3 p-1.5 rounded-2xl bg-card border border-border/80 shadow-md mb-8 max-w-md">
+          <button
+            type="button"
+            onClick={() => setActiveToolTab('generator')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold transition-all ${activeToolTab === 'generator'
+              ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/25'
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
+              }`}
+          >
+            <Barcode className="w-4 h-4" />
+            <span>سازنده بارکد (Generator)</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveToolTab('scanner')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold transition-all ${activeToolTab === 'scanner'
+              ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/25'
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
+              }`}
+          >
+            <Camera className="w-4 h-4" />
+            <span>اسکنر بارکد (Scanner)</span>
+          </button>
+        </div>
 
-              {/* Load Profile Button */}
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleLoadProfile}
-                disabled={isProfileLoading}
-                className="rounded-xl border-cyan-500/40 text-cyan-500 hover:bg-cyan-500/10 font-bold text-xs h-9"
-              >
-                <User className="w-3.5 h-3.5 me-1.5" />
-                <span>
-                  {isProfileLoading ? 'در حال فراخوانی...' : 'فراخوانی اطلاعات من'}
-                </span>
-              </Button>
-            </div>
-
-            {/* Cascade 1: 13 Independent Categories */}
-            <div className="space-y-2.5">
-              <label className="text-xs font-bold text-foreground flex items-center justify-between">
-                <span className="flex items-center gap-1.5">
-                  <Layers className="w-3.5 h-3.5 text-cyan-500" />
-                  <span>1. انتخاب دسته‌بندی بارکد (13 گروه مستقل):</span>
-                </span>
-                <span className="text-[11px] font-mono text-cyan-500">
-                  {BARCODE_CATEGORIES.length} دسته اصلی
-                </span>
-              </label>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">
-                {BARCODE_CATEGORIES.map((cat) => {
-                  const active = cat.id === selectedCategory;
-                  return (
-                    <button
-                      key={cat.id}
-                      type="button"
-                      onClick={() => handleCategoryChange(cat.id)}
-                      className={`text-start px-3 py-2.5 rounded-xl border text-xs font-semibold transition-all flex items-center justify-between ${
-                        active
-                          ? 'border-cyan-500 bg-cyan-500/15 text-cyan-400 shadow-md shadow-cyan-500/10 font-bold'
-                          : 'border-border/60 hover:bg-muted text-muted-foreground hover:text-foreground'
-                      }`}
-                    >
-                      <span className="truncate">{cat.title}</span>
-                      {active && (
-                        <Check className="w-3.5 h-3.5 text-cyan-400 shrink-0 ms-1" />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Cascade 2: Subtype Selector */}
-            <div className="space-y-2 pt-2">
-              <label className="text-xs font-bold text-foreground flex items-center justify-between">
-                <span className="flex items-center gap-1.5">
-                  <Barcode className="w-3.5 h-3.5 text-cyan-500" />
-                  <span>2. نوع دقیق استاندارد (Subtype):</span>
-                </span>
-                <span className="text-[11px] text-muted-foreground font-mono">
-                  {currentCategory.subtypes.length} مدل در این دسته
-                </span>
-              </label>
-              <select
-                value={selectedSubtypeId}
-                onChange={(e) => handleSubtypeChange(e.target.value)}
-                className="w-full h-11 px-3.5 rounded-xl border border-border bg-background text-foreground text-xs font-medium focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-all cursor-pointer"
-              >
-                {currentCategory.subtypes.map((sub) => (
-                  <option key={sub.id} value={sub.id}>
-                    {sub.name}
-                  </option>
-                ))}
-              </select>
-              <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 pt-1 leading-relaxed">
-                <Info className="w-3.5 h-3.5 text-cyan-500 shrink-0" />
-                <span>{currentGuideText}</span>
-              </p>
-            </div>
-
-            {/* Content Input Form: Adaptive based on Category (Step 2: dir="ltr" text-left on all inputs) */}
-            <div className="space-y-3 pt-2">
-              {/* GROUP 11: Business Cards Form */}
-              {selectedCategory === 'business_cards' ? (
-                <div className="space-y-3 p-4 rounded-2xl bg-muted/30 border border-border/60">
-                  <span className="text-xs font-bold text-foreground flex items-center gap-1.5 pb-2 border-b border-border/50">
-                    <User className="w-4 h-4 text-cyan-500" />
-                    <span>مشخصات کارت ویزیت الکترونیکی (vCard / MeCard):</span>
-                  </span>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[11px] text-muted-foreground mb-1">
-                        نام:
-                      </label>
-                      <Input
-                        value={cardFirstName}
-                        onChange={(e) => setCardFirstName(e.target.value)}
-                        placeholder="نام (مثال: احمد)"
-                        className="h-10 text-xs font-medium"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] text-muted-foreground mb-1">
-                        نام خانوادگی:
-                      </label>
-                      <Input
-                        value={cardLastName}
-                        onChange={(e) => setCardLastName(e.target.value)}
-                        placeholder="نام خانوادگی (مثال: رسولی)"
-                        className="h-10 text-xs font-medium"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[11px] text-muted-foreground mb-1">
-                        شرکت / سازمان:
-                      </label>
-                      <Input
-                        value={cardOrg}
-                        onChange={(e) => setCardOrg(e.target.value)}
-                        placeholder="نام شرکت (مثال: آریا لینک)"
-                        className="h-10 text-xs font-medium"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] text-muted-foreground mb-1">
-                        عنوان شغلی:
-                      </label>
-                      <Input
-                        value={cardTitle}
-                        onChange={(e) => setCardTitle(e.target.value)}
-                        placeholder="سمت (مثال: مدیر فناوری)"
-                        className="h-10 text-xs font-medium"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[11px] text-muted-foreground mb-1">
-                        شماره تلفن:
-                      </label>
-                      <Input
-                        dir="ltr"
-                        style={{ textAlign: 'left' }}
-                        value={cardPhone}
-                        onChange={(e) => setCardPhone(e.target.value)}
-                        placeholder="شماره تلفن با کد کشور (مثال: +93700123456)"
-                        className="h-10 text-xs font-mono text-left"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] text-muted-foreground mb-1">
-                        آدرس ایمیل:
-                      </label>
-                      <Input
-                        dir="ltr"
-                        style={{ textAlign: 'left' }}
-                        value={cardEmail}
-                        onChange={(e) => setCardEmail(e.target.value)}
-                        placeholder="ایمیل کاری (مثال: info@aryalink.com)"
-                        className="h-10 text-xs font-mono text-left"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] text-muted-foreground mb-1">
-                      وب‌سایت یا لینک کارت هوشمند:
-                    </label>
-                    <Input
-                      dir="ltr"
-                      style={{ textAlign: 'left' }}
-                      value={cardWebsite}
-                      onChange={(e) => setCardWebsite(e.target.value)}
-                      placeholder="لینک اینترنتی (مثال: https://aryalink.com)"
-                      className="h-10 text-xs font-mono text-left"
-                    />
-                  </div>
-                </div>
-              ) : selectedCategory === 'event_barcodes' ? (
-                /* GROUP 12: Event Barcodes Form */
-                <div className="space-y-3 p-4 rounded-2xl bg-muted/30 border border-border/60">
-                  <span className="text-xs font-bold text-foreground flex items-center gap-1.5 pb-2 border-b border-border/50">
-                    <Calendar className="w-4 h-4 text-cyan-500" />
-                    <span>مشخصات رویداد و تقویم (iCalendar VEVENT):</span>
-                  </span>
-
-                  <div>
-                    <label className="block text-[11px] text-muted-foreground mb-1">
-                      عنوان رویداد:
-                    </label>
-                    <Input
-                      value={eventTitle}
-                      onChange={(e) => setEventTitle(e.target.value)}
-                      placeholder="عنوان جلسه یا همایش (مثال: کنفرانس سالانه آریا لینک)"
-                      className="h-10 text-xs font-medium"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] text-muted-foreground mb-1">
-                      محل برگزاری:
-                    </label>
-                    <Input
-                      value={eventLocation}
-                      onChange={(e) => setEventLocation(e.target.value)}
-                      placeholder="محل رویداد (مثال: کابل، هتل سرینا)"
-                      className="h-10 text-xs font-medium"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[11px] text-muted-foreground mb-1">
-                        زمان شروع (فرمت YYYYMMDDTHHMMSSZ):
-                      </label>
-                      <Input
-                        dir="ltr"
-                        style={{ textAlign: 'left' }}
-                        value={eventStart}
-                        onChange={(e) => setEventStart(e.target.value)}
-                        placeholder="فرمت تقویم (مثال: 20261115T090000Z)"
-                        className="h-10 text-xs font-mono text-left"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] text-muted-foreground mb-1">
-                        زمان پایان (فرمت YYYYMMDDTHHMMSSZ):
-                      </label>
-                      <Input
-                        dir="ltr"
-                        style={{ textAlign: 'left' }}
-                        value={eventEnd}
-                        onChange={(e) => setEventEnd(e.target.value)}
-                        placeholder="فرمت تقویم (مثال: 20261115T120000Z)"
-                        className="h-10 text-xs font-mono text-left"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] text-muted-foreground mb-1">
-                      توضیحات رویداد:
-                    </label>
-                    <Input
-                      value={eventDescription}
-                      onChange={(e) => setEventDescription(e.target.value)}
-                      placeholder="توضیحات کوتاه (مثال: معرفی راهکارهای نوین کارت هوشمند)"
-                      className="h-10 text-xs font-medium"
-                    />
-                  </div>
-                </div>
-              ) : selectedCategory === 'wifi_barcodes' ? (
-                /* GROUP 13: Wi-Fi Barcodes Form */
-                <div className="space-y-3 p-4 rounded-2xl bg-muted/30 border border-border/60">
-                  <span className="text-xs font-bold text-foreground flex items-center gap-1.5 pb-2 border-b border-border/50">
-                    <Wifi className="w-4 h-4 text-cyan-500" />
-                    <span>مشخصات اتصال خودکار شبکه وای‌فای:</span>
-                  </span>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[11px] text-muted-foreground mb-1">
-                        نام شبکه (SSID):
-                      </label>
-                      <Input
-                        dir="ltr"
-                        style={{ textAlign: 'left' }}
-                        value={wifiSsid}
-                        onChange={(e) => setWifiSsid(e.target.value)}
-                        placeholder="نام شبکه وای‌فای (مثال: AryaLink_Guest)"
-                        className="h-10 text-xs font-mono text-left"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] text-muted-foreground mb-1">
-                        رمز عبور وای‌فای:
-                      </label>
-                      <Input
-                        dir="ltr"
-                        style={{ textAlign: 'left' }}
-                        value={wifiPassword}
-                        onChange={(e) => setWifiPassword(e.target.value)}
-                        placeholder="رمز عبور شبکه (مثال: Secret2026)"
-                        className="h-10 text-xs font-mono text-left"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[11px] text-muted-foreground">
-                        رمزنگاری:
-                      </span>
-                      {(['WPA', 'WEP', 'nopass'] as const).map((auth) => (
-                        <button
-                          key={auth}
-                          type="button"
-                          onClick={() => setWifiAuth(auth)}
-                          className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors ${
-                            wifiAuth === auth
-                              ? 'bg-cyan-500/20 border-cyan-500 text-cyan-400 font-bold'
-                              : 'border-border/60 text-muted-foreground hover:bg-muted'
-                          }`}
-                        >
-                          {auth === 'nopass' ? 'بدون رمز (Open)' : auth}
-                        </button>
-                      ))}
-                    </div>
-
-                    <label className="flex items-center gap-2 cursor-pointer text-xs text-muted-foreground">
-                      <input
-                        type="checkbox"
-                        checked={wifiHidden}
-                        onChange={(e) => setWifiHidden(e.target.checked)}
-                        className="rounded border-border accent-cyan-500 cursor-pointer"
-                      />
-                      <span>شبکه پنهان (Hidden SSID)</span>
-                    </label>
-                  </div>
-                </div>
-              ) : (
-                /* GROUP 1-10: Standard Barcode Content Input with dir="ltr" and text-left */
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-foreground">
-                      3. متن، عدد یا لینک درون بارکد:
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => setTextValue(currentSubtype.defaultText)}
-                      className="text-[10px] text-cyan-500 hover:underline flex items-center gap-1"
-                    >
-                      <RefreshCw className="w-3 h-3" />
-                      <span>نمونه پیش‌فرض معتبر</span>
-                    </button>
-                  </div>
-                  <Input
-                    dir="ltr"
-                    style={{ textAlign: 'left' }}
-                    value={textValue}
-                    onChange={(e) => setTextValue(e.target.value)}
-                    placeholder={currentSubtype.placeholder}
-                    className="h-11 rounded-xl text-xs font-mono font-semibold text-left"
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* Appearance Settings: Colors, Scale, Include Text */}
-            <div className="pt-4 border-t border-border/60 space-y-4">
-              <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                <Palette className="w-3.5 h-3.5 text-cyan-500" />
-                <span>تنظیمات ظاهری و خروجی:</span>
-              </span>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Line Color */}
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-medium text-muted-foreground">
-                    رنگ خطوط بارکد (پیش‌فرض مشکی):
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="color"
-                      value={lineColor}
-                      onChange={(e) => setLineColor(e.target.value)}
-                      className="w-10 h-10 rounded-lg cursor-pointer border border-border p-0.5 bg-transparent"
-                    />
-                    <Input
-                      dir="ltr"
-                      style={{ textAlign: 'left' }}
-                      value={lineColor}
-                      onChange={(e) => setLineColor(e.target.value)}
-                      className="h-10 text-xs font-mono text-left"
-                    />
-                  </div>
+        {activeToolTab === 'generator' ? (
+          /* Generator View (Controls Grid + Live Canvas Preview) */
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            {/* Controls Column */}
+            <div className="lg:col-span-7 space-y-6 bg-card border border-border/70 rounded-3xl p-6 sm:p-8 shadow-xl">
+              {/* Header & Load My Profile Button */}
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-5">
+                <div className="flex items-center gap-2">
+                  <Sliders className="w-5 h-5 text-cyan-500" />
+                  <h2 className="text-base font-bold text-foreground">
+                    تنظیمات و انتخاب استاندارد بارکد (116 مدل بین‌المللی)
+                  </h2>
                 </div>
 
-                {/* Background Color */}
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-medium text-muted-foreground">
-                    رنگ پس‌زمینه (پیش‌فرض سفید):
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="color"
-                      value={bgColor}
-                      onChange={(e) => setBgColor(e.target.value)}
-                      className="w-10 h-10 rounded-lg cursor-pointer border border-border p-0.5 bg-transparent"
-                    />
-                    <Input
-                      dir="ltr"
-                      style={{ textAlign: 'left' }}
-                      value={bgColor}
-                      onChange={(e) => setBgColor(e.target.value)}
-                      className="h-10 text-xs font-mono text-left"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                {/* Scale */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between text-[11px] font-medium text-muted-foreground">
-                    <span>اندازه و مقیاس (Scale):</span>
-                    <span className="font-mono text-cyan-500 font-bold">
-                      {scale}x
-                    </span>
-                  </div>
-                  <input
-                    type="range"
-                    min="1"
-                    max="5"
-                    step="1"
-                    value={scale}
-                    onChange={(e) => setScale(Number(e.target.value))}
-                    className="w-full accent-cyan-500 cursor-pointer"
-                  />
-                </div>
-
-                {/* Include Text */}
-                <div className="flex items-center justify-between p-3 rounded-xl bg-muted/50 border border-border/50">
-                  <div className="space-y-0.5">
-                    <label className="text-xs font-bold text-foreground cursor-pointer">
-                      نمایش متن زیر بارکد
-                    </label>
-                    <p className="text-[10px] text-muted-foreground">
-                      فاصله استاندارد 2 پیکسلی و 10 پیکسل حاشیه امن پایین
-                    </p>
-                  </div>
-                  <Switch
-                    checked={includeText}
-                    onCheckedChange={(checked) => setIncludeText(checked)}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Live Preview & Download Column (Step 3: max-w-full h-auto object-contain, No stretching) */}
-          <div className="lg:col-span-5 sticky top-28 space-y-6">
-            <div className="bg-card border border-border/70 rounded-3xl p-6 sm:p-8 shadow-xl text-center space-y-5">
-              <div className="flex items-center justify-between border-b border-border/60 pb-3">
-                <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                  <Sparkles className="w-4 h-4 text-cyan-500" />
-                  <span>پیش‌نمایش زنده بارکد</span>
-                </span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted font-mono font-semibold text-muted-foreground">
-                  {currentSubtype.name}
-                </span>
-              </div>
-
-              {/* STRICT PURE WHITE Barcode Render Container (Step 3: object-contain with native aspect ratio) */}
-              <div className="min-h-[260px] rounded-2xl bg-white border-2 border-slate-200 p-6 sm:p-8 flex items-center justify-center overflow-hidden shadow-inner text-slate-900">
-                <div className="flex flex-col items-center justify-center max-w-full overflow-x-auto p-2 bg-white">
-                  {/* Step 3: Strictly max-w-full h-auto object-contain - No w-full or h-full to keep 2D codes perfectly square */}
-                  <canvas
-                    ref={canvasRef}
-                    className={`max-w-full h-auto object-contain drop-shadow-sm select-none transition-opacity duration-200 ${
-                      hasError ? 'hidden' : 'block'
-                    }`}
-                  />
-
-                  {/* Fallback Display if Format is Invalid */}
-                  {hasError && (
-                    <div className="text-center p-4 max-w-sm space-y-2">
-                      <div className="w-10 h-10 rounded-full bg-rose-500/10 text-rose-500 flex items-center justify-center mx-auto font-bold text-lg">
-                        !
-                      </div>
-                      <p className="text-xs font-bold text-rose-500">
-                        فرمت ورودی برای این نوع بارکد نامعتبر است.
-                      </p>
-                      <p className="text-[11px] text-slate-500 leading-relaxed">
-                        {currentSubtype.hint}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Small red error message under the box if format error occurs */}
-              {hasError && (
-                <p className="text-xs font-semibold text-rose-500 text-center animate-pulse">
-                  فرمت ورودی برای این نوع بارکد نامعتبر است.
-                </p>
-              )}
-
-              {/* Payload Summary Info */}
-              <div className="p-3 rounded-xl bg-muted/40 border border-border/60 text-xs text-muted-foreground flex items-center justify-between gap-3 text-start">
-                <div className="min-w-0 flex-1 truncate">
-                  <span className="text-[10px] uppercase font-mono block text-muted-foreground">
-                    محتوای کدگذاری‌شده:
-                  </span>
-                  <span
-                    dir="ltr"
-                    className="text-foreground font-mono truncate block text-xs text-left"
-                  >
-                    {computedPayload}
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    navigator.clipboard.writeText(computedPayload);
-                    toast.success('محتوای کد کپی شد.');
-                  }}
-                  className="p-1.5 rounded-lg bg-background border border-border hover:bg-muted text-foreground transition-colors shrink-0"
-                  title="کپی محتوا"
-                >
-                  <Copy className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
-              {/* Action Buttons: SVG, PNG, JPG */}
-              <div className="space-y-3 pt-2">
-                <div className="grid grid-cols-3 gap-2">
-                  <Button
-                    type="button"
-                    onClick={handleDownloadSvg}
-                    disabled={hasError || !svgOutput}
-                    className="h-11 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-cyan-500/20"
-                  >
-                    <Download className="w-3.5 h-3.5" />
-                    <span>SVG (وکتور)</span>
-                  </Button>
-
-                  <Button
-                    type="button"
-                    onClick={handleDownloadPng}
-                    disabled={hasError}
-                    className="h-11 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-blue-500/20"
-                  >
-                    <Download className="w-3.5 h-3.5" />
-                    <span>PNG</span>
-                  </Button>
-
-                  <Button
-                    type="button"
-                    onClick={handleDownloadJpg}
-                    disabled={hasError}
-                    className="h-11 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-indigo-500/20"
-                  >
-                    <Download className="w-3.5 h-3.5" />
-                    <span>JPG</span>
-                  </Button>
-                </div>
-
+                {/* Load Profile Button */}
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={handleCopySvg}
-                  disabled={hasError || !svgOutput}
-                  className="w-full h-10 rounded-xl text-xs font-semibold border-border hover:bg-muted flex items-center justify-center gap-2"
+                  onClick={handleLoadProfile}
+                  disabled={isProfileLoading}
+                  className="rounded-xl border-cyan-500/40 text-cyan-500 hover:bg-cyan-500/10 font-bold text-xs h-9"
                 >
-                  {copied ? (
-                    <Check className="w-4 h-4 text-emerald-500" />
-                  ) : (
-                    <Copy className="w-4 h-4" />
-                  )}
+                  <User className="w-3.5 h-3.5 me-1.5" />
                   <span>
-                    {copied ? 'کد SVG کپی شد!' : 'کپی سورس وکتور SVG'}
+                    {isProfileLoading ? 'در حال فراخوانی...' : 'فراخوانی اطلاعات من'}
                   </span>
                 </Button>
               </div>
 
-              <div className="text-[11px] text-muted-foreground flex items-center justify-center gap-2 pt-2 border-t border-border/50">
-                <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                <span>
-                  خروجی کاملاً استاندارد و قابل خواندن توسط تمام دستگاه‌های
-                  بارکدخوان
+              {/* Stage 1: Smart Search & Filter Section */}
+              <div className="p-4 sm:p-5 rounded-2xl bg-muted/30 border border-border/70 space-y-3.5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                  <div className="flex items-center gap-2 text-xs font-bold text-foreground">
+                    <Search className="w-4 h-4 text-cyan-500" />
+                    <span>جستجوی هوشمند در 116 مدل بارکد:</span>
+                  </div>
+
+                  {/* 3 Filter Checkboxes */}
+                  <div className="flex flex-wrap items-center gap-3 text-xs">
+                    <span className="text-[11px] text-muted-foreground">جستجو در:</span>
+                    <label className="inline-flex items-center gap-1.5 cursor-pointer text-muted-foreground hover:text-foreground">
+                      <input
+                        type="checkbox"
+                        checked={searchInName}
+                        onChange={(e) => setSearchInName(e.target.checked)}
+                        className="rounded border-border text-cyan-500 focus:ring-cyan-500 w-3.5 h-3.5"
+                      />
+                      <span>نام</span>
+                    </label>
+
+                    <label className="inline-flex items-center gap-1.5 cursor-pointer text-muted-foreground hover:text-foreground">
+                      <input
+                        type="checkbox"
+                        checked={searchInFeatures}
+                        onChange={(e) => setSearchInFeatures(e.target.checked)}
+                        className="rounded border-border text-cyan-500 focus:ring-cyan-500 w-3.5 h-3.5"
+                      />
+                      <span>ویژگی‌ها</span>
+                    </label>
+
+                    <label className="inline-flex items-center gap-1.5 cursor-pointer text-muted-foreground hover:text-foreground">
+                      <input
+                        type="checkbox"
+                        checked={searchInGuide}
+                        onChange={(e) => setSearchInGuide(e.target.checked)}
+                        className="rounded border-border text-cyan-500 focus:ring-cyan-500 w-3.5 h-3.5"
+                      />
+                      <span>راهنما</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Search Input */}
+                <div className="relative">
+                  <Search className="w-4 h-4 text-muted-foreground absolute start-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <Input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="جستجو بر اساس نام، مشخصات، استاندارد یا کاربرد صنعتی..."
+                    className="ps-10 pe-10 h-10 rounded-xl bg-background border-border text-xs focus-visible:ring-cyan-500"
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery('')}
+                      className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1 rounded-md"
+                      title="پاک کردن جستجو"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Conditional Display: Search Results vs Cascade Selector */}
+              {searchQuery.trim().length > 0 ? (
+                /* Interactive Search Results Card Grid */
+                <div className="space-y-3 p-4 rounded-2xl bg-card border border-cyan-500/30">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold text-foreground flex items-center gap-2">
+                      <Filter className="w-3.5 h-3.5 text-cyan-500" />
+                      <span>نتایج جستجو:</span>
+                    </span>
+                    <span className="text-cyan-500 font-mono font-bold">
+                      {searchResults.length} مدل یافت شد
+                    </span>
+                  </div>
+
+                  {searchResults.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-80 overflow-y-auto pe-1">
+                      {searchResults.map(({ category, subtype, features, guide }) => {
+                        const isSelected = selectedSubtypeId === subtype.id;
+                        return (
+                          <button
+                            key={subtype.id}
+                            type="button"
+                            onClick={() => {
+                              setSelectedCategory(category.id);
+                              setSelectedSubtypeId(subtype.id);
+                              if (
+                                subtype.defaultText &&
+                                !['business_cards', 'event_barcodes', 'wifi_barcodes'].includes(category.id)
+                              ) {
+                                setTextValue(subtype.defaultText);
+                              }
+                              toast.info(`مدل ${subtype.name} انتخاب شد.`);
+                            }}
+                            className={`p-3 rounded-xl border text-start transition-all flex flex-col justify-between gap-2 ${isSelected
+                              ? 'bg-cyan-500/15 border-cyan-500 text-foreground ring-1 ring-cyan-500'
+                              : 'bg-muted/30 border-border/70 hover:border-cyan-500/50 hover:bg-muted/60 text-muted-foreground hover:text-foreground'
+                              }`}
+                          >
+                            <div>
+                              <div className="flex items-center justify-between gap-2 mb-1">
+                                <span className="text-xs font-bold text-foreground line-clamp-1">
+                                  {subtype.name}
+                                </span>
+                                {isSelected && (
+                                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-500 text-white font-semibold">
+                                    فعال
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">
+                                {features}
+                              </p>
+                            </div>
+                            <div className="text-[10px] font-mono text-cyan-500/90 flex items-center justify-between pt-1 border-t border-border/40">
+                              <span className="truncate">{category.title.split('(')[0].trim()}</span>
+                              <span>bcid: {subtype.bcid}</span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="p-6 text-center text-xs text-muted-foreground space-y-2">
+                      <p>هیچ مدلی با عبارت جستجو شده یافت نشد.</p>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSearchQuery('')}
+                        className="text-cyan-500 hover:text-cyan-400 text-xs"
+                      >
+                        نمایش تمام 116 مدل بارکد
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <>
+                  {/* Cascade 1: 13 Independent Categories */}
+                  <div className="space-y-2.5">
+                    <label className="text-xs font-bold text-foreground flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <Layers className="w-3.5 h-3.5 text-cyan-500" />
+                        <span>1. انتخاب دسته‌بندی بارکد (13 گروه مستقل):</span>
+                      </span>
+                      <span className="text-[11px] font-mono text-cyan-500">
+                        {BARCODE_CATEGORIES.length} دسته اصلی
+                      </span>
+                    </label>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">
+                      {BARCODE_CATEGORIES.map((cat) => {
+                        const active = cat.id === selectedCategory;
+                        return (
+                          <button
+                            key={cat.id}
+                            type="button"
+                            onClick={() => handleCategoryChange(cat.id)}
+                            className={`text-start px-3 py-2.5 rounded-xl border text-xs font-semibold transition-all flex items-center justify-between ${active
+                              ? 'border-cyan-500 bg-cyan-500/15 text-cyan-400 shadow-md shadow-cyan-500/10 font-bold'
+                              : 'border-border/60 hover:bg-muted text-muted-foreground hover:text-foreground'
+                              }`}
+                          >
+                            <span className="truncate">{cat.title}</span>
+                            {active && (
+                              <Check className="w-3.5 h-3.5 text-cyan-400 shrink-0 ms-1" />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Cascade 2: Subtype Selector */}
+                  <div className="space-y-2 pt-2">
+                    <label className="text-xs font-bold text-foreground flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <Barcode className="w-3.5 h-3.5 text-cyan-500" />
+                        <span>2. نوع دقیق استاندارد (Subtype):</span>
+                      </span>
+                      <span className="text-[11px] text-muted-foreground font-mono">
+                        {currentCategory.subtypes.length} مدل در این دسته
+                      </span>
+                    </label>
+                    <select
+                      value={selectedSubtypeId}
+                      onChange={(e) => handleSubtypeChange(e.target.value)}
+                      className="w-full h-11 px-3.5 rounded-xl border border-border bg-background text-foreground text-xs font-medium focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-all cursor-pointer"
+                    >
+                      {currentCategory.subtypes.map((sub) => (
+                        <option key={sub.id} value={sub.id}>
+                          {sub.name}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 pt-1 leading-relaxed">
+                      <Info className="w-3.5 h-3.5 text-cyan-500 shrink-0" />
+                      <span>{currentGuideText}</span>
+                    </p>
+                  </div>
+                </>
+              )}
+
+              {/* Content Input Form: Adaptive based on Category (Step 2: dir="ltr" text-left on all inputs) */}
+              <div className="space-y-3 pt-2">
+                {/* GROUP 11: Business Cards Form */}
+                {selectedCategory === 'business_cards' ? (
+                  <div className="space-y-3 p-4 rounded-2xl bg-muted/30 border border-border/60">
+                    <span className="text-xs font-bold text-foreground flex items-center gap-1.5 pb-2 border-b border-border/50">
+                      <User className="w-4 h-4 text-cyan-500" />
+                      <span>مشخصات کارت ویزیت الکترونیکی (vCard / MeCard):</span>
+                    </span>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] text-muted-foreground mb-1">
+                          نام:
+                        </label>
+                        <Input
+                          value={cardFirstName}
+                          onChange={(e) => setCardFirstName(e.target.value)}
+                          placeholder="نام (مثال: احمد)"
+                          className="h-10 text-xs font-medium"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] text-muted-foreground mb-1">
+                          نام خانوادگی:
+                        </label>
+                        <Input
+                          value={cardLastName}
+                          onChange={(e) => setCardLastName(e.target.value)}
+                          placeholder="نام خانوادگی (مثال: رسولی)"
+                          className="h-10 text-xs font-medium"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] text-muted-foreground mb-1">
+                          شرکت / سازمان:
+                        </label>
+                        <Input
+                          value={cardOrg}
+                          onChange={(e) => setCardOrg(e.target.value)}
+                          placeholder="نام شرکت (مثال: آریا لینک)"
+                          className="h-10 text-xs font-medium"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] text-muted-foreground mb-1">
+                          عنوان شغلی:
+                        </label>
+                        <Input
+                          value={cardTitle}
+                          onChange={(e) => setCardTitle(e.target.value)}
+                          placeholder="سمت (مثال: مدیر فناوری)"
+                          className="h-10 text-xs font-medium"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] text-muted-foreground mb-1">
+                          شماره تلفن:
+                        </label>
+                        <Input
+                          dir="ltr"
+                          style={{ textAlign: 'left' }}
+                          value={cardPhone}
+                          onChange={(e) => setCardPhone(e.target.value)}
+                          placeholder="شماره تلفن با کد کشور (مثال: +93700123456)"
+                          className="h-10 text-xs font-mono text-left"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] text-muted-foreground mb-1">
+                          آدرس ایمیل:
+                        </label>
+                        <Input
+                          dir="ltr"
+                          style={{ textAlign: 'left' }}
+                          value={cardEmail}
+                          onChange={(e) => setCardEmail(e.target.value)}
+                          placeholder="ایمیل کاری (مثال: info@aryalink.com)"
+                          className="h-10 text-xs font-mono text-left"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] text-muted-foreground mb-1">
+                        وب‌سایت یا لینک کارت هوشمند:
+                      </label>
+                      <Input
+                        dir="ltr"
+                        style={{ textAlign: 'left' }}
+                        value={cardWebsite}
+                        onChange={(e) => setCardWebsite(e.target.value)}
+                        placeholder="لینک اینترنتی (مثال: https://aryalink.com)"
+                        className="h-10 text-xs font-mono text-left"
+                      />
+                    </div>
+                  </div>
+                ) : selectedCategory === 'event_barcodes' ? (
+                  /* GROUP 12: Event Barcodes Form */
+                  <div className="space-y-3 p-4 rounded-2xl bg-muted/30 border border-border/60">
+                    <span className="text-xs font-bold text-foreground flex items-center gap-1.5 pb-2 border-b border-border/50">
+                      <Calendar className="w-4 h-4 text-cyan-500" />
+                      <span>مشخصات رویداد و تقویم (iCalendar VEVENT):</span>
+                    </span>
+
+                    <div>
+                      <label className="block text-[11px] text-muted-foreground mb-1">
+                        عنوان رویداد:
+                      </label>
+                      <Input
+                        value={eventTitle}
+                        onChange={(e) => setEventTitle(e.target.value)}
+                        placeholder="عنوان جلسه یا همایش (مثال: کنفرانس سالانه آریا لینک)"
+                        className="h-10 text-xs font-medium"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] text-muted-foreground mb-1">
+                        محل برگزاری:
+                      </label>
+                      <Input
+                        value={eventLocation}
+                        onChange={(e) => setEventLocation(e.target.value)}
+                        placeholder="محل رویداد (مثال: کابل، هتل سرینا)"
+                        className="h-10 text-xs font-medium"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] text-muted-foreground mb-1">
+                          زمان شروع (فرمت YYYYMMDDTHHMMSSZ):
+                        </label>
+                        <Input
+                          dir="ltr"
+                          style={{ textAlign: 'left' }}
+                          value={eventStart}
+                          onChange={(e) => setEventStart(e.target.value)}
+                          placeholder="فرمت تقویم (مثال: 20261115T090000Z)"
+                          className="h-10 text-xs font-mono text-left"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] text-muted-foreground mb-1">
+                          زمان پایان (فرمت YYYYMMDDTHHMMSSZ):
+                        </label>
+                        <Input
+                          dir="ltr"
+                          style={{ textAlign: 'left' }}
+                          value={eventEnd}
+                          onChange={(e) => setEventEnd(e.target.value)}
+                          placeholder="فرمت تقویم (مثال: 20261115T120000Z)"
+                          className="h-10 text-xs font-mono text-left"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] text-muted-foreground mb-1">
+                        توضیحات رویداد:
+                      </label>
+                      <Input
+                        value={eventDescription}
+                        onChange={(e) => setEventDescription(e.target.value)}
+                        placeholder="توضیحات کوتاه (مثال: معرفی راهکارهای نوین کارت هوشمند)"
+                        className="h-10 text-xs font-medium"
+                      />
+                    </div>
+                  </div>
+                ) : selectedCategory === 'wifi_barcodes' ? (
+                  /* GROUP 13: Wi-Fi Barcodes Form */
+                  <div className="space-y-3 p-4 rounded-2xl bg-muted/30 border border-border/60">
+                    <span className="text-xs font-bold text-foreground flex items-center gap-1.5 pb-2 border-b border-border/50">
+                      <Wifi className="w-4 h-4 text-cyan-500" />
+                      <span>مشخصات اتصال خودکار شبکه وای‌فای:</span>
+                    </span>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] text-muted-foreground mb-1">
+                          نام شبکه (SSID):
+                        </label>
+                        <Input
+                          dir="ltr"
+                          style={{ textAlign: 'left' }}
+                          value={wifiSsid}
+                          onChange={(e) => setWifiSsid(e.target.value)}
+                          placeholder="نام شبکه وای‌فای (مثال: AryaLink_Guest)"
+                          className="h-10 text-xs font-mono text-left"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] text-muted-foreground mb-1">
+                          رمز عبور وای‌فای:
+                        </label>
+                        <Input
+                          dir="ltr"
+                          style={{ textAlign: 'left' }}
+                          value={wifiPassword}
+                          onChange={(e) => setWifiPassword(e.target.value)}
+                          placeholder="رمز عبور شبکه (مثال: Secret2026)"
+                          className="h-10 text-xs font-mono text-left"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] text-muted-foreground">
+                          رمزنگاری:
+                        </span>
+                        {(['WPA', 'WEP', 'nopass'] as const).map((auth) => (
+                          <button
+                            key={auth}
+                            type="button"
+                            onClick={() => setWifiAuth(auth)}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors ${wifiAuth === auth
+                              ? 'bg-cyan-500/20 border-cyan-500 text-cyan-400 font-bold'
+                              : 'border-border/60 text-muted-foreground hover:bg-muted'
+                              }`}
+                          >
+                            {auth === 'nopass' ? 'بدون رمز (Open)' : auth}
+                          </button>
+                        ))}
+                      </div>
+
+                      <label className="flex items-center gap-2 cursor-pointer text-xs text-muted-foreground">
+                        <input
+                          type="checkbox"
+                          checked={wifiHidden}
+                          onChange={(e) => setWifiHidden(e.target.checked)}
+                          className="rounded border-border accent-cyan-500 cursor-pointer"
+                        />
+                        <span>شبکه پنهان (Hidden SSID)</span>
+                      </label>
+                    </div>
+                  </div>
+                ) : (
+                  /* GROUP 1-10: Standard Barcode Content Input with dir="ltr" and text-left */
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-foreground">
+                        3. متن، عدد یا لینک درون بارکد:
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setTextValue(currentSubtype.defaultText)}
+                        className="text-[10px] text-cyan-500 hover:underline flex items-center gap-1"
+                      >
+                        <RefreshCw className="w-3 h-3" />
+                        <span>نمونه پیش‌فرض معتبر</span>
+                      </button>
+                    </div>
+                    <Input
+                      dir="ltr"
+                      style={{ textAlign: 'left' }}
+                      value={textValue}
+                      onChange={(e) => setTextValue(e.target.value)}
+                      placeholder={currentSubtype.placeholder}
+                      className="h-11 rounded-xl text-xs font-mono font-semibold text-left"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Appearance Settings: Colors, Scale, Include Text */}
+              <div className="pt-4 border-t border-border/60 space-y-4">
+                <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                  <Palette className="w-3.5 h-3.5 text-cyan-500" />
+                  <span>تنظیمات ظاهری و خروجی:</span>
                 </span>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Line Color */}
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-medium text-muted-foreground">
+                      رنگ خطوط بارکد (پیش‌فرض مشکی):
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={lineColor}
+                        onChange={(e) => setLineColor(e.target.value)}
+                        className="w-10 h-10 rounded-lg cursor-pointer border border-border p-0.5 bg-transparent"
+                      />
+                      <Input
+                        dir="ltr"
+                        style={{ textAlign: 'left' }}
+                        value={lineColor}
+                        onChange={(e) => setLineColor(e.target.value)}
+                        className="h-10 text-xs font-mono text-left"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Background Color */}
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-medium text-muted-foreground">
+                      رنگ پس‌زمینه (پیش‌فرض سفید):
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={bgColor}
+                        onChange={(e) => setBgColor(e.target.value)}
+                        className="w-10 h-10 rounded-lg cursor-pointer border border-border p-0.5 bg-transparent"
+                      />
+                      <Input
+                        dir="ltr"
+                        style={{ textAlign: 'left' }}
+                        value={bgColor}
+                        onChange={(e) => setBgColor(e.target.value)}
+                        className="h-10 text-xs font-mono text-left"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                  {/* Scale */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-[11px] font-medium text-muted-foreground">
+                      <span>اندازه و مقیاس (Scale):</span>
+                      <span className="font-mono text-cyan-500 font-bold">
+                        {scale}x
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min="1"
+                      max="5"
+                      step="1"
+                      value={scale}
+                      onChange={(e) => setScale(Number(e.target.value))}
+                      className="w-full accent-cyan-500 cursor-pointer"
+                    />
+                  </div>
+
+                  {/* Include Text */}
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-muted/50 border border-border/50">
+                    <div className="space-y-0.5">
+                      <label className="text-xs font-bold text-foreground cursor-pointer">
+                        نمایش متن زیر بارکد
+                      </label>
+                      <p className="text-[10px] text-muted-foreground">
+                        فاصله استاندارد 2 پیکسلی و 10 پیکسل حاشیه امن پایین
+                      </p>
+                    </div>
+                    <Switch
+                      checked={includeText}
+                      onCheckedChange={(checked) => setIncludeText(checked)}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Stage 3: Smart Helper (بخش راهنمای هوشمند استاندارد) */}
-            <div className="bg-card/95 border border-cyan-500/30 rounded-3xl p-5 sm:p-6 shadow-xl backdrop-blur-sm text-start space-y-3.5 relative overflow-hidden group transition-all duration-300 hover:border-cyan-500/50">
-              <div className="absolute top-0 end-0 w-32 h-32 bg-cyan-500/10 rounded-full blur-2xl pointer-events-none -mr-10 -mt-10" />
+            {/* Live Preview & Download Column (Step 3: max-w-full h-auto object-contain, No stretching) */}
+            <div className="lg:col-span-5 sticky top-28 space-y-6">
+              <div className="bg-card border border-border/70 rounded-3xl p-6 sm:p-8 shadow-xl text-center space-y-5">
+                <div className="flex items-center justify-between border-b border-border/60 pb-3">
+                  <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                    <Sparkles className="w-4 h-4 text-cyan-500" />
+                    <span>پیش‌نمایش زنده بارکد</span>
+                  </span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted font-mono font-semibold text-muted-foreground">
+                    {currentSubtype.name}
+                  </span>
+                </div>
 
-              <div className="flex items-center justify-between gap-2 border-b border-border/50 pb-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
-                    <Info className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-bold text-foreground">
-                      راهنمای هوشمند استاندارد
-                    </h4>
-                    <span className="text-[10px] text-muted-foreground font-mono">
-                      {currentSubtype.name}
-                    </span>
+                {/* STRICT PURE WHITE Barcode Render Container (Step 3: object-contain with native aspect ratio) */}
+                <div className="min-h-[260px] rounded-2xl bg-white border-2 border-slate-200 p-6 sm:p-8 flex items-center justify-center overflow-hidden shadow-inner text-slate-900">
+                  <div className="flex flex-col items-center justify-center max-w-full overflow-x-auto p-2 bg-white">
+                    {/* Step 3: Strictly max-w-full h-auto object-contain - No w-full or h-full to keep 2D codes perfectly square */}
+                    <canvas
+                      ref={canvasRef}
+                      className={`max-w-full h-auto object-contain drop-shadow-sm select-none transition-opacity duration-200 ${hasError ? 'hidden' : 'block'
+                        }`}
+                    />
+
+                    {/* Fallback Display if Format is Invalid */}
+                    {hasError && (
+                      <div className="text-center p-4 max-w-sm space-y-2">
+                        <div className="w-10 h-10 rounded-full bg-rose-500/10 text-rose-500 flex items-center justify-center mx-auto font-bold text-lg">
+                          !
+                        </div>
+                        <p className="text-xs font-bold text-rose-500">
+                          فرمت ورودی برای این نوع بارکد نامعتبر است.
+                        </p>
+                        <p className="text-[11px] text-slate-500 leading-relaxed">
+                          {currentSubtype.hint}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
-                <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-medium">
-                  {currentCategory.title.split('(')[0].trim()}
-                </span>
+
+                {/* Small red error message under the box if format error occurs */}
+                {hasError && (
+                  <p className="text-xs font-semibold text-rose-500 text-center animate-pulse">
+                    فرمت ورودی برای این نوع بارکد نامعتبر است.
+                  </p>
+                )}
+
+                {/* Payload Summary Info */}
+                <div className="p-3 rounded-xl bg-muted/40 border border-border/60 text-xs text-muted-foreground flex items-center justify-between gap-3 text-start">
+                  <div className="min-w-0 flex-1 truncate">
+                    <span className="text-[10px] uppercase font-mono block text-muted-foreground">
+                      محتوای کدگذاری‌شده:
+                    </span>
+                    <span
+                      dir="ltr"
+                      className="text-foreground font-mono truncate block text-xs text-left"
+                    >
+                      {computedPayload}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(computedPayload);
+                      toast.success('محتوای کد کپی شد.');
+                    }}
+                    className="p-1.5 rounded-lg bg-background border border-border hover:bg-muted text-foreground transition-colors shrink-0"
+                    title="کپی محتوا"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                {/* Action Buttons: SVG, PNG, JPG */}
+                <div className="space-y-3 pt-2">
+                  <div className="grid grid-cols-3 gap-2">
+                    <Button
+                      type="button"
+                      onClick={handleDownloadSvg}
+                      disabled={hasError || !svgOutput}
+                      className="h-11 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-cyan-500/20"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>SVG (وکتور)</span>
+                    </Button>
+
+                    <Button
+                      type="button"
+                      onClick={handleDownloadPng}
+                      disabled={hasError}
+                      className="h-11 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-blue-500/20"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>PNG</span>
+                    </Button>
+
+                    <Button
+                      type="button"
+                      onClick={handleDownloadJpg}
+                      disabled={hasError}
+                      className="h-11 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-indigo-500/20"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>JPG</span>
+                    </Button>
+                  </div>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleCopySvg}
+                    disabled={hasError || !svgOutput}
+                    className="w-full h-10 rounded-xl text-xs font-semibold border-border hover:bg-muted flex items-center justify-center gap-2"
+                  >
+                    {copied ? (
+                      <Check className="w-4 h-4 text-emerald-500" />
+                    ) : (
+                      <Copy className="w-4 h-4" />
+                    )}
+                    <span>
+                      {copied ? 'کد SVG کپی شد!' : 'کپی سورس وکتور SVG'}
+                    </span>
+                  </Button>
+                </div>
+
+                <div className="text-[11px] text-muted-foreground flex items-center justify-center gap-2 pt-2 border-t border-border/50">
+                  <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                  <span>
+                    خروجی کاملاً استاندارد و قابل خواندن توسط تمام دستگاه‌های
+                    بارکدخوان
+                  </span>
+                </div>
               </div>
 
-              <div className="p-3.5 rounded-2xl bg-muted/40 border border-border/60 space-y-2">
-                <p className="text-xs text-foreground/90 leading-relaxed font-medium">
-                  {currentGuideText}
-                </p>
-              </div>
+              {/* Stage 3: Smart Helper (بخش راهنمای هوشمند استاندارد) */}
+              <div className="bg-card/95 border border-cyan-500/30 rounded-3xl p-5 sm:p-6 shadow-xl backdrop-blur-sm text-start space-y-3.5 relative overflow-hidden group transition-all duration-300 hover:border-cyan-500/50">
+                <div className="absolute top-0 end-0 w-32 h-32 bg-cyan-500/10 rounded-full blur-2xl pointer-events-none -mr-10 -mt-10" />
 
-              <div className="flex items-center justify-between gap-2 pt-1 text-[11px] text-muted-foreground">
-                <span className="flex items-center gap-1.5">
-                  <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>استاندارد بین‌المللی ISO/IEC و GS1</span>
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setTextValue(currentSubtype.defaultText)}
-                  className="text-cyan-400 hover:text-cyan-300 font-semibold text-[11px] flex items-center gap-1 transition-colors"
-                >
-                  <RefreshCw className="w-3 h-3" />
-                  <span>تست نمونه معتبر</span>
-                </button>
+                <div className="flex items-center justify-between gap-2 border-b border-border/50 pb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+                      <Info className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-foreground">
+                        راهنمای هوشمند استاندارد
+                      </h4>
+                      <span className="text-[10px] text-muted-foreground font-mono">
+                        {currentSubtype.name}
+                      </span>
+                    </div>
+                  </div>
+                  <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-medium">
+                    {currentCategory.title.split('(')[0].trim()}
+                  </span>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-muted/40 border border-border/60 space-y-2">
+                  <p className="text-xs text-foreground/90 leading-relaxed font-medium">
+                    {currentGuideText}
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-between gap-2 pt-1 text-[11px] text-muted-foreground">
+                  <span className="flex items-center gap-1.5">
+                    <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>استاندارد بین‌المللی ISO/IEC و GS1</span>
+                  </span>
+
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        ) : (
+          /* Scanner View (Stage 2, 3, 4) */
+          <div className="bg-card border border-border/70 rounded-3xl p-6 sm:p-8 shadow-xl">
+            <CodeScanner
+              scannerType="barcode"
+              title="اسکنر هوشمند بارکد (Barcode Scanner)"
+              subtitle="اسکن زنده انواع کدهای خطی، دوبعدی و صنعتی با دوربین زنده دستگاه یا بارگذاری عکس"
+              onRecreate={(decodedText) => {
+                setTextValue(decodedText);
+                setActiveToolTab('generator');
+                toast.success('محتوای اسکن شده به اینپوت بارکد منتقل شد.');
+              }}
+            />
+          </div>
+        )}
 
         {/* Stage 4: CTA Banner */}
         <ToolsCtaBanner />

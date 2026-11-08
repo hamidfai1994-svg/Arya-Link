@@ -30,11 +30,13 @@ import {
   ShieldCheck,
   Sliders,
   Maximize2,
+  Camera,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { useProfileLoader } from '@/components/tools/useProfileLoader';
 import { ToolsCtaBanner } from '@/components/tools/ToolsCtaBanner';
+import { CodeScanner } from '@/components/tools/CodeScanner';
 import { toast } from 'sonner';
 
 type ContentTab =
@@ -58,10 +60,98 @@ type DotStyle =
 type CornerSquareStyle = 'square' | 'dot' | 'extra-rounded';
 type CornerDotStyle = 'square' | 'dot';
 
+export type FrameStyle =
+  | 'none'
+  | 'bottom-banner'
+  | 'top-banner'
+  | 'rounded-banner'
+  | 'phone'
+  | 'clipboard';
+
+const toSvgDataUrl = (svgStr: string) =>
+  `data:image/svg+xml;utf8,${encodeURIComponent(svgStr)}`;
+
+const PRESET_LOGOS = [
+  {
+    id: 'link',
+    label: 'Link',
+    bg: '#8b5cf6',
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100"><circle cx="50" cy="50" r="46" fill="#8b5cf6"/><path d="M42 58a12 12 0 0 0 17 0l8-8a12 12 0 0 0-17-17l-4 4" stroke="#ffffff" stroke-width="6" stroke-linecap="round" fill="none"/><path d="M58 42a12 12 0 0 0-17 0l-8 8a12 12 0 0 0 17 17l4-4" stroke="#ffffff" stroke-width="6" stroke-linecap="round" fill="none"/></svg>`,
+  },
+  {
+    id: 'location',
+    label: 'Location',
+    bg: '#ef4444',
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100"><circle cx="50" cy="50" r="46" fill="#ef4444"/><path d="M50 26a16 16 0 0 0-16 16c0 12 16 32 16 32s16-20 16-32a16 16 0 0 0-16-16zm0 22a6 6 0 1 1 6-6 6 6 0 0 1-6 6z" fill="#ffffff"/></svg>`,
+  },
+  {
+    id: 'email',
+    label: 'Email',
+    bg: '#f59e0b',
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100"><circle cx="50" cy="50" r="46" fill="#f59e0b"/><rect x="26" y="33" width="48" height="34" rx="6" fill="#ffffff"/><path d="M28 36l22 16 22-16" stroke="#f59e0b" stroke-width="5" stroke-linecap="round" fill="none"/></svg>`,
+  },
+  {
+    id: 'whatsapp',
+    label: 'WhatsApp',
+    bg: '#22c55e',
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100"><circle cx="50" cy="50" r="46" fill="#22c55e"/><path d="M50 24a26 26 0 0 0-22 39.5L25 76l13-3.4A26 26 0 1 0 50 24z" fill="#ffffff"/><path d="M60 55c-.8 2.2-3.8 4-5.3 4.2-1.5.3-3.4.4-11-2.8-9.2-3.8-15-13.4-15.5-14-.5-.6-3.8-5-3.8-9.6s2.4-6.8 3.3-7.7c.9-.9 1.9-1.1 2.5-1.1s1.3 0 1.8.1c.6 0 1.4-.2 2.2 1.7.8 1.9 2.7 6.6 2.9 7.1.3.5.4 1.1.1 1.7-.3.7-.6 1-1.1 1.6-.6.6-1.1 1.1-1.6 1.7-.5.5-.9 1.1-.4 2 2.1 3.7 4.7 6.4 8.5 8.5.9.5 1.5.1 2-.4.6-.5 1.1-1.1 1.7-1.6.6-.5 1.2-.4 1.8-.1.7.3 4.2 2 4.9 2.3.7.4 1.2.6 1.4.9.2.4.2 2.1-.6 4.3z" fill="#22c55e"/></svg>`,
+  },
+  {
+    id: 'wifi',
+    label: 'WiFi',
+    bg: '#3b82f6',
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100"><circle cx="50" cy="50" r="46" fill="#3b82f6"/><path d="M30 40a28 28 0 0 1 40 0M37 49a18 18 0 0 1 26 0M44 58a8 8 0 0 1 12 0" stroke="#ffffff" stroke-width="5" stroke-linecap="round" fill="none"/><circle cx="50" cy="69" r="4" fill="#ffffff"/></svg>`,
+  },
+  {
+    id: 'vcard',
+    label: 'Contact',
+    bg: '#1e40af',
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100"><circle cx="50" cy="50" r="46" fill="#1e40af"/><rect x="25" y="32" width="50" height="36" rx="5" fill="#ffffff"/><circle cx="40" cy="46" r="6" fill="#1e40af"/><rect x="52" y="42" width="16" height="3" rx="1.5" fill="#1e40af"/><rect x="52" y="49" width="11" height="3" rx="1.5" fill="#1e40af"/><path d="M32 59c0-4 4-6 8-6s8 2 8 6" fill="#1e40af"/></svg>`,
+  },
+  {
+    id: 'paypal',
+    label: 'PayPal',
+    bg: '#0284c7',
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100"><circle cx="50" cy="50" r="46" fill="#0284c7"/><path d="M38 72l6-38h15c7 0 11 3 10 9-1 5-4 8-9 8h-5l-3 21h-9z" fill="#ffffff"/><path d="M46 64l4-24h12c5 0 9 2 8 7-1 5-3 7-8 7h-4l-3 18h-9z" fill="#bae6fd"/></svg>`,
+  },
+  {
+    id: 'bitcoin',
+    label: 'Bitcoin',
+    bg: '#f97316',
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100"><circle cx="50" cy="50" r="46" fill="#f97316"/><path d="M57 45c4-1 6-4 5-8-1-5-6-7-11-7h-11v38h13c6 0 11-2 11-8 0-4-3-7-7-8zm-11-9h5c3 0 5 1 5 4s-2 4-5 4h-5v-8zm6 24h-6v-9h6c3 0 6 1 6 4.5s-3 4.5-6 4.5z" fill="#ffffff"/><path d="M47 24v4M53 24v4M47 70v4M53 70v4" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/></svg>`,
+  },
+];
+
+const PRESET_BADGES = [
+  {
+    id: 'scanme_bracket',
+    label: '[SCAN ME]',
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100"><rect width="100" height="100" fill="#ffffff" rx="10"/><path d="M22 36V22h14M78 36V22H64M22 64v14h14M78 64v14H64" stroke="#000000" stroke-width="6" stroke-linecap="round" fill="none"/><text x="50" y="44" font-family="sans-serif" font-weight="900" font-size="16" fill="#000000" text-anchor="middle">SCAN</text><text x="50" y="66" font-family="sans-serif" font-weight="900" font-size="20" fill="#000000" text-anchor="middle">ME</text></svg>`,
+  },
+  {
+    id: 'scanme_badge',
+    label: 'SCAN ME',
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100"><rect width="100" height="100" fill="#ffffff" rx="10"/><rect x="8" y="24" width="84" height="52" rx="8" fill="#000000"/><text x="50" y="48" font-family="sans-serif" font-weight="900" font-size="14" fill="#ffffff" text-anchor="middle" letter-spacing="1">SCAN</text><text x="50" y="67" font-family="sans-serif" font-weight="900" font-size="16" fill="#ffffff" text-anchor="middle" letter-spacing="2">ME</text></svg>`,
+  },
+  {
+    id: 'qr_badge',
+    label: 'QR Scanner',
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100"><rect width="100" height="100" fill="#ffffff" rx="10"/><path d="M25 35V25h10M75 35V25H65M25 65v10h10M75 65v10H65" stroke="#000000" stroke-width="5" stroke-linecap="round" fill="none"/><rect x="36" y="36" width="12" height="12" fill="#000000"/><rect x="52" y="36" width="12" height="12" fill="#000000"/><rect x="36" y="52" width="12" height="12" fill="#000000"/><rect x="52" y="52" width="12" height="12" fill="#000000"/></svg>`,
+  },
+  {
+    id: 'barcode_badge',
+    label: 'Barcode',
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100"><rect width="100" height="100" fill="#ffffff" rx="10"/><path d="M20 30v40M27 30v40M37 30v40M42 30v40M49 30v40M59 30v40M64 30v40M74 30v40M80 30v40" stroke="#000000" stroke-width="4" stroke-linecap="square"/></svg>`,
+  },
+];
+
 export default function AdvancedQrMakerPage() {
   const { dir, language } = useLanguage();
   const isRtl = dir === 'rtl';
   const { loadProfile, isLoading: isProfileLoading } = useProfileLoader();
+
+  // Top-Level Mode Tab: Generator vs Scanner
+  const [mainViewMode, setMainViewMode] = useState<'generator' | 'scanner'>('generator');
 
   // Active Tab
   const [activeTab, setActiveTab] = useState<ContentTab>('url');
@@ -116,17 +206,27 @@ export default function AdvancedQrMakerPage() {
     address: 'Kabul, Afghanistan',
   });
 
-  // Styling States
-  const [dotStyle, setDotStyle] = useState<DotStyle>('rounded');
-  const [cornerSquareStyle, setCornerSquareStyle] =
-    useState<CornerSquareStyle>('extra-rounded');
-  const [cornerDotStyle, setCornerDotStyle] = useState<CornerDotStyle>('dot');
+  // Design Tab: 'frame' | 'shape' | 'logo' (Step 2)
+  const [designTab, setDesignTab] = useState<'frame' | 'shape' | 'logo'>('shape');
 
-  // Colors
-  const [colorMode, setColorMode] = useState<'single' | 'gradient'>('gradient');
-  const [singleColor, setSingleColor] = useState('#06b6d4');
-  const [gradientColor1, setGradientColor1] = useState('#06b6d4');
-  const [gradientColor2, setGradientColor2] = useState('#3b82f6');
+  // Styling States - Default: Pure Black #000000, Square Dots, Square Outer Eye, Square Inner Dot
+  const [dotStyle, setDotStyle] = useState<DotStyle>('square');
+  const [cornerSquareStyle, setCornerSquareStyle] =
+    useState<CornerSquareStyle>('square');
+  const [cornerDotStyle, setCornerDotStyle] = useState<CornerDotStyle>('square');
+
+  // Frame States
+  const [frameStyle, setFrameStyle] = useState<
+    'none' | 'bottom-banner' | 'top-banner' | 'rounded-banner' | 'phone' | 'clipboard'
+  >('none');
+  const [frameText, setFrameText] = useState('SCAN ME');
+  const [frameColor, setFrameColor] = useState('#000000');
+
+  // Colors - Default: Single color Pure Black #000000
+  const [colorMode, setColorMode] = useState<'single' | 'gradient'>('single');
+  const [singleColor, setSingleColor] = useState('#000000');
+  const [gradientColor1, setGradientColor1] = useState('#000000');
+  const [gradientColor2, setGradientColor2] = useState('#000000');
   const [gradientType, setGradientType] = useState<'linear' | 'radial'>('linear');
   const [gradientRotation, setGradientRotation] = useState(45);
 
@@ -136,8 +236,8 @@ export default function AdvancedQrMakerPage() {
 
   // Eye custom colors
   const [customEyeColors, setCustomEyeColors] = useState(false);
-  const [eyeSquareColor, setEyeSquareColor] = useState('#0e7490');
-  const [eyeDotColor, setEyeDotColor] = useState('#0284c7');
+  const [eyeSquareColor, setEyeSquareColor] = useState('#000000');
+  const [eyeDotColor, setEyeDotColor] = useState('#000000');
 
   // Logo upload
   const [logoDataUrl, setLogoDataUrl] = useState<string | null>(null);
@@ -460,22 +560,27 @@ export default function AdvancedQrMakerPage() {
     );
   };
 
-  // Reset to default
+  // Reset to default - Pure Black #000000, Square
   const handleReset = () => {
-    setColorMode('gradient');
-    setSingleColor('#06b6d4');
-    setGradientColor1('#06b6d4');
-    setGradientColor2('#3b82f6');
-    setDotStyle('rounded');
-    setCornerSquareStyle('extra-rounded');
-    setCornerDotStyle('dot');
+    setColorMode('single');
+    setSingleColor('#000000');
+    setGradientColor1('#000000');
+    setGradientColor2('#000000');
+    setDotStyle('square');
+    setCornerSquareStyle('square');
+    setCornerDotStyle('square');
     setIsTransparentBg(false);
     setBgColor('#ffffff');
     setCustomEyeColors(false);
+    setEyeSquareColor('#000000');
+    setEyeDotColor('#000000');
     setLogoDataUrl(null);
+    setFrameStyle('none');
+    setFrameText('SCAN ME');
+    setFrameColor('#000000');
     setMargin(8);
     setErrorCorrectionLevel('Q');
-    toast.info(language === 'en' ? 'Styles reset to defaults.' : 'تنظیمات ظاهری بازنشانی شدند.');
+    toast.info(language === 'en' ? 'Styles reset to defaults.' : 'تنظیمات ظاهری به حالت پیش‌فرض بازنشانی شدند.');
   };
 
   // Preset Colors
@@ -603,8 +708,49 @@ export default function AdvancedQrMakerPage() {
           </div>
         </div>
 
-        {/* Main Grid: Left Config Tabs & Form | Right Sticky Live Preview */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        {/* Top-Level Mode Navigation: Generator vs Scanner */}
+        <div className="flex items-center gap-3 p-1.5 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-xl mb-8 max-w-md">
+          <button
+            type="button"
+            onClick={() => setMainViewMode('generator')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+              mainViewMode === 'generator'
+                ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg shadow-cyan-500/25 border border-cyan-400/30'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+            }`}
+          >
+            <QrCode className="w-4 h-4" />
+            <span>
+              {language === 'en'
+                ? 'QR Generator'
+                : language === 'ps'
+                ? 'QR جوړونکی'
+                : 'سازنده کیوآر کد'}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setMainViewMode('scanner')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+              mainViewMode === 'scanner'
+                ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg shadow-cyan-500/25 border border-cyan-400/30'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+            }`}
+          >
+            <Camera className="w-4 h-4" />
+            <span>
+              {language === 'en'
+                ? 'QR Scanner'
+                : language === 'ps'
+                ? 'QR سکینر'
+                : 'اسکنر کیوآر کد'}
+            </span>
+          </button>
+        </div>
+
+        {mainViewMode === 'generator' ? (
+          /* Main Grid: Left Config Tabs & Form | Right Sticky Live Preview */
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* Left Column (8 cols): Content Tabs + Design Customizers */}
           <div className="lg:col-span-7 space-y-6">
             {/* Step 1: Content Type Tabs */}
@@ -1115,520 +1261,726 @@ export default function AdvancedQrMakerPage() {
               </div>
             </div>
 
-            {/* Step 2: Visual Styling & Design System */}
-            <div className="bg-slate-900/60 backdrop-blur-xl border border-slate-800 rounded-2xl p-5 shadow-xl space-y-6">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <span className="text-xs font-bold tracking-wider uppercase text-cyan-400 flex items-center gap-1.5">
-                  <Palette className="w-4 h-4" />
-                  {language === 'en'
-                    ? 'Step 2: Shapes & Color Customization'
-                    : language === 'ps'
-                    ? 'دویم ګام: رنګونه او اشکال'
-                    : 'مرحله 2: شخصی‌سازی اشکال، رنگ و قالب'}
-                </span>
-                <span className="text-xs text-slate-400">
-                  {colorMode === 'gradient'
-                    ? language === 'en'
-                      ? 'Gradient'
-                      : 'گرادیان مدرن'
-                    : language === 'en'
-                    ? 'Single Color'
-                    : 'تک‌رنگ'}
-                </span>
+            {/* Step 2: Visual Styling & Design System - 3 Dedicated Tabs: Frame, Shape, Logo */}
+            <div className="bg-slate-900/60 backdrop-blur-xl border border-slate-800 rounded-3xl p-5 sm:p-6 shadow-xl space-y-6">
+              {/* Top Tabs: Frame | Shape | Logo (Exact Match to Reference Screenshots) */}
+              <div className="flex items-center p-1.5 rounded-2xl bg-slate-950/80 border border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setDesignTab('frame')}
+                  className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all text-center ${
+                    designTab === 'frame'
+                      ? 'bg-cyan-500 text-white shadow-md shadow-cyan-500/20'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  فریم (Frame)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDesignTab('shape')}
+                  className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all text-center ${
+                    designTab === 'shape'
+                      ? 'bg-cyan-500 text-white shadow-md shadow-cyan-500/20'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  شکل (Shape)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDesignTab('logo')}
+                  className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all text-center ${
+                    designTab === 'logo'
+                      ? 'bg-cyan-500 text-white shadow-md shadow-cyan-500/20'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  لوگو (Logo)
+                </button>
               </div>
 
-              {/* Dots Shape Style */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-2">
-                  {language === 'en' ? 'Dot Pattern Style' : 'شکل نقاط داخلی (Dot Pattern)'}
-                </label>
-                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-                  {(
-                    [
-                      { id: 'rounded', label: 'Rounded' },
-                      { id: 'dots', label: 'Dots' },
-                      { id: 'classy', label: 'Classy' },
-                      { id: 'classy-rounded', label: 'Classy-R' },
-                      { id: 'square', label: 'Square' },
-                      { id: 'extra-rounded', label: 'Extra-R' },
-                    ] as const
-                  ).map((pattern) => (
-                    <button
-                      key={pattern.id}
-                      type="button"
-                      onClick={() => setDotStyle(pattern.id)}
-                      className={`py-2 px-2 rounded-xl text-xs font-medium border text-center transition-all ${
-                        dotStyle === pattern.id
-                          ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300 font-bold'
-                          : 'bg-slate-950/40 border-slate-800 text-slate-400 hover:text-slate-200'
-                      }`}
-                    >
-                      {pattern.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Corner Eye Shapes */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-2">
-                    {language === 'en'
-                      ? 'Corner Squares (Outer Eye)'
-                      : 'فریم چشم‌های گوشه (Outer Eye)'}
-                  </label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {(
-                      [
-                        { id: 'extra-rounded', label: 'Extra Round' },
-                        { id: 'dot', label: 'Circle' },
-                        { id: 'square', label: 'Square' },
-                      ] as const
-                    ).map((shape) => (
+              {/* TAB 1: FRAME */}
+              {designTab === 'frame' && (
+                <div className="space-y-5 animate-in fade-in duration-200">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-3">
+                      انتخاب قالب و فریم کیوآر کد (Frame Style):
+                    </label>
+                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2.5">
+                      {/* Frame 1: None (X) */}
                       <button
-                        key={shape.id}
                         type="button"
-                        onClick={() => setCornerSquareStyle(shape.id)}
-                        className={`py-1.5 px-2 rounded-xl text-xs font-medium border text-center transition-colors ${
-                          cornerSquareStyle === shape.id
-                            ? 'bg-blue-500/20 border-blue-500 text-blue-300'
-                            : 'bg-slate-950/40 border-slate-800 text-slate-400 hover:text-slate-200'
+                        onClick={() => setFrameStyle('none')}
+                        className={`aspect-square p-2.5 rounded-2xl border flex flex-col items-center justify-center gap-1.5 transition-all ${
+                          frameStyle === 'none'
+                            ? 'border-cyan-500 bg-cyan-500/20 text-cyan-300 ring-2 ring-cyan-500/30'
+                            : 'border-slate-800 bg-slate-950/50 text-slate-400 hover:border-slate-700 hover:text-white'
                         }`}
+                        title="بدون فریم"
                       >
-                        {shape.label}
+                        <X className="w-6 h-6 stroke-[2.5]" />
+                        <span className="text-[10px] font-medium">None</span>
                       </button>
-                    ))}
-                  </div>
-                </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-2">
-                    {language === 'en'
-                      ? 'Corner Dots (Inner Eye)'
-                      : 'نقطه مرکزی چشم‌ها (Inner Dot)'}
-                  </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {(
-                      [
-                        { id: 'dot', label: 'Circle / Dot' },
-                        { id: 'square', label: 'Square' },
-                      ] as const
-                    ).map((dot) => (
+                      {/* Frame 2: Bottom Banner */}
                       <button
-                        key={dot.id}
                         type="button"
-                        onClick={() => setCornerDotStyle(dot.id)}
-                        className={`py-1.5 px-2 rounded-xl text-xs font-medium border text-center transition-colors ${
-                          cornerDotStyle === dot.id
-                            ? 'bg-blue-500/20 border-blue-500 text-blue-300'
-                            : 'bg-slate-950/40 border-slate-800 text-slate-400 hover:text-slate-200'
+                        onClick={() => setFrameStyle('bottom-banner')}
+                        className={`aspect-square p-2.5 rounded-2xl border flex flex-col items-center justify-center gap-1 transition-all ${
+                          frameStyle === 'bottom-banner'
+                            ? 'border-cyan-500 bg-cyan-500/20 text-cyan-300 ring-2 ring-cyan-500/30'
+                            : 'border-slate-800 bg-slate-950/50 text-slate-400 hover:border-slate-700 hover:text-white'
                         }`}
+                        title="بنر پایین"
                       >
-                        {dot.label}
+                        <svg viewBox="0 0 40 40" className="w-8 h-8">
+                          <rect x="5" y="4" width="30" height="32" rx="3" stroke="currentColor" strokeWidth="2" fill="none" />
+                          <rect x="10" y="8" width="20" height="18" fill="currentColor" fillOpacity="0.4" />
+                          <rect x="5" y="27" width="30" height="9" fill="currentColor" />
+                          <text x="20" y="33.5" fontSize="4.5" fill="#ffffff" fontWeight="bold" textAnchor="middle">SCAN</text>
+                        </svg>
+                        <span className="text-[10px] font-medium">Bottom</span>
                       </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
 
-              {/* Color Mode Switcher */}
-              <div className="pt-2 border-t border-slate-800/80">
-                <div className="flex items-center justify-between mb-3">
-                  <label className="text-xs font-semibold text-slate-300">
-                    {language === 'en' ? 'Color Configuration' : 'پالت رنگی کدهای QR'}
-                  </label>
-                  <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800">
-                    <button
-                      type="button"
-                      onClick={() => setColorMode('gradient')}
-                      className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
-                        colorMode === 'gradient'
-                          ? 'bg-cyan-500/20 text-cyan-300'
-                          : 'text-slate-400 hover:text-slate-200'
-                      }`}
-                    >
-                      {language === 'en' ? 'Gradient' : 'گرادیان دو رنگ'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setColorMode('single')}
-                      className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
-                        colorMode === 'single'
-                          ? 'bg-cyan-500/20 text-cyan-300'
-                          : 'text-slate-400 hover:text-slate-200'
-                      }`}
-                    >
-                      {language === 'en' ? 'Single Color' : 'تک رنگ'}
-                    </button>
-                  </div>
-                </div>
+                      {/* Frame 3: Top Banner */}
+                      <button
+                        type="button"
+                        onClick={() => setFrameStyle('top-banner')}
+                        className={`aspect-square p-2.5 rounded-2xl border flex flex-col items-center justify-center gap-1 transition-all ${
+                          frameStyle === 'top-banner'
+                            ? 'border-cyan-500 bg-cyan-500/20 text-cyan-300 ring-2 ring-cyan-500/30'
+                            : 'border-slate-800 bg-slate-950/50 text-slate-400 hover:border-slate-700 hover:text-white'
+                        }`}
+                        title="بنر بالا"
+                      >
+                        <svg viewBox="0 0 40 40" className="w-8 h-8">
+                          <rect x="5" y="4" width="30" height="32" rx="3" stroke="currentColor" strokeWidth="2" fill="none" />
+                          <rect x="5" y="4" width="30" height="9" fill="currentColor" />
+                          <text x="20" y="10.5" fontSize="4.5" fill="#ffffff" fontWeight="bold" textAnchor="middle">SCAN</text>
+                          <rect x="10" y="14" width="20" height="18" fill="currentColor" fillOpacity="0.4" />
+                        </svg>
+                        <span className="text-[10px] font-medium">Top</span>
+                      </button>
 
-                {colorMode === 'gradient' ? (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {/* Gradient Color 1 */}
+                      {/* Frame 4: Rounded Banner */}
+                      <button
+                        type="button"
+                        onClick={() => setFrameStyle('rounded-banner')}
+                        className={`aspect-square p-2.5 rounded-2xl border flex flex-col items-center justify-center gap-1 transition-all ${
+                          frameStyle === 'rounded-banner'
+                            ? 'border-cyan-500 bg-cyan-500/20 text-cyan-300 ring-2 ring-cyan-500/30'
+                            : 'border-slate-800 bg-slate-950/50 text-slate-400 hover:border-slate-700 hover:text-white'
+                        }`}
+                        title="بج گرد"
+                      >
+                        <svg viewBox="0 0 40 40" className="w-8 h-8">
+                          <rect x="5" y="4" width="30" height="32" rx="6" stroke="currentColor" strokeWidth="1.5" fill="none" />
+                          <rect x="10" y="8" width="20" height="18" rx="2" fill="currentColor" fillOpacity="0.4" />
+                          <rect x="9" y="27" width="22" height="7" rx="3.5" fill="currentColor" />
+                          <text x="20" y="32" fontSize="4" fill="#ffffff" fontWeight="bold" textAnchor="middle">SCAN</text>
+                        </svg>
+                        <span className="text-[10px] font-medium">Badge</span>
+                      </button>
+
+                      {/* Frame 5: Phone */}
+                      <button
+                        type="button"
+                        onClick={() => setFrameStyle('phone')}
+                        className={`aspect-square p-2.5 rounded-2xl border flex flex-col items-center justify-center gap-1 transition-all ${
+                          frameStyle === 'phone'
+                            ? 'border-cyan-500 bg-cyan-500/20 text-cyan-300 ring-2 ring-cyan-500/30'
+                            : 'border-slate-800 bg-slate-950/50 text-slate-400 hover:border-slate-700 hover:text-white'
+                        }`}
+                        title="موبایل"
+                      >
+                        <svg viewBox="0 0 40 40" className="w-8 h-8">
+                          <rect x="7" y="3" width="26" height="34" rx="6" stroke="currentColor" strokeWidth="2" fill="none" />
+                          <rect x="15" y="5.5" width="10" height="1.5" rx="0.75" fill="currentColor" />
+                          <rect x="10" y="9" width="20" height="20" rx="1" fill="currentColor" fillOpacity="0.4" />
+                          <circle cx="20" cy="33" r="1.5" fill="currentColor" />
+                        </svg>
+                        <span className="text-[10px] font-medium">Phone</span>
+                      </button>
+
+                      {/* Frame 6: Clipboard */}
+                      <button
+                        type="button"
+                        onClick={() => setFrameStyle('clipboard')}
+                        className={`aspect-square p-2.5 rounded-2xl border flex flex-col items-center justify-center gap-1 transition-all ${
+                          frameStyle === 'clipboard'
+                            ? 'border-cyan-500 bg-cyan-500/20 text-cyan-300 ring-2 ring-cyan-500/30'
+                            : 'border-slate-800 bg-slate-950/50 text-slate-400 hover:border-slate-700 hover:text-white'
+                        }`}
+                        title="تخته‌شاسی"
+                      >
+                        <svg viewBox="0 0 40 40" className="w-8 h-8">
+                          <rect x="6" y="6" width="28" height="31" rx="4" stroke="currentColor" strokeWidth="1.5" fill="none" />
+                          <rect x="13" y="3" width="14" height="5" rx="1.5" fill="currentColor" />
+                          <rect x="10" y="11" width="20" height="20" rx="1" fill="currentColor" fillOpacity="0.4" />
+                        </svg>
+                        <span className="text-[10px] font-medium">Clip</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Frame Text & Color Settings (Active when frame is not 'none') */}
+                  {frameStyle !== 'none' && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-2xl bg-slate-950/60 border border-slate-800 animate-in fade-in">
                       <div>
-                        <span className="block text-xs text-slate-400 mb-1.5">
-                          {language === 'en' ? 'Start Color' : 'رنگ آغازین گرادیان'}
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="color"
-                            value={gradientColor1}
-                            onChange={(e) => setGradientColor1(e.target.value)}
-                            className="w-10 h-10 rounded-xl cursor-pointer bg-transparent border border-slate-700"
-                          />
-                          <input
-                            type="text"
-                            value={gradientColor1}
-                            onChange={(e) => setGradientColor1(e.target.value)}
-                            className="w-28 px-2.5 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs font-mono text-white focus:outline-none"
-                          />
-                        </div>
+                        <label className="block text-xs text-slate-400 mb-1.5 font-medium">
+                          متن داخل فریم (Frame Label):
+                        </label>
+                        <input
+                          type="text"
+                          value={frameText}
+                          onChange={(e) => setFrameText(e.target.value)}
+                          placeholder="SCAN ME"
+                          className="w-full px-3 py-2 bg-slate-900 border border-slate-700 focus:border-cyan-500 rounded-xl text-xs text-white focus:outline-none uppercase font-bold"
+                        />
                       </div>
-
-                      {/* Gradient Color 2 */}
                       <div>
-                        <span className="block text-xs text-slate-400 mb-1.5">
-                          {language === 'en' ? 'End Color' : 'رنگ پایانی گرادیان'}
-                        </span>
+                        <label className="block text-xs text-slate-400 mb-1.5 font-medium">
+                          رنگ فریم (Frame Color):
+                        </label>
                         <div className="flex items-center gap-2">
                           <input
                             type="color"
-                            value={gradientColor2}
-                            onChange={(e) => setGradientColor2(e.target.value)}
-                            className="w-10 h-10 rounded-xl cursor-pointer bg-transparent border border-slate-700"
+                            value={frameColor}
+                            onChange={(e) => setFrameColor(e.target.value)}
+                            className="w-9 h-9 rounded-xl cursor-pointer bg-transparent border border-slate-700 shrink-0"
                           />
                           <input
                             type="text"
-                            value={gradientColor2}
-                            onChange={(e) => setGradientColor2(e.target.value)}
-                            className="w-28 px-2.5 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs font-mono text-white focus:outline-none"
+                            value={frameColor}
+                            onChange={(e) => setFrameColor(e.target.value)}
+                            className="flex-1 px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs font-mono text-white focus:outline-none"
                           />
                         </div>
                       </div>
                     </div>
+                  )}
+                </div>
+              )}
 
-                    {/* Gradient Type & Rotation Slider */}
-                    <div className="flex flex-wrap items-center gap-4 pt-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-slate-400">
-                          {language === 'en' ? 'Type:' : 'نوع:'}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => setGradientType('linear')}
-                          className={`px-2.5 py-1 rounded-lg text-xs font-medium border ${
-                            gradientType === 'linear'
-                              ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300'
-                              : 'bg-slate-950/40 border-slate-800 text-slate-400'
-                          }`}
-                        >
-                          {language === 'en' ? 'Linear' : 'خطی (Linear)'}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setGradientType('radial')}
-                          className={`px-2.5 py-1 rounded-lg text-xs font-medium border ${
-                            gradientType === 'radial'
-                              ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300'
-                              : 'bg-slate-950/40 border-slate-800 text-slate-400'
-                          }`}
-                        >
-                          {language === 'en' ? 'Radial' : 'دایره‌ای (Radial)'}
-                        </button>
+              {/* TAB 2: SHAPE (Exact match to Reference Screenshot 2) */}
+              {designTab === 'shape' && (
+                <div className="space-y-6 animate-in fade-in duration-200">
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                    <span className="text-xs font-bold text-slate-300">
+                      Shape & Color
+                    </span>
+                  </div>
+
+                  {/* 1. Shape Style (Dots) */}
+                  <div className="space-y-2.5">
+                    <label className="block text-xs font-medium text-slate-400">
+                      Shape style (شکل نقاط داخلی):
+                    </label>
+                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2.5">
+                      {(
+                        [
+                          { id: 'square', label: 'Square' },
+                          { id: 'dots', label: 'Dots' },
+                          { id: 'rounded', label: 'Rounded' },
+                          { id: 'classy', label: 'Classy' },
+                          { id: 'classy-rounded', label: 'Classy-R' },
+                          { id: 'extra-rounded', label: 'Extra-R' },
+                        ] as const
+                      ).map((pattern) => {
+                        const isSelected = dotStyle === pattern.id;
+                        return (
+                          <button
+                            key={pattern.id}
+                            type="button"
+                            onClick={() => setDotStyle(pattern.id)}
+                            className={`p-2.5 rounded-2xl border flex flex-col items-center justify-center gap-1.5 transition-all ${
+                              isSelected
+                                ? 'border-cyan-500 bg-cyan-500/20 text-cyan-300 ring-2 ring-cyan-500/30 font-bold'
+                                : 'border-slate-800 bg-slate-950/50 text-slate-400 hover:border-slate-700 hover:text-white'
+                            }`}
+                            title={pattern.label}
+                          >
+                            {pattern.id === 'square' ? (
+                              <svg viewBox="0 0 40 40" className="w-7 h-7">
+                                <rect x="6" y="6" width="7" height="7" fill="currentColor" />
+                                <rect x="17" y="6" width="7" height="7" fill="currentColor" />
+                                <rect x="28" y="6" width="7" height="7" fill="currentColor" />
+                                <rect x="6" y="17" width="7" height="7" fill="currentColor" />
+                                <rect x="17" y="17" width="7" height="7" fill="currentColor" />
+                                <rect x="28" y="17" width="7" height="7" fill="currentColor" />
+                                <rect x="6" y="28" width="7" height="7" fill="currentColor" />
+                                <rect x="17" y="28" width="7" height="7" fill="currentColor" />
+                                <rect x="28" y="28" width="7" height="7" fill="currentColor" />
+                              </svg>
+                            ) : pattern.id === 'dots' ? (
+                              <svg viewBox="0 0 40 40" className="w-7 h-7">
+                                <circle cx="9.5" cy="9.5" r="4" fill="currentColor" />
+                                <circle cx="20.5" cy="9.5" r="4" fill="currentColor" />
+                                <circle cx="31.5" cy="9.5" r="4" fill="currentColor" />
+                                <circle cx="9.5" cy="20.5" r="4" fill="currentColor" />
+                                <circle cx="20.5" cy="20.5" r="4" fill="currentColor" />
+                                <circle cx="31.5" cy="20.5" r="4" fill="currentColor" />
+                                <circle cx="9.5" cy="31.5" r="4" fill="currentColor" />
+                                <circle cx="20.5" cy="31.5" r="4" fill="currentColor" />
+                                <circle cx="31.5" cy="31.5" r="4" fill="currentColor" />
+                              </svg>
+                            ) : pattern.id === 'rounded' ? (
+                              <svg viewBox="0 0 40 40" className="w-7 h-7">
+                                <rect x="6" y="6" width="7" height="7" rx="2" fill="currentColor" />
+                                <rect x="17" y="6" width="7" height="7" rx="2" fill="currentColor" />
+                                <rect x="28" y="6" width="7" height="7" rx="2" fill="currentColor" />
+                                <rect x="6" y="17" width="7" height="7" rx="2" fill="currentColor" />
+                                <rect x="17" y="17" width="7" height="7" rx="2" fill="currentColor" />
+                                <rect x="28" y="17" width="7" height="7" rx="2" fill="currentColor" />
+                                <rect x="6" y="28" width="7" height="7" rx="2" fill="currentColor" />
+                                <rect x="17" y="28" width="7" height="7" rx="2" fill="currentColor" />
+                                <rect x="28" y="28" width="7" height="7" rx="2" fill="currentColor" />
+                              </svg>
+                            ) : pattern.id === 'classy' ? (
+                              <svg viewBox="0 0 40 40" className="w-7 h-7">
+                                <rect x="6" y="6" width="7" height="7" rx="3.5" fill="currentColor" />
+                                <rect x="17" y="6" width="7" height="7" fill="currentColor" />
+                                <rect x="28" y="6" width="7" height="7" rx="3.5" fill="currentColor" />
+                                <rect x="6" y="17" width="7" height="7" fill="currentColor" />
+                                <rect x="17" y="17" width="7" height="7" rx="3.5" fill="currentColor" />
+                                <rect x="28" y="17" width="7" height="7" fill="currentColor" />
+                                <rect x="6" y="28" width="7" height="7" rx="3.5" fill="currentColor" />
+                                <rect x="17" y="28" width="7" height="7" fill="currentColor" />
+                                <rect x="28" y="28" width="7" height="7" rx="3.5" fill="currentColor" />
+                              </svg>
+                            ) : pattern.id === 'classy-rounded' ? (
+                              <svg viewBox="0 0 40 40" className="w-7 h-7">
+                                <rect x="6" y="6" width="7" height="7" rx="3" fill="currentColor" />
+                                <circle cx="20.5" cy="9.5" r="3.5" fill="currentColor" />
+                                <rect x="28" y="6" width="7" height="7" rx="3" fill="currentColor" />
+                                <circle cx="9.5" cy="20.5" r="3.5" fill="currentColor" />
+                                <rect x="17" y="17" width="7" height="7" rx="3" fill="currentColor" />
+                                <circle cx="31.5" cy="20.5" r="3.5" fill="currentColor" />
+                                <rect x="6" y="28" width="7" height="7" rx="3" fill="currentColor" />
+                                <circle cx="20.5" cy="31.5" r="3.5" fill="currentColor" />
+                                <rect x="28" y="28" width="7" height="7" rx="3" fill="currentColor" />
+                              </svg>
+                            ) : (
+                              <svg viewBox="0 0 40 40" className="w-7 h-7">
+                                <rect x="6" y="6" width="7" height="7" rx="3.5" fill="currentColor" />
+                                <rect x="17" y="6" width="7" height="7" rx="3.5" fill="currentColor" />
+                                <rect x="28" y="6" width="7" height="7" rx="3.5" fill="currentColor" />
+                                <rect x="6" y="17" width="7" height="7" rx="3.5" fill="currentColor" />
+                                <rect x="17" y="17" width="7" height="7" rx="3.5" fill="currentColor" />
+                                <rect x="28" y="17" width="7" height="7" rx="3.5" fill="currentColor" />
+                                <rect x="6" y="28" width="7" height="7" rx="3.5" fill="currentColor" />
+                                <rect x="17" y="28" width="7" height="7" rx="3.5" fill="currentColor" />
+                                <rect x="28" y="28" width="7" height="7" rx="3.5" fill="currentColor" />
+                              </svg>
+                            )}
+                            <span className="text-[10px] font-medium">{pattern.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* 2. Background Color & Shape Color with Toggles */}
+                  <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800 space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Background Color */}
+                      <div className="space-y-2">
+                        <label className="block text-xs font-medium text-slate-400">
+                          Background color (رنگ پس‌زمینه):
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={bgColor}
+                            onChange={(e) => setBgColor(e.target.value)}
+                            disabled={isTransparentBg}
+                            className="flex-1 px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs font-mono text-white focus:outline-none uppercase"
+                          />
+                          <input
+                            type="color"
+                            value={bgColor}
+                            onChange={(e) => setBgColor(e.target.value)}
+                            disabled={isTransparentBg}
+                            className="w-10 h-10 rounded-xl cursor-pointer bg-transparent border border-slate-700 shrink-0"
+                          />
+                        </div>
+                        <label className="inline-flex items-center gap-2 cursor-pointer text-xs text-slate-300 pt-1">
+                          <input
+                            type="checkbox"
+                            checked={isTransparentBg}
+                            onChange={(e) => setIsTransparentBg(e.target.checked)}
+                            className="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-cyan-500"
+                          />
+                          <span>Transparent background (شفاف)</span>
+                        </label>
                       </div>
 
-                      {gradientType === 'linear' && (
-                        <div className="flex items-center gap-2 flex-1 min-w-[200px]">
-                          <span className="text-xs text-slate-400 shrink-0">
-                            {language === 'en' ? 'Angle:' : 'زاویه:'}{' '}
-                            <span className="font-mono text-cyan-400">
-                              {gradientRotation}°
-                            </span>
-                          </span>
+                      {/* Shape Color */}
+                      <div className="space-y-2">
+                        <label className="block text-xs font-medium text-slate-400">
+                          Shape color (رنگ نقاط):
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={singleColor}
+                            onChange={(e) => {
+                              setSingleColor(e.target.value);
+                              setGradientColor1(e.target.value);
+                            }}
+                            className="flex-1 px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs font-mono text-white focus:outline-none uppercase"
+                          />
+                          <input
+                            type="color"
+                            value={singleColor}
+                            onChange={(e) => {
+                              setSingleColor(e.target.value);
+                              setGradientColor1(e.target.value);
+                            }}
+                            className="w-10 h-10 rounded-xl cursor-pointer bg-transparent border border-slate-700 shrink-0"
+                          />
+                        </div>
+                        <label className="inline-flex items-center gap-2 cursor-pointer text-xs text-slate-300 pt-1">
+                          <input
+                            type="checkbox"
+                            checked={colorMode === 'gradient'}
+                            onChange={(e) => setColorMode(e.target.checked ? 'gradient' : 'single')}
+                            className="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-cyan-500"
+                          />
+                          <span>Gradient (گرادیان دو رنگ)</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Gradient Extra Settings */}
+                    {colorMode === 'gradient' && (
+                      <div className="pt-3 border-t border-slate-800 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-[11px] text-slate-400 mb-1">
+                            رنگ دوم گرادیان (End Color):
+                          </label>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="text"
+                              value={gradientColor2}
+                              onChange={(e) => setGradientColor2(e.target.value)}
+                              className="flex-1 px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-xl text-xs font-mono text-white uppercase"
+                            />
+                            <input
+                              type="color"
+                              value={gradientColor2}
+                              onChange={(e) => setGradientColor2(e.target.value)}
+                              className="w-8 h-8 rounded-xl cursor-pointer bg-transparent border border-slate-700"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-[11px] text-slate-400 mb-1">
+                            زاویه گرادیان: {gradientRotation}°
+                          </label>
                           <input
                             type="range"
                             min="0"
                             max="360"
                             step="15"
                             value={gradientRotation}
-                            onChange={(e) =>
-                              setGradientRotation(Number(e.target.value))
-                            }
-                            className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-500"
+                            onChange={(e) => setGradientRotation(Number(e.target.value))}
+                            className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-500 mt-2"
                           />
                         </div>
-                      )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 3. Border Style (Corner Squares / Outer Eye) */}
+                  <div className="space-y-3 pt-2">
+                    <label className="block text-xs font-medium text-slate-400">
+                      Border style (فریم گوشه‌ها):
+                    </label>
+                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2.5">
+                      {(
+                        [
+                          { id: 'square', label: 'Square' },
+                          { id: 'extra-rounded', label: 'Rounded' },
+                          { id: 'dot', label: 'Circle' },
+                        ] as const
+                      ).map((b) => {
+                        const isSelected = cornerSquareStyle === b.id;
+                        return (
+                          <button
+                            key={b.id}
+                            type="button"
+                            onClick={() => setCornerSquareStyle(b.id)}
+                            className={`p-2.5 rounded-2xl border flex flex-col items-center justify-center gap-1.5 transition-all ${
+                              isSelected
+                                ? 'border-cyan-500 bg-cyan-500/20 text-cyan-300 ring-2 ring-cyan-500/30 font-bold'
+                                : 'border-slate-800 bg-slate-950/50 text-slate-400 hover:border-slate-700 hover:text-white'
+                            }`}
+                            title={b.label}
+                          >
+                            {b.id === 'square' ? (
+                              <svg viewBox="0 0 40 40" className="w-7 h-7">
+                                <rect x="7" y="7" width="26" height="26" stroke="currentColor" strokeWidth="4.5" fill="none" />
+                              </svg>
+                            ) : b.id === 'extra-rounded' ? (
+                              <svg viewBox="0 0 40 40" className="w-7 h-7">
+                                <rect x="7" y="7" width="26" height="26" rx="8" stroke="currentColor" strokeWidth="4.5" fill="none" />
+                              </svg>
+                            ) : (
+                              <svg viewBox="0 0 40 40" className="w-7 h-7">
+                                <circle cx="20" cy="20" r="13" stroke="currentColor" strokeWidth="4.5" fill="none" />
+                              </svg>
+                            )}
+                            <span className="text-[10px] font-medium">{b.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Border Color */}
+                    <div className="p-3 rounded-2xl bg-slate-950/60 border border-slate-800 flex items-center justify-between gap-3">
+                      <span className="text-xs text-slate-400">
+                        Border color (رنگ فریم گوشه‌ها):
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={customEyeColors ? eyeSquareColor : singleColor}
+                          onChange={(e) => {
+                            setEyeSquareColor(e.target.value);
+                            setCustomEyeColors(true);
+                          }}
+                          className="w-24 px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded-xl text-xs font-mono text-white uppercase"
+                        />
+                        <input
+                          type="color"
+                          value={customEyeColors ? eyeSquareColor : singleColor}
+                          onChange={(e) => {
+                            setEyeSquareColor(e.target.value);
+                            setCustomEyeColors(true);
+                          }}
+                          className="w-8 h-8 rounded-xl cursor-pointer bg-transparent border border-slate-700"
+                        />
+                      </div>
                     </div>
                   </div>
-                ) : (
-                  <div>
-                    <div className="flex items-center gap-3 mb-3">
-                      <input
-                        type="color"
-                        value={singleColor}
-                        onChange={(e) => setSingleColor(e.target.value)}
-                        className="w-10 h-10 rounded-xl cursor-pointer bg-transparent border border-slate-700"
-                      />
-                      <input
-                        type="text"
-                        value={singleColor}
-                        onChange={(e) => setSingleColor(e.target.value)}
-                        className="w-28 px-2.5 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs font-mono text-white focus:outline-none"
-                      />
+
+                  {/* 4. Center Style (Corner Dots / Inner Eye) */}
+                  <div className="space-y-3 pt-2">
+                    <label className="block text-xs font-medium text-slate-400">
+                      Center style (نقطه مرکزی چشم‌ها):
+                    </label>
+                    <div className="grid grid-cols-2 sm:grid-cols-6 gap-2.5">
+                      {(
+                        [
+                          { id: 'square', label: 'Square' },
+                          { id: 'dot', label: 'Circle' },
+                        ] as const
+                      ).map((c) => {
+                        const isSelected = cornerDotStyle === c.id;
+                        return (
+                          <button
+                            key={c.id}
+                            type="button"
+                            onClick={() => setCornerDotStyle(c.id)}
+                            className={`p-2.5 rounded-2xl border flex flex-col items-center justify-center gap-1.5 transition-all ${
+                              isSelected
+                                ? 'border-cyan-500 bg-cyan-500/20 text-cyan-300 ring-2 ring-cyan-500/30 font-bold'
+                                : 'border-slate-800 bg-slate-950/50 text-slate-400 hover:border-slate-700 hover:text-white'
+                            }`}
+                            title={c.label}
+                          >
+                            {c.id === 'square' ? (
+                              <svg viewBox="0 0 40 40" className="w-7 h-7">
+                                <rect x="10" y="10" width="20" height="20" fill="currentColor" />
+                              </svg>
+                            ) : (
+                              <svg viewBox="0 0 40 40" className="w-7 h-7">
+                                <circle cx="20" cy="20" r="11" fill="currentColor" />
+                              </svg>
+                            )}
+                            <span className="text-[10px] font-medium">{c.label}</span>
+                          </button>
+                        );
+                      })}
                     </div>
-                    {/* Palette Presets */}
-                    <div className="flex flex-wrap gap-2">
-                      {colorPresets.map((preset) => (
-                        <button
-                          key={preset.hex}
-                          type="button"
-                          onClick={() => setSingleColor(preset.hex)}
-                          className="w-7 h-7 rounded-lg border border-white/20 transition-transform hover:scale-110"
-                          style={{ backgroundColor: preset.hex }}
-                          title={preset.name}
+
+                    {/* Center Color */}
+                    <div className="p-3 rounded-2xl bg-slate-950/60 border border-slate-800 flex items-center justify-between gap-3">
+                      <span className="text-xs text-slate-400">
+                        Center color (رنگ نقطه مرکزی):
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={customEyeColors ? eyeDotColor : singleColor}
+                          onChange={(e) => {
+                            setEyeDotColor(e.target.value);
+                            setCustomEyeColors(true);
+                          }}
+                          className="w-24 px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded-xl text-xs font-mono text-white uppercase"
                         />
+                        <input
+                          type="color"
+                          value={customEyeColors ? eyeDotColor : singleColor}
+                          onChange={(e) => {
+                            setEyeDotColor(e.target.value);
+                            setCustomEyeColors(true);
+                          }}
+                          className="w-8 h-8 rounded-xl cursor-pointer bg-transparent border border-slate-700"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 3: LOGO (Exact match to Reference Screenshot 1) */}
+              {designTab === 'logo' && (
+                <div className="space-y-6 animate-in fade-in duration-200">
+                  {/* Upload Logo Section */}
+                  <div className="space-y-2">
+                    <label className="block text-xs font-semibold text-slate-300">
+                      Upload Logo (بارگذاری لوگو):
+                    </label>
+                    <label className="flex items-center justify-between p-3 border-2 border-dashed border-slate-700 hover:border-cyan-500 rounded-2xl bg-slate-950/50 cursor-pointer transition-colors group">
+                      <span className="text-xs text-slate-400 group-hover:text-cyan-300">
+                        {logoDataUrl ? 'فایل لوگو انتخاب شده است (کلیک برای تعویض)' : 'انتخاب فایل لوگو از سیستم (Choose file)...'}
+                      </span>
+                      <span className="px-3.5 py-1.5 rounded-xl bg-slate-800 text-xs font-semibold text-slate-200 group-hover:bg-cyan-600 group-hover:text-white transition-colors">
+                        Browse
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleLogoFile}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+
+                  {/* Or choose from here Section (Preset Icons & Badges) */}
+                  <div className="space-y-3">
+                    <label className="block text-xs font-semibold text-slate-300">
+                      Or choose from here (یا انتخاب از آیکون‌های پرکاربرد):
+                    </label>
+
+                    {/* Circular Preset Icons */}
+                    <div className="flex flex-wrap items-center gap-2.5">
+                      {/* X Button: Remove Logo */}
+                      <button
+                        type="button"
+                        onClick={() => setLogoDataUrl(null)}
+                        className={`w-11 h-11 rounded-2xl border flex items-center justify-center transition-all ${
+                          !logoDataUrl
+                            ? 'border-cyan-500 bg-cyan-500/20 text-cyan-300 ring-2 ring-cyan-500/30'
+                            : 'border-slate-800 bg-slate-950/60 text-slate-400 hover:text-white hover:border-slate-700'
+                        }`}
+                        title="حذف لوگو"
+                      >
+                        <X className="w-5 h-5 stroke-[2.5]" />
+                      </button>
+
+                      {/* Presets: Link, Location, Email, WhatsApp, WiFi, Contact, PayPal, Bitcoin */}
+                      {PRESET_LOGOS.map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => {
+                            setLogoDataUrl(toSvgDataUrl(item.svg));
+                            setErrorCorrectionLevel('H');
+                            toast.success(`آیکون ${item.label} به مرکز کیوآر کد اضافه شد.`);
+                          }}
+                          className="w-11 h-11 rounded-2xl border border-slate-800 bg-slate-950/60 hover:scale-110 hover:border-slate-600 transition-all p-1 flex items-center justify-center shadow-md"
+                          title={item.label}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={toSvgDataUrl(item.svg)}
+                            alt={item.label}
+                            className="w-full h-full object-contain"
+                          />
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Preset Badges ([SCAN ME], etc.) */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-2">
+                      {PRESET_BADGES.map((badge) => (
+                        <button
+                          key={badge.id}
+                          type="button"
+                          onClick={() => {
+                            setLogoDataUrl(toSvgDataUrl(badge.svg));
+                            setErrorCorrectionLevel('H');
+                            toast.success(`بج ${badge.label} به مرکز کیوآر کد اضافه شد.`);
+                          }}
+                          className="h-12 rounded-xl border border-slate-800 bg-slate-950/60 hover:border-slate-600 hover:scale-105 transition-all p-1.5 flex items-center justify-center"
+                          title={badge.label}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={toSvgDataUrl(badge.svg)}
+                            alt={badge.label}
+                            className="h-full object-contain"
+                          />
+                        </button>
                       ))}
                     </div>
                   </div>
-                )}
-              </div>
 
-              {/* Background Options */}
-              <div className="pt-4 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <span className="text-xs font-semibold text-slate-300">
-                    {language === 'en' ? 'Background Color:' : 'رنگ پس‌زمینه:'}
-                  </span>
-                  {!isTransparentBg && (
-                    <div className="flex items-center gap-2">
+                  {/* Logo Options (if logo selected) */}
+                  {logoDataUrl && (
+                    <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-slate-300 font-medium">
+                          اندازه لوگو در مرکز (Logo Size):
+                        </span>
+                        <span className="text-xs font-mono text-cyan-400">
+                          {Math.round(logoSize * 100)}%
+                        </span>
+                      </div>
                       <input
-                        type="color"
-                        value={bgColor}
-                        onChange={(e) => setBgColor(e.target.value)}
-                        className="w-8 h-8 rounded-lg cursor-pointer bg-transparent border border-slate-700"
+                        type="range"
+                        min="0.15"
+                        max="0.45"
+                        step="0.05"
+                        value={logoSize}
+                        onChange={(e) => setLogoSize(Number(e.target.value))}
+                        className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-500"
                       />
-                      <span className="text-xs font-mono text-slate-400">
-                        {bgColor}
-                      </span>
+
+                      <div className="pt-2 flex items-center justify-between">
+                        <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-300">
+                          <input
+                            type="checkbox"
+                            checked={hideBehindLogo}
+                            onChange={(e) => setHideBehindLogo(e.target.checked)}
+                            className="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-cyan-500"
+                          />
+                          <span>پنهان کردن نقاط زیر لوگو (Hide Dots)</span>
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setLogoDataUrl(null)}
+                          className="text-xs text-rose-400 hover:text-rose-300"
+                        >
+                          حذف لوگو
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
+              )}
 
-                <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-300">
-                  <input
-                    type="checkbox"
-                    checked={isTransparentBg}
-                    onChange={(e) => setIsTransparentBg(e.target.checked)}
-                    className="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-cyan-500"
-                  />
-                  <span>
-                    {language === 'en'
-                      ? 'Transparent Background (PNG / SVG)'
-                      : 'پس‌زمینه کاملاً شفاف (بدون رنگ سفید)'}
-                  </span>
-                </label>
-              </div>
-
-              {/* Custom Eye Colors Toggle */}
-              <div className="pt-4 border-t border-slate-800/80">
-                <div className="flex items-center justify-between mb-3">
-                  <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-300">
-                    <input
-                      type="checkbox"
-                      checked={customEyeColors}
-                      onChange={(e) => setCustomEyeColors(e.target.checked)}
-                      className="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-cyan-500"
-                    />
-                    <span>
-                      {language === 'en'
-                        ? 'Custom Eye Colors (Corners)'
-                        : 'رنگ‌بندی مجزای چشم‌های گوشه (Corners)'}
-                    </span>
-                  </label>
-                </div>
-
-                {customEyeColors && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3 rounded-xl bg-slate-950/50 border border-slate-800">
-                    <div>
-                      <span className="block text-xs text-slate-400 mb-1">
-                        {language === 'en' ? 'Outer Corner Frame' : 'فریم بیرونی گوشه‌ها'}
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="color"
-                          value={eyeSquareColor}
-                          onChange={(e) => setEyeSquareColor(e.target.value)}
-                          className="w-8 h-8 rounded-lg cursor-pointer bg-transparent border border-slate-700"
-                        />
-                        <span className="text-xs font-mono text-slate-400">
-                          {eyeSquareColor}
-                        </span>
-                      </div>
-                    </div>
-                    <div>
-                      <span className="block text-xs text-slate-400 mb-1">
-                        {language === 'en' ? 'Inner Corner Dot' : 'نقطه مرکزی چشم‌ها'}
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="color"
-                          value={eyeDotColor}
-                          onChange={(e) => setEyeDotColor(e.target.value)}
-                          className="w-8 h-8 rounded-lg cursor-pointer bg-transparent border border-slate-700"
-                        />
-                        <span className="text-xs font-mono text-slate-400">
-                          {eyeDotColor}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Step 3: Logo Upload & Advanced Settings */}
-            <div className="bg-slate-900/60 backdrop-blur-xl border border-slate-800 rounded-2xl p-5 shadow-xl space-y-5">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <span className="text-xs font-bold tracking-wider uppercase text-cyan-400 flex items-center gap-1.5">
-                  <ImageIcon className="w-4 h-4" />
-                  {language === 'en'
-                    ? 'Step 3: Center Logo & Advanced'
-                    : language === 'ps'
-                    ? 'دریم ګام: لوګو او پرمختللي تنظیمات'
-                    : 'مرحله 3: قرار دادن لوگو در مرکز و تنظیمات پیشرفته'}
-                </span>
-                {logoDataUrl && (
-                  <button
-                    type="button"
-                    onClick={() => setLogoDataUrl(null)}
-                    className="text-xs text-rose-400 hover:text-rose-300 flex items-center gap-1"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                    {language === 'en' ? 'Remove Logo' : 'حذف لوگو'}
-                  </button>
-                )}
-              </div>
-
-              {/* Logo Uploader */}
-              <div>
-                {!logoDataUrl ? (
-                  <label className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-slate-700 hover:border-cyan-500 rounded-2xl bg-slate-950/40 cursor-pointer transition-colors group">
-                    <Upload className="w-8 h-8 text-slate-500 group-hover:text-cyan-400 transition-colors mb-2" />
-                    <span className="text-xs font-semibold text-slate-300 group-hover:text-cyan-300">
-                      {language === 'en'
-                        ? 'Click or drag logo image here (PNG, SVG, JPG)'
-                        : 'جهت بارگذاری لوگو در مرکز کیوآر کد اینجا کلیک کنید'}
-                    </span>
-                    <span className="text-[11px] text-slate-500 mt-1">
-                      {language === 'en'
-                        ? 'Recommended: Transparent PNG with high contrast'
-                        : 'پیشنهاد: تصویر PNG با پس‌زمینه شفاف'}
-                    </span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleLogoFile}
-                      className="hidden"
-                    />
-                  </label>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-4 p-3 rounded-xl bg-slate-950/60 border border-slate-800">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={logoDataUrl}
-                        alt="Center Logo Preview"
-                        className="w-14 h-14 object-contain rounded-lg border border-slate-700 bg-white/10 p-1"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <span className="text-xs font-semibold text-slate-200 block truncate">
-                          {language === 'en' ? 'Logo Loaded' : 'لوگو با موفقیت اضافه شد'}
-                        </span>
-                        <span className="text-[11px] text-emerald-400 flex items-center gap-1 mt-0.5">
-                          <Check className="w-3 h-3" />
-                          {language === 'en'
-                            ? 'Error correction upgraded to High (H)'
-                            : 'اصلاح خطا روی حداکثر تنظیم شد'}
-                        </span>
-                      </div>
-                      <label className="px-3 py-1.5 rounded-lg border border-slate-700 text-xs font-medium text-slate-300 hover:bg-slate-800 cursor-pointer">
-                        {language === 'en' ? 'Change' : 'تغییر'}
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleLogoFile}
-                          className="hidden"
-                        />
-                      </label>
-                    </div>
-
-                    {/* Logo Size and Margin Sliders */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <div className="flex justify-between text-xs text-slate-400 mb-1">
-                          <span>{language === 'en' ? 'Logo Size' : 'اندازه لوگو'}</span>
-                          <span className="font-mono text-cyan-400">
-                            {Math.round(logoSize * 100)}%
-                          </span>
-                        </div>
-                        <input
-                          type="range"
-                          min="0.15"
-                          max="0.45"
-                          step="0.05"
-                          value={logoSize}
-                          onChange={(e) => setLogoSize(Number(e.target.value))}
-                          className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-500"
-                        />
-                      </div>
-
-                      <div>
-                        <div className="flex justify-between text-xs text-slate-400 mb-1">
-                          <span>
-                            {language === 'en' ? 'Logo Padding' : 'حاشیه امن لوگو'}
-                          </span>
-                          <span className="font-mono text-cyan-400">
-                            {logoMargin}px
-                          </span>
-                        </div>
-                        <input
-                          type="range"
-                          min="0"
-                          max="10"
-                          step="1"
-                          value={logoMargin}
-                          onChange={(e) => setLogoMargin(Number(e.target.value))}
-                          className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-500"
-                        />
-                      </div>
-                    </div>
-
-                    <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-300">
-                      <input
-                        type="checkbox"
-                        checked={hideBehindLogo}
-                        onChange={(e) => setHideBehindLogo(e.target.checked)}
-                        className="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-cyan-500"
-                      />
-                      <span>
-                        {language === 'en'
-                          ? 'Hide QR dots behind the logo (Clean look)'
-                          : 'پنهان کردن نقاط کیوآر کد در زیر لوگو جهت خوانایی تمیزتر'}
-                      </span>
-                    </label>
-                  </div>
-                )}
-              </div>
-
-              {/* Advanced Settings Accordion / Details */}
+              {/* Advanced General Settings (Error Correction & Margin) */}
               <div className="pt-4 border-t border-slate-800 grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-slate-400 mb-1">
                     {language === 'en'
                       ? 'Error Correction Level'
-                      : 'سطح بازیابی خطای اسکن (Error Correction)'}
+                      : 'سطح تصحیح خطا (Error Correction)'}
                   </label>
                   <div className="grid grid-cols-4 gap-1.5">
                     {(
@@ -1645,7 +1997,7 @@ export default function AdvancedQrMakerPage() {
                         onClick={() => setErrorCorrectionLevel(lvl.id)}
                         className={`py-1 rounded-lg text-xs font-medium border text-center transition-colors ${
                           errorCorrectionLevel === lvl.id
-                            ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300'
+                            ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300 font-bold'
                             : 'bg-slate-950/40 border-slate-800 text-slate-400'
                         }`}
                       >
@@ -1658,7 +2010,7 @@ export default function AdvancedQrMakerPage() {
                 <div>
                   <div className="flex justify-between text-xs text-slate-400 mb-1">
                     <span>
-                      {language === 'en' ? 'Outer Margin' : 'حاشیه سفید بیرونی'}
+                      {language === 'en' ? 'Outer Margin' : 'حاشیه بیرونی'}
                     </span>
                     <span className="font-mono text-cyan-400">{margin}px</span>
                   </div>
@@ -1674,6 +2026,8 @@ export default function AdvancedQrMakerPage() {
                 </div>
               </div>
             </div>
+
+
           </div>
 
           {/* Right Column (5 cols): Sticky Live Render & High-Res Download Card */}
@@ -1825,6 +2179,64 @@ export default function AdvancedQrMakerPage() {
             </div>
           </div>
         </div>
+        ) : (
+          /* Scanner View (Stage 2, 3, 4) */
+          <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl">
+            <CodeScanner
+              scannerType="qrcode"
+              title={
+                language === 'en'
+                  ? 'QR Code Smart Scanner'
+                  : language === 'ps'
+                  ? 'ځیرک QR سکینر'
+                  : 'اسکنر هوشمند کیوآر کد'
+              }
+              subtitle={
+                language === 'en'
+                  ? 'Scan QR codes instantly using your device camera or upload image files'
+                  : language === 'ps'
+                  ? 'د خپلې کمیرې له لارې سمدستي QR کوډونه سکین کړئ یا عکس پورته کړئ'
+                  : 'اسکن سریع کدهای QR با وب‌کم، دوربین تلفن همراه یا بارگذاری مستقیم فایل عکس'
+              }
+              onRecreate={(decodedText) => {
+                const trimmed = decodedText.trim();
+                if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+                  setUrl(trimmed);
+                  setActiveTab('url');
+                } else if (trimmed.startsWith('WIFI:')) {
+                  const ssidMatch = trimmed.match(/S:([^;]+)/);
+                  const passMatch = trimmed.match(/P:([^;]+)/);
+                  const typeMatch = trimmed.match(/T:([^;]+)/);
+                  setWifiData({
+                    ssid: ssidMatch ? ssidMatch[1] : 'Network',
+                    password: passMatch ? passMatch[1] : '',
+                    encryption: (typeMatch ? typeMatch[1] : 'WPA') as any,
+                    hidden: false,
+                  });
+                  setActiveTab('wifi');
+                } else if (trimmed.startsWith('tel:') || /^\+?[0-9\- ]{7,16}$/.test(trimmed)) {
+                  setPhoneNumber(trimmed.replace('tel:', ''));
+                  setActiveTab('phone');
+                } else if (trimmed.startsWith('mailto:')) {
+                  setEmailData((prev) => ({
+                    ...prev,
+                    to: trimmed.replace('mailto:', ''),
+                  }));
+                  setActiveTab('email');
+                } else {
+                  setPlainText(trimmed);
+                  setActiveTab('text');
+                }
+                setMainViewMode('generator');
+                toast.success(
+                  language === 'en'
+                    ? 'Scanned content transferred to generator!'
+                    : 'محتوای اسکن شده به بخش سازنده منتقل شد.'
+                );
+              }}
+            />
+          </div>
+        )}
 
         {/* Global CTA Banner at bottom */}
         <ToolsCtaBanner />

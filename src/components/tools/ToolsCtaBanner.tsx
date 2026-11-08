@@ -25,8 +25,8 @@ export function ToolsCtaBanner() {
                 {language === 'en'
                   ? 'Smart NFC & Unified Bio Link'
                   : language === 'ps'
-                  ? 'د سمارټ NFC او بایو لینک یوځای والی'
-                  : 'کارت ویزیت هوشمند NFC و لینک‌بایو'}
+                    ? 'د سمارټ NFC او بایو لینک یوځای والی'
+                    : 'کارت ویزیت هوشمند NFC و لینک‌بایو'}
               </span>
             </div>
 
@@ -61,8 +61,8 @@ export function ToolsCtaBanner() {
               {language === 'en'
                 ? 'Create a custom digital profile with clickable contacts, social channels, payment gateways, live analytics, and NFC tap technology in seconds.'
                 : language === 'ps'
-                ? 'په څو ثانیو کې د اړیکو تڼیو، ټولنیزو شبکو، تادیاتي دروازو او لمسي NFC سره خپل ځانګړی پروفایل وړیا جوړ کړئ.'
-                : 'در چند ثانیه کارت ویزیت هوشمند خود را بسازید و با لمس NFC، کیوآر کد اختصاصی و یک لینک یکپارچه با مشتریان در ارتباط باشید.'}
+                  ? 'په څو ثانیو کې د اړیکو تڼیو، ټولنیزو شبکو، تادیاتي دروازو او لمسي NFC سره خپل ځانګړی پروفایل وړیا جوړ کړئ.'
+                  : 'در چند دقیقه کارت ویزیت هوشمند خود را بسازید و با لمس NFC، کیوآر کد اختصاصی و یک لینک یکپارچه با مشتریان در ارتباط باشید.'}
             </p>
 
             <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 text-xs text-slate-300 pt-1">
@@ -87,8 +87,8 @@ export function ToolsCtaBanner() {
                   {language === 'en'
                     ? 'Create Free Card'
                     : language === 'ps'
-                    ? 'وړیا کارټ جوړ کړئ'
-                    : 'ساخت رایگان کارت'}
+                      ? 'وړیا کارټ جوړ کړئ'
+                      : 'ساخت رایگان کارت'}
                 </span>
                 {isRtl ? (
                   <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
