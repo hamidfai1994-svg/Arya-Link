@@ -10,3 +10,4 @@ export { default as AuditLog, type IAuditLogDocument } from './AuditLog.model';
 export { default as LandingCms, type ILandingCmsDocument, INITIAL_LANDING_CMS } from './LandingCms.model';
 export { default as Transaction, type ITransactionDocument } from './Transaction.model';
 export { default as Otp, type IOtpDocument } from './Otp.model';
+export { default as ToolHistory, type IToolHistoryDocument } from './ToolHistory.model';

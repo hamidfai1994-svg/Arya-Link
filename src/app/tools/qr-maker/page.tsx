@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import {
   QrCode,
   Link2,
@@ -31,6 +32,8 @@ import {
   Sliders,
   Maximize2,
   Camera,
+  Bookmark,
+  Scan,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
@@ -50,24 +53,44 @@ type ContentTab =
   | 'location';
 
 type DotStyle =
+  | 'square'
   | 'rounded'
-  | 'dots'
+  | 'stripes'
+  | 'diamond'
+  | 'cross'
   | 'classy'
   | 'classy-rounded'
-  | 'square'
-  | 'extra-rounded';
+  | 'dots';
 
-type CornerSquareStyle = 'square' | 'dot' | 'extra-rounded';
-type CornerDotStyle = 'square' | 'dot';
+type CornerSquareStyle =
+  | 'square'
+  | 'rounded-square'
+  | 'circle'
+  | 'leaf-left'
+  | 'leaf-right'
+  | 'leaf-both'
+  | 'square-cutout'
+  | 'teardrop';
+
+type CornerDotStyle =
+  | 'square'
+  | 'rounded-square'
+  | 'circle'
+  | 'leaf'
+  | 'sunburst'
+  | 'star'
+  | 'diamond'
+  | 'cross';
 
 export type FrameStyle =
   | 'none'
   | 'bottom-banner'
-  | 'top-banner'
-  | 'rounded-banner'
+  | 'black-banner'
+  | 'hanging-tab'
   | 'circle'
   | 'phone'
   | 'clipboard'
+  | 'screen'
   | 'bag';
 
 const toSvgDataUrl = (svgStr: string) =>
@@ -84,13 +107,13 @@ const PRESET_LOGOS = [
     id: 'location',
     label: 'Location',
     bg: '#ef4444',
-    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100"><circle cx="50" cy="50" r="46" fill="#ef4444"/><path d="M50 26a16 16 0 0 0-16 16c0 12 16 32 16 32s16-20 16-32a16 16 0 0 0-16-16zm0 22a6 6 0 1 1 6-6 6 6 0 0 1-6 6z" fill="#ffffff"/></svg>`,
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100"><circle cx="50" cy="50" r="46" fill="#ef4444"/><path d="M50 24a18 18 0 0 0-18 18c0 14 18 36 18 36s18-22 18-36a18 18 0 0 0-18-18zm0 25a7 7 0 1 1 7-7 7 7 0 0 1-7 7z" fill="#ffffff"/></svg>`,
   },
   {
     id: 'email',
     label: 'Email',
     bg: '#f59e0b',
-    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100"><circle cx="50" cy="50" r="46" fill="#f59e0b"/><rect x="26" y="33" width="48" height="34" rx="6" fill="#ffffff"/><path d="M28 36l22 16 22-16" stroke="#f59e0b" stroke-width="5" stroke-linecap="round" fill="none"/></svg>`,
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100"><circle cx="50" cy="50" r="46" fill="#f59e0b"/><rect x="25" y="32" width="50" height="36" rx="6" fill="#ffffff"/><path d="M28 36l22 17 22-17" stroke="#f59e0b" stroke-width="5" stroke-linecap="round" fill="none"/></svg>`,
   },
   {
     id: 'whatsapp',
@@ -102,25 +125,25 @@ const PRESET_LOGOS = [
     id: 'wifi',
     label: 'WiFi',
     bg: '#3b82f6',
-    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100"><circle cx="50" cy="50" r="46" fill="#3b82f6"/><path d="M30 40a28 28 0 0 1 40 0M37 49a18 18 0 0 1 26 0M44 58a8 8 0 0 1 12 0" stroke="#ffffff" stroke-width="5" stroke-linecap="round" fill="none"/><circle cx="50" cy="69" r="4" fill="#ffffff"/></svg>`,
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100"><circle cx="50" cy="50" r="46" fill="#3b82f6"/><path d="M28 38a32 32 0 0 1 44 0M35 48a21 21 0 0 1 30 0M43 58a10 10 0 0 1 14 0" stroke="#ffffff" stroke-width="5" stroke-linecap="round" fill="none"/><circle cx="50" cy="69" r="4" fill="#ffffff"/></svg>`,
   },
   {
     id: 'vcard',
     label: 'Contact',
-    bg: '#1e40af',
-    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100"><circle cx="50" cy="50" r="46" fill="#1e40af"/><rect x="25" y="32" width="50" height="36" rx="5" fill="#ffffff"/><circle cx="40" cy="46" r="6" fill="#1e40af"/><rect x="52" y="42" width="16" height="3" rx="1.5" fill="#1e40af"/><rect x="52" y="49" width="11" height="3" rx="1.5" fill="#1e40af"/><path d="M32 59c0-4 4-6 8-6s8 2 8 6" fill="#1e40af"/></svg>`,
+    bg: '#1d4ed8',
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100"><circle cx="50" cy="50" r="46" fill="#1d4ed8"/><rect x="25" y="31" width="50" height="38" rx="6" fill="#ffffff"/><circle cx="41" cy="45" r="6" fill="#1d4ed8"/><rect x="52" y="42" width="16" height="3" rx="1.5" fill="#1d4ed8"/><rect x="52" y="48" width="12" height="3" rx="1.5" fill="#1d4ed8"/><path d="M33 58c0-4 4-6 8-6s8 2 8 6" fill="#1d4ed8"/></svg>`,
   },
   {
     id: 'paypal',
     label: 'PayPal',
-    bg: '#0284c7',
-    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100"><circle cx="50" cy="50" r="46" fill="#0284c7"/><path d="M38 72l6-38h15c7 0 11 3 10 9-1 5-4 8-9 8h-5l-3 21h-9z" fill="#ffffff"/><path d="M46 64l4-24h12c5 0 9 2 8 7-1 5-3 7-8 7h-4l-3 18h-9z" fill="#bae6fd"/></svg>`,
+    bg: '#003087',
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100"><rect width="100" height="100" rx="16" fill="#ffffff"/><path d="M34 76l6-42h16c8 0 12 3.5 11 10.5-1 6-5.5 9.5-11 9.5h-5.5l-3.5 22H34z" fill="#003087"/><path d="M43 67l4-27h13c7 0 11 3 10 9-1 5.5-4.5 8.5-9.5 8.5h-5l-3 18.5h-9.5z" fill="#0079C1"/><text x="64" y="74" font-family="sans-serif" font-weight="900" font-size="11" fill="#003087">PayPal</text></svg>`,
   },
   {
     id: 'bitcoin',
     label: 'Bitcoin',
-    bg: '#f97316',
-    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100"><circle cx="50" cy="50" r="46" fill="#f97316"/><path d="M57 45c4-1 6-4 5-8-1-5-6-7-11-7h-11v38h13c6 0 11-2 11-8 0-4-3-7-7-8zm-11-9h5c3 0 5 1 5 4s-2 4-5 4h-5v-8zm6 24h-6v-9h6c3 0 6 1 6 4.5s-3 4.5-6 4.5z" fill="#ffffff"/><path d="M47 24v4M53 24v4M47 70v4M53 70v4" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/></svg>`,
+    bg: '#f7931a',
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100"><circle cx="50" cy="50" r="46" fill="#f7931a"/><path d="M58 44c4-1 6-4 5-8-1-5-6-7-11-7h-11v38h13c6 0 11-2 11-8 0-4-3-7-7-8zm-11-9h5c3 0 5 1 5 4s-2 4-5 4h-5v-8zm6 24h-6v-9h6c3 0 6 1 6 4.5s-3 4.5-6 4.5z" fill="#ffffff"/><path d="M47 23v4M53 23v4M47 70v4M53 70v4" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round"/></svg>`,
   },
 ];
 
@@ -128,37 +151,50 @@ const PRESET_BADGES = [
   {
     id: 'scanme_bracket',
     label: '[SCAN ME]',
-    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100"><rect width="100" height="100" fill="#ffffff" rx="10"/><path d="M22 36V22h14M78 36V22H64M22 64v14h14M78 64v14H64" stroke="#000000" stroke-width="6" stroke-linecap="round" fill="none"/><text x="50" y="44" font-family="sans-serif" font-weight="900" font-size="16" fill="#000000" text-anchor="middle">SCAN</text><text x="50" y="66" font-family="sans-serif" font-weight="900" font-size="20" fill="#000000" text-anchor="middle">ME</text></svg>`,
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 60" width="100" height="60"><path d="M22 20V12h14M78 20V12H64M22 40v8h14M78 40v8H64" stroke="#000000" stroke-width="4.5" stroke-linecap="round" fill="none"/><text x="50" y="27" font-family="sans-serif" font-weight="900" font-size="14" fill="#000000" text-anchor="middle">SCAN</text><text x="50" y="47" font-family="sans-serif" font-weight="900" font-size="17" fill="#000000" text-anchor="middle">ME</text></svg>`,
   },
   {
     id: 'scanme_badge',
     label: 'SCAN ME',
-    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100"><rect width="100" height="100" fill="#ffffff" rx="10"/><rect x="8" y="24" width="84" height="52" rx="8" fill="#000000"/><text x="50" y="48" font-family="sans-serif" font-weight="900" font-size="14" fill="#ffffff" text-anchor="middle" letter-spacing="1">SCAN</text><text x="50" y="67" font-family="sans-serif" font-weight="900" font-size="16" fill="#ffffff" text-anchor="middle" letter-spacing="2">ME</text></svg>`,
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 60" width="100" height="60"><text x="50" y="28" font-family="sans-serif" font-weight="900" font-size="18" fill="#000000" text-anchor="middle" letter-spacing="1">SCAN</text><text x="50" y="48" font-family="sans-serif" font-weight="900" font-size="18" fill="#000000" text-anchor="middle" letter-spacing="1">ME</text></svg>`,
   },
   {
-    id: 'qr_badge',
-    label: 'QR Scanner',
-    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100"><rect width="100" height="100" fill="#ffffff" rx="10"/><path d="M25 35V25h10M75 35V25H65M25 65v10h10M75 65v10H65" stroke="#000000" stroke-width="5" stroke-linecap="round" fill="none"/><rect x="36" y="36" width="12" height="12" fill="#000000"/><rect x="52" y="36" width="12" height="12" fill="#000000"/><rect x="36" y="52" width="12" height="12" fill="#000000"/><rect x="52" y="52" width="12" height="12" fill="#000000"/></svg>`,
+    id: 'table_stand',
+    label: 'Menu Stand',
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 60" width="100" height="60"><path d="M30 46h40M25 50h50" stroke="#000000" stroke-width="3" stroke-linecap="round"/><rect x="34" y="10" width="32" height="32" rx="3" stroke="#000000" stroke-width="2.5" fill="#ffffff"/><rect x="39" y="15" width="7" height="7" fill="#000000"/><rect x="54" y="15" width="7" height="7" fill="#000000"/><rect x="39" y="30" width="7" height="7" fill="#000000"/><rect x="54" y="30" width="7" height="7" fill="#000000"/><line x1="28" y1="26" x2="72" y2="26" stroke="#ef4444" stroke-width="2" stroke-dasharray="2 2"/></svg>`,
   },
   {
-    id: 'barcode_badge',
-    label: 'Barcode',
-    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100"><rect width="100" height="100" fill="#ffffff" rx="10"/><path d="M20 30v40M27 30v40M37 30v40M42 30v40M49 30v40M59 30v40M64 30v40M74 30v40M80 30v40" stroke="#000000" stroke-width="4" stroke-linecap="square"/></svg>`,
+    id: 'viewfinder',
+    label: 'Viewfinder',
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 60" width="100" height="60"><path d="M28 20V12h12M72 20V12H60M28 40v8h12M72 40v8H60" stroke="#000000" stroke-width="3.5" stroke-linecap="round" fill="none"/><line x1="22" y1="30" x2="78" y2="30" stroke="#000000" stroke-width="3.5" stroke-linecap="round"/><circle cx="50" cy="30" r="2.5" fill="#000000"/></svg>`,
   },
   {
-    id: 'menu_badge',
-    label: 'Menu',
-    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100"><rect width="100" height="100" fill="#ffffff" rx="10"/><path d="M24 25v50M76 25v50" stroke="#000000" stroke-width="6" stroke-linecap="round"/><path d="M36 38h28M36 50h28M36 62h28" stroke="#000000" stroke-width="5" stroke-linecap="round"/></svg>`,
+    id: 'dining',
+    label: 'Dining',
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 60" width="100" height="60"><path d="M22 14v12a5 5 0 0 0 5 5v15M25 14v10M29 14v10" stroke="#000000" stroke-width="2.5" stroke-linecap="round" fill="none"/><path d="M78 14v14a4 4 0 0 1-4 4v17" stroke="#000000" stroke-width="2.5" stroke-linecap="round" fill="none"/><rect x="36" y="16" width="28" height="28" rx="2" stroke="#000000" stroke-width="2" fill="none"/><rect x="41" y="21" width="6" height="6" fill="#000000"/><rect x="53" y="21" width="6" height="6" fill="#000000"/><rect x="41" y="33" width="6" height="6" fill="#000000"/><rect x="53" y="33" width="6" height="6" fill="#000000"/></svg>`,
   },
 ];
 
-export default function AdvancedQrMakerPage() {
+function AdvancedQrMakerContent() {
   const { dir, language } = useLanguage();
   const isRtl = dir === 'rtl';
   const { loadProfile, isLoading: isProfileLoading } = useProfileLoader();
+  const searchParams = useSearchParams();
 
   // Top-Level Mode Tab: Generator vs Scanner
   const [mainViewMode, setMainViewMode] = useState<'generator' | 'scanner'>('generator');
+
+  // Handle URL query parameter ?tab=scanner
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam === 'scanner') {
+      setMainViewMode('scanner');
+    } else if (tabParam === 'generator') {
+      setMainViewMode('generator');
+    }
+  }, [searchParams]);
+
+  const [isSavingToHistory, setIsSavingToHistory] = useState(false);
 
   // Active Tab
   const [activeTab, setActiveTab] = useState<ContentTab>('url');
@@ -260,8 +296,66 @@ export default function AdvancedQrMakerPage() {
   // QR Container Ref & Instance Ref
   const qrContainerRef = useRef<HTMLDivElement>(null);
   const qrCodeInstanceRef = useRef<any>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isClientReady, setIsClientReady] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  // Mappers from visual shapes to standard qr-code-styling figures
+  const mapDotStyle = (style: DotStyle): 'square' | 'rounded' | 'dots' | 'classy' | 'classy-rounded' | 'extra-rounded' => {
+    switch (style) {
+      case 'square':
+        return 'square';
+      case 'rounded':
+        return 'rounded';
+      case 'stripes':
+      case 'diamond':
+        return 'classy';
+      case 'cross':
+      case 'classy-rounded':
+        return 'classy-rounded';
+      case 'classy':
+        return 'classy';
+      case 'dots':
+        return 'dots';
+      default:
+        return 'square';
+    }
+  };
+
+  const mapCornerSquareStyle = (style: CornerSquareStyle): 'square' | 'extra-rounded' | 'dot' => {
+    switch (style) {
+      case 'square':
+        return 'square';
+      case 'circle':
+        return 'dot';
+      case 'rounded-square':
+      case 'leaf-left':
+      case 'leaf-right':
+      case 'leaf-both':
+      case 'square-cutout':
+      case 'teardrop':
+        return 'extra-rounded';
+      default:
+        return 'square';
+    }
+  };
+
+  const mapCornerDotStyle = (style: CornerDotStyle): 'square' | 'dot' => {
+    switch (style) {
+      case 'square':
+      case 'diamond':
+      case 'cross':
+        return 'square';
+      case 'rounded-square':
+      case 'circle':
+      case 'leaf':
+      case 'sunburst':
+      case 'star':
+        return 'dot';
+      default:
+        return 'square';
+    }
+  };
 
   // Calculate final payload string based on active tab
   const computedPayload = useMemo(() => {
@@ -406,7 +500,7 @@ export default function AdvancedQrMakerPage() {
         crossOrigin: 'anonymous',
       },
       dotsOptions: {
-        type: dotStyle,
+        type: mapDotStyle(dotStyle),
         color: !isGrad ? singleColor : undefined,
         gradient: dotsGradient,
       },
@@ -414,7 +508,7 @@ export default function AdvancedQrMakerPage() {
         color: isTransparentBg ? 'transparent' : bgColor,
       },
       cornersSquareOptions: {
-        type: cornerSquareStyle,
+        type: mapCornerSquareStyle(cornerSquareStyle),
         color: customEyeColors
           ? eyeSquareColor
           : !isGrad
@@ -422,7 +516,7 @@ export default function AdvancedQrMakerPage() {
           : gradientColor1,
       },
       cornersDotOptions: {
-        type: cornerDotStyle,
+        type: mapCornerDotStyle(cornerDotStyle),
         color: customEyeColors
           ? eyeDotColor
           : !isGrad
@@ -569,7 +663,12 @@ export default function AdvancedQrMakerPage() {
           const bannerH = Math.round(downloadSize * 0.16);
           const pad = Math.round(downloadSize * 0.06);
 
-          if (frameStyle === 'bottom-banner') {
+          if (
+            frameStyle === 'bottom-banner' ||
+            frameStyle === 'black-banner' ||
+            frameStyle === 'screen' ||
+            frameStyle === 'hanging-tab'
+          ) {
             canvas.width = qrW + pad * 2;
             canvas.height = qrH + pad + bannerH;
             ctx.fillStyle = '#ffffff';
@@ -585,24 +684,8 @@ export default function AdvancedQrMakerPage() {
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillText((frameText || 'SCAN ME').toUpperCase(), canvas.width / 2, qrH + pad + bannerH / 2);
-          } else if (frameStyle === 'top-banner') {
-            canvas.width = qrW + pad * 2;
-            canvas.height = qrH + pad + bannerH;
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = frameColor;
-            ctx.fillRect(0, 0, canvas.width, bannerH);
-            ctx.drawImage(img, pad, bannerH, qrW, qrH);
-            ctx.lineWidth = Math.round(downloadSize * 0.02);
-            ctx.strokeStyle = frameColor;
-            ctx.strokeRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = '#ffffff';
-            ctx.font = `bold ${Math.round(bannerH * 0.48)}px sans-serif`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText((frameText || 'SCAN ME').toUpperCase(), canvas.width / 2, bannerH / 2);
           } else {
-            // rounded-banner, phone, clipboard, circle, bag
+            // phone, clipboard, circle, bag
             canvas.width = qrW + pad * 2;
             canvas.height = qrH + pad * 2 + bannerH;
             ctx.fillStyle = '#ffffff';
@@ -687,6 +770,59 @@ export default function AdvancedQrMakerPage() {
     setMargin(8);
     setErrorCorrectionLevel('Q');
     toast.info(language === 'en' ? 'Styles reset to defaults.' : 'تنظیمات ظاهری به حالت پیش‌فرض بازنشانی شدند.');
+  };
+
+  // Stage 5: Save QR Code to Cloud History
+  const handleSaveToHistory = async () => {
+    try {
+      setIsSavingToHistory(true);
+      let previewUrl = '';
+      if (qrContainerRef.current) {
+        const canvas = qrContainerRef.current.querySelector('canvas');
+        if (canvas) {
+          previewUrl = canvas.toDataURL('image/png');
+        }
+      }
+
+      const res = await fetch('/api/tools/history', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          toolType: 'qr',
+          title: `QR Code: ${activeTab.toUpperCase()}`,
+          subtype: activeTab,
+          payload: computedPayload,
+          previewDataUrl: previewUrl,
+          config: {
+            dotStyle,
+            cornerSquareStyle,
+            cornerDotStyle,
+            frameStyle,
+            frameText,
+            frameColor,
+            singleColor,
+            colorMode,
+            bgColor,
+          },
+        }),
+      });
+
+      const data = await res.json();
+      if (res.status === 401) {
+        toast.error('برای ذخیره در تاریخچه، ابتدا وارد حساب کاربری خود شوید.');
+        return;
+      }
+
+      if (data.success) {
+        toast.success('کد QR با موفقیت در تاریخچه ابزارهای شما ذخیره شد.');
+      } else {
+        toast.error(data.message || 'خطا در ذخیره تاریخچه.');
+      }
+    } catch {
+      toast.error('خطای شبکه در ذخیره تاریخچه.');
+    } finally {
+      setIsSavingToHistory(false);
+    }
   };
 
   // Preset Colors
@@ -1367,242 +1503,261 @@ export default function AdvancedQrMakerPage() {
               </div>
             </div>
 
-            {/* Step 2: Visual Styling & Design System - 3 Dedicated Tabs: Frame, Shape, Logo */}
-            <div className="bg-slate-900/60 backdrop-blur-xl border border-slate-800 rounded-3xl p-5 sm:p-6 shadow-xl space-y-6">
-              {/* Top Tabs: Frame | Shape | Logo (Exact Match to Reference Screenshots) */}
-              <div className="flex items-center p-1.5 rounded-2xl bg-slate-950/80 border border-slate-800">
+            {/* Step 2: Visual Styling & Design System - Exact Match to Screenshots */}
+            <div className="rounded-3xl border border-slate-200 bg-white shadow-xl overflow-hidden text-slate-800">
+              {/* Tabs Bar: Frame | Shape | Logo */}
+              <div className="flex items-center border-b border-slate-200 bg-slate-50/70 px-4 pt-3 gap-2">
                 <button
                   type="button"
                   onClick={() => setDesignTab('frame')}
-                  className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all text-center ${
+                  className={`px-6 py-2.5 rounded-t-xl font-medium text-sm transition-all border border-b-0 relative ${
                     designTab === 'frame'
-                      ? 'bg-cyan-500 text-white shadow-md shadow-cyan-500/20'
-                      : 'text-slate-400 hover:text-white'
+                      ? 'bg-white text-teal-600 font-semibold border-slate-200 shadow-xs -mb-px z-10'
+                      : 'bg-transparent text-slate-500 hover:text-slate-800 border-transparent'
                   }`}
                 >
-                  فریم (Frame)
+                  Frame
                 </button>
                 <button
                   type="button"
                   onClick={() => setDesignTab('shape')}
-                  className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all text-center ${
+                  className={`px-6 py-2.5 rounded-t-xl font-medium text-sm transition-all border border-b-0 relative ${
                     designTab === 'shape'
-                      ? 'bg-cyan-500 text-white shadow-md shadow-cyan-500/20'
-                      : 'text-slate-400 hover:text-white'
+                      ? 'bg-white text-teal-600 font-semibold border-slate-200 shadow-xs -mb-px z-10'
+                      : 'bg-transparent text-slate-500 hover:text-slate-800 border-transparent'
                   }`}
                 >
-                  شکل (Shape)
+                  Shape
                 </button>
                 <button
                   type="button"
                   onClick={() => setDesignTab('logo')}
-                  className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all text-center ${
+                  className={`px-6 py-2.5 rounded-t-xl font-medium text-sm transition-all border border-b-0 relative ${
                     designTab === 'logo'
-                      ? 'bg-cyan-500 text-white shadow-md shadow-cyan-500/20'
-                      : 'text-slate-400 hover:text-white'
+                      ? 'bg-white text-teal-600 font-semibold border-slate-200 shadow-xs -mb-px z-10'
+                      : 'bg-transparent text-slate-500 hover:text-slate-800 border-transparent'
                   }`}
                 >
-                  لوگو (Logo)
+                  Logo
                 </button>
               </div>
+
+              <div className="p-5 sm:p-6 space-y-6">
 
               {/* TAB 1: FRAME */}
               {designTab === 'frame' && (
                 <div className="space-y-5 animate-in fade-in duration-200">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-3">
-                      انتخاب قالب و فریم کیوآر کد (Frame Style):
-                    </label>
-                    <div className="grid grid-cols-4 sm:grid-cols-8 gap-2.5">
+                  <div className="relative">
+                    <div className="flex items-center gap-3 overflow-x-auto pb-4 pt-1 px-1 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100">
                       {/* Frame 1: None (X) */}
                       <button
                         type="button"
                         onClick={() => setFrameStyle('none')}
-                        className={`aspect-square p-2.5 rounded-2xl border flex flex-col items-center justify-center gap-1.5 transition-all ${
+                        className={`shrink-0 w-20 h-20 rounded-2xl border flex flex-col items-center justify-center transition-all ${
                           frameStyle === 'none'
-                            ? 'border-cyan-500 bg-cyan-500/20 text-cyan-300 ring-2 ring-cyan-500/30'
-                            : 'border-slate-800 bg-slate-950/50 text-slate-400 hover:border-slate-700 hover:text-white'
+                            ? 'border-blue-500 bg-sky-50 text-slate-800 ring-2 ring-blue-300/60 shadow-xs'
+                            : 'border-slate-200 bg-white text-slate-400 hover:border-slate-300 hover:text-slate-700 shadow-2xs'
                         }`}
-                        title="بدون فریم"
+                        title="No Frame"
                       >
-                        <X className="w-6 h-6 stroke-[2.5]" />
-                        <span className="text-[10px] font-medium">None</span>
+                        <X className="w-7 h-7 stroke-[2.5]" />
                       </button>
 
-                      {/* Frame 2: Bottom Banner */}
+                      {/* Frame 2: Bottom Banner (scan me pill) */}
                       <button
                         type="button"
                         onClick={() => setFrameStyle('bottom-banner')}
-                        className={`aspect-square p-2.5 rounded-2xl border flex flex-col items-center justify-center gap-1 transition-all ${
+                        className={`shrink-0 w-20 h-20 rounded-2xl border flex flex-col items-center justify-center p-1.5 transition-all ${
                           frameStyle === 'bottom-banner'
-                            ? 'border-cyan-500 bg-cyan-500/20 text-cyan-300 ring-2 ring-cyan-500/30'
-                            : 'border-slate-800 bg-slate-950/50 text-slate-400 hover:border-slate-700 hover:text-white'
+                            ? 'border-blue-500 bg-sky-50 text-slate-800 ring-2 ring-blue-300/60 shadow-xs'
+                            : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
                         }`}
-                        title="بنر پایین"
+                        title="Bottom Banner"
                       >
-                        <svg viewBox="0 0 40 40" className="w-8 h-8">
-                          <rect x="5" y="4" width="30" height="32" rx="3" stroke="currentColor" strokeWidth="2" fill="none" />
-                          <rect x="10" y="8" width="20" height="18" fill="currentColor" fillOpacity="0.4" />
-                          <rect x="5" y="27" width="30" height="9" fill="currentColor" />
-                          <text x="20" y="33.5" fontSize="4.5" fill="#ffffff" fontWeight="bold" textAnchor="middle">SCAN</text>
+                        <svg viewBox="0 0 50 60" className="w-12 h-14">
+                          <rect x="4" y="4" width="42" height="52" rx="4" stroke="#000000" strokeWidth="2.5" fill="none" />
+                          <rect x="10" y="8" width="30" height="30" rx="1" fill="#000000" fillOpacity="0.85" />
+                          <rect x="8" y="42" width="34" height="10" rx="5" fill="#000000" />
+                          <circle cx="14" cy="47" r="2.5" fill="#ffffff" />
+                          <text x="28" y="49.5" fontSize="4.5" fill="#ffffff" fontWeight="bold" textAnchor="middle">SCAN ME</text>
                         </svg>
-                        <span className="text-[10px] font-medium">Bottom</span>
                       </button>
 
-                      {/* Frame 3: Top Banner */}
+                      {/* Frame 3: Black Banner */}
                       <button
                         type="button"
-                        onClick={() => setFrameStyle('top-banner')}
-                        className={`aspect-square p-2.5 rounded-2xl border flex flex-col items-center justify-center gap-1 transition-all ${
-                          frameStyle === 'top-banner'
-                            ? 'border-cyan-500 bg-cyan-500/20 text-cyan-300 ring-2 ring-cyan-500/30'
-                            : 'border-slate-800 bg-slate-950/50 text-slate-400 hover:border-slate-700 hover:text-white'
+                        onClick={() => setFrameStyle('black-banner')}
+                        className={`shrink-0 w-20 h-20 rounded-2xl border flex flex-col items-center justify-center p-1.5 transition-all ${
+                          frameStyle === 'black-banner'
+                            ? 'border-blue-500 bg-sky-50 text-slate-800 ring-2 ring-blue-300/60 shadow-xs'
+                            : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
                         }`}
-                        title="بنر بالا"
+                        title="Solid Black Banner"
                       >
-                        <svg viewBox="0 0 40 40" className="w-8 h-8">
-                          <rect x="5" y="4" width="30" height="32" rx="3" stroke="currentColor" strokeWidth="2" fill="none" />
-                          <rect x="5" y="4" width="30" height="9" fill="currentColor" />
-                          <text x="20" y="10.5" fontSize="4.5" fill="#ffffff" fontWeight="bold" textAnchor="middle">SCAN</text>
-                          <rect x="10" y="14" width="20" height="18" fill="currentColor" fillOpacity="0.4" />
+                        <svg viewBox="0 0 50 60" className="w-12 h-14">
+                          <rect x="4" y="4" width="42" height="52" rx="4" stroke="#000000" strokeWidth="2.5" fill="none" />
+                          <rect x="10" y="8" width="30" height="30" rx="1" fill="#000000" fillOpacity="0.85" />
+                          <rect x="4" y="42" width="42" height="14" rx="2" fill="#000000" />
+                          <text x="25" y="51" fontSize="5.5" fill="#ffffff" fontWeight="bold" textAnchor="middle">SCAN ME</text>
                         </svg>
-                        <span className="text-[10px] font-medium">Top</span>
                       </button>
 
-                      {/* Frame 4: Rounded Banner */}
+                      {/* Frame 4: Hanging Tab */}
                       <button
                         type="button"
-                        onClick={() => setFrameStyle('rounded-banner')}
-                        className={`aspect-square p-2.5 rounded-2xl border flex flex-col items-center justify-center gap-1 transition-all ${
-                          frameStyle === 'rounded-banner'
-                            ? 'border-cyan-500 bg-cyan-500/20 text-cyan-300 ring-2 ring-cyan-500/30'
-                            : 'border-slate-800 bg-slate-950/50 text-slate-400 hover:border-slate-700 hover:text-white'
+                        onClick={() => setFrameStyle('hanging-tab')}
+                        className={`shrink-0 w-20 h-20 rounded-2xl border flex flex-col items-center justify-center p-1.5 transition-all ${
+                          frameStyle === 'hanging-tab'
+                            ? 'border-blue-500 bg-sky-50 text-slate-800 ring-2 ring-blue-300/60 shadow-xs'
+                            : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
                         }`}
-                        title="بج گرد"
+                        title="Hanging Tab"
                       >
-                        <svg viewBox="0 0 40 40" className="w-8 h-8">
-                          <rect x="5" y="4" width="30" height="32" rx="6" stroke="currentColor" strokeWidth="1.5" fill="none" />
-                          <rect x="10" y="8" width="20" height="18" rx="2" fill="currentColor" fillOpacity="0.4" />
-                          <rect x="9" y="27" width="22" height="7" rx="3.5" fill="currentColor" />
-                          <text x="20" y="32" fontSize="4" fill="#ffffff" fontWeight="bold" textAnchor="middle">SCAN</text>
+                        <svg viewBox="0 0 50 60" className="w-12 h-14">
+                          <rect x="4" y="4" width="42" height="42" rx="3" stroke="#000000" strokeWidth="2.5" fill="none" />
+                          <rect x="10" y="8" width="30" height="30" rx="1" fill="#000000" fillOpacity="0.85" />
+                          <path d="M10 46h30v10a2 2 0 0 1-2 2H12a2 2 0 0 1-2-2V46z" fill="#000000" />
+                          <text x="25" y="53.5" fontSize="4.5" fill="#ffffff" fontWeight="bold" textAnchor="middle">SCAN ME</text>
                         </svg>
-                        <span className="text-[10px] font-medium">Badge</span>
                       </button>
 
                       {/* Frame 5: Circle */}
                       <button
                         type="button"
                         onClick={() => setFrameStyle('circle')}
-                        className={`aspect-square p-2.5 rounded-2xl border flex flex-col items-center justify-center gap-1 transition-all ${
+                        className={`shrink-0 w-20 h-20 rounded-2xl border flex flex-col items-center justify-center p-1.5 transition-all ${
                           frameStyle === 'circle'
-                            ? 'border-cyan-500 bg-cyan-500/20 text-cyan-300 ring-2 ring-cyan-500/30'
-                            : 'border-slate-800 bg-slate-950/50 text-slate-400 hover:border-slate-700 hover:text-white'
+                            ? 'border-blue-500 bg-sky-50 text-slate-800 ring-2 ring-blue-300/60 shadow-xs'
+                            : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
                         }`}
-                        title="دایره‌ای"
+                        title="Circle Frame"
                       >
-                        <svg viewBox="0 0 40 40" className="w-8 h-8">
-                          <circle cx="20" cy="20" r="16" stroke="currentColor" strokeWidth="1.5" fill="none" />
-                          <rect x="12" y="10" width="16" height="15" rx="1" fill="currentColor" fillOpacity="0.4" />
-                          <rect x="11" y="27" width="18" height="6" rx="3" fill="currentColor" />
-                          <text x="20" y="31.5" fontSize="3.5" fill="#ffffff" fontWeight="bold" textAnchor="middle">SCAN</text>
+                        <svg viewBox="0 0 50 60" className="w-12 h-14">
+                          <circle cx="25" cy="24" r="20" stroke="#000000" strokeWidth="2" fill="none" />
+                          <rect x="13" y="12" width="24" height="24" rx="1" fill="#000000" fillOpacity="0.85" />
+                          <text x="25" y="52" fontSize="5.5" fill="#000000" fontWeight="bold" textAnchor="middle">SCAN ME</text>
                         </svg>
-                        <span className="text-[10px] font-medium">Circle</span>
                       </button>
 
                       {/* Frame 6: Phone */}
                       <button
                         type="button"
                         onClick={() => setFrameStyle('phone')}
-                        className={`aspect-square p-2.5 rounded-2xl border flex flex-col items-center justify-center gap-1 transition-all ${
+                        className={`shrink-0 w-20 h-20 rounded-2xl border flex flex-col items-center justify-center p-1.5 transition-all ${
                           frameStyle === 'phone'
-                            ? 'border-cyan-500 bg-cyan-500/20 text-cyan-300 ring-2 ring-cyan-500/30'
-                            : 'border-slate-800 bg-slate-950/50 text-slate-400 hover:border-slate-700 hover:text-white'
+                            ? 'border-blue-500 bg-sky-50 text-slate-800 ring-2 ring-blue-300/60 shadow-xs'
+                            : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
                         }`}
-                        title="موبایل"
+                        title="Phone Mockup"
                       >
-                        <svg viewBox="0 0 40 40" className="w-8 h-8">
-                          <rect x="7" y="3" width="26" height="34" rx="6" stroke="currentColor" strokeWidth="2" fill="none" />
-                          <rect x="15" y="5.5" width="10" height="1.5" rx="0.75" fill="currentColor" />
-                          <rect x="10" y="9" width="20" height="20" rx="1" fill="currentColor" fillOpacity="0.4" />
-                          <circle cx="20" cy="33" r="1.5" fill="currentColor" />
+                        <svg viewBox="0 0 50 60" className="w-12 h-14">
+                          <rect x="8" y="3" width="34" height="54" rx="7" stroke="#000000" strokeWidth="2" fill="none" />
+                          <rect x="20" y="6" width="10" height="2" rx="1" fill="#000000" />
+                          <circle cx="25" cy="10" r="0.8" fill="#000000" />
+                          <rect x="12" y="13" width="26" height="26" rx="1" fill="#000000" fillOpacity="0.85" />
+                          <rect x="10" y="42" width="30" height="10" rx="2" fill="#000000" />
+                          <text x="25" y="49" fontSize="4.5" fill="#ffffff" fontWeight="bold" textAnchor="middle">SCAN ME</text>
                         </svg>
-                        <span className="text-[10px] font-medium">Phone</span>
                       </button>
 
                       {/* Frame 7: Clipboard */}
                       <button
                         type="button"
                         onClick={() => setFrameStyle('clipboard')}
-                        className={`aspect-square p-2.5 rounded-2xl border flex flex-col items-center justify-center gap-1 transition-all ${
+                        className={`shrink-0 w-20 h-20 rounded-2xl border flex flex-col items-center justify-center p-1.5 transition-all ${
                           frameStyle === 'clipboard'
-                            ? 'border-cyan-500 bg-cyan-500/20 text-cyan-300 ring-2 ring-cyan-500/30'
-                            : 'border-slate-800 bg-slate-950/50 text-slate-400 hover:border-slate-700 hover:text-white'
+                            ? 'border-blue-500 bg-sky-50 text-slate-800 ring-2 ring-blue-300/60 shadow-xs'
+                            : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
                         }`}
-                        title="تخته‌شاسی"
+                        title="Clipboard Mockup"
                       >
-                        <svg viewBox="0 0 40 40" className="w-8 h-8">
-                          <rect x="6" y="6" width="28" height="31" rx="4" stroke="currentColor" strokeWidth="1.5" fill="none" />
-                          <rect x="13" y="3" width="14" height="5" rx="1.5" fill="currentColor" />
-                          <rect x="10" y="11" width="20" height="20" rx="1" fill="currentColor" fillOpacity="0.4" />
+                        <svg viewBox="0 0 50 60" className="w-12 h-14">
+                          <rect x="7" y="8" width="36" height="48" rx="4" stroke="#000000" strokeWidth="2" fill="none" />
+                          <rect x="17" y="4" width="16" height="6" rx="2" fill="#000000" />
+                          <rect x="12" y="14" width="26" height="26" rx="1" fill="#000000" fillOpacity="0.85" />
+                          <rect x="9" y="43" width="32" height="9" rx="2" fill="#000000" />
+                          <text x="25" y="50" fontSize="4.5" fill="#ffffff" fontWeight="bold" textAnchor="middle">SCAN ME</text>
                         </svg>
-                        <span className="text-[10px] font-medium">Clip</span>
                       </button>
 
-                      {/* Frame 8: Bag */}
+                      {/* Frame 8: Screen / Monitor */}
+                      <button
+                        type="button"
+                        onClick={() => setFrameStyle('screen')}
+                        className={`shrink-0 w-20 h-20 rounded-2xl border flex flex-col items-center justify-center p-1.5 transition-all ${
+                          frameStyle === 'screen'
+                            ? 'border-blue-500 bg-sky-50 text-slate-800 ring-2 ring-blue-300/60 shadow-xs'
+                            : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
+                        }`}
+                        title="Screen / Monitor"
+                      >
+                        <svg viewBox="0 0 50 60" className="w-12 h-14">
+                          <rect x="5" y="6" width="40" height="44" rx="4" stroke="#000000" strokeWidth="2" fill="none" />
+                          <rect x="11" y="10" width="28" height="28" rx="1" fill="#000000" fillOpacity="0.85" />
+                          <rect x="10" y="41" width="30" height="8" rx="4" fill="#000000" />
+                          <text x="25" y="47" fontSize="4.5" fill="#ffffff" fontWeight="bold" textAnchor="middle">SCAN ME</text>
+                        </svg>
+                      </button>
+
+                      {/* Frame 9: Shopping Bag */}
                       <button
                         type="button"
                         onClick={() => setFrameStyle('bag')}
-                        className={`aspect-square p-2.5 rounded-2xl border flex flex-col items-center justify-center gap-1 transition-all ${
+                        className={`shrink-0 w-20 h-20 rounded-2xl border flex flex-col items-center justify-center p-1.5 transition-all ${
                           frameStyle === 'bag'
-                            ? 'border-cyan-500 bg-cyan-500/20 text-cyan-300 ring-2 ring-cyan-500/30'
-                            : 'border-slate-800 bg-slate-950/50 text-slate-400 hover:border-slate-700 hover:text-white'
+                            ? 'border-blue-500 bg-sky-50 text-slate-800 ring-2 ring-blue-300/60 shadow-xs'
+                            : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
                         }`}
-                        title="ساک خرید"
+                        title="Shopping Bag"
                       >
-                        <svg viewBox="0 0 40 40" className="w-8 h-8">
-                          <path d="M15 10V6a5 5 0 0 1 10 0v4" stroke="currentColor" strokeWidth="1.5" fill="none" />
-                          <rect x="6" y="10" width="28" height="26" rx="3" stroke="currentColor" strokeWidth="1.5" fill="none" />
-                          <rect x="11" y="14" width="18" height="15" fill="currentColor" fillOpacity="0.4" />
-                          <rect x="9" y="30" width="22" height="5" fill="currentColor" />
-                          <text x="20" y="34" fontSize="3.5" fill="#ffffff" fontWeight="bold" textAnchor="middle">SCAN</text>
+                        <svg viewBox="0 0 50 60" className="w-12 h-14">
+                          <path d="M19 14V8a6 6 0 0 1 12 0v6" stroke="#000000" strokeWidth="2" fill="none" />
+                          <rect x="6" y="14" width="38" height="42" rx="4" stroke="#000000" strokeWidth="2" fill="none" />
+                          <rect x="12" y="18" width="26" height="26" fill="#000000" fillOpacity="0.85" />
+                          <rect x="9" y="46" width="32" height="7" rx="1" fill="#000000" />
+                          <text x="25" y="51.5" fontSize="4.5" fill="#ffffff" fontWeight="bold" textAnchor="middle">SCAN ME</text>
                         </svg>
-                        <span className="text-[10px] font-medium">Bag</span>
                       </button>
                     </div>
                   </div>
 
-                  {/* Frame Text & Color Settings (Active when frame is not 'none') */}
+                  {/* Frame Customization when active */}
                   {frameStyle !== 'none' && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-2xl bg-slate-950/60 border border-slate-800 animate-in fade-in">
+                    <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-xs text-slate-400 mb-1.5 font-medium">
-                          متن داخل فریم (Frame Label):
+                        <label className="block text-xs text-slate-600 font-medium mb-1.5">
+                          Frame Text:
                         </label>
                         <input
                           type="text"
                           value={frameText}
                           onChange={(e) => setFrameText(e.target.value)}
-                          placeholder="SCAN ME"
-                          className="w-full px-3 py-2 bg-slate-900 border border-slate-700 focus:border-cyan-500 rounded-xl text-xs text-white focus:outline-none uppercase font-bold"
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold uppercase text-slate-800 focus:outline-none focus:border-cyan-500 shadow-xs"
                         />
                       </div>
                       <div>
-                        <label className="block text-xs text-slate-400 mb-1.5 font-medium">
-                          رنگ فریم (Frame Color):
+                        <label className="block text-xs text-slate-600 font-medium mb-1.5">
+                          Frame Color:
                         </label>
                         <div className="flex items-center gap-2">
-                          <input
-                            type="color"
-                            value={frameColor}
-                            onChange={(e) => setFrameColor(e.target.value)}
-                            className="w-9 h-9 rounded-xl cursor-pointer bg-transparent border border-slate-700 shrink-0"
-                          />
                           <input
                             type="text"
                             value={frameColor}
                             onChange={(e) => setFrameColor(e.target.value)}
-                            className="flex-1 px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs font-mono text-white focus:outline-none"
+                            className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-mono uppercase text-slate-800 focus:outline-none focus:border-cyan-500 shadow-xs"
                           />
+                          <div className="relative w-9 h-9 rounded-lg border border-slate-200 shadow-xs overflow-hidden shrink-0 cursor-pointer">
+                            <input
+                              type="color"
+                              value={frameColor}
+                              onChange={(e) => setFrameColor(e.target.value)}
+                              className="absolute -inset-2 w-14 h-14 cursor-pointer opacity-0"
+                            />
+                            <div
+                              className="w-full h-full"
+                              style={{ backgroundColor: frameColor }}
+                            />
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1613,26 +1768,26 @@ export default function AdvancedQrMakerPage() {
               {/* TAB 2: SHAPE (Exact match to Reference Screenshot 2) */}
               {designTab === 'shape' && (
                 <div className="space-y-6 animate-in fade-in duration-200">
-                  <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                    <span className="text-xs font-bold text-slate-300">
-                      Shape & Color
-                    </span>
+                  <div className="text-sm font-bold text-slate-800">
+                    Shape & Color
                   </div>
 
                   {/* 1. Shape Style (Dots) */}
-                  <div className="space-y-2.5">
-                    <label className="block text-xs font-medium text-slate-400">
-                      Shape style (شکل نقاط داخلی):
+                  <div className="space-y-2">
+                    <label className="block text-xs font-medium text-slate-600">
+                      Shape style
                     </label>
-                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2.5">
+                    <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
                       {(
                         [
                           { id: 'square', label: 'Square' },
-                          { id: 'dots', label: 'Dots' },
                           { id: 'rounded', label: 'Rounded' },
+                          { id: 'stripes', label: 'Stripes' },
+                          { id: 'diamond', label: 'Diamond' },
+                          { id: 'cross', label: 'Cross' },
                           { id: 'classy', label: 'Classy' },
                           { id: 'classy-rounded', label: 'Classy-R' },
-                          { id: 'extra-rounded', label: 'Extra-R' },
+                          { id: 'dots', label: 'Dots' },
                         ] as const
                       ).map((pattern) => {
                         const isSelected = dotStyle === pattern.id;
@@ -1641,51 +1796,70 @@ export default function AdvancedQrMakerPage() {
                             key={pattern.id}
                             type="button"
                             onClick={() => setDotStyle(pattern.id)}
-                            className={`p-2.5 rounded-2xl border flex flex-col items-center justify-center gap-1.5 transition-all ${
+                            className={`h-14 rounded-xl border flex items-center justify-center p-1.5 transition-all ${
                               isSelected
-                                ? 'border-cyan-500 bg-cyan-500/20 text-cyan-300 ring-2 ring-cyan-500/30 font-bold'
-                                : 'border-slate-800 bg-slate-950/50 text-slate-400 hover:border-slate-700 hover:text-white'
+                                ? 'border-blue-500 bg-sky-50 text-slate-900 ring-2 ring-blue-300/60 shadow-xs'
+                                : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
                             }`}
                             title={pattern.label}
                           >
                             {pattern.id === 'square' ? (
-                              <svg viewBox="0 0 40 40" className="w-7 h-7">
-                                <rect x="6" y="6" width="7" height="7" fill="currentColor" />
-                                <rect x="17" y="6" width="7" height="7" fill="currentColor" />
-                                <rect x="28" y="6" width="7" height="7" fill="currentColor" />
-                                <rect x="6" y="17" width="7" height="7" fill="currentColor" />
-                                <rect x="17" y="17" width="7" height="7" fill="currentColor" />
-                                <rect x="28" y="17" width="7" height="7" fill="currentColor" />
-                                <rect x="6" y="28" width="7" height="7" fill="currentColor" />
-                                <rect x="17" y="28" width="7" height="7" fill="currentColor" />
-                                <rect x="28" y="28" width="7" height="7" fill="currentColor" />
-                              </svg>
-                            ) : pattern.id === 'dots' ? (
-                              <svg viewBox="0 0 40 40" className="w-7 h-7">
-                                <circle cx="9.5" cy="9.5" r="4" fill="currentColor" />
-                                <circle cx="20.5" cy="9.5" r="4" fill="currentColor" />
-                                <circle cx="31.5" cy="9.5" r="4" fill="currentColor" />
-                                <circle cx="9.5" cy="20.5" r="4" fill="currentColor" />
-                                <circle cx="20.5" cy="20.5" r="4" fill="currentColor" />
-                                <circle cx="31.5" cy="20.5" r="4" fill="currentColor" />
-                                <circle cx="9.5" cy="31.5" r="4" fill="currentColor" />
-                                <circle cx="20.5" cy="31.5" r="4" fill="currentColor" />
-                                <circle cx="31.5" cy="31.5" r="4" fill="currentColor" />
+                              <svg viewBox="0 0 40 40" className="w-8 h-8">
+                                <rect x="5" y="5" width="8" height="8" fill="#000000" />
+                                <rect x="16" y="5" width="8" height="8" fill="#000000" />
+                                <rect x="27" y="5" width="8" height="8" fill="#000000" />
+                                <rect x="5" y="16" width="8" height="8" fill="#000000" />
+                                <rect x="16" y="16" width="8" height="8" fill="#000000" />
+                                <rect x="27" y="16" width="8" height="8" fill="#000000" />
+                                <rect x="5" y="27" width="8" height="8" fill="#000000" />
+                                <rect x="16" y="27" width="8" height="8" fill="#000000" />
+                                <rect x="27" y="27" width="8" height="8" fill="#000000" />
                               </svg>
                             ) : pattern.id === 'rounded' ? (
-                              <svg viewBox="0 0 40 40" className="w-7 h-7">
-                                <rect x="6" y="6" width="7" height="7" rx="2" fill="currentColor" />
-                                <rect x="17" y="6" width="7" height="7" rx="2" fill="currentColor" />
-                                <rect x="28" y="6" width="7" height="7" rx="2" fill="currentColor" />
-                                <rect x="6" y="17" width="7" height="7" rx="2" fill="currentColor" />
-                                <rect x="17" y="17" width="7" height="7" rx="2" fill="currentColor" />
-                                <rect x="28" y="17" width="7" height="7" rx="2" fill="currentColor" />
-                                <rect x="6" y="28" width="7" height="7" rx="2" fill="currentColor" />
-                                <rect x="17" y="28" width="7" height="7" rx="2" fill="currentColor" />
-                                <rect x="28" y="28" width="7" height="7" rx="2" fill="currentColor" />
+                              <svg viewBox="0 0 40 40" className="w-8 h-8">
+                                <rect x="5" y="5" width="8" height="8" rx="2.5" fill="#000000" />
+                                <rect x="16" y="5" width="8" height="8" rx="2.5" fill="#000000" />
+                                <rect x="27" y="5" width="8" height="8" rx="2.5" fill="#000000" />
+                                <rect x="5" y="16" width="8" height="8" rx="2.5" fill="#000000" />
+                                <rect x="16" y="16" width="8" height="8" rx="2.5" fill="#000000" />
+                                <rect x="27" y="16" width="8" height="8" rx="2.5" fill="#000000" />
+                                <rect x="5" y="27" width="8" height="8" rx="2.5" fill="#000000" />
+                                <rect x="16" y="27" width="8" height="8" rx="2.5" fill="#000000" />
+                                <rect x="27" y="27" width="8" height="8" rx="2.5" fill="#000000" />
+                              </svg>
+                            ) : pattern.id === 'stripes' ? (
+                              <svg viewBox="0 0 40 40" className="w-8 h-8">
+                                <rect x="5" y="7" width="12" height="4" rx="1.5" fill="#000000" />
+                                <rect x="21" y="7" width="14" height="4" rx="1.5" fill="#000000" />
+                                <rect x="5" y="14" width="18" height="4" rx="1.5" fill="#000000" />
+                                <rect x="27" y="14" width="8" height="4" rx="1.5" fill="#000000" />
+                                <rect x="8" y="21" width="10" height="4" rx="1.5" fill="#000000" />
+                                <rect x="22" y="21" width="13" height="4" rx="1.5" fill="#000000" />
+                                <rect x="5" y="28" width="16" height="4" rx="1.5" fill="#000000" />
+                                <rect x="25" y="28" width="10" height="4" rx="1.5" fill="#000000" />
+                              </svg>
+                            ) : pattern.id === 'diamond' ? (
+                              <svg viewBox="0 0 40 40" className="w-8 h-8">
+                                <polygon points="10,6 14,10 10,14 6,10" fill="#000000" />
+                                <polygon points="20,6 24,10 20,14 16,10" fill="#000000" />
+                                <polygon points="30,6 34,10 30,14 26,10" fill="#000000" />
+                                <polygon points="10,16 14,20 10,24 6,20" fill="#000000" />
+                                <polygon points="20,16 24,20 20,24 16,20" fill="#000000" />
+                                <polygon points="30,16 34,20 30,24 26,20" fill="#000000" />
+                                <polygon points="10,26 14,30 10,34 6,30" fill="#000000" />
+                                <polygon points="20,26 24,30 20,34 16,30" fill="#000000" />
+                                <polygon points="30,26 34,30 30,34 26,30" fill="#000000" />
+                              </svg>
+                            ) : pattern.id === 'cross' ? (
+                              <svg viewBox="0 0 40 40" className="w-8 h-8">
+                                <path d="M 8 7 h 4 v 2 h 2 v 4 h -2 v 2 h -4 v -2 h -2 v -4 h 2 z" fill="#000000" />
+                                <path d="M 26 7 h 4 v 2 h 2 v 4 h -2 v 2 h -4 v -2 h -2 v -4 h 2 z" fill="#000000" />
+                                <path d="M 17 16 h 4 v 2 h 2 v 4 h -2 v 2 h -4 v -2 h -2 v -4 h 2 z" fill="#000000" />
+                                <path d="M 8 25 h 4 v 2 h 2 v 4 h -2 v 2 h -4 v -2 h -2 v -4 h 2 z" fill="#000000" />
+                                <path d="M 26 25 h 4 v 2 h 2 v 4 h -2 v 2 h -4 v -2 h -2 v -4 h 2 z" fill="#000000" />
                               </svg>
                             ) : pattern.id === 'classy' ? (
-                              <svg viewBox="0 0 40 40" className="w-7 h-7">
+                              <svg viewBox="0 0 40 40" className="w-8 h-8">
                                 <rect x="6" y="6" width="7" height="7" rx="3.5" fill="currentColor" />
                                 <rect x="17" y="6" width="7" height="7" fill="currentColor" />
                                 <rect x="28" y="6" width="7" height="7" rx="3.5" fill="currentColor" />
@@ -1697,7 +1871,7 @@ export default function AdvancedQrMakerPage() {
                                 <rect x="28" y="28" width="7" height="7" rx="3.5" fill="currentColor" />
                               </svg>
                             ) : pattern.id === 'classy-rounded' ? (
-                              <svg viewBox="0 0 40 40" className="w-7 h-7">
+                              <svg viewBox="0 0 40 40" className="w-8 h-8">
                                 <rect x="6" y="6" width="7" height="7" rx="3" fill="currentColor" />
                                 <circle cx="20.5" cy="9.5" r="3.5" fill="currentColor" />
                                 <rect x="28" y="6" width="7" height="7" rx="3" fill="currentColor" />
@@ -1709,123 +1883,169 @@ export default function AdvancedQrMakerPage() {
                                 <rect x="28" y="28" width="7" height="7" rx="3" fill="currentColor" />
                               </svg>
                             ) : (
-                              <svg viewBox="0 0 40 40" className="w-7 h-7">
-                                <rect x="6" y="6" width="7" height="7" rx="3.5" fill="currentColor" />
-                                <rect x="17" y="6" width="7" height="7" rx="3.5" fill="currentColor" />
-                                <rect x="28" y="6" width="7" height="7" rx="3.5" fill="currentColor" />
-                                <rect x="6" y="17" width="7" height="7" rx="3.5" fill="currentColor" />
-                                <rect x="17" y="17" width="7" height="7" rx="3.5" fill="currentColor" />
-                                <rect x="28" y="17" width="7" height="7" rx="3.5" fill="currentColor" />
-                                <rect x="6" y="28" width="7" height="7" rx="3.5" fill="currentColor" />
-                                <rect x="17" y="28" width="7" height="7" rx="3.5" fill="currentColor" />
-                                <rect x="28" y="28" width="7" height="7" rx="3.5" fill="currentColor" />
+                              <svg viewBox="0 0 40 40" className="w-8 h-8">
+                                <circle cx="7" cy="7" r="2" fill="#000000" />
+                                <circle cx="15" cy="7" r="2" fill="#000000" />
+                                <circle cx="23" cy="7" r="2" fill="#000000" />
+                                <circle cx="31" cy="7" r="2" fill="#000000" />
+                                <circle cx="7" cy="15" r="2" fill="#000000" />
+                                <circle cx="15" cy="15" r="2" fill="#000000" />
+                                <circle cx="23" cy="15" r="2" fill="#000000" />
+                                <circle cx="31" cy="15" r="2" fill="#000000" />
+                                <circle cx="7" cy="23" r="2" fill="#000000" />
+                                <circle cx="15" cy="23" r="2" fill="#000000" />
+                                <circle cx="23" cy="23" r="2" fill="#000000" />
+                                <circle cx="31" cy="23" r="2" fill="#000000" />
+                                <circle cx="7" cy="31" r="2" fill="#000000" />
+                                <circle cx="15" cy="31" r="2" fill="#000000" />
+                                <circle cx="23" cy="31" r="2" fill="#000000" />
+                                <circle cx="31" cy="31" r="2" fill="#000000" />
                               </svg>
                             )}
-                            <span className="text-[10px] font-medium">{pattern.label}</span>
                           </button>
                         );
                       })}
                     </div>
                   </div>
 
-                  {/* 2. Background Color & Shape Color with Toggles */}
-                  <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800 space-y-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {/* Background Color */}
-                      <div className="space-y-2">
-                        <label className="block text-xs font-medium text-slate-400">
-                          Background color (رنگ پس‌زمینه):
+                  {/* 2. Colors Box (2 columns) */}
+                  <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      {/* Left: Background color */}
+                      <div className="space-y-2.5">
+                        <label className="block text-xs font-medium text-slate-600">
+                          Background color
                         </label>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-3">
                           <input
                             type="text"
-                            value={bgColor}
-                            onChange={(e) => setBgColor(e.target.value)}
+                            value={isTransparentBg ? 'TRANSPARENT' : bgColor.toUpperCase()}
+                            onChange={(e) => {
+                              if (!isTransparentBg) setBgColor(e.target.value);
+                            }}
                             disabled={isTransparentBg}
-                            className="flex-1 px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs font-mono text-white focus:outline-none uppercase"
+                            className="w-32 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono text-slate-800 focus:outline-none focus:border-cyan-500 uppercase shadow-2xs"
                           />
-                          <input
-                            type="color"
-                            value={bgColor}
-                            onChange={(e) => setBgColor(e.target.value)}
-                            disabled={isTransparentBg}
-                            className="w-10 h-10 rounded-xl cursor-pointer bg-transparent border border-slate-700 shrink-0"
-                          />
+                          <div className="relative w-8 h-8 rounded-lg border border-slate-300 shadow-2xs overflow-hidden shrink-0 cursor-pointer">
+                            <input
+                              type="color"
+                              value={bgColor}
+                              onChange={(e) => {
+                                setBgColor(e.target.value);
+                                setIsTransparentBg(false);
+                              }}
+                              disabled={isTransparentBg}
+                              className="absolute -inset-2 w-12 h-12 cursor-pointer opacity-0"
+                            />
+                            <div
+                              className="w-full h-full"
+                              style={{
+                                backgroundColor: isTransparentBg ? 'transparent' : bgColor,
+                                backgroundImage: isTransparentBg
+                                  ? 'linear-gradient(45deg, #cbd5e1 25%, transparent 25%), linear-gradient(-45deg, #cbd5e1 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #cbd5e1 75%), linear-gradient(-45deg, transparent 75%, #cbd5e1 75%)'
+                                  : undefined,
+                                backgroundSize: '8px 8px',
+                                backgroundPosition: '0 0, 0 4px, 4px -4px, -4px 0px',
+                              }}
+                            />
+                          </div>
                         </div>
-                        <label className="inline-flex items-center gap-2 cursor-pointer text-xs text-slate-300 pt-1">
-                          <input
-                            type="checkbox"
-                            checked={isTransparentBg}
-                            onChange={(e) => setIsTransparentBg(e.target.checked)}
-                            className="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-cyan-500"
-                          />
-                          <span>Transparent background (شفاف)</span>
-                        </label>
+                        {/* Toggle: Transparent background */}
+                        <div className="pt-1">
+                          <label className="inline-flex items-center gap-2.5 cursor-pointer select-none">
+                            <div className="relative">
+                              <input
+                                type="checkbox"
+                                checked={isTransparentBg}
+                                onChange={(e) => setIsTransparentBg(e.target.checked)}
+                                className="sr-only peer"
+                              />
+                              <div className="w-8 h-4 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-cyan-600"></div>
+                            </div>
+                            <span className="text-xs text-slate-600 font-medium">Transparent background</span>
+                          </label>
+                        </div>
                       </div>
 
-                      {/* Shape Color */}
-                      <div className="space-y-2">
-                        <label className="block text-xs font-medium text-slate-400">
-                          Shape color (رنگ نقاط):
+                      {/* Right: Shape color */}
+                      <div className="space-y-2.5">
+                        <label className="block text-xs font-medium text-slate-600">
+                          Shape color
                         </label>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-3">
                           <input
                             type="text"
-                            value={singleColor}
+                            value={singleColor.toUpperCase()}
                             onChange={(e) => {
                               setSingleColor(e.target.value);
                               setGradientColor1(e.target.value);
                             }}
-                            className="flex-1 px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs font-mono text-white focus:outline-none uppercase"
+                            className="w-32 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono text-slate-800 focus:outline-none focus:border-cyan-500 uppercase shadow-2xs"
                           />
-                          <input
-                            type="color"
-                            value={singleColor}
-                            onChange={(e) => {
-                              setSingleColor(e.target.value);
-                              setGradientColor1(e.target.value);
-                            }}
-                            className="w-10 h-10 rounded-xl cursor-pointer bg-transparent border border-slate-700 shrink-0"
-                          />
+                          <div className="relative w-8 h-8 rounded-lg border border-slate-300 shadow-2xs overflow-hidden shrink-0 cursor-pointer">
+                            <input
+                              type="color"
+                              value={singleColor}
+                              onChange={(e) => {
+                                setSingleColor(e.target.value);
+                                setGradientColor1(e.target.value);
+                              }}
+                              className="absolute -inset-2 w-12 h-12 cursor-pointer opacity-0"
+                            />
+                            <div
+                              className="w-full h-full"
+                              style={{ backgroundColor: singleColor }}
+                            />
+                          </div>
                         </div>
-                        <label className="inline-flex items-center gap-2 cursor-pointer text-xs text-slate-300 pt-1">
-                          <input
-                            type="checkbox"
-                            checked={colorMode === 'gradient'}
-                            onChange={(e) => setColorMode(e.target.checked ? 'gradient' : 'single')}
-                            className="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-cyan-500"
-                          />
-                          <span>Gradient (گرادیان دو رنگ)</span>
-                        </label>
+                        {/* Toggle: Gradient */}
+                        <div className="pt-1">
+                          <label className="inline-flex items-center gap-2.5 cursor-pointer select-none">
+                            <div className="relative">
+                              <input
+                                type="checkbox"
+                                checked={colorMode === 'gradient'}
+                                onChange={(e) => setColorMode(e.target.checked ? 'gradient' : 'single')}
+                                className="sr-only peer"
+                              />
+                              <div className="w-8 h-4 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-cyan-600"></div>
+                            </div>
+                            <span className="text-xs text-slate-600 font-medium">Gradient</span>
+                          </label>
+                        </div>
                       </div>
                     </div>
 
                     {/* Gradient Extra Settings */}
                     {colorMode === 'gradient' && (
-                      <div className="pt-3 border-t border-slate-800 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="mt-4 pt-3 border-t border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-[11px] text-slate-400 mb-1">
-                            رنگ دوم گرادیان (End Color):
+                          <label className="block text-[11px] text-slate-600 mb-1 font-medium">
+                            End Color (رنگ دوم گرادیان):
                           </label>
                           <div className="flex items-center gap-2">
                             <input
                               type="text"
-                              value={gradientColor2}
+                              value={gradientColor2.toUpperCase()}
                               onChange={(e) => setGradientColor2(e.target.value)}
-                              className="flex-1 px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-xl text-xs font-mono text-white uppercase"
+                              className="w-32 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono text-slate-800 uppercase shadow-2xs"
                             />
-                            <input
-                              type="color"
-                              value={gradientColor2}
-                              onChange={(e) => setGradientColor2(e.target.value)}
-                              className="w-8 h-8 rounded-xl cursor-pointer bg-transparent border border-slate-700"
-                            />
+                            <div className="relative w-8 h-8 rounded-lg border border-slate-300 shadow-2xs overflow-hidden shrink-0 cursor-pointer">
+                              <input
+                                type="color"
+                                value={gradientColor2}
+                                onChange={(e) => setGradientColor2(e.target.value)}
+                                className="absolute -inset-2 w-12 h-12 cursor-pointer opacity-0"
+                              />
+                              <div className="w-full h-full" style={{ backgroundColor: gradientColor2 }} />
+                            </div>
                           </div>
                         </div>
                         <div>
-                          <label className="block text-[11px] text-slate-400 mb-1">
-                            زاویه گرادیان: {gradientRotation}°
-                          </label>
+                          <div className="flex justify-between text-[11px] text-slate-600 mb-1 font-medium">
+                            <span>Gradient Angle</span>
+                            <span className="font-mono text-cyan-600">{gradientRotation}°</span>
+                          </div>
                           <input
                             type="range"
                             min="0"
@@ -1833,24 +2053,29 @@ export default function AdvancedQrMakerPage() {
                             step="15"
                             value={gradientRotation}
                             onChange={(e) => setGradientRotation(Number(e.target.value))}
-                            className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-500 mt-2"
+                            className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-cyan-600 mt-2"
                           />
                         </div>
                       </div>
                     )}
                   </div>
 
-                  {/* 3. Border Style (Corner Squares / Outer Eye) */}
-                  <div className="space-y-3 pt-2">
-                    <label className="block text-xs font-medium text-slate-400">
-                      Border style (فریم گوشه‌ها):
+                  {/* 3. Border style (Corner Squares) */}
+                  <div className="space-y-2">
+                    <label className="block text-xs font-medium text-slate-600">
+                      Border style
                     </label>
-                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2.5">
+                    <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
                       {(
                         [
                           { id: 'square', label: 'Square' },
-                          { id: 'extra-rounded', label: 'Rounded' },
-                          { id: 'dot', label: 'Circle' },
+                          { id: 'rounded-square', label: 'Rounded Square' },
+                          { id: 'circle', label: 'Circle' },
+                          { id: 'leaf-left', label: 'Leaf Left' },
+                          { id: 'leaf-right', label: 'Leaf Right' },
+                          { id: 'leaf-both', label: 'Leaf Both' },
+                          { id: 'square-cutout', label: 'Square Cutout' },
+                          { id: 'teardrop', label: 'Teardrop' },
                         ] as const
                       ).map((b) => {
                         const isSelected = cornerSquareStyle === b.id;
@@ -1859,70 +2084,102 @@ export default function AdvancedQrMakerPage() {
                             key={b.id}
                             type="button"
                             onClick={() => setCornerSquareStyle(b.id)}
-                            className={`p-2.5 rounded-2xl border flex flex-col items-center justify-center gap-1.5 transition-all ${
+                            className={`h-14 rounded-xl border flex items-center justify-center p-1.5 transition-all ${
                               isSelected
-                                ? 'border-cyan-500 bg-cyan-500/20 text-cyan-300 ring-2 ring-cyan-500/30 font-bold'
-                                : 'border-slate-800 bg-slate-950/50 text-slate-400 hover:border-slate-700 hover:text-white'
+                                ? 'border-blue-500 bg-sky-50 text-slate-900 ring-2 ring-blue-300/60 shadow-xs'
+                                : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
                             }`}
                             title={b.label}
                           >
                             {b.id === 'square' ? (
-                              <svg viewBox="0 0 40 40" className="w-7 h-7">
-                                <rect x="7" y="7" width="26" height="26" stroke="currentColor" strokeWidth="4.5" fill="none" />
+                              <svg viewBox="0 0 40 40" className="w-8 h-8">
+                                <rect x="6" y="6" width="28" height="28" stroke="#1e293b" strokeWidth="4.5" fill="none" />
                               </svg>
-                            ) : b.id === 'extra-rounded' ? (
-                              <svg viewBox="0 0 40 40" className="w-7 h-7">
-                                <rect x="7" y="7" width="26" height="26" rx="8" stroke="currentColor" strokeWidth="4.5" fill="none" />
+                            ) : b.id === 'rounded-square' ? (
+                              <svg viewBox="0 0 40 40" className="w-8 h-8">
+                                <rect x="6" y="6" width="28" height="28" rx="8" stroke="#1e293b" strokeWidth="4.5" fill="none" />
+                              </svg>
+                            ) : b.id === 'circle' ? (
+                              <svg viewBox="0 0 40 40" className="w-8 h-8">
+                                <circle cx="20" cy="20" r="14" stroke="#1e293b" strokeWidth="4.5" fill="none" />
+                              </svg>
+                            ) : b.id === 'leaf-left' ? (
+                              <svg viewBox="0 0 40 40" className="w-8 h-8">
+                                <path d="M 20 6 C 12 6 6 12 6 20 L 6 34 L 20 34 C 28 34 34 28 34 20 L 34 6 Z" stroke="#1e293b" strokeWidth="4" fill="none" />
+                              </svg>
+                            ) : b.id === 'leaf-right' ? (
+                              <svg viewBox="0 0 40 40" className="w-8 h-8">
+                                <path d="M 6 6 L 20 6 C 28 6 34 12 34 20 L 34 34 L 20 34 C 12 34 6 28 6 20 Z" stroke="#1e293b" strokeWidth="4" fill="none" />
+                              </svg>
+                            ) : b.id === 'leaf-both' ? (
+                              <svg viewBox="0 0 40 40" className="w-8 h-8">
+                                <path d="M 20 6 C 12 6 6 12 6 20 L 6 20 C 6 28 12 34 20 34 C 28 34 34 28 34 20 C 34 12 28 6 20 6 Z" stroke="#1e293b" strokeWidth="4" fill="none" />
+                              </svg>
+                            ) : b.id === 'square-cutout' ? (
+                              <svg viewBox="0 0 40 40" className="w-8 h-8">
+                                <rect x="6" y="6" width="28" height="28" rx="4" fill="#1e293b" />
+                                <circle cx="20" cy="20" r="8" fill="#ffffff" />
                               </svg>
                             ) : (
-                              <svg viewBox="0 0 40 40" className="w-7 h-7">
-                                <circle cx="20" cy="20" r="13" stroke="currentColor" strokeWidth="4.5" fill="none" />
+                              <svg viewBox="0 0 40 40" className="w-8 h-8">
+                                <path d="M 20 6 L 33 20 C 33 27.2 27.2 33 20 33 C 12.8 33 7 27.2 7 20 Z" stroke="#1e293b" strokeWidth="4" fill="none" />
                               </svg>
                             )}
-                            <span className="text-[10px] font-medium">{b.label}</span>
                           </button>
                         );
                       })}
                     </div>
 
                     {/* Border Color */}
-                    <div className="p-3 rounded-2xl bg-slate-950/60 border border-slate-800 flex items-center justify-between gap-3">
-                      <span className="text-xs text-slate-400">
-                        Border color (رنگ فریم گوشه‌ها):
-                      </span>
-                      <div className="flex items-center gap-2">
+                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+                      <label className="block text-xs font-medium text-slate-600 mb-1.5">
+                        Border color
+                      </label>
+                      <div className="flex items-center gap-3">
                         <input
                           type="text"
-                          value={customEyeColors ? eyeSquareColor : singleColor}
+                          value={(customEyeColors ? eyeSquareColor : singleColor).toUpperCase()}
                           onChange={(e) => {
                             setEyeSquareColor(e.target.value);
                             setCustomEyeColors(true);
                           }}
-                          className="w-24 px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded-xl text-xs font-mono text-white uppercase"
+                          className="flex-1 max-w-[280px] px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono text-slate-800 uppercase shadow-2xs"
                         />
-                        <input
-                          type="color"
-                          value={customEyeColors ? eyeSquareColor : singleColor}
-                          onChange={(e) => {
-                            setEyeSquareColor(e.target.value);
-                            setCustomEyeColors(true);
-                          }}
-                          className="w-8 h-8 rounded-xl cursor-pointer bg-transparent border border-slate-700"
-                        />
+                        <div className="relative w-14 h-8 rounded-lg border border-slate-300 shadow-2xs overflow-hidden shrink-0 cursor-pointer">
+                          <input
+                            type="color"
+                            value={customEyeColors ? eyeSquareColor : singleColor}
+                            onChange={(e) => {
+                              setEyeSquareColor(e.target.value);
+                              setCustomEyeColors(true);
+                            }}
+                            className="absolute -inset-2 w-20 h-14 cursor-pointer opacity-0"
+                          />
+                          <div
+                            className="w-full h-full"
+                            style={{ backgroundColor: customEyeColors ? eyeSquareColor : singleColor }}
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* 4. Center Style (Corner Dots / Inner Eye) */}
-                  <div className="space-y-3 pt-2">
-                    <label className="block text-xs font-medium text-slate-400">
-                      Center style (نقطه مرکزی چشم‌ها):
+                  {/* 4. Center style (Corner Dots) */}
+                  <div className="space-y-2">
+                    <label className="block text-xs font-medium text-slate-600">
+                      Center style
                     </label>
-                    <div className="grid grid-cols-2 sm:grid-cols-6 gap-2.5">
+                    <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
                       {(
                         [
                           { id: 'square', label: 'Square' },
-                          { id: 'dot', label: 'Circle' },
+                          { id: 'rounded-square', label: 'Rounded Square' },
+                          { id: 'circle', label: 'Circle' },
+                          { id: 'leaf', label: 'Leaf' },
+                          { id: 'sunburst', label: 'Sunburst' },
+                          { id: 'star', label: 'Star' },
+                          { id: 'diamond', label: 'Diamond' },
+                          { id: 'cross', label: 'Cross' },
                         ] as const
                       ).map((c) => {
                         const isSelected = cornerDotStyle === c.id;
@@ -1931,52 +2188,81 @@ export default function AdvancedQrMakerPage() {
                             key={c.id}
                             type="button"
                             onClick={() => setCornerDotStyle(c.id)}
-                            className={`p-2.5 rounded-2xl border flex flex-col items-center justify-center gap-1.5 transition-all ${
+                            className={`h-14 rounded-xl border flex items-center justify-center p-1.5 transition-all ${
                               isSelected
-                                ? 'border-cyan-500 bg-cyan-500/20 text-cyan-300 ring-2 ring-cyan-500/30 font-bold'
-                                : 'border-slate-800 bg-slate-950/50 text-slate-400 hover:border-slate-700 hover:text-white'
+                                ? 'border-blue-500 bg-sky-50 text-slate-900 ring-2 ring-blue-300/60 shadow-xs'
+                                : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
                             }`}
                             title={c.label}
                           >
                             {c.id === 'square' ? (
-                              <svg viewBox="0 0 40 40" className="w-7 h-7">
-                                <rect x="10" y="10" width="20" height="20" fill="currentColor" />
+                              <svg viewBox="0 0 40 40" className="w-8 h-8">
+                                <rect x="9" y="9" width="22" height="22" fill="#1e293b" />
+                              </svg>
+                            ) : c.id === 'rounded-square' ? (
+                              <svg viewBox="0 0 40 40" className="w-8 h-8">
+                                <rect x="9" y="9" width="22" height="22" rx="6" fill="#1e293b" />
+                              </svg>
+                            ) : c.id === 'circle' ? (
+                              <svg viewBox="0 0 40 40" className="w-8 h-8">
+                                <circle cx="20" cy="20" r="11" fill="#1e293b" />
+                              </svg>
+                            ) : c.id === 'leaf' ? (
+                              <svg viewBox="0 0 40 40" className="w-8 h-8">
+                                <path d="M 20 8 C 27 8 32 13 32 20 C 32 27 27 32 20 32 L 8 32 L 8 20 C 8 13 13 8 20 8 Z" fill="#1e293b" />
+                              </svg>
+                            ) : c.id === 'sunburst' ? (
+                              <svg viewBox="0 0 40 40" className="w-8 h-8">
+                                <path d="M 20 8 l 3 2 l 3.5 -1 l 1.5 3.5 l 3.5 1 l -0.5 3.5 l 3 2 l -2 3 l 2 3 l -3 2 l 0.5 3.5 l -3.5 1 l -1.5 3.5 l -3.5 -1 l -3 2 l -3 -2 l -3.5 1 l -1.5 -3.5 l -3.5 -1 l 0.5 -3.5 l -3 -2 l 2 -3 l -2 -3 l 3 -2 l -0.5 -3.5 l 3.5 -1 l 1.5 -3.5 l 3.5 1 z" fill="#1e293b" />
+                              </svg>
+                            ) : c.id === 'star' ? (
+                              <svg viewBox="0 0 40 40" className="w-8 h-8">
+                                <polygon points="20,7 23.8,15.2 32.8,16.2 26.2,22.2 28,31 20,26.4 12,31 13.8,22.2 7.2,16.2 16.2,15.2" fill="#1e293b" />
+                              </svg>
+                            ) : c.id === 'diamond' ? (
+                              <svg viewBox="0 0 40 40" className="w-8 h-8">
+                                <polygon points="20,7 33,20 20,33 7,20" fill="#1e293b" />
                               </svg>
                             ) : (
-                              <svg viewBox="0 0 40 40" className="w-7 h-7">
-                                <circle cx="20" cy="20" r="11" fill="currentColor" />
+                              <svg viewBox="0 0 40 40" className="w-8 h-8">
+                                <path d="M 16 8 h 8 v 8 h 8 v 8 h -8 v 8 h -8 v -8 h -8 v -8 h 8 z" fill="#1e293b" />
                               </svg>
                             )}
-                            <span className="text-[10px] font-medium">{c.label}</span>
                           </button>
                         );
                       })}
                     </div>
 
                     {/* Center Color */}
-                    <div className="p-3 rounded-2xl bg-slate-950/60 border border-slate-800 flex items-center justify-between gap-3">
-                      <span className="text-xs text-slate-400">
-                        Center color (رنگ نقطه مرکزی):
-                      </span>
-                      <div className="flex items-center gap-2">
+                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+                      <label className="block text-xs font-medium text-slate-600 mb-1.5">
+                        Center color
+                      </label>
+                      <div className="flex items-center gap-3">
                         <input
                           type="text"
-                          value={customEyeColors ? eyeDotColor : singleColor}
+                          value={(customEyeColors ? eyeDotColor : singleColor).toUpperCase()}
                           onChange={(e) => {
                             setEyeDotColor(e.target.value);
                             setCustomEyeColors(true);
                           }}
-                          className="w-24 px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded-xl text-xs font-mono text-white uppercase"
+                          className="flex-1 max-w-[280px] px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono text-slate-800 uppercase shadow-2xs"
                         />
-                        <input
-                          type="color"
-                          value={customEyeColors ? eyeDotColor : singleColor}
-                          onChange={(e) => {
-                            setEyeDotColor(e.target.value);
-                            setCustomEyeColors(true);
-                          }}
-                          className="w-8 h-8 rounded-xl cursor-pointer bg-transparent border border-slate-700"
-                        />
+                        <div className="relative w-14 h-8 rounded-lg border border-slate-300 shadow-2xs overflow-hidden shrink-0 cursor-pointer">
+                          <input
+                            type="color"
+                            value={customEyeColors ? eyeDotColor : singleColor}
+                            onChange={(e) => {
+                              setEyeDotColor(e.target.value);
+                              setCustomEyeColors(true);
+                            }}
+                            className="absolute -inset-2 w-20 h-14 cursor-pointer opacity-0"
+                          />
+                          <div
+                            className="w-full h-full"
+                            style={{ backgroundColor: customEyeColors ? eyeDotColor : singleColor }}
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1988,48 +2274,52 @@ export default function AdvancedQrMakerPage() {
                 <div className="space-y-6 animate-in fade-in duration-200">
                   {/* Upload Logo Section */}
                   <div className="space-y-2">
-                    <label className="block text-xs font-semibold text-slate-300">
-                      Upload Logo (بارگذاری لوگو):
+                    <label className="block text-sm font-semibold text-slate-700">
+                      Upload Logo
                     </label>
-                    <label className="flex items-center justify-between p-3 border-2 border-dashed border-slate-700 hover:border-cyan-500 rounded-2xl bg-slate-950/50 cursor-pointer transition-colors group">
-                      <span className="text-xs text-slate-400 group-hover:text-cyan-300">
-                        {logoDataUrl ? 'فایل لوگو انتخاب شده است (کلیک برای تعویض)' : 'انتخاب فایل لوگو از سیستم (Choose file)...'}
+                    <div
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex items-center justify-between px-4 py-2.5 border border-slate-200 rounded-xl bg-white hover:border-slate-300 cursor-pointer transition-colors shadow-2xs group"
+                    >
+                      <span className="text-xs text-slate-400 group-hover:text-slate-600 truncate">
+                        {logoDataUrl ? 'فایل لوگو انتخاب شده است (کلیک برای تغییر)' : 'Choose file'}
                       </span>
-                      <span className="px-3.5 py-1.5 rounded-xl bg-slate-800 text-xs font-semibold text-slate-200 group-hover:bg-cyan-600 group-hover:text-white transition-colors">
+                      <span className="text-xs font-semibold text-slate-500 group-hover:text-cyan-600 transition-colors">
                         Browse
                       </span>
                       <input
+                        ref={fileInputRef}
                         type="file"
                         accept="image/*"
                         onChange={handleLogoFile}
                         className="hidden"
                       />
-                    </label>
+                    </div>
                   </div>
 
                   {/* Or choose from here Section (Preset Icons & Badges) */}
                   <div className="space-y-3">
-                    <label className="block text-xs font-semibold text-slate-300">
-                      Or choose from here (یا انتخاب از آیکون‌های پرکاربرد):
+                    <label className="block text-sm font-semibold text-slate-700">
+                      Or choose from here
                     </label>
 
-                    {/* Circular Preset Icons */}
-                    <div className="flex flex-wrap items-center gap-2.5">
-                      {/* X Button: Remove Logo */}
+                    {/* Row 1: 9 preset circular / branded logos */}
+                    <div className="flex items-center gap-2.5 overflow-x-auto pb-1">
+                      {/* X Clear Button */}
                       <button
                         type="button"
                         onClick={() => setLogoDataUrl(null)}
-                        className={`w-11 h-11 rounded-2xl border flex items-center justify-center transition-all ${
+                        className={`w-12 h-12 rounded-xl border shrink-0 flex items-center justify-center transition-all ${
                           !logoDataUrl
-                            ? 'border-cyan-500 bg-cyan-500/20 text-cyan-300 ring-2 ring-cyan-500/30'
-                            : 'border-slate-800 bg-slate-950/60 text-slate-400 hover:text-white hover:border-slate-700'
+                            ? 'border-blue-500 bg-sky-50 text-slate-900 ring-2 ring-blue-300/60 shadow-xs'
+                            : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 shadow-2xs'
                         }`}
-                        title="حذف لوگو"
+                        title="Clear Logo"
                       >
                         <X className="w-5 h-5 stroke-[2.5]" />
                       </button>
 
-                      {/* Presets: Link, Location, Email, WhatsApp, WiFi, Contact, PayPal, Bitcoin */}
+                      {/* 8 preset logos */}
                       {PRESET_LOGOS.map((item) => (
                         <button
                           key={item.id}
@@ -2037,9 +2327,9 @@ export default function AdvancedQrMakerPage() {
                           onClick={() => {
                             setLogoDataUrl(toSvgDataUrl(item.svg));
                             setErrorCorrectionLevel('H');
-                            toast.success(`آیکون ${item.label} به مرکز کیوآر کد اضافه شد.`);
+                            toast.success(`Logo ${item.label} selected.`);
                           }}
-                          className="w-11 h-11 rounded-2xl border border-slate-800 bg-slate-950/60 hover:scale-110 hover:border-slate-600 transition-all p-1 flex items-center justify-center shadow-md"
+                          className="w-12 h-12 rounded-xl border border-slate-200 bg-white hover:border-slate-300 hover:scale-105 transition-all p-1.5 flex items-center justify-center shadow-2xs shrink-0"
                           title={item.label}
                         >
                           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -2052,8 +2342,8 @@ export default function AdvancedQrMakerPage() {
                       ))}
                     </div>
 
-                    {/* Preset Badges ([SCAN ME], etc.) */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-2">
+                    {/* Row 2: 5 preset badges */}
+                    <div className="grid grid-cols-5 gap-2.5 pt-1">
                       {PRESET_BADGES.map((badge) => (
                         <button
                           key={badge.id}
@@ -2061,9 +2351,9 @@ export default function AdvancedQrMakerPage() {
                           onClick={() => {
                             setLogoDataUrl(toSvgDataUrl(badge.svg));
                             setErrorCorrectionLevel('H');
-                            toast.success(`بج ${badge.label} به مرکز کیوآر کد اضافه شد.`);
+                            toast.success(`Badge ${badge.label} selected.`);
                           }}
-                          className="h-12 rounded-xl border border-slate-800 bg-slate-950/60 hover:border-slate-600 hover:scale-105 transition-all p-1.5 flex items-center justify-center"
+                          className="h-12 rounded-xl border border-slate-200 bg-white hover:border-slate-300 hover:scale-105 transition-all p-1.5 flex items-center justify-center shadow-2xs"
                           title={badge.label}
                         >
                           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -2079,12 +2369,12 @@ export default function AdvancedQrMakerPage() {
 
                   {/* Logo Options (if logo selected) */}
                   {logoDataUrl && (
-                    <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800 space-y-3">
+                    <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs text-slate-300 font-medium">
-                          اندازه لوگو در مرکز (Logo Size):
+                        <span className="text-xs text-slate-700 font-medium">
+                          Logo Size (اندازه لوگو در مرکز):
                         </span>
-                        <span className="text-xs font-mono text-cyan-400">
+                        <span className="text-xs font-mono font-bold text-cyan-600">
                           {Math.round(logoSize * 100)}%
                         </span>
                       </div>
@@ -2095,23 +2385,23 @@ export default function AdvancedQrMakerPage() {
                         step="0.05"
                         value={logoSize}
                         onChange={(e) => setLogoSize(Number(e.target.value))}
-                        className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-500"
+                        className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-cyan-600"
                       />
 
-                      <div className="pt-2 flex items-center justify-between">
-                        <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-300">
+                      <div className="pt-1 flex items-center justify-between">
+                        <label className="inline-flex items-center gap-2 cursor-pointer select-none">
                           <input
                             type="checkbox"
                             checked={hideBehindLogo}
                             onChange={(e) => setHideBehindLogo(e.target.checked)}
-                            className="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-cyan-500"
+                            className="rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
                           />
-                          <span>پنهان کردن نقاط زیر لوگو (Hide Dots)</span>
+                          <span className="text-xs text-slate-600 font-medium">Hide dots behind logo (پنهان کردن نقاط زیر لوگو)</span>
                         </label>
                         <button
                           type="button"
                           onClick={() => setLogoDataUrl(null)}
-                          className="text-xs text-rose-400 hover:text-rose-300"
+                          className="text-xs text-rose-500 hover:text-rose-600 font-medium"
                         >
                           حذف لوگو
                         </button>
@@ -2122,9 +2412,9 @@ export default function AdvancedQrMakerPage() {
               )}
 
               {/* Advanced General Settings (Error Correction & Margin) */}
-              <div className="pt-4 border-t border-slate-800 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="pt-4 border-t border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1">
+                  <label className="block text-xs font-semibold text-slate-600 mb-1.5">
                     {language === 'en'
                       ? 'Error Correction Level'
                       : 'سطح تصحیح خطا (Error Correction)'}
@@ -2142,10 +2432,10 @@ export default function AdvancedQrMakerPage() {
                         key={lvl.id}
                         type="button"
                         onClick={() => setErrorCorrectionLevel(lvl.id)}
-                        className={`py-1 rounded-lg text-xs font-medium border text-center transition-colors ${
+                        className={`py-1.5 rounded-lg text-xs font-medium border text-center transition-colors ${
                           errorCorrectionLevel === lvl.id
-                            ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300 font-bold'
-                            : 'bg-slate-950/40 border-slate-800 text-slate-400'
+                            ? 'bg-sky-50 border-blue-500 text-slate-900 font-bold ring-1 ring-blue-300'
+                            : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-white'
                         }`}
                       >
                         {lvl.label}
@@ -2155,11 +2445,11 @@ export default function AdvancedQrMakerPage() {
                 </div>
 
                 <div>
-                  <div className="flex justify-between text-xs text-slate-400 mb-1">
+                  <div className="flex justify-between text-xs text-slate-600 mb-1.5 font-medium">
                     <span>
                       {language === 'en' ? 'Outer Margin' : 'حاشیه بیرونی'}
                     </span>
-                    <span className="font-mono text-cyan-400">{margin}px</span>
+                    <span className="font-mono text-cyan-600">{margin}px</span>
                   </div>
                   <input
                     type="range"
@@ -2168,16 +2458,15 @@ export default function AdvancedQrMakerPage() {
                     step="2"
                     value={margin}
                     onChange={(e) => setMargin(Number(e.target.value))}
-                    className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-500 mt-2"
+                    className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-cyan-600 mt-2"
                   />
                 </div>
               </div>
             </div>
-
-
           </div>
+        </div>
 
-          {/* Right Column (5 cols): Sticky Live Render & High-Res Download Card */}
+        {/* Right Column (5 cols): Sticky Live Render & High-Res Download Card */}
           <div className="lg:col-span-5 lg:sticky lg:top-24 space-y-6">
             <div className="bg-gradient-to-b from-slate-900/90 to-slate-950/90 backdrop-blur-2xl border border-slate-800/90 rounded-3xl p-6 shadow-2xl relative overflow-hidden">
               {/* Subtle top ambient indicator */}
@@ -2217,12 +2506,12 @@ export default function AdvancedQrMakerPage() {
                   className={`relative flex flex-col items-center justify-center transition-all ${
                     frameStyle === 'none'
                       ? 'hover:scale-105'
-                      : frameStyle === 'bottom-banner'
+                      : frameStyle === 'bottom-banner' || frameStyle === 'black-banner'
                       ? 'rounded-2xl overflow-hidden shadow-2xl bg-white p-3 pb-0'
-                      : frameStyle === 'top-banner'
-                      ? 'rounded-2xl overflow-hidden shadow-2xl bg-white p-3 pt-0'
-                      : frameStyle === 'rounded-banner'
-                      ? 'rounded-3xl shadow-2xl bg-white p-4 pb-7'
+                      : frameStyle === 'hanging-tab'
+                      ? 'rounded-2xl shadow-2xl bg-white p-3 pb-2'
+                      : frameStyle === 'screen'
+                      ? 'rounded-2xl shadow-2xl bg-white p-3 pb-0'
                       : frameStyle === 'circle'
                       ? 'rounded-full shadow-2xl bg-white p-7'
                       : frameStyle === 'phone'
@@ -2240,15 +2529,6 @@ export default function AdvancedQrMakerPage() {
                   }
                 >
                   {/* Top Frame Elements */}
-                  {frameStyle === 'top-banner' && (
-                    <div
-                      className="w-[calc(100%+24px)] -mx-3 py-2 px-6 text-center font-black text-xs uppercase tracking-widest text-white shadow-sm mb-2"
-                      style={{ backgroundColor: frameColor }}
-                    >
-                      {frameText || 'SCAN ME'}
-                    </div>
-                  )}
-
                   {frameStyle === 'phone' && (
                     <div
                       className="w-16 h-1.5 rounded-full mb-2.5"
@@ -2279,18 +2559,30 @@ export default function AdvancedQrMakerPage() {
                   />
 
                   {/* Bottom Frame Elements */}
-                  {frameStyle === 'bottom-banner' && (
+                  {(frameStyle === 'bottom-banner' || frameStyle === 'black-banner') && (
                     <div
-                      className="w-[calc(100%+24px)] -mx-3 py-2 px-6 text-center font-black text-xs uppercase tracking-widest text-white shadow-sm mt-2"
+                      className="w-[calc(100%+24px)] -mx-3 py-2 px-6 text-center font-black text-xs uppercase tracking-widest text-white shadow-sm mt-2 flex items-center justify-center gap-1.5"
+                      style={{ backgroundColor: frameColor }}
+                    >
+                      {frameStyle === 'bottom-banner' && (
+                        <Scan className="w-3.5 h-3.5 stroke-[2.5]" />
+                      )}
+                      <span>{frameText || 'SCAN ME'}</span>
+                    </div>
+                  )}
+
+                  {frameStyle === 'hanging-tab' && (
+                    <div
+                      className="w-[calc(100%-20px)] mx-auto py-1.5 px-4 text-center font-black text-[11px] uppercase tracking-wider text-white shadow-md rounded-b-xl mt-1 -mb-2"
                       style={{ backgroundColor: frameColor }}
                     >
                       {frameText || 'SCAN ME'}
                     </div>
                   )}
 
-                  {frameStyle === 'rounded-banner' && (
+                  {frameStyle === 'screen' && (
                     <div
-                      className="absolute -bottom-4 px-6 py-1 rounded-full font-black text-xs uppercase tracking-widest text-white shadow-lg border-2 border-white"
+                      className="w-[calc(100%+24px)] -mx-3 py-2 px-4 text-center font-black text-[11px] uppercase tracking-wider text-white shadow-sm mt-2"
                       style={{ backgroundColor: frameColor }}
                     >
                       {frameText || 'SCAN ME'}
@@ -2426,6 +2718,22 @@ export default function AdvancedQrMakerPage() {
                     <span>JPG (استاندارد)</span>
                   </Button>
                 </div>
+
+                {/* Save to History Button */}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleSaveToHistory}
+                  disabled={isSavingToHistory}
+                  className="w-full py-2.5 rounded-xl border-cyan-500/40 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 font-bold text-xs transition-all flex items-center justify-center gap-2"
+                >
+                  <Bookmark className="w-4 h-4 text-cyan-400" />
+                  <span>
+                    {isSavingToHistory
+                      ? 'در حال ذخیره...'
+                      : 'ذخیره در تاریخچه ابزارهای من'}
+                  </span>
+                </Button>
               </div>
 
               {/* Security & Standard Note */}
@@ -2500,5 +2808,13 @@ export default function AdvancedQrMakerPage() {
         <ToolsCtaBanner />
       </div>
     </div>
+  );
+}
+
+export default function AdvancedQrMakerPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-slate-950 flex items-center justify-center text-slate-400">Loading...</div>}>
+      <AdvancedQrMakerContent />
+    </Suspense>
   );
 }

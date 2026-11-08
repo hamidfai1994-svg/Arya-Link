@@ -17,6 +17,9 @@ import {
   QrCode,
   Mail,
   Wrench,
+  History,
+  Camera,
+  Scan,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -36,6 +39,7 @@ export function PublicNavbar() {
   const pathname = usePathname();
   const { data: session } = useSession();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [toolsDropdownOpen, setToolsDropdownOpen] = useState(false);
 
   const navLinks = [
     { title: t('nav.home', 'صفحه اصلی'), href: '/' },
@@ -120,66 +124,185 @@ export function PublicNavbar() {
             );
           })}
 
-          {/* Tools Dropdown Menu */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                className={cn(
-                  'transition-colors py-1 relative hover:text-cyan-500 flex items-center gap-1.5 outline-none cursor-pointer',
-                  isToolsActive ? 'text-cyan-500 font-bold' : ''
-                )}
+          {/* Tools Dropdown Menu with Hover */}
+          <div
+            onMouseEnter={() => setToolsDropdownOpen(true)}
+            onMouseLeave={() => setToolsDropdownOpen(false)}
+            className="relative"
+          >
+            <DropdownMenu open={toolsDropdownOpen} onOpenChange={setToolsDropdownOpen}>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  onClick={() => setToolsDropdownOpen((prev) => !prev)}
+                  className={cn(
+                    'transition-colors py-1 relative hover:text-cyan-500 flex items-center gap-1.5 outline-none cursor-pointer',
+                    isToolsActive ? 'text-cyan-500 font-bold' : ''
+                  )}
+                >
+                  <Wrench className="w-3.5 h-3.5 text-cyan-500" />
+                  <span>{t('nav.tools', 'امکانات جانبی')}</span>
+                  <ChevronDown
+                    className={cn(
+                      'w-3.5 h-3.5 opacity-70 transition-transform duration-200',
+                      toolsDropdownOpen ? 'rotate-180' : ''
+                    )}
+                  />
+                  {isToolsActive && (
+                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-cyan-500 rounded-full" />
+                  )}
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align={dir === 'rtl' ? 'start' : 'end'}
+                className="w-80 p-2.5 rounded-2xl bg-white/95 dark:bg-zinc-950/95 backdrop-blur-xl border border-border shadow-2xl z-50 animate-in fade-in-50 zoom-in-95 space-y-2.5"
               >
-                <Wrench className="w-3.5 h-3.5 text-cyan-500" />
-                <span>{t('nav.tools', 'امکانات جانبی')}</span>
-                <ChevronDown className="w-3.5 h-3.5 opacity-70" />
-                {isToolsActive && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-cyan-500 rounded-full" />
-                )}
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align={dir === 'rtl' ? 'start' : 'end'}
-              className="w-72 p-2 rounded-2xl bg-white/95 dark:bg-zinc-950/95 backdrop-blur-xl border border-border shadow-xl z-50 animate-in fade-in-50 zoom-in-95"
-            >
-              <div className="px-2.5 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 border-b border-border/50 mb-1">
-                <Sparkles className="w-3 h-3 text-cyan-500" />
-                <span>{t('nav.tools_desc', 'جعبه ابزار دیجیتال و کاربردی')}</span>
-              </div>
-              {tools.map((item) => {
-                const Icon = item.icon;
-                const active = pathname === item.href;
-                return (
-                  <DropdownMenuItem key={item.href} asChild className="p-0 focus:bg-transparent cursor-pointer">
+                {/* Header */}
+                <div className="px-2 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center justify-between border-b border-border/50 pb-1.5">
+                  <span className="flex items-center gap-1.5">
+                    <Sparkles className="w-3 h-3 text-cyan-500" />
+                    <span>جعبه ابزار دیجیتال</span>
+                  </span>
+                  <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-500 font-mono font-bold">
+                    PRO
+                  </span>
+                </div>
+
+                {/* Group 1: کیو آر کد */}
+                <div className="space-y-1">
+                  <span className="text-[10px] font-bold text-cyan-500 px-2 flex items-center gap-1">
+                    <QrCode className="w-3 h-3" />
+                    <span>کیوآر کد (QR Code)</span>
+                  </span>
+                  <div className="grid grid-cols-2 gap-1.5 pt-0.5">
                     <Link
-                      href={item.href}
-                      className={cn(
-                        'flex items-start gap-3 p-2.5 rounded-xl transition-all duration-200 group hover:bg-cyan-500/10 dark:hover:bg-cyan-500/15',
-                        active ? 'bg-cyan-500/10 text-cyan-500' : 'text-foreground'
-                      )}
+                      href="/tools/qr-maker"
+                      onClick={() => setToolsDropdownOpen(false)}
+                      className="p-2 rounded-xl hover:bg-cyan-500/10 transition-colors flex items-center gap-2 group border border-transparent hover:border-cyan-500/20"
                     >
-                      <div className="p-2 rounded-lg bg-cyan-500/10 text-cyan-500 group-hover:bg-cyan-500 group-hover:text-white transition-colors shrink-0 mt-0.5">
-                        <Icon className="w-4 h-4" />
+                      <div className="w-7 h-7 rounded-lg bg-cyan-500/10 text-cyan-500 group-hover:bg-cyan-500 group-hover:text-white flex items-center justify-center transition-colors">
+                        <QrCode className="w-3.5 h-3.5" />
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-1">
-                          <span className="text-xs font-bold truncate group-hover:text-cyan-500 transition-colors">
-                            {item.title}
-                          </span>
-                          <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-cyan-500/15 text-cyan-500 font-mono font-bold">
-                            {item.badge}
-                          </span>
-                        </div>
-                        <p className="text-[10px] text-muted-foreground line-clamp-1 mt-0.5">
-                          {item.desc}
-                        </p>
+                      <div className="min-w-0">
+                        <span className="text-xs font-bold block text-foreground group-hover:text-cyan-500 truncate">
+                          ساخت QR
+                        </span>
+                        <span className="text-[9px] text-muted-foreground block truncate">
+                          طراحی با لوگو
+                        </span>
                       </div>
                     </Link>
-                  </DropdownMenuItem>
-                );
-              })}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                    <Link
+                      href="/tools/qr-maker?tab=scanner"
+                      onClick={() => setToolsDropdownOpen(false)}
+                      className="p-2 rounded-xl hover:bg-cyan-500/10 transition-colors flex items-center gap-2 group border border-transparent hover:border-cyan-500/20"
+                    >
+                      <div className="w-7 h-7 rounded-lg bg-cyan-500/10 text-cyan-500 group-hover:bg-cyan-500 group-hover:text-white flex items-center justify-center transition-colors">
+                        <Camera className="w-3.5 h-3.5" />
+                      </div>
+                      <div className="min-w-0">
+                        <span className="text-xs font-bold block text-foreground group-hover:text-cyan-500 truncate">
+                          اسکنر QR
+                        </span>
+                        <span className="text-[9px] text-muted-foreground block truncate">
+                          اسکن با دوربین
+                        </span>
+                      </div>
+                    </Link>
+                  </div>
+                </div>
+
+                {/* Group 2: بارکد */}
+                <div className="space-y-1 pt-1 border-t border-border/40">
+                  <span className="text-[10px] font-bold text-emerald-500 px-2 flex items-center gap-1">
+                    <Barcode className="w-3 h-3" />
+                    <span>بارکد ساز جامع (Barcode)</span>
+                  </span>
+                  <div className="grid grid-cols-2 gap-1.5 pt-0.5">
+                    <Link
+                      href="/tools/barcode-maker"
+                      onClick={() => setToolsDropdownOpen(false)}
+                      className="p-2 rounded-xl hover:bg-emerald-500/10 transition-colors flex items-center gap-2 group border border-transparent hover:border-emerald-500/20"
+                    >
+                      <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-500 group-hover:bg-emerald-500 group-hover:text-white flex items-center justify-center transition-colors">
+                        <Barcode className="w-3.5 h-3.5" />
+                      </div>
+                      <div className="min-w-0">
+                        <span className="text-xs font-bold block text-foreground group-hover:text-emerald-500 truncate">
+                          ساخت بارکد
+                        </span>
+                        <span className="text-[9px] text-muted-foreground block truncate">
+                          116 مدل استاندارد
+                        </span>
+                      </div>
+                    </Link>
+                    <Link
+                      href="/tools/barcode-maker?tab=scanner"
+                      onClick={() => setToolsDropdownOpen(false)}
+                      className="p-2 rounded-xl hover:bg-emerald-500/10 transition-colors flex items-center gap-2 group border border-transparent hover:border-emerald-500/20"
+                    >
+                      <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-500 group-hover:bg-emerald-500 group-hover:text-white flex items-center justify-center transition-colors">
+                        <Scan className="w-3.5 h-3.5" />
+                      </div>
+                      <div className="min-w-0">
+                        <span className="text-xs font-bold block text-foreground group-hover:text-emerald-500 truncate">
+                          اسکنر بارکد
+                        </span>
+                        <span className="text-[9px] text-muted-foreground block truncate">
+                          دوربین و تصویر
+                        </span>
+                      </div>
+                    </Link>
+                  </div>
+                </div>
+
+                {/* Group 3: امضای ایمیل */}
+                <div className="space-y-1 pt-1 border-t border-border/40">
+                  <span className="text-[10px] font-bold text-amber-500 px-2 flex items-center gap-1">
+                    <Mail className="w-3 h-3" />
+                    <span>امضای ایمیل سازمانی</span>
+                  </span>
+                  <Link
+                    href="/tools/email-signature"
+                    onClick={() => setToolsDropdownOpen(false)}
+                    className="p-2 rounded-xl hover:bg-amber-500/10 transition-colors flex items-center gap-2.5 group border border-transparent hover:border-amber-500/20"
+                  >
+                    <div className="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-500 group-hover:bg-amber-500 group-hover:text-white flex items-center justify-center transition-colors shrink-0">
+                      <Mail className="w-3.5 h-3.5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-foreground group-hover:text-amber-500 truncate">
+                          ساخت امضای رسمی ایمیل
+                        </span>
+                        <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-amber-500/15 text-amber-500 font-mono">
+                          NEW
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-muted-foreground block truncate">
+                        قالب‌های استاندارد HTML برای جیمیل و اوت‌لوک
+                      </span>
+                    </div>
+                  </Link>
+                </div>
+
+                {/* Footer: تاریخچه ابزارهای من */}
+                <div className="pt-1.5 border-t border-border/60">
+                  <Link
+                    href="/tools/history"
+                    onClick={() => setToolsDropdownOpen(false)}
+                    className="flex items-center justify-between p-2 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-500 transition-colors group"
+                  >
+                    <div className="flex items-center gap-2">
+                      <History className="w-4 h-4 text-cyan-500 group-hover:scale-110 transition-transform" />
+                      <span className="text-xs font-bold">تاریخچه ابزارهای من</span>
+                    </div>
+                    <ArrowRight className="w-3.5 h-3.5 text-cyan-500 group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5 transition-transform" />
+                  </Link>
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
 
           {navLinks.slice(3).map((link) => {
             const active = isLinkActive(link.href);
@@ -270,34 +393,71 @@ export function PublicNavbar() {
             ))}
 
             {/* Mobile Tools Section */}
-            <div className="py-2 border-y border-border/50 my-1">
-              <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 mb-2">
+            <div className="py-2.5 border-y border-border/50 my-1 space-y-2">
+              <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 mb-1">
                 <Wrench className="w-3.5 h-3.5 text-cyan-500" />
-                <span>{t('nav.tools', 'امکانات جانبی (جعبه ابزار)')}</span>
+                <span>{t('nav.tools', 'امکانات جانبی (جعبه ابزار دیجیتال)')}</span>
               </span>
-              <div className="grid grid-cols-1 gap-2 pl-2 pr-2">
-                {tools.map((item) => {
-                  const Icon = item.icon;
-                  const active = pathname === item.href;
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => setMobileMenuOpen(false)}
-                      className={cn(
-                        'flex items-center gap-3 p-2 rounded-xl transition-colors',
-                        active ? 'bg-cyan-500/10 text-cyan-500 font-bold' : 'text-foreground/80 hover:bg-muted'
-                      )}
-                    >
-                      <Icon className="w-4 h-4 text-cyan-500 shrink-0" />
-                      <span className="text-xs">{item.title}</span>
-                      <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-cyan-500/15 text-cyan-500 ms-auto font-mono">
-                        {item.badge}
-                      </span>
-                    </Link>
-                  );
-                })}
+              <div className="grid grid-cols-2 gap-1.5">
+                <Link
+                  href="/tools/qr-maker"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-2 p-2 rounded-xl bg-muted/40 hover:bg-cyan-500/10 text-xs font-semibold text-foreground transition-colors"
+                >
+                  <QrCode className="w-4 h-4 text-cyan-500 shrink-0" />
+                  <span>ساخت QR کد</span>
+                </Link>
+                <Link
+                  href="/tools/qr-maker?tab=scanner"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-2 p-2 rounded-xl bg-muted/40 hover:bg-cyan-500/10 text-xs font-semibold text-foreground transition-colors"
+                >
+                  <Camera className="w-4 h-4 text-cyan-500 shrink-0" />
+                  <span>اسکنر QR کد</span>
+                </Link>
+                <Link
+                  href="/tools/barcode-maker"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-2 p-2 rounded-xl bg-muted/40 hover:bg-emerald-500/10 text-xs font-semibold text-foreground transition-colors"
+                >
+                  <Barcode className="w-4 h-4 text-emerald-500 shrink-0" />
+                  <span>ساخت بارکد</span>
+                </Link>
+                <Link
+                  href="/tools/barcode-maker?tab=scanner"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-2 p-2 rounded-xl bg-muted/40 hover:bg-emerald-500/10 text-xs font-semibold text-foreground transition-colors"
+                >
+                  <Scan className="w-4 h-4 text-emerald-500 shrink-0" />
+                  <span>اسکنر بارکد</span>
+                </Link>
               </div>
+
+              <Link
+                href="/tools/email-signature"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center justify-between p-2 rounded-xl bg-muted/40 hover:bg-amber-500/10 text-xs font-semibold text-foreground transition-colors"
+              >
+                <span className="flex items-center gap-2">
+                  <Mail className="w-4 h-4 text-amber-500 shrink-0" />
+                  <span>ساخت امضای ایمیل</span>
+                </span>
+                <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-amber-500/15 text-amber-500 font-mono">
+                  NEW
+                </span>
+              </Link>
+
+              <Link
+                href="/tools/history"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center justify-between p-2 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-xs font-bold text-cyan-500 transition-colors"
+              >
+                <span className="flex items-center gap-2">
+                  <History className="w-4 h-4 text-cyan-500 shrink-0" />
+                  <span>تاریخچه ابزارهای من</span>
+                </span>
+                <ArrowRight className="w-3.5 h-3.5 text-cyan-500 rtl:rotate-180" />
+              </Link>
             </div>
 
             {navLinks.slice(3).map((link) => (

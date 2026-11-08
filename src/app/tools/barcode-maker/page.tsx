@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import bwipjs from 'bwip-js';
 import {
   Barcode,
@@ -21,6 +22,8 @@ import {
   Camera,
   X,
   Filter,
+  Code,
+  Bookmark,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -432,27 +435,42 @@ export const BARCODE_SMART_GUIDES: Record<string, string> = {
 };
 
 // Ensure every subtype across all 116 items has explicit name, features, and guide fields populated
+// and strip any legacy "راهنما: " or "راهنما:" prefix from guides
+Object.keys(BARCODE_SMART_GUIDES).forEach((k) => {
+  BARCODE_SMART_GUIDES[k] = BARCODE_SMART_GUIDES[k].replace(/^راهنما:\s*/, '');
+});
+
 BARCODE_CATEGORIES.forEach((cat) => {
   cat.subtypes.forEach((sub) => {
     if (!sub.features) {
       sub.features = sub.hint;
     }
-    if (!sub.guide) {
-      sub.guide =
-        BARCODE_SMART_GUIDES[sub.id] ||
-        BARCODE_SMART_GUIDES[cat.id] ||
-        sub.hint;
-    }
+    const rawGuide =
+      BARCODE_SMART_GUIDES[sub.id] ||
+      BARCODE_SMART_GUIDES[cat.id] ||
+      sub.hint;
+    sub.guide = rawGuide.replace(/^راهنما:\s*/, '');
   });
 });
 
-export default function MegaBarcodeGeneratorPage() {
+function MegaBarcodeGeneratorContent() {
   const { dir, language, t } = useLanguage();
   const isRtl = dir === 'rtl';
   const { loadProfile, isLoading: isProfileLoading } = useProfileLoader();
 
   // Top-Level Tab State (Generator vs Scanner)
   const [activeToolTab, setActiveToolTab] = useState<'generator' | 'scanner'>('generator');
+
+  // Handle URL query parameter ?tab=scanner
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam === 'scanner') {
+      setActiveToolTab('scanner');
+    } else if (tabParam === 'generator') {
+      setActiveToolTab('generator');
+    }
+  }, [searchParams]);
 
   // Search & Filter States
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -472,6 +490,36 @@ export default function MegaBarcodeGeneratorPage() {
   const [bgColor, setBgColor] = useState<string>('#ffffff');
   const [scale, setScale] = useState<number>(3);
   const [includeText, setIncludeText] = useState<boolean>(true);
+
+  // Group 7: Banking and Payments Form State (Stage 1)
+  // 1. EPC QR Code V2 (SEPA)
+  const [epcName, setEpcName] = useState('AryaLink Technologies');
+  const [epcIban, setEpcIban] = useState('CH2400000000000000000');
+  const [epcBic, setEpcBic] = useState('TESTCHZZXXX');
+  const [epcAmount, setEpcAmount] = useState('120.00');
+  const [epcBusinessCode, setEpcBusinessCode] = useState('SALES');
+  const [epcReference, setEpcReference] = useState('INV-2026-001');
+
+  // 2. Swiss QR Code
+  const [swissIban, setSwissIban] = useState('CH5800791123000889012');
+  const [swissName, setSwissName] = useState('Robert Schneider AG');
+  const [swissStreet, setSwissStreet] = useState('Rue du Lac');
+  const [swissBuildingNumber, setSwissBuildingNumber] = useState('1268');
+  const [swissPostalCode, setSwissPostalCode] = useState('2501');
+  const [swissCity, setSwissCity] = useState('Biel');
+  const [swissCountryCode, setSwissCountryCode] = useState('CH');
+
+  // 3. ZATCA QR Code (KSA)
+  const [zatcaSellerName, setZatcaSellerName] = useState('AryaLink Digital Solutions');
+  const [zatcaVatNumber, setZatcaVatNumber] = useState('300000000000003');
+  const [zatcaTimestamp, setZatcaTimestamp] = useState('2026-11-08T16:00:00Z');
+  const [zatcaInvoiceTotal, setZatcaInvoiceTotal] = useState('1500.00');
+  const [zatcaVatTotal, setZatcaVatTotal] = useState('225.00');
+
+  // HTML Embed & Cloud History States (Stage 2 & 5)
+  const [barcodeDataUrl, setBarcodeDataUrl] = useState<string>('');
+  const [embedCopied, setEmbedCopied] = useState<boolean>(false);
+  const [isSavingToHistory, setIsSavingToHistory] = useState<boolean>(false);
 
   // Group 11: Business Card State
   const [cardFirstName, setCardFirstName] = useState('احمد');
@@ -556,8 +604,98 @@ export default function MegaBarcodeGeneratorPage() {
     return results;
   }, [searchQuery, searchInName, searchInFeatures, searchInGuide]);
 
-  // String formatting for Group 11, 12, 13
+  // String formatting for Group 7 (Banking), 11, 12, 13
   const computedPayload = useMemo(() => {
+    // Group 7: Banking and Payments (EPC SEPA, Swiss QR, ZATCA)
+    if (selectedCategory === 'banking') {
+      if (selectedSubtypeId === 'epcqr') {
+        // EPC QR Code V2 (SEPA Credit Transfer)
+        return [
+          'BCD',
+          '002',
+          '1',
+          'SCT',
+          epcBic.trim(),
+          epcName.trim(),
+          epcIban.trim(),
+          epcAmount.trim() ? `EUR${epcAmount.trim()}` : '',
+          epcBusinessCode.trim(),
+          epcReference.trim(),
+        ].join('\n');
+      }
+
+      if (selectedSubtypeId.startsWith('swissqr')) {
+        // Swiss QR Bill (SPC)
+        const version = selectedSubtypeId === 'swissqr_v1' ? '0100' : '0200';
+        const refType = selectedSubtypeId.includes('credref')
+          ? 'SCOR'
+          : selectedSubtypeId.includes('qrref')
+            ? 'QRR'
+            : 'NON';
+        const refNumber = selectedSubtypeId.includes('credref')
+          ? 'RF18539007547034'
+          : selectedSubtypeId.includes('qrref')
+            ? '210000000003139471430009017'
+            : '';
+
+        return [
+          'SPC',
+          version,
+          '1',
+          swissIban.trim(),
+          'S',
+          swissName.trim(),
+          swissStreet.trim(),
+          swissBuildingNumber.trim(),
+          swissPostalCode.trim(),
+          swissCity.trim(),
+          swissCountryCode.trim(),
+          '', '', '', '', '', '', '',
+          '199.95',
+          'CHF',
+          'K',
+          'Customer AG',
+          'Bahnhofstrasse 10',
+          '8001 Zurich',
+          '', '', 'CH',
+          refType,
+          refNumber,
+          'EPD',
+        ].join('^CR^LF');
+      }
+
+      if (selectedSubtypeId === 'zatca') {
+        // ZATCA Saudi Arabia TLV Base64 format
+        try {
+          const encoder = new TextEncoder();
+          const tags = [
+            zatcaSellerName.trim() || 'AryaLink Digital Solutions',
+            zatcaVatNumber.trim() || '300000000000003',
+            zatcaTimestamp.trim() || '2026-11-08T16:00:00Z',
+            zatcaInvoiceTotal.trim() || '1500.00',
+            zatcaVatTotal.trim() || '225.00',
+          ];
+          const bytes: number[] = [];
+          tags.forEach((str, i) => {
+            const tagNum = i + 1;
+            const utf8 = encoder.encode(str);
+            bytes.push(tagNum);
+            bytes.push(utf8.length);
+            for (let j = 0; j < utf8.length; j++) {
+              bytes.push(utf8[j]);
+            }
+          });
+          let binary = '';
+          for (let i = 0; i < bytes.length; i++) {
+            binary += String.fromCharCode(bytes[i]);
+          }
+          return btoa(binary);
+        } catch {
+          return `${zatcaSellerName} - VAT: ${zatcaVatNumber} - Total: ${zatcaInvoiceTotal}`;
+        }
+      }
+    }
+
     if (selectedCategory === 'business_cards') {
       if (
         selectedSubtypeId === 'mecard_qr' ||
@@ -624,6 +762,24 @@ export default function MegaBarcodeGeneratorPage() {
     wifiSsid,
     wifiPassword,
     wifiHidden,
+    epcName,
+    epcIban,
+    epcBic,
+    epcAmount,
+    epcBusinessCode,
+    epcReference,
+    swissIban,
+    swissName,
+    swissStreet,
+    swissBuildingNumber,
+    swissPostalCode,
+    swissCity,
+    swissCountryCode,
+    zatcaSellerName,
+    zatcaVatNumber,
+    zatcaTimestamp,
+    zatcaInvoiceTotal,
+    zatcaVatTotal,
   ]);
 
   // Auto-switch subtype when category changes
@@ -740,6 +896,11 @@ export default function MegaBarcodeGeneratorPage() {
       // 1. Render directly to visible canvas via bwipjs.toCanvas
       bwipjs.toCanvas(canvas, bwipOptions);
 
+      // Save raster dataUrl for HTML Embed snippet & Cloud History (Stage 2 & 5)
+      try {
+        setBarcodeDataUrl(canvas.toDataURL('image/png'));
+      } catch (dataErr) { }
+
       // 2. Also generate SVG string for SVG vector download/copy
       try {
         const svg = bwipjs.toSVG(bwipOptions);
@@ -845,6 +1006,64 @@ export default function MegaBarcodeGeneratorPage() {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
     toast.success('کد وکتور SVG در حافظه کپی شد.');
+  };
+
+  // Stage 5: Save Barcode to Cloud History
+  const handleSaveToHistory = async () => {
+    try {
+      setIsSavingToHistory(true);
+      const preview =
+        barcodeDataUrl ||
+        (canvasRef.current ? canvasRef.current.toDataURL('image/png') : '');
+
+      const res = await fetch('/api/tools/history', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          toolType: 'barcode',
+          title: `Barcode: ${currentSubtype.name}`,
+          subtype: currentSubtype.id,
+          payload: computedPayload,
+          previewDataUrl: preview,
+          config: {
+            bcid: currentSubtype.bcid,
+            category: selectedCategory,
+            scale,
+            barcolor: lineColor,
+            backgroundcolor: bgColor,
+          },
+        }),
+      });
+
+      const data = await res.json();
+      if (res.status === 401) {
+        toast.error('برای ذخیره در تاریخچه، ابتدا وارد حساب کاربری خود شوید.');
+        return;
+      }
+
+      if (data.success) {
+        toast.success('بارکد با موفقیت در تاریخچه ابزارهای شما ذخیره شد.');
+      } else {
+        toast.error(data.message || 'خطا در ذخیره تاریخچه.');
+      }
+    } catch {
+      toast.error('خطای شبکه در ذخیره تاریخچه.');
+    } finally {
+      setIsSavingToHistory(false);
+    }
+  };
+
+  // Stage 2: HTML Embed Snippet & Backlink
+  const embedHtmlCode = useMemo(() => {
+    const src = barcodeDataUrl || 'data:image/png;base64,...';
+    return `<!-- Barcode generated by AryaLink (https://aryalink.com/tools/barcode-maker) -->\n<a href="https://aryalink.com/tools/barcode-maker" target="_blank" rel="noopener noreferrer">\n  <img src="${src}" alt="${currentSubtype.name} - AryaLink Barcode" />\n</a>`;
+  }, [barcodeDataUrl, currentSubtype.name]);
+
+  const handleCopyEmbedCode = () => {
+    navigator.clipboard.writeText(embedHtmlCode);
+    setEmbedCopied(true);
+    toast.success('کد جاسازی HTML با موفقیت کپی شد.');
+    setTimeout(() => setEmbedCopied(false), 2000);
   };
 
   return (
@@ -1128,18 +1347,300 @@ export default function MegaBarcodeGeneratorPage() {
                         </option>
                       ))}
                     </select>
-                    <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 pt-1 leading-relaxed">
-                      <Info className="w-3.5 h-3.5 text-cyan-500 shrink-0" />
-                      <span>{currentGuideText}</span>
-                    </p>
                   </div>
                 </>
               )}
 
-              {/* Content Input Form: Adaptive based on Category (Step 2: dir="ltr" text-left on all inputs) */}
+              {/* Content Input Form: Adaptive based on Category (Stage 1 Dynamic Forms) */}
               <div className="space-y-3 pt-2">
-                {/* GROUP 11: Business Cards Form */}
-                {selectedCategory === 'business_cards' ? (
+                {/* GROUP 7: Banking and Payments Dynamic Form (Stage 1) */}
+                {selectedCategory === 'banking' ? (
+                  <div className="space-y-4 p-4 rounded-2xl bg-muted/30 border border-border/60">
+                    {/* Subtype 1: EPC QR Code V2 (SEPA) */}
+                    {selectedSubtypeId === 'epcqr' ? (
+                      <div className="space-y-3">
+                        <span className="text-xs font-bold text-foreground flex items-center gap-1.5 pb-2 border-b border-border/50">
+                          <Layers className="w-4 h-4 text-cyan-500" />
+                          <span>مشخصات پرداخت شتابی یورو (EPC QR Code V2 SEPA):</span>
+                        </span>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-[11px] text-muted-foreground mb-1">
+                              نام ذینفع (Name):
+                            </label>
+                            <Input
+                              dir="ltr"
+                              style={{ textAlign: 'left' }}
+                              value={epcName}
+                              onChange={(e) => setEpcName(e.target.value)}
+                              placeholder="Beneficiary Name (e.g. AryaLink Technologies)"
+                              className="h-10 text-xs font-mono text-left"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] text-muted-foreground mb-1">
+                              شماره شبا بین‌المللی (IBAN):
+                            </label>
+                            <Input
+                              dir="ltr"
+                              style={{ textAlign: 'left' }}
+                              value={epcIban}
+                              onChange={(e) => setEpcIban(e.target.value)}
+                              placeholder="IBAN (e.g. CH2400000000000000000)"
+                              className="h-10 text-xs font-mono text-left uppercase"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-[11px] text-muted-foreground mb-1">
+                              کد سوئیفت بانک (BIC):
+                            </label>
+                            <Input
+                              dir="ltr"
+                              style={{ textAlign: 'left' }}
+                              value={epcBic}
+                              onChange={(e) => setEpcBic(e.target.value)}
+                              placeholder="BIC / SWIFT (e.g. TESTCHZZXXX)"
+                              className="h-10 text-xs font-mono text-left uppercase"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] text-muted-foreground mb-1">
+                              مبلغ یورو (Amount EUR):
+                            </label>
+                            <Input
+                              dir="ltr"
+                              style={{ textAlign: 'left' }}
+                              value={epcAmount}
+                              onChange={(e) => setEpcAmount(e.target.value)}
+                              placeholder="Amount in EUR (e.g. 120.00)"
+                              className="h-10 text-xs font-mono text-left"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-[11px] text-muted-foreground mb-1">
+                              کد کسب‌وکار (Business Code):
+                            </label>
+                            <Input
+                              dir="ltr"
+                              style={{ textAlign: 'left' }}
+                              value={epcBusinessCode}
+                              onChange={(e) => setEpcBusinessCode(e.target.value)}
+                              placeholder="Business Code (e.g. SALES)"
+                              className="h-10 text-xs font-mono text-left uppercase"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] text-muted-foreground mb-1">
+                              کد مرجع و شناسه فاکتور (Reference):
+                            </label>
+                            <Input
+                              dir="ltr"
+                              style={{ textAlign: 'left' }}
+                              value={epcReference}
+                              onChange={(e) => setEpcReference(e.target.value)}
+                              placeholder="Reference (e.g. INV-2026-001)"
+                              className="h-10 text-xs font-mono text-left"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ) : selectedSubtypeId.startsWith('swissqr') ? (
+                      /* Subtype 2: Swiss QR Code */
+                      <div className="space-y-3">
+                        <span className="text-xs font-bold text-foreground flex items-center gap-1.5 pb-2 border-b border-border/50">
+                          <Layers className="w-4 h-4 text-cyan-500" />
+                          <span>مشخصات صورتحساب رسمی سوئیس (Swiss QR-Bill):</span>
+                        </span>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-[11px] text-muted-foreground mb-1">
+                              شماره شبا (IBAN):
+                            </label>
+                            <Input
+                              dir="ltr"
+                              style={{ textAlign: 'left' }}
+                              value={swissIban}
+                              onChange={(e) => setSwissIban(e.target.value)}
+                              placeholder="IBAN (e.g. CH5800791123000889012)"
+                              className="h-10 text-xs font-mono text-left uppercase"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] text-muted-foreground mb-1">
+                              نام ذینفع / بستانکار (Name):
+                            </label>
+                            <Input
+                              dir="ltr"
+                              style={{ textAlign: 'left' }}
+                              value={swissName}
+                              onChange={(e) => setSwissName(e.target.value)}
+                              placeholder="Name (e.g. Robert Schneider AG)"
+                              className="h-10 text-xs font-mono text-left"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          <div className="sm:col-span-2">
+                            <label className="block text-[11px] text-muted-foreground mb-1">
+                              خیابان (Street):
+                            </label>
+                            <Input
+                              dir="ltr"
+                              style={{ textAlign: 'left' }}
+                              value={swissStreet}
+                              onChange={(e) => setSwissStreet(e.target.value)}
+                              placeholder="Street (e.g. Rue du Lac)"
+                              className="h-10 text-xs font-mono text-left"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] text-muted-foreground mb-1">
+                              پلاک ساختمان (Building Number):
+                            </label>
+                            <Input
+                              dir="ltr"
+                              style={{ textAlign: 'left' }}
+                              value={swissBuildingNumber}
+                              onChange={(e) => setSwissBuildingNumber(e.target.value)}
+                              placeholder="Building No (e.g. 1268)"
+                              className="h-10 text-xs font-mono text-left"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          <div>
+                            <label className="block text-[11px] text-muted-foreground mb-1">
+                              کد پستی (Postal Code):
+                            </label>
+                            <Input
+                              dir="ltr"
+                              style={{ textAlign: 'left' }}
+                              value={swissPostalCode}
+                              onChange={(e) => setSwissPostalCode(e.target.value)}
+                              placeholder="Postal Code (e.g. 2501)"
+                              className="h-10 text-xs font-mono text-left"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] text-muted-foreground mb-1">
+                              شهر (Town / City):
+                            </label>
+                            <Input
+                              dir="ltr"
+                              style={{ textAlign: 'left' }}
+                              value={swissCity}
+                              onChange={(e) => setSwissCity(e.target.value)}
+                              placeholder="City (e.g. Biel)"
+                              className="h-10 text-xs font-mono text-left"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] text-muted-foreground mb-1">
+                              کد کشور (Country Code):
+                            </label>
+                            <Input
+                              dir="ltr"
+                              style={{ textAlign: 'left' }}
+                              value={swissCountryCode}
+                              onChange={(e) => setSwissCountryCode(e.target.value)}
+                              placeholder="Country (e.g. CH)"
+                              className="h-10 text-xs font-mono text-left uppercase"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      /* Subtype 3: ZATCA QR Code (KSA) */
+                      <div className="space-y-3">
+                        <span className="text-xs font-bold text-foreground flex items-center gap-1.5 pb-2 border-b border-border/50">
+                          <Layers className="w-4 h-4 text-cyan-500" />
+                          <span>مشخصات صورتحساب الکترونیکی زکات و مالیات (ZATCA Fatoora TLV):</span>
+                        </span>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-[11px] text-muted-foreground mb-1">
+                              نام فروشنده (Seller Name):
+                            </label>
+                            <Input
+                              dir="ltr"
+                              style={{ textAlign: 'left' }}
+                              value={zatcaSellerName}
+                              onChange={(e) => setZatcaSellerName(e.target.value)}
+                              placeholder="Seller Name (e.g. AryaLink Digital Solutions)"
+                              className="h-10 text-xs font-mono text-left"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] text-muted-foreground mb-1">
+                              شماره مالیاتی (VAT Number):
+                            </label>
+                            <Input
+                              dir="ltr"
+                              style={{ textAlign: 'left' }}
+                              value={zatcaVatNumber}
+                              onChange={(e) => setZatcaVatNumber(e.target.value)}
+                              placeholder="15-digit VAT (e.g. 300000000000003)"
+                              className="h-10 text-xs font-mono text-left"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          <div>
+                            <label className="block text-[11px] text-muted-foreground mb-1">
+                              زمان و تاریخ صدور (Time Stamp):
+                            </label>
+                            <Input
+                              dir="ltr"
+                              style={{ textAlign: 'left' }}
+                              value={zatcaTimestamp}
+                              onChange={(e) => setZatcaTimestamp(e.target.value)}
+                              placeholder="Timestamp (e.g. 2026-11-08T16:00:00Z)"
+                              className="h-10 text-xs font-mono text-left"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] text-muted-foreground mb-1">
+                              مجموع فاکتور (Invoice Total):
+                            </label>
+                            <Input
+                              dir="ltr"
+                              style={{ textAlign: 'left' }}
+                              value={zatcaInvoiceTotal}
+                              onChange={(e) => setZatcaInvoiceTotal(e.target.value)}
+                              placeholder="Total (e.g. 1500.00)"
+                              className="h-10 text-xs font-mono text-left"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] text-muted-foreground mb-1">
+                              مجموع مالیات ارزش افزوده (VAT Total):
+                            </label>
+                            <Input
+                              dir="ltr"
+                              style={{ textAlign: 'left' }}
+                              value={zatcaVatTotal}
+                              onChange={(e) => setZatcaVatTotal(e.target.value)}
+                              placeholder="VAT Amount (e.g. 225.00)"
+                              className="h-10 text-xs font-mono text-left"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : selectedCategory === 'business_cards' ? (
                   <div className="space-y-3 p-4 rounded-2xl bg-muted/30 border border-border/60">
                     <span className="text-xs font-bold text-foreground flex items-center gap-1.5 pb-2 border-b border-border/50">
                       <User className="w-4 h-4 text-cyan-500" />
@@ -1623,6 +2124,22 @@ export default function MegaBarcodeGeneratorPage() {
                       {copied ? 'کد SVG کپی شد!' : 'کپی سورس وکتور SVG'}
                     </span>
                   </Button>
+
+                  {/* Stage 5: Save to History Button */}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleSaveToHistory}
+                    disabled={hasError || isSavingToHistory}
+                    className="w-full h-10 rounded-xl text-xs font-bold border-cyan-500/40 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 flex items-center justify-center gap-2"
+                  >
+                    <Bookmark className="w-4 h-4 text-cyan-400" />
+                    <span>
+                      {isSavingToHistory
+                        ? 'در حال ذخیره...'
+                        : 'ذخیره در تاریخچه ابزارهای من'}
+                    </span>
+                  </Button>
                 </div>
 
                 <div className="text-[11px] text-muted-foreground flex items-center justify-center gap-2 pt-2 border-t border-border/50">
@@ -1689,9 +2206,56 @@ export default function MegaBarcodeGeneratorPage() {
           </div>
         )}
 
+        {/* Stage 2: Backlinking & HTML Embed Section */}
+        {activeToolTab === 'generator' && (
+          <div className="bg-card border border-border/70 rounded-3xl p-6 sm:p-8 shadow-xl space-y-4 my-8">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/50 pb-4">
+              <div>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 text-xs font-bold mb-1.5">
+                  <Code className="w-3.5 h-3.5" />
+                  <span>کد جاسازی در سایت (HTML Embed)</span>
+                </div>
+                <h3 className="text-base sm:text-lg font-bold text-foreground">
+                  جاسازی مستقیم بارکد در وب‌سایت‌ها و نرم‌افزارها
+                </h3>
+                <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                  تگ HTML زیر حاوی تصویر Base64 بارکد تولیدشده است. برای استفاده در صفحات وب، فاکتورهای آنلاین یا نرم‌افزارها، آن را با یک کلیک کپی کنید:
+                </p>
+              </div>
+
+              <Button
+                type="button"
+                onClick={handleCopyEmbedCode}
+                className="rounded-xl bg-cyan-500 hover:bg-cyan-400 text-white font-bold text-xs flex items-center gap-2 shrink-0 self-start sm:self-center"
+              >
+                {embedCopied ? (
+                  <Check className="w-4 h-4 text-white" />
+                ) : (
+                  <Copy className="w-4 h-4" />
+                )}
+                <span>{embedCopied ? 'کد کپی شد!' : 'کپی کد HTML Embed'}</span>
+              </Button>
+            </div>
+
+            <div className="relative rounded-2xl bg-slate-950 p-4 border border-slate-800 font-mono text-xs text-slate-300 overflow-x-auto text-left" dir="ltr">
+              <pre className="whitespace-pre-wrap break-all leading-relaxed">
+                {embedHtmlCode}
+              </pre>
+            </div>
+          </div>
+        )}
+
         {/* Stage 4: CTA Banner */}
         <ToolsCtaBanner />
       </div>
     </div>
+  );
+}
+
+export default function MegaBarcodeGeneratorPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center text-muted-foreground">Loading...</div>}>
+      <MegaBarcodeGeneratorContent />
+    </Suspense>
   );
 }
