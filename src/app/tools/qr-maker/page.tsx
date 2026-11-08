@@ -288,6 +288,7 @@ function AdvancedQrMakerContent() {
 
   // Logo upload
   const [logoDataUrl, setLogoDataUrl] = useState<string | null>(null);
+  const [selectedPresetLogoId, setSelectedPresetLogoId] = useState<string | null>(null);
   const [logoSize, setLogoSize] = useState(0.35);
   const [logoMargin, setLogoMargin] = useState(3);
   const [hideBehindLogo, setHideBehindLogo] = useState(true);
@@ -629,6 +630,7 @@ function AdvancedQrMakerContent() {
     reader.onload = (event) => {
       const dataUrl = event.target?.result as string;
       setLogoDataUrl(dataUrl);
+      setSelectedPresetLogoId('custom');
       // Auto upgrade error correction to H to preserve scannability
       setErrorCorrectionLevel('H');
       toast.success(
@@ -785,6 +787,7 @@ function AdvancedQrMakerContent() {
     setEyeSquareColor('#000000');
     setEyeDotColor('#000000');
     setLogoDataUrl(null);
+    setSelectedPresetLogoId(null);
     setFrameStyle('none');
     setFrameText('SCAN ME');
     setFrameColor('#000000');
@@ -990,8 +993,8 @@ function AdvancedQrMakerContent() {
             type="button"
             onClick={() => setMainViewMode('generator')}
             className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold transition-all ${mainViewMode === 'generator'
-                ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg shadow-cyan-500/25 border border-cyan-400/30'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/50'
+              ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg shadow-cyan-500/25 border border-cyan-400/30'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/50'
               }`}
           >
             <QrCode className="w-4 h-4" />
@@ -1007,8 +1010,8 @@ function AdvancedQrMakerContent() {
             type="button"
             onClick={() => setMainViewMode('scanner')}
             className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold transition-all ${mainViewMode === 'scanner'
-                ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg shadow-cyan-500/25 border border-cyan-400/30'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/50'
+              ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg shadow-cyan-500/25 border border-cyan-400/30'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/50'
               }`}
           >
             <Camera className="w-4 h-4" />
@@ -1095,8 +1098,8 @@ function AdvancedQrMakerContent() {
                         type="button"
                         onClick={() => setActiveTab(tab.id)}
                         className={`flex items-center justify-center gap-2 p-2.5 rounded-xl border text-xs sm:text-sm font-medium transition-all ${isActive
-                            ? 'bg-cyan-500/15 border-cyan-500/60 text-cyan-300 shadow-md shadow-cyan-500/10'
-                            : 'bg-slate-950/40 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
+                          ? 'bg-cyan-500/15 border-cyan-500/60 text-cyan-300 shadow-md shadow-cyan-500/10'
+                          : 'bg-slate-950/40 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
                           }`}
                       >
                         <Icon className="w-4 h-4 shrink-0" />
@@ -1445,8 +1448,8 @@ function AdvancedQrMakerContent() {
                                 setWifiData({ ...wifiData, encryption: enc })
                               }
                               className={`px-3 py-1 rounded-lg text-xs font-medium border transition-colors ${wifiData.encryption === enc
-                                  ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300'
-                                  : 'bg-slate-950/50 border-slate-800 text-slate-400 hover:text-slate-200'
+                                ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300'
+                                : 'bg-slate-950/50 border-slate-800 text-slate-400 hover:text-slate-200'
                                 }`}
                             >
                               {enc === 'nopass' ? 'None (Open)' : enc}
@@ -1541,31 +1544,31 @@ function AdvancedQrMakerContent() {
                     type="button"
                     onClick={() => setDesignTab('frame')}
                     className={`px-6 py-2.5 rounded-t-xl font-medium text-sm transition-all border border-b-0 relative ${designTab === 'frame'
-                        ? 'bg-white text-teal-600 font-semibold border-slate-200 shadow-xs -mb-px z-10'
-                        : 'bg-transparent text-slate-500 hover:text-slate-800 border-transparent'
+                      ? 'bg-white text-teal-600 font-semibold border-slate-200 shadow-xs -mb-px z-10'
+                      : 'bg-transparent text-slate-500 hover:text-slate-800 border-transparent'
                       }`}
                   >
-                    {language === 'en' ? 'Frame' : language === 'ps' ? 'د سترګو چوکاټ' : 'فریم چشم‌ها'}
+                    {language === 'en' ? 'Frame' : language === 'ps' ? 'Frame (چوکاټ)' : 'Frame (فریم و قالب)'}
                   </button>
                   <button
                     type="button"
                     onClick={() => setDesignTab('shape')}
                     className={`px-6 py-2.5 rounded-t-xl font-medium text-sm transition-all border border-b-0 relative ${designTab === 'shape'
-                        ? 'bg-white text-teal-600 font-semibold border-slate-200 shadow-xs -mb-px z-10'
-                        : 'bg-transparent text-slate-500 hover:text-slate-800 border-transparent'
+                      ? 'bg-white text-teal-600 font-semibold border-slate-200 shadow-xs -mb-px z-10'
+                      : 'bg-transparent text-slate-500 hover:text-slate-800 border-transparent'
                       }`}
                   >
-                    {language === 'en' ? 'Shape' : language === 'ps' ? 'شکل او بڼه' : 'شکل و ظاهر'}
+                    {language === 'en' ? 'Shape' : language === 'ps' ? 'Shape (شکل او رنګ)' : 'Shape (شکل و ظاهر)'}
                   </button>
                   <button
                     type="button"
                     onClick={() => setDesignTab('logo')}
                     className={`px-6 py-2.5 rounded-t-xl font-medium text-sm transition-all border border-b-0 relative ${designTab === 'logo'
-                        ? 'bg-white text-teal-600 font-semibold border-slate-200 shadow-xs -mb-px z-10'
-                        : 'bg-transparent text-slate-500 hover:text-slate-800 border-transparent'
+                      ? 'bg-white text-teal-600 font-semibold border-slate-200 shadow-xs -mb-px z-10'
+                      : 'bg-transparent text-slate-500 hover:text-slate-800 border-transparent'
                       }`}
                   >
-                    {language === 'en' ? 'Logo' : language === 'ps' ? 'لوګو' : 'لوگو'}
+                    {language === 'en' ? 'Logo' : language === 'ps' ? 'Logo (لوګو)' : 'Logo (لوگو)'}
                   </button>
                 </div>
 
@@ -1581,8 +1584,8 @@ function AdvancedQrMakerContent() {
                             type="button"
                             onClick={() => setFrameStyle('none')}
                             className={`shrink-0 w-20 h-20 rounded-2xl border flex flex-col items-center justify-center transition-all ${frameStyle === 'none'
-                                ? 'border-blue-500 bg-sky-50 text-slate-800 ring-2 ring-blue-300/60 shadow-xs'
-                                : 'border-slate-200 bg-white text-slate-400 hover:border-slate-300 hover:text-slate-700 shadow-2xs'
+                              ? 'border-blue-500 bg-sky-50 text-slate-800 ring-2 ring-blue-300/60 shadow-xs'
+                              : 'border-slate-200 bg-white text-slate-400 hover:border-slate-300 hover:text-slate-700 shadow-2xs'
                               }`}
                             title="No Frame"
                           >
@@ -1594,8 +1597,8 @@ function AdvancedQrMakerContent() {
                             type="button"
                             onClick={() => setFrameStyle('bottom-banner')}
                             className={`shrink-0 w-20 h-20 rounded-2xl border flex flex-col items-center justify-center p-1.5 transition-all ${frameStyle === 'bottom-banner'
-                                ? 'border-blue-500 bg-sky-50 text-slate-800 ring-2 ring-blue-300/60 shadow-xs'
-                                : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
+                              ? 'border-blue-500 bg-sky-50 text-slate-800 ring-2 ring-blue-300/60 shadow-xs'
+                              : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
                               }`}
                             title="Bottom Banner"
                           >
@@ -1613,8 +1616,8 @@ function AdvancedQrMakerContent() {
                             type="button"
                             onClick={() => setFrameStyle('black-banner')}
                             className={`shrink-0 w-20 h-20 rounded-2xl border flex flex-col items-center justify-center p-1.5 transition-all ${frameStyle === 'black-banner'
-                                ? 'border-blue-500 bg-sky-50 text-slate-800 ring-2 ring-blue-300/60 shadow-xs'
-                                : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
+                              ? 'border-blue-500 bg-sky-50 text-slate-800 ring-2 ring-blue-300/60 shadow-xs'
+                              : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
                               }`}
                             title="Solid Black Banner"
                           >
@@ -1631,8 +1634,8 @@ function AdvancedQrMakerContent() {
                             type="button"
                             onClick={() => setFrameStyle('hanging-tab')}
                             className={`shrink-0 w-20 h-20 rounded-2xl border flex flex-col items-center justify-center p-1.5 transition-all ${frameStyle === 'hanging-tab'
-                                ? 'border-blue-500 bg-sky-50 text-slate-800 ring-2 ring-blue-300/60 shadow-xs'
-                                : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
+                              ? 'border-blue-500 bg-sky-50 text-slate-800 ring-2 ring-blue-300/60 shadow-xs'
+                              : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
                               }`}
                             title="Hanging Tab"
                           >
@@ -1649,8 +1652,8 @@ function AdvancedQrMakerContent() {
                             type="button"
                             onClick={() => setFrameStyle('circle')}
                             className={`shrink-0 w-20 h-20 rounded-2xl border flex flex-col items-center justify-center p-1.5 transition-all ${frameStyle === 'circle'
-                                ? 'border-blue-500 bg-sky-50 text-slate-800 ring-2 ring-blue-300/60 shadow-xs'
-                                : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
+                              ? 'border-blue-500 bg-sky-50 text-slate-800 ring-2 ring-blue-300/60 shadow-xs'
+                              : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
                               }`}
                             title="Circle Frame"
                           >
@@ -1666,8 +1669,8 @@ function AdvancedQrMakerContent() {
                             type="button"
                             onClick={() => setFrameStyle('phone')}
                             className={`shrink-0 w-20 h-20 rounded-2xl border flex flex-col items-center justify-center p-1.5 transition-all ${frameStyle === 'phone'
-                                ? 'border-blue-500 bg-sky-50 text-slate-800 ring-2 ring-blue-300/60 shadow-xs'
-                                : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
+                              ? 'border-blue-500 bg-sky-50 text-slate-800 ring-2 ring-blue-300/60 shadow-xs'
+                              : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
                               }`}
                             title="Phone Mockup"
                           >
@@ -1686,8 +1689,8 @@ function AdvancedQrMakerContent() {
                             type="button"
                             onClick={() => setFrameStyle('clipboard')}
                             className={`shrink-0 w-20 h-20 rounded-2xl border flex flex-col items-center justify-center p-1.5 transition-all ${frameStyle === 'clipboard'
-                                ? 'border-blue-500 bg-sky-50 text-slate-800 ring-2 ring-blue-300/60 shadow-xs'
-                                : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
+                              ? 'border-blue-500 bg-sky-50 text-slate-800 ring-2 ring-blue-300/60 shadow-xs'
+                              : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
                               }`}
                             title="Clipboard Mockup"
                           >
@@ -1705,8 +1708,8 @@ function AdvancedQrMakerContent() {
                             type="button"
                             onClick={() => setFrameStyle('screen')}
                             className={`shrink-0 w-20 h-20 rounded-2xl border flex flex-col items-center justify-center p-1.5 transition-all ${frameStyle === 'screen'
-                                ? 'border-blue-500 bg-sky-50 text-slate-800 ring-2 ring-blue-300/60 shadow-xs'
-                                : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
+                              ? 'border-blue-500 bg-sky-50 text-slate-800 ring-2 ring-blue-300/60 shadow-xs'
+                              : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
                               }`}
                             title="Screen / Monitor"
                           >
@@ -1723,8 +1726,8 @@ function AdvancedQrMakerContent() {
                             type="button"
                             onClick={() => setFrameStyle('bag')}
                             className={`shrink-0 w-20 h-20 rounded-2xl border flex flex-col items-center justify-center p-1.5 transition-all ${frameStyle === 'bag'
-                                ? 'border-blue-500 bg-sky-50 text-slate-800 ring-2 ring-blue-300/60 shadow-xs'
-                                : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
+                              ? 'border-blue-500 bg-sky-50 text-slate-800 ring-2 ring-blue-300/60 shadow-xs'
+                              : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
                               }`}
                             title="Shopping Bag"
                           >
@@ -1815,8 +1818,8 @@ function AdvancedQrMakerContent() {
                                 type="button"
                                 onClick={() => setDotStyle(pattern.id)}
                                 className={`h-14 rounded-xl border flex items-center justify-center p-1.5 transition-all ${isSelected
-                                    ? 'border-blue-500 bg-sky-50 text-slate-900 ring-2 ring-blue-300/60 shadow-xs'
-                                    : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
+                                  ? 'border-blue-500 bg-sky-50 text-slate-900 ring-2 ring-blue-300/60 shadow-xs'
+                                  : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
                                   }`}
                                 title={pattern.label}
                               >
@@ -2102,8 +2105,8 @@ function AdvancedQrMakerContent() {
                                 type="button"
                                 onClick={() => setCornerSquareStyle(b.id)}
                                 className={`h-14 rounded-xl border flex items-center justify-center p-1.5 transition-all ${isSelected
-                                    ? 'border-blue-500 bg-sky-50 text-slate-900 ring-2 ring-blue-300/60 shadow-xs'
-                                    : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
+                                  ? 'border-blue-500 bg-sky-50 text-slate-900 ring-2 ring-blue-300/60 shadow-xs'
+                                  : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
                                   }`}
                                 title={b.label}
                               >
@@ -2205,8 +2208,8 @@ function AdvancedQrMakerContent() {
                                 type="button"
                                 onClick={() => setCornerDotStyle(c.id)}
                                 className={`h-14 rounded-xl border flex items-center justify-center p-1.5 transition-all ${isSelected
-                                    ? 'border-blue-500 bg-sky-50 text-slate-900 ring-2 ring-blue-300/60 shadow-xs'
-                                    : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
+                                  ? 'border-blue-500 bg-sky-50 text-slate-900 ring-2 ring-blue-300/60 shadow-xs'
+                                  : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
                                   }`}
                                 title={c.label}
                               >
@@ -2294,12 +2297,14 @@ function AdvancedQrMakerContent() {
                         </label>
                         <div
                           onClick={() => fileInputRef.current?.click()}
-                          className="flex items-center justify-between px-4 py-2.5 border border-slate-200 rounded-xl bg-white hover:border-slate-300 cursor-pointer transition-colors shadow-2xs group"
+                          className="flex items-center justify-between px-4 py-2 border border-slate-200 rounded-xl bg-white hover:border-slate-300 cursor-pointer transition-colors shadow-2xs group"
                         >
                           <span className="text-xs text-slate-400 group-hover:text-slate-600 truncate">
-                            {logoDataUrl ? 'فایل لوگو انتخاب شده است (کلیک برای تغییر)' : 'Choose file'}
+                            {logoDataUrl && selectedPresetLogoId === 'custom'
+                              ? (language === 'en' ? 'Logo file selected (click to replace)' : 'فایل لوگو انتخاب شد (کلیک برای تغییر)')
+                              : 'Choose file'}
                           </span>
-                          <span className="text-xs font-semibold text-slate-500 group-hover:text-cyan-600 transition-colors">
+                          <span className="text-xs font-medium text-slate-600 bg-slate-100 group-hover:bg-slate-200 px-3 py-1.5 rounded-lg border border-slate-200/80 transition-colors">
                             Browse
                           </span>
                           <input
@@ -2319,14 +2324,17 @@ function AdvancedQrMakerContent() {
                         </label>
 
                         {/* Row 1: 9 preset circular / branded logos */}
-                        <div className="flex items-center gap-2.5 overflow-x-auto pb-1">
+                        <div className="grid grid-cols-5 sm:grid-cols-9 gap-2 sm:gap-2.5">
                           {/* X Clear Button */}
                           <button
                             type="button"
-                            onClick={() => setLogoDataUrl(null)}
-                            className={`w-12 h-12 rounded-xl border shrink-0 flex items-center justify-center transition-all ${!logoDataUrl
-                                ? 'border-blue-500 bg-sky-50 text-slate-900 ring-2 ring-blue-300/60 shadow-xs'
-                                : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 shadow-2xs'
+                            onClick={() => {
+                              setLogoDataUrl(null);
+                              setSelectedPresetLogoId(null);
+                            }}
+                            className={`w-full h-12 rounded-xl border flex items-center justify-center transition-all ${!logoDataUrl
+                              ? 'border-blue-500 bg-sky-50 text-slate-900 ring-2 ring-blue-300/60 shadow-xs'
+                              : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 shadow-2xs'
                               }`}
                             title="Clear Logo"
                           >
@@ -2334,50 +2342,64 @@ function AdvancedQrMakerContent() {
                           </button>
 
                           {/* 8 preset logos */}
-                          {PRESET_LOGOS.map((item) => (
-                            <button
-                              key={item.id}
-                              type="button"
-                              onClick={() => {
-                                setLogoDataUrl(toSvgDataUrl(item.svg));
-                                setErrorCorrectionLevel('H');
-                                toast.success(`Logo ${item.label} selected.`);
-                              }}
-                              className="w-12 h-12 rounded-xl border border-slate-200 bg-white hover:border-slate-300 hover:scale-105 transition-all p-1.5 flex items-center justify-center shadow-2xs shrink-0"
-                              title={item.label}
-                            >
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img
-                                src={toSvgDataUrl(item.svg)}
-                                alt={item.label}
-                                className="w-full h-full object-contain"
-                              />
-                            </button>
-                          ))}
+                          {PRESET_LOGOS.map((item) => {
+                            const isSelected = selectedPresetLogoId === item.id;
+                            return (
+                              <button
+                                key={item.id}
+                                type="button"
+                                onClick={() => {
+                                  setLogoDataUrl(toSvgDataUrl(item.svg));
+                                  setSelectedPresetLogoId(item.id);
+                                  setErrorCorrectionLevel('H');
+                                  toast.success(`Logo ${item.label} selected.`);
+                                }}
+                                className={`w-full h-12 rounded-xl border transition-all p-1.5 flex items-center justify-center shadow-2xs ${isSelected
+                                  ? 'border-blue-500 bg-sky-50 text-slate-900 ring-2 ring-blue-300/60 shadow-xs'
+                                  : 'border-slate-200 bg-white hover:border-slate-300 hover:scale-105'
+                                  }`}
+                                title={item.label}
+                              >
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={toSvgDataUrl(item.svg)}
+                                  alt={item.label}
+                                  className="w-full h-full object-contain"
+                                />
+                              </button>
+                            );
+                          })}
                         </div>
 
                         {/* Row 2: 5 preset badges */}
-                        <div className="grid grid-cols-5 gap-2.5 pt-1">
-                          {PRESET_BADGES.map((badge) => (
-                            <button
-                              key={badge.id}
-                              type="button"
-                              onClick={() => {
-                                setLogoDataUrl(toSvgDataUrl(badge.svg));
-                                setErrorCorrectionLevel('H');
-                                toast.success(`Badge ${badge.label} selected.`);
-                              }}
-                              className="h-12 rounded-xl border border-slate-200 bg-white hover:border-slate-300 hover:scale-105 transition-all p-1.5 flex items-center justify-center shadow-2xs"
-                              title={badge.label}
-                            >
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img
-                                src={toSvgDataUrl(badge.svg)}
-                                alt={badge.label}
-                                className="h-full object-contain"
-                              />
-                            </button>
-                          ))}
+                        <div className="grid grid-cols-5 gap-2 sm:gap-2.5 pt-1">
+                          {PRESET_BADGES.map((badge) => {
+                            const isSelected = selectedPresetLogoId === badge.id;
+                            return (
+                              <button
+                                key={badge.id}
+                                type="button"
+                                onClick={() => {
+                                  setLogoDataUrl(toSvgDataUrl(badge.svg));
+                                  setSelectedPresetLogoId(badge.id);
+                                  setErrorCorrectionLevel('H');
+                                  toast.success(`Badge ${badge.label} selected.`);
+                                }}
+                                className={`h-12 rounded-xl border transition-all p-1.5 flex items-center justify-center shadow-2xs ${isSelected
+                                  ? 'border-blue-500 bg-sky-50 text-slate-900 ring-2 ring-blue-300/60 shadow-xs'
+                                  : 'border-slate-200 bg-white hover:border-slate-300 hover:scale-105'
+                                  }`}
+                                title={badge.label}
+                              >
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={toSvgDataUrl(badge.svg)}
+                                  alt={badge.label}
+                                  className="h-full object-contain"
+                                />
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
 
@@ -2447,8 +2469,8 @@ function AdvancedQrMakerContent() {
                             type="button"
                             onClick={() => setErrorCorrectionLevel(lvl.id)}
                             className={`py-1.5 rounded-lg text-xs font-medium border text-center transition-colors ${errorCorrectionLevel === lvl.id
-                                ? 'bg-sky-50 border-blue-500 text-slate-900 font-bold ring-1 ring-blue-300'
-                                : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-white'
+                              ? 'bg-sky-50 border-blue-500 text-slate-900 font-bold ring-1 ring-blue-300'
+                              : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-white'
                               }`}
                           >
                             {lvl.label}
@@ -2517,20 +2539,20 @@ function AdvancedQrMakerContent() {
                   {/* Single outer card containing qrContainerRef (prevents unmount / canvas detachment) */}
                   <div
                     className={`relative flex flex-col items-center justify-center transition-all ${frameStyle === 'none'
-                        ? 'hover:scale-105'
-                        : frameStyle === 'bottom-banner' || frameStyle === 'black-banner'
-                          ? 'rounded-2xl overflow-hidden shadow-2xl bg-white p-3 pb-0'
-                          : frameStyle === 'hanging-tab'
-                            ? 'rounded-2xl shadow-2xl bg-white p-3 pb-2'
-                            : frameStyle === 'screen'
-                              ? 'rounded-2xl shadow-2xl bg-white p-3 pb-0'
-                              : frameStyle === 'circle'
-                                ? 'rounded-full shadow-2xl bg-white p-7'
-                                : frameStyle === 'phone'
-                                  ? 'rounded-[32px] shadow-2xl bg-white p-3 pt-4 min-w-[260px]'
-                                  : frameStyle === 'clipboard'
-                                    ? 'rounded-2xl shadow-2xl bg-white p-4 pt-6'
-                                    : 'rounded-2xl shadow-2xl bg-white p-4 pt-7'
+                      ? 'hover:scale-105'
+                      : frameStyle === 'bottom-banner' || frameStyle === 'black-banner'
+                        ? 'rounded-2xl overflow-hidden shadow-2xl bg-white p-3 pb-0'
+                        : frameStyle === 'hanging-tab'
+                          ? 'rounded-2xl shadow-2xl bg-white p-3 pb-2'
+                          : frameStyle === 'screen'
+                            ? 'rounded-2xl shadow-2xl bg-white p-3 pb-0'
+                            : frameStyle === 'circle'
+                              ? 'rounded-full shadow-2xl bg-white p-7'
+                              : frameStyle === 'phone'
+                                ? 'rounded-[32px] shadow-2xl bg-white p-3 pt-4 min-w-[260px]'
+                                : frameStyle === 'clipboard'
+                                  ? 'rounded-2xl shadow-2xl bg-white p-4 pt-6'
+                                  : 'rounded-2xl shadow-2xl bg-white p-4 pt-7'
                       }`}
                     style={
                       frameStyle !== 'none'
@@ -2680,8 +2702,8 @@ function AdvancedQrMakerContent() {
                         type="button"
                         onClick={() => setDownloadSize(item.size)}
                         className={`py-1.5 px-2 rounded-xl text-xs font-mono font-medium border transition-colors ${downloadSize === item.size
-                            ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300'
-                            : 'bg-slate-950/40 border-slate-800 text-slate-400 hover:text-slate-200'
+                          ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300'
+                          : 'bg-slate-950/40 border-slate-800 text-slate-400 hover:text-slate-200'
                           }`}
                       >
                         {item.label}

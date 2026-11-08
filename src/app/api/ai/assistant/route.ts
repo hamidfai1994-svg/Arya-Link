@@ -54,6 +54,18 @@ async function generateWithRetry<T>(fn: () => Promise<T>, maxRetries = 2, delayM
 }
 
 export async function POST(req: NextRequest) {
+  console.log("Checking API Key in Backend:", !!process.env.GEMINI_API_KEY);
+
+  const rawApiKey = process.env.GEMINI_API_KEY || '';
+  const apiKey = rawApiKey.replace(/["'\r\n]/g, '').trim();
+
+  if (!process.env.GEMINI_API_KEY || !apiKey) {
+    return NextResponse.json(
+      { success: false, data: null, message: "API Key is missing in server environment" },
+      { status: 500 }
+    );
+  }
+
   try {
     const session = await getServerSession(authOptions);
     const authHeader = req.headers.get('authorization');
@@ -68,25 +80,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const rawApiKey = process.env.GEMINI_API_KEY || '';
-    const apiKey = rawApiKey.replace(/["'\r\n]/g, '').trim();
-
-    if (!apiKey) {
-      console.error('[Gemini Assistant Error] GEMINI_API_KEY is not configured.');
-      return NextResponse.json(
-        {
-          success: false,
-          data: null,
-          message: 'کلید وب‌سرویس هوش مصنوعی (GEMINI_API_KEY) در متغیرهای محیطی سیستم تنظیم نشده است.',
-        },
-        { status: 503 }
-      );
-    }
-
     const body = await req.json().catch(() => ({}));
     const { action, headline, currentText, displayName } = body;
 
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+    const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
       model: 'gemini-1.5-flash',
       generationConfig: {
@@ -99,15 +96,15 @@ export async function POST(req: NextRequest) {
 
     if (action === 'generate_bio') {
       prompt = `شما یک دستیار حرفه‌ای کپی‌رایتینگ برای کارت ویزیت هوشمند و صفحه لینک‌بیو (Arya Link) هستید.
-با توجه به اطلاعات زیر، یک متن بیوگرافی (Bio) بسیار شیک، حرفه‌ای، جذاب و موجز (حداکثر ۲ تا ۳ جمله کوتاه، حدود ۱۵۰ تا ۲۵۰ کاراکتر) به زبان فارسی روان و شایسته برای کارت ویزیت بنویسید.
+با توجه به اطلاعات زیر، یک متن بیوگرافی (Bio) بسیار شیک، حرفه‌ای، جذاب و موجز (حداکثر 2 تا 3 جمله کوتاه، حدود 150 تا 250 کاراکتر) به زبان فارسی روان و شایسته برای کارت ویزیت بنویسید.
 اطلاعات کاربر:
 نام: ${displayName || 'کاربر گرامی'}
 عنوان شغلی / هدلاین: ${headline || 'متخصص و کارآفرین'}
 
 قوانین حیاتی:
-۱. فقط و فقط متن نهایی بیوگرافی را بنویس. هیچ مقدمه، موخره، علامت نقل قول یا توضیح اضافی ننویس.
-۲. از ایموجی‌های متناسب و شیک (حداکثر ۲ یا ۳ ایموجی) استفاده کن.
-۳. تمام ارقام و اعداد در متن باید صرفاً انگلیسی (0123456789) باشند.`;
+1. فقط و فقط متن نهایی بیوگرافی را بنویس. هیچ مقدمه، موخره، علامت نقل قول یا توضیح اضافی ننویس.
+2. از ایموجی‌های متناسب و شیک (حداکثر 2 یا 3 ایموجی) استفاده کن.
+3. تمام ارقام و اعداد در متن باید صرفاً انگلیسی (0123456789) باشند.`;
     } else if (action === 'improve_text') {
       if (!currentText || currentText.trim().length === 0) {
         return NextResponse.json(
@@ -121,9 +118,9 @@ export async function POST(req: NextRequest) {
 "${currentText}"
 
 قوانین حیاتی:
-۱. فقط و فقط نسخه اصلاح‌شده نهایی متن را بازگردان. هیچ توضیح اضافه یا برچسبی ننویس.
-۲. لحن متن باید محترمانه، حرفه‌ای و جذاب باشد.
-۳. تمام اعداد در متن در صورت وجود باید صرفاً انگلیسی باشند (0123456789).`;
+1. فقط و فقط نسخه اصلاح‌شده نهایی متن را بازگردان. هیچ توضیح اضافه یا برچسبی ننویس.
+2. لحن متن باید محترمانه، حرفه‌ای و جذاب باشد.
+3. تمام اعداد در متن در صورت وجود باید صرفاً انگلیسی باشند (0123456789).`;
     } else {
       return NextResponse.json(
         { success: false, data: null, message: 'عملیات هوش مصنوعی مشخص نیست.' },

@@ -81,6 +81,18 @@ async function generateWithRetry<T>(fn: () => Promise<T>, maxRetries = 2, delayM
 }
 
 export async function POST(req: NextRequest) {
+  console.log("Checking API Key in Backend:", !!process.env.GEMINI_API_KEY);
+
+  const rawApiKey = process.env.GEMINI_API_KEY || '';
+  const apiKey = rawApiKey.replace(/["'\r\n]/g, '').trim();
+
+  if (!process.env.GEMINI_API_KEY || !apiKey) {
+    return NextResponse.json(
+      { success: false, data: null, message: "API Key is missing in server environment" },
+      { status: 500 }
+    );
+  }
+
   try {
     const session = await getServerSession(authOptions);
     const authHeader = req.headers.get('authorization');
@@ -93,21 +105,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { success: false, data: null, message: 'لطفاً ابتدا وارد حساب کاربری خود شوید.' },
         { status: 401 }
-      );
-    }
-
-    const rawApiKey = process.env.GEMINI_API_KEY || '';
-    const apiKey = rawApiKey.replace(/["'\r\n]/g, '').trim();
-
-    if (!apiKey) {
-      console.error('[Gemini OCR Error] GEMINI_API_KEY is not defined in environment variables.');
-      return NextResponse.json(
-        {
-          success: false,
-          data: null,
-          message: 'کلید وب‌سرویس هوش مصنوعی (GEMINI_API_KEY) در سرور تنظیم نشده است.',
-        },
-        { status: 503 }
       );
     }
 
@@ -162,7 +159,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Initialize Google Generative AI Client
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+    const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
       model: 'gemini-1.5-flash',
       generationConfig: {
@@ -171,19 +168,19 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    const prompt = `شما یک مدل هوش مصنوعی بینایی ماشین با دقت ۱۰۰٪ برای خواندن و استخراج اطلاعات از کارت‌های ویزیت هستید.
+    const prompt = `شما یک مدل هوش مصنوعی بینایی ماشین با دقت 100% برای خواندن و استخراج اطلاعات از کارت‌های ویزیت هستید.
 متن این کارت ویزیت را بخوان و فقط یک آبجکت JSON با کلیدهای name, phone, email, website, company, job_title, socials برگردان. زبان کارت ممکن است فارسی، دری، پشتو یا انگلیسی باشد.
 
 قوانین حیاتی:
-۱. تمام اعداد، شماره تلفن‌ها و ارقام باید صرفاً با ارقام انگلیسی (0123456789) باشند.
-۲. فیلد name: نام و نام خانوادگی فرد روی کارت.
-۳. فیلد phone: شماره تماس مستقیم یا موبایل با پیش‌شماره در صورت وجود (صرفاً ارقام انگلیسی).
-۴. فیلد email: آدرس ایمیل معتبر.
-۵. فیلد website: آدرس وب‌سایت اینترنتی (مثلاً https://example.com یا example.com).
-۶. فیلد company: نام شرکت، سازمان یا برند.
-۷. فیلد job_title: سمت یا عنوان شغلی فرد.
-۸. فیلد socials: آبجکتی از آیدی یا لینک شبکه‌های اجتماعی یافت‌شده روی کارت شامل whatsapp, telegram, instagram, linkedin, twitter, facebook.
-۹. خروجی باید صرفاً یک JSON استاندارد باشد:
+1. تمام اعداد، شماره تلفن‌ها و ارقام باید صرفاً با ارقام انگلیسی (0123456789) باشند.
+2. فیلد name: نام و نام خانوادگی فرد روی کارت.
+3. فیلد phone: شماره تماس مستقیم یا موبایل با پیش‌شماره در صورت وجود (صرفاً ارقام انگلیسی).
+4. فیلد email: آدرس ایمیل معتبر.
+5. فیلد website: آدرس وب‌سایت اینترنتی (مثلاً https://example.com یا example.com).
+6. فیلد company: نام شرکت، سازمان یا برند.
+7. فیلد job_title: سمت یا عنوان شغلی فرد.
+8. فیلد socials: آبجکتی از آیدی یا لینک شبکه‌های اجتماعی یافت‌شده روی کارت شامل whatsapp, telegram, instagram, linkedin, twitter, facebook.
+9. خروجی باید صرفاً یک JSON استاندارد باشد:
 {
   "name": "",
   "phone": "",
