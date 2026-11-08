@@ -115,7 +115,7 @@ export async function POST(req: NextRequest) {
 
     // Initialize Google Generative AI Client
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-3.8-flash' });
 
     const prompt = `شما یک مدل هوش مصنوعی بینایی ماشین با دقت ۱۰۰٪ برای خواندن و استخراج اطلاعات از کارت‌های ویزیت هستید.
 متن این کارت ویزیت را بخوان و فقط یک آبجکت JSON با کلیدهای name, phone, email, website, company, job_title, socials برگردان. زبان کارت ممکن است فارسی، دری، پشتو یا انگلیسی باشد.
