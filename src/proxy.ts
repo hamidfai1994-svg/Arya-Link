@@ -66,8 +66,8 @@ function detectGeoLanguage(req: NextRequest): 'da' | 'ps' | 'en' {
   return 'da';
 }
 
-export default withAuth(
-  function middleware(req) {
+const proxy = withAuth(
+  function proxy(req) {
     const pathname = req.nextUrl.pathname;
     const role = (req.nextauth.token?.role as string)?.toLowerCase();
 
@@ -113,6 +113,9 @@ export default withAuth(
     },
   }
 );
+
+export default proxy;
+export { proxy };
 
 export const config = {
   matcher: [
