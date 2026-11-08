@@ -976,7 +976,7 @@ export default function UserDashboardPage() {
                 name: contact.name,
                 phone: contact.phone,
                 email: contact.email,
-                message: contact.notes || 'مخاطب اسکن‌شده از کارت ویزیت (Gemini Vision)',
+                message: contact.notes || 'مخاطب اسکن‌شده از کارت ویزیت',
               }),
             });
             if (res.ok) {

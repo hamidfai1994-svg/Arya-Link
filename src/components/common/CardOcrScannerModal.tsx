@@ -130,6 +130,59 @@ export const CardOcrScannerModal: React.FC<CardOcrScannerModalProps> = ({
     }
   }, [isOpen, initialMode]);
 
+  // Helper: Client-side image compression to max 1024px and JPEG quality 0.7
+  const compressImage = (imageSource: File | Blob | string): Promise<string> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+
+      img.onload = () => {
+        try {
+          const MAX_DIMENSION = 1024;
+          let { width, height } = img;
+
+          if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+            if (width > height) {
+              height = Math.round((height * MAX_DIMENSION) / width);
+              width = MAX_DIMENSION;
+            } else {
+              width = Math.round((width * MAX_DIMENSION) / height);
+              height = MAX_DIMENSION;
+            }
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            resolve(typeof imageSource === 'string' ? imageSource : '');
+            return;
+          }
+
+          ctx.drawImage(img, 0, 0, width, height);
+          // Compress with quality 0.7 to reduce size below 200KB while preserving sharp OCR text
+          const compressed = canvas.toDataURL('image/jpeg', 0.7);
+          resolve(compressed);
+        } catch (err) {
+          console.warn('Canvas compression error:', err);
+          resolve(typeof imageSource === 'string' ? imageSource : '');
+        }
+      };
+
+      img.onerror = () => {
+        resolve(typeof imageSource === 'string' ? imageSource : '');
+      };
+
+      if (typeof imageSource === 'string') {
+        img.src = imageSource;
+      } else {
+        img.src = URL.createObjectURL(imageSource);
+      }
+    });
+  };
+
   // Start live webcam / mobile camera
   const startCamera = async () => {
     setImageSrc(null);
@@ -155,7 +208,7 @@ export const CardOcrScannerModal: React.FC<CardOcrScannerModalProps> = ({
   };
 
   // Capture still image from camera video stream
-  const capturePhoto = () => {
+  const capturePhoto = async () => {
     if (!videoRef.current) return;
     const canvas = document.createElement('canvas');
     canvas.width = videoRef.current.videoWidth || 1280;
@@ -163,25 +216,32 @@ export const CardOcrScannerModal: React.FC<CardOcrScannerModalProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
     stopCamera();
-    setImageSrc(dataUrl);
-    runGeminiVisionOcr(dataUrl, false);
+    const compressed = await compressImage(dataUrl);
+    setImageSrc(compressed);
+    runGeminiVisionOcr(compressed, false);
   };
 
-  // Handle uploaded file (Option 1: Upload from device)
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle uploaded file (Option 1: Upload from device with client-side compression)
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     stopCamera();
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const result = event.target?.result as string;
-      setImageSrc(result);
-      runGeminiVisionOcr(result, false);
-    };
-    reader.readAsDataURL(file);
+    try {
+      const compressed = await compressImage(file);
+      setImageSrc(compressed);
+      runGeminiVisionOcr(compressed, false);
+    } catch {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const result = event.target?.result as string;
+        setImageSrc(result);
+        runGeminiVisionOcr(result, false);
+      };
+      reader.readAsDataURL(file);
+    }
     // Reset file input so the same file can be picked again if desired
     e.target.value = '';
   };
@@ -211,17 +271,13 @@ export const CardOcrScannerModal: React.FC<CardOcrScannerModalProps> = ({
         const imageType = item.types.find((type) => type.startsWith('image/'));
         if (imageType) {
           const blob = await item.getType(imageType);
-          const reader = new FileReader();
-          reader.onload = (event) => {
-            const base64 = event.target?.result as string;
-            if (base64) {
-              setImageSrc(base64);
-              runGeminiVisionOcr(base64, false);
-            }
-          };
-          reader.readAsDataURL(blob);
-          toast.success('تصویر از کلیپ‌بورد با موفقیت دریافت شد!');
-          return;
+          const compressed = await compressImage(blob);
+          if (compressed) {
+            setImageSrc(compressed);
+            runGeminiVisionOcr(compressed, false);
+            toast.success('تصویر فشرده شده از کلیپ‌بورد برای اسکن ارسال شد!');
+            return;
+          }
         }
       }
 
@@ -233,7 +289,7 @@ export const CardOcrScannerModal: React.FC<CardOcrScannerModalProps> = ({
           runGeminiVisionOcr(text.trim(), true);
           return;
         }
-      } catch {}
+      } catch { }
 
       toast.info('هیچ تصویری در کلیپ‌بورد شما یافت نشد. عکسی را Copy کنید و مجدداً امتحان کنید.');
     } catch (err: any) {
@@ -245,17 +301,25 @@ export const CardOcrScannerModal: React.FC<CardOcrScannerModalProps> = ({
   // Call Gemini Vision OCR API Route (High-Precision Persian/Dari/Pashto/English)
   const runGeminiVisionOcr = async (imgPayload: string, isUrl = false) => {
     setIsScanning(true);
-    setScanProgress(30);
-    setStatusText('در حال ارسال تصویر به هوش مصنوعی Gemini Vision...');
+    setScanProgress(20);
+    setStatusText('در حال آماده‌سازی و بهینه‌سازی تصویر...');
 
     try {
+      let finalPayload = imgPayload;
+      if (!isUrl && (imgPayload.startsWith('data:image') || imgPayload.length > 50000)) {
+        finalPayload = await compressImage(imgPayload);
+      }
+
+      setScanProgress(45);
+      setStatusText('در حال ارسال تصویر فشرده به هوش مصنوعی...');
+
       const res = await fetch('/api/ai/ocr', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(isUrl ? { imageUrl: imgPayload } : { imageBase64: imgPayload }),
+        body: JSON.stringify(isUrl ? { imageUrl: finalPayload } : { imageBase64: finalPayload }),
       });
 
-      setScanProgress(75);
+      setScanProgress(80);
       setStatusText('در حال خواندن و استخراج متون فارسی، پشتو و انگلیسی...');
 
       const result = await res.json();
@@ -271,7 +335,7 @@ export const CardOcrScannerModal: React.FC<CardOcrScannerModalProps> = ({
         company ? `شرکت: ${company}` : '',
         job_title ? `سمت: ${job_title}` : '',
         website ? `وب‌سایت: ${website}` : '',
-        'اسکن شده با Gemini Vision در Arya Link',
+        'اسکن شده با هوش مصنوعی در Arya Link',
       ].filter(Boolean);
 
       const parsed: ScannedContactData = {
@@ -318,17 +382,14 @@ export const CardOcrScannerModal: React.FC<CardOcrScannerModalProps> = ({
           e.preventDefault();
           const file = items[i].getAsFile();
           if (file) {
-            const reader = new FileReader();
-            reader.onload = (event) => {
-              const base64 = event.target?.result as string;
-              if (base64) {
-                stopCamera();
-                setImageSrc(base64);
-                runGeminiVisionOcr(base64, false);
-                toast.success('تصویر الصاق شده بلافاصله برای اسکن ارسال شد!');
+            stopCamera();
+            compressImage(file).then((compressed) => {
+              if (compressed) {
+                setImageSrc(compressed);
+                runGeminiVisionOcr(compressed, false);
+                toast.success('تصویر الصاق شده فشرده و برای اسکن ارسال شد!');
               }
-            };
-            reader.readAsDataURL(file);
+            });
             break;
           }
         }
@@ -359,13 +420,11 @@ export const CardOcrScannerModal: React.FC<CardOcrScannerModalProps> = ({
               </div>
               <div>
                 <DialogTitle className="text-base font-bold text-white flex items-center gap-2">
-                  <span>اسکنر کارت ویزیت هوشمند (Gemini Vision)</span>
-                  <span className="text-[10px] bg-purple-500/20 text-purple-300 border border-purple-500/30 px-1.5 py-0.2 rounded-md font-sans">
-                    دقت ۱۰۰٪
-                  </span>
+                  <span>اسکنر هوشمند ویزیت کارت</span>
+
                 </DialogTitle>
                 <DialogDescription className="text-xs text-slate-400">
-                  تشخیص هوشمند متون فارسی، پشتو و انگلیسی با قابلیت جایگذاری فوری (Ctrl+V)
+                  لطفا از ویزیت کارت تان در محیط مناسب و نور کافی، عکس واضح بگیرید!
                 </DialogDescription>
               </div>
             </div>
@@ -611,7 +670,7 @@ export const CardOcrScannerModal: React.FC<CardOcrScannerModalProps> = ({
               <div className="flex items-center justify-between border-b border-white/10 pb-2">
                 <span className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
                   <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                  <span>اطلاعات استخراج شده توسط Gemini Vision:</span>
+                  <span>اطلاعات استخراج شده</span>
                 </span>
                 <span className="text-[10px] text-slate-400 font-sans">قابل ویرایش</span>
               </div>

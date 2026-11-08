@@ -5,6 +5,54 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 
 export const dynamic = 'force-dynamic';
 
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function isServerError(error: any): boolean {
+  const status = error?.status || error?.statusCode;
+  const msg = (error?.message || '').toLowerCase();
+
+  if (typeof status === 'number' && status >= 500 && status < 600) {
+    return true;
+  }
+
+  return (
+    msg.includes('503') ||
+    msg.includes('500') ||
+    msg.includes('502') ||
+    msg.includes('504') ||
+    msg.includes('service unavailable') ||
+    msg.includes('overloaded') ||
+    msg.includes('high demand') ||
+    msg.includes('unavailable') ||
+    msg.includes('resource_exhausted') ||
+    msg.includes('resource exhausted') ||
+    msg.includes('rate limit')
+  );
+}
+
+async function generateWithRetry<T>(fn: () => Promise<T>, maxRetries = 2, delayMs = 500): Promise<T> {
+  let lastError: any = null;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (err: any) {
+      lastError = err;
+      console.warn(`[Gemini Assistant] Attempt ${attempt}/${maxRetries} failed with error:`, err?.message || err);
+
+      if (attempt < maxRetries && isServerError(err)) {
+        console.info(`[Gemini Assistant] Retrying in ${delayMs}ms (attempt ${attempt + 1}/${maxRetries})...`);
+        await sleep(delayMs);
+        continue;
+      }
+
+      throw err;
+    }
+  }
+
+  throw lastError;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -39,7 +87,13 @@ export async function POST(req: NextRequest) {
     const { action, headline, currentText, displayName } = body;
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-    const model = genAI.getGenerativeModel({ model: 'gemini-3.8-flash' });
+    const model = genAI.getGenerativeModel({
+      model: 'gemini-1.5-flash',
+      generationConfig: {
+        maxOutputTokens: 250,
+        temperature: 0.7,
+      },
+    });
 
     let prompt = '';
 
@@ -77,7 +131,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const result = await model.generateContent(prompt);
+    const result = await generateWithRetry(() => model.generateContent(prompt));
     const response = await result.response;
     const generatedText = response.text()?.trim() || '';
 
@@ -105,7 +159,9 @@ export async function POST(req: NextRequest) {
     const status = error?.status;
 
     let userFriendlyMessage = 'خطا در ارتباط با سرویس هوش مصنوعی گوگل جمنای.';
-    if (status === 401 || errMsg.includes('401') || errMsg.includes('API_KEY_INVALID') || errMsg.includes('API key not valid')) {
+    if (isServerError(error)) {
+      userFriendlyMessage = 'سرورهای هوش مصنوعی در حال حاضر شلوغ هستند. لطفاً چند لحظه دیگر دوباره امتحان کنید.';
+    } else if (status === 401 || errMsg.includes('401') || errMsg.includes('API_KEY_INVALID') || errMsg.includes('API key not valid')) {
       userFriendlyMessage = 'کلید API هوش مصنوعی در سرور نامعتبر است. لطفاً کلید GEMINI_API_KEY را در تنظیمات بررسی کنید.';
     } else if (status === 429 || errMsg.includes('429') || errMsg.includes('RESOURCE_EXHAUSTED')) {
       userFriendlyMessage = 'محدودیت تعداد درخواست هوش مصنوعی تکمیل شده است. لطفاً دقایقی دیگر مجدداً تلاش کنید.';
@@ -122,7 +178,7 @@ export async function POST(req: NextRequest) {
         message: userFriendlyMessage,
         error: errMsg || 'AI Generation Failed',
       },
-      { status: typeof status === 'number' && status >= 400 && status < 600 ? status : 500 }
+      { status: typeof status === 'number' && status >= 400 && status < 600 ? status : (isServerError(error) ? 503 : 500) }
     );
   }
 }

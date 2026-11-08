@@ -641,10 +641,16 @@ export const ProfileEditor: React.FC = () => {
     setIsAiGenerating(true);
     toast.info('هوش مصنوعی در حال نگارش متن...', { duration: 2500 });
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+    }, 15000);
+
     try {
       const res = await fetch('/api/ai/assistant', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({
           action,
           displayName: profile.displayName,
@@ -652,6 +658,8 @@ export const ProfileEditor: React.FC = () => {
           currentText: currentText,
         }),
       });
+
+      clearTimeout(timeoutId);
 
       const data = await res.json();
       const outputText = typeof data.data === 'string' ? data.data : (data.data?.text || data.text || '');
@@ -668,9 +676,14 @@ export const ProfileEditor: React.FC = () => {
         setIsAiGenerating(false);
         toast.error(data.message || 'خطا در ارتباط با هوش مصنوعی.');
       }
-    } catch (err) {
+    } catch (err: any) {
+      clearTimeout(timeoutId);
       setIsAiGenerating(false);
-      toast.error('خطای ارتباط با سرور.');
+      if (err?.name === 'AbortError') {
+        toast.error('پاسخ هوش مصنوعی بیش از حد (۱۵ ثانیه) طول کشید. لطفاً دوباره تلاش کنید.');
+      } else {
+        toast.error('خطای ارتباط با سرور.');
+      }
     }
   };
 

@@ -14,7 +14,8 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
     pathname.startsWith('/blog') ||
     pathname.startsWith('/services') ||
     pathname.startsWith('/about') ||
-    pathname.startsWith('/order');
+    pathname.startsWith('/order') ||
+    pathname.startsWith('/tools');
 
   if (!isMarketingPage) {
     return <>{children}</>;
