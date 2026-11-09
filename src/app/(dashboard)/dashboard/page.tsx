@@ -351,9 +351,6 @@ export default function UserDashboardPage() {
               >
                 <Scan className="w-4 h-4 text-cyan-400 animate-pulse" />
                 <span>اسکن کارت ویزیت</span>
-                <span className="text-[10px] font-sans font-bold bg-slate-950/80 text-cyan-300 px-1.5 py-0.5 rounded border border-cyan-500/30">
-                  Ctrl+V
-                </span>
               </button>
               <button
                 type="button"

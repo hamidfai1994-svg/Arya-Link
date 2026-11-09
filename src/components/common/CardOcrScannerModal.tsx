@@ -701,7 +701,7 @@ export const CardOcrScannerModal: React.FC<CardOcrScannerModalProps> = ({
                   <div className="p-3 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between text-xs text-slate-300">
                     <span className="flex items-center gap-1.5">
                       <Zap className="w-4 h-4 text-amber-400" />
-                      <span>جایگذاری فوق‌سریع:</span>
+                      <span>برای جایگذاری سریع:</span>
                     </span>
                     <span className="font-sans font-bold bg-slate-900 border border-white/15 px-2 py-0.5 rounded text-[11px] text-cyan-400">
                       Ctrl + V
@@ -1037,7 +1037,7 @@ export const CardOcrScannerModal: React.FC<CardOcrScannerModalProps> = ({
                   className="flex-1 py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 font-bold text-xs shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
                 >
                   <CheckCircle2 className="w-4 h-4" />
-                  <span>تبدیل و افزودن به ماژول‌های کارت</span>
+                  <span>افزودن به ماژول‌های کارت</span>
                 </button>
                 <button
                   type="button"

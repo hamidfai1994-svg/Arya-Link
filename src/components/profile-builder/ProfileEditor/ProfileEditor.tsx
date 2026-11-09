@@ -458,8 +458,8 @@ export const ProfileEditor: React.FC = () => {
           const formattedTel = cleanPhone.startsWith('+')
             ? cleanPhone
             : cleanPhone.startsWith('00')
-            ? `+${cleanPhone.slice(2)}`
-            : `+${cleanPhone}`;
+              ? `+${cleanPhone.slice(2)}`
+              : `+${cleanPhone}`;
           newModules.push(
             createModule(
               'phone_call',
@@ -510,14 +510,14 @@ export const ProfileEditor: React.FC = () => {
         } else if (type === 'social') {
           const p = platform || (
             val.includes('instagram.com') ? 'instagram' :
-            val.includes('t.me') || val.includes('telegram') ? 'telegram' :
-            val.includes('wa.me') || val.includes('whatsapp') ? 'whatsapp' :
-            val.includes('linkedin.com') ? 'linkedin' :
-            val.includes('twitter.com') || val.includes('x.com') ? 'twitter' :
-            val.includes('facebook.com') ? 'facebook' :
-            val.includes('youtube.com') ? 'youtube' :
-            val.includes('aparat.com') ? 'aparat' :
-            val.includes('github.com') ? 'github' : ''
+              val.includes('t.me') || val.includes('telegram') ? 'telegram' :
+                val.includes('wa.me') || val.includes('whatsapp') ? 'whatsapp' :
+                  val.includes('linkedin.com') ? 'linkedin' :
+                    val.includes('twitter.com') || val.includes('x.com') ? 'twitter' :
+                      val.includes('facebook.com') ? 'facebook' :
+                        val.includes('youtube.com') ? 'youtube' :
+                          val.includes('aparat.com') ? 'aparat' :
+                            val.includes('github.com') ? 'github' : ''
           );
 
           if (p === 'instagram') {
@@ -594,8 +594,8 @@ export const ProfileEditor: React.FC = () => {
         const formattedTel = cleanPhone.startsWith('+')
           ? cleanPhone
           : cleanPhone.startsWith('00')
-          ? `+${cleanPhone.slice(2)}`
-          : `+${cleanPhone}`;
+            ? `+${cleanPhone.slice(2)}`
+            : `+${cleanPhone}`;
         newModules.push(
           createModule(
             'phone_call',
@@ -1498,9 +1498,6 @@ export const ProfileEditor: React.FC = () => {
                       >
                         <Scan className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
                         <span>اسکن کارت ویزیت</span>
-                        <span className="text-[10px] font-sans font-bold bg-slate-900/80 text-cyan-300 px-1 py-0.2 rounded border border-cyan-500/30">
-                          Ctrl+V
-                        </span>
                       </button>
                       <button
                         type="button"
@@ -1905,11 +1902,10 @@ export const ProfileEditor: React.FC = () => {
                                 type="button"
                                 title={pattern.name}
                                 onClick={() => updateTheme({ bgPatternId: pattern.id })}
-                                className={`w-full aspect-square rounded-xl border-2 transition-all overflow-hidden cursor-pointer ${
-                                  isSelected
-                                    ? 'border-cyan-500 ring-4 ring-cyan-500/20 shadow-md shadow-cyan-500/30 scale-105'
-                                    : 'border-border/60 hover:border-cyan-500/50 hover:scale-105'
-                                }`}
+                                className={`w-full aspect-square rounded-xl border-2 transition-all overflow-hidden cursor-pointer ${isSelected
+                                  ? 'border-cyan-500 ring-4 ring-cyan-500/20 shadow-md shadow-cyan-500/30 scale-105'
+                                  : 'border-border/60 hover:border-cyan-500/50 hover:scale-105'
+                                  }`}
                                 style={{
                                   backgroundImage: pattern.cssFunc(isLight ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.15)', 16),
                                   backgroundSize: '16px 16px',
