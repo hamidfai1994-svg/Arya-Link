@@ -213,115 +213,95 @@ export function PublicNavbar() {
                 </span>
               </div>
 
-                {/* Item 1: کیوآر کد با Flyout Submenu */}
-                <div className="relative group/qr">
-                  <div className="p-2 rounded-xl hover:bg-cyan-500/10 transition-colors flex items-center justify-between cursor-pointer border border-transparent hover:border-cyan-500/20 text-foreground group-hover/qr:text-cyan-500">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="w-7 h-7 rounded-lg bg-cyan-500/10 text-cyan-500 flex items-center justify-center shrink-0">
-                        <QrCode className="w-3.5 h-3.5" />
-                      </div>
-                      <div className="min-w-0">
-                        <span className="text-xs font-bold block truncate">کیوآر کد (QR Code)</span>
-                        <span className="text-[10px] text-muted-foreground block truncate">ساخت و اسکن کدهای هوشمند</span>
-                      </div>
+              {/* Item 1: کیوآر کد ساز پیشرفته */}
+              <div className="rounded-xl border border-transparent hover:border-cyan-500/20 hover:bg-cyan-500/5 transition-all p-1.5 space-y-1">
+                <Link
+                  href="/tools/qr-maker"
+                  onClick={() => setToolsDropdownOpen(false)}
+                  className="flex items-center justify-between p-1 rounded-lg text-foreground hover:text-cyan-500 transition-colors group/item"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-7 h-7 rounded-lg bg-cyan-500/10 text-cyan-500 flex items-center justify-center shrink-0 group-hover/item:scale-105 transition-transform">
+                      <QrCode className="w-3.5 h-3.5" />
                     </div>
-                    {dir === 'rtl' ? (
-                      <ChevronLeft className="w-4 h-4 text-muted-foreground group-hover/qr:text-cyan-500 shrink-0" />
-                    ) : (
-                      <ChevronRight className="w-4 h-4 text-muted-foreground group-hover/qr:text-cyan-500 shrink-0" />
-                    )}
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-bold block truncate">کیوآر کد ساز پیشرفته</span>
+                        <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-500 font-mono font-bold">
+                          AI
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-muted-foreground block truncate">
+                        طراحی کدهای هوشمند با لوگو، رنگ و اشکال
+                      </span>
+                    </div>
                   </div>
-
-                  {/* Flyout Submenu for QR Code */}
-                  <div
-                    className="absolute top-0 rtl:right-full rtl:mr-1.5 ltr:left-full ltr:ml-1.5 w-52 p-2 rounded-2xl bg-white dark:bg-zinc-950 backdrop-blur-xl border border-border shadow-2xl z-50 opacity-0 pointer-events-none group-hover/qr:opacity-100 group-hover/qr:pointer-events-auto transition-all duration-150 space-y-1 before:absolute rtl:before:-right-3 ltr:before:-left-3 before:top-0 before:w-4 before:h-full"
+                  <ArrowLeft className="w-3.5 h-3.5 text-muted-foreground group-hover/item:text-cyan-500 rtl:block ltr:hidden shrink-0 group-hover/item:-translate-x-0.5 transition-transform" />
+                  <ArrowRight className="w-3.5 h-3.5 text-muted-foreground group-hover/item:text-cyan-500 ltr:block rtl:hidden shrink-0 group-hover/item:translate-x-0.5 transition-transform" />
+                </Link>
+                <div className="flex items-center gap-1.5 pr-9 pl-1">
+                  <Link
+                    href="/tools/qr-maker"
+                    onClick={() => setToolsDropdownOpen(false)}
+                    className="text-[10px] px-2 py-0.5 rounded-md bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-500/20 transition-colors"
                   >
-                    <div className="px-2 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider border-b border-border/40 pb-1">
-                      گزینه‌های کیوآر کد
-                    </div>
-                    <Link
-                      href="/tools/qr-maker"
-                      onClick={() => setToolsDropdownOpen(false)}
-                      className="p-2 rounded-xl hover:bg-cyan-500/10 transition-colors flex items-center gap-2 text-foreground hover:text-cyan-500"
-                    >
-                      <div className="w-6 h-6 rounded-md bg-cyan-500/10 text-cyan-500 flex items-center justify-center shrink-0">
-                        <QrCode className="w-3.5 h-3.5" />
-                      </div>
-                      <div>
-                        <span className="text-xs font-bold block">ساختن کیوآر کد</span>
-                        <span className="text-[10px] text-muted-foreground block">طراحی با لوگو و اشکال</span>
-                      </div>
-                    </Link>
-                    <Link
-                      href="/tools/qr-maker?tab=scan"
-                      onClick={() => setToolsDropdownOpen(false)}
-                      className="p-2 rounded-xl hover:bg-cyan-500/10 transition-colors flex items-center gap-2 text-foreground hover:text-cyan-500"
-                    >
-                      <div className="w-6 h-6 rounded-md bg-cyan-500/10 text-cyan-500 flex items-center justify-center shrink-0">
-                        <Camera className="w-3.5 h-3.5" />
-                      </div>
-                      <div>
-                        <span className="text-xs font-bold block">اسکن کیوآر کد</span>
-                        <span className="text-[10px] text-muted-foreground block">اسکن با دوربین / فایل</span>
-                      </div>
-                    </Link>
-                  </div>
+                    ساخت QR
+                  </Link>
+                  <Link
+                    href="/tools/qr-maker?tab=scan"
+                    onClick={() => setToolsDropdownOpen(false)}
+                    className="text-[10px] px-2 py-0.5 rounded-md bg-muted text-muted-foreground hover:bg-cyan-500/10 hover:text-cyan-500 transition-colors flex items-center gap-1"
+                  >
+                    <Camera className="w-2.5 h-2.5" />
+                    <span>اسکنر دوربین</span>
+                  </Link>
                 </div>
+              </div>
 
-                {/* Item 2: بارکد ساز جامع با Flyout Submenu */}
-                <div className="relative group/barcode">
-                  <div className="p-2 rounded-xl hover:bg-emerald-500/10 transition-colors flex items-center justify-between cursor-pointer border border-transparent hover:border-emerald-500/20 text-foreground group-hover/barcode:text-emerald-500">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
-                        <Barcode className="w-3.5 h-3.5" />
-                      </div>
-                      <div className="min-w-0">
+              {/* Item 2: بارکد ساز جامع */}
+              <div className="rounded-xl border border-transparent hover:border-emerald-500/20 hover:bg-emerald-500/5 transition-all p-1.5 space-y-1">
+                <Link
+                  href="/tools/barcode-maker"
+                  onClick={() => setToolsDropdownOpen(false)}
+                  className="flex items-center justify-between p-1 rounded-lg text-foreground hover:text-emerald-500 transition-colors group/item"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0 group-hover/item:scale-105 transition-transform">
+                      <Barcode className="w-3.5 h-3.5" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
                         <span className="text-xs font-bold block truncate">بارکد ساز جامع (Barcode)</span>
-                        <span className="text-[10px] text-muted-foreground block truncate">116 مدل استاندارد بین‌المللی</span>
+                        <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-500 font-mono font-bold">
+                          116
+                        </span>
                       </div>
+                      <span className="text-[10px] text-muted-foreground block truncate">
+                        تولید و اسکن انواع استانداردهای صنعتی و تجاری
+                      </span>
                     </div>
-                    {dir === 'rtl' ? (
-                      <ChevronLeft className="w-4 h-4 text-muted-foreground group-hover/barcode:text-emerald-500 shrink-0" />
-                    ) : (
-                      <ChevronRight className="w-4 h-4 text-muted-foreground group-hover/barcode:text-emerald-500 shrink-0" />
-                    )}
                   </div>
-
-                  {/* Flyout Submenu for Barcode */}
-                  <div
-                    className="absolute top-0 rtl:right-full rtl:mr-1.5 ltr:left-full ltr:ml-1.5 w-52 p-2 rounded-2xl bg-white dark:bg-zinc-950 backdrop-blur-xl border border-border shadow-2xl z-50 opacity-0 pointer-events-none group-hover/barcode:opacity-100 group-hover/barcode:pointer-events-auto transition-all duration-150 space-y-1 before:absolute rtl:before:-right-3 ltr:before:-left-3 before:top-0 before:w-4 before:h-full"
+                  <ArrowLeft className="w-3.5 h-3.5 text-muted-foreground group-hover/item:text-emerald-500 rtl:block ltr:hidden shrink-0 group-hover/item:-translate-x-0.5 transition-transform" />
+                  <ArrowRight className="w-3.5 h-3.5 text-muted-foreground group-hover/item:text-emerald-500 ltr:block rtl:hidden shrink-0 group-hover/item:translate-x-0.5 transition-transform" />
+                </Link>
+                <div className="flex items-center gap-1.5 pr-9 pl-1">
+                  <Link
+                    href="/tools/barcode-maker"
+                    onClick={() => setToolsDropdownOpen(false)}
+                    className="text-[10px] px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition-colors"
                   >
-                    <div className="px-2 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider border-b border-border/40 pb-1">
-                      گزینه‌های بارکد ساز
-                    </div>
-                    <Link
-                      href="/tools/barcode-maker"
-                      onClick={() => setToolsDropdownOpen(false)}
-                      className="p-2 rounded-xl hover:bg-emerald-500/10 transition-colors flex items-center gap-2 text-foreground hover:text-emerald-500"
-                    >
-                      <div className="w-6 h-6 rounded-md bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
-                        <Barcode className="w-3.5 h-3.5" />
-                      </div>
-                      <div>
-                        <span className="text-xs font-bold block">ساختن بارکد</span>
-                        <span className="text-[10px] text-muted-foreground block">116 مدل در 13 دسته</span>
-                      </div>
-                    </Link>
-                    <Link
-                      href="/tools/barcode-maker?tab=scan"
-                      onClick={() => setToolsDropdownOpen(false)}
-                      className="p-2 rounded-xl hover:bg-emerald-500/10 transition-colors flex items-center gap-2 text-foreground hover:text-emerald-500"
-                    >
-                      <div className="w-6 h-6 rounded-md bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
-                        <Scan className="w-3.5 h-3.5" />
-                      </div>
-                      <div>
-                        <span className="text-xs font-bold block">اسکن بارکد</span>
-                        <span className="text-[10px] text-muted-foreground block">اسکن خطوط و کدهای 2D</span>
-                      </div>
-                    </Link>
-                  </div>
+                    تولید بارکد
+                  </Link>
+                  <Link
+                    href="/tools/barcode-maker?tab=scan"
+                    onClick={() => setToolsDropdownOpen(false)}
+                    className="text-[10px] px-2 py-0.5 rounded-md bg-muted text-muted-foreground hover:bg-emerald-500/10 hover:text-emerald-500 transition-colors flex items-center gap-1"
+                  >
+                    <Scan className="w-2.5 h-2.5" />
+                    <span>اسکنر بارکد</span>
+                  </Link>
                 </div>
+              </div>
 
                 {/* Item 3: امضای ایمیل سازمانی */}
                 <Link
@@ -457,7 +437,7 @@ export function PublicNavbar() {
             <div className="py-2.5 border-y border-border/50 my-1 space-y-2">
               <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 mb-1">
                 <Wrench className="w-3.5 h-3.5 text-cyan-500" />
-                <span>{t('nav.tools', 'امکانات جانبی (جعبه ابزار دیجیتال)')}</span>
+                <span>{t('nav.tools', 'خدمات جانبی (جعبه ابزار دیجیتال)')}</span>
               </span>
               <div className="grid grid-cols-2 gap-1.5">
                 <Link
