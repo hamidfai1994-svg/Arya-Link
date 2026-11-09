@@ -5,13 +5,13 @@ import { authOptions } from '@/lib/auth';
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
-  const rawApiKey = process.env.OPENROUTER_API_KEY || '';
+  const rawApiKey = process.env.GROQ_API_KEY || '';
   const apiKey = rawApiKey.replace(/["'\r\n]/g, '').trim();
 
-  if (!process.env.OPENROUTER_API_KEY || !apiKey) {
-    console.error('[OpenRouter Assistant] OPENROUTER_API_KEY is not defined in environment variables.');
+  if (!process.env.GROQ_API_KEY || !apiKey) {
+    console.error('[Groq Assistant] GROQ_API_KEY is not defined in environment variables.');
     return NextResponse.json(
-      { success: false, data: null, message: 'OPENROUTER_API_KEY is missing in server environment' },
+      { success: false, data: null, message: 'GROQ_API_KEY is missing in server environment' },
       { status: 500 }
     );
   }
@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     const isDev = process.env.NODE_ENV !== 'production';
 
     if (!session?.user && !authHeader && !initDataHeader && !isDev) {
-      console.warn('[OpenRouter Assistant] Unauthenticated request rejected.');
+      console.warn('[Groq Assistant] Unauthenticated request rejected.');
       return NextResponse.json(
         { success: false, data: null, message: 'لطفاً ابتدا وارد حساب کاربری خود شوید.' },
         { status: 401 }
@@ -69,17 +69,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
-        'HTTP-Referer': 'https://aryalink.com',
-        'X-Title': 'Arya Link',
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-3.8-flash',
-        models: ['google/gemini-3.8-flash', 'google/gemini-2.0-flash-001'],
+        model: 'llama3-8b-8192',
         messages: [
           {
             role: 'user',
@@ -93,7 +90,7 @@ export async function POST(req: NextRequest) {
 
     if (!response.ok) {
       const errBody = await response.json().catch(() => ({}));
-      const errMsg = errBody?.error?.message || `OpenRouter API error: HTTP ${response.status} ${response.statusText}`;
+      const errMsg = errBody?.error?.message || `Groq API error: HTTP ${response.status} ${response.statusText}`;
       throw new Error(errMsg);
     }
 
@@ -114,7 +111,7 @@ export async function POST(req: NextRequest) {
       message: 'متن با موفقیت توسط هوش مصنوعی تولید شد.',
     });
   } catch (error: any) {
-    console.error('RAW_OPENROUTER_ERROR:', error);
+    console.error('RAW_GROQ_ERROR:', error);
 
     return NextResponse.json(
       { success: false, message: error instanceof Error ? error.message : String(error) },

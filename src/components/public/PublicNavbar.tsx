@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
@@ -23,12 +23,6 @@ import {
   Camera,
   Scan,
 } from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
@@ -42,6 +36,7 @@ export function PublicNavbar() {
   const { data: session } = useSession();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [toolsDropdownOpen, setToolsDropdownOpen] = useState(false);
+  const toolsDropdownRef = useRef<HTMLDivElement>(null);
   const toolsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleToolsMouseEnter = () => {
@@ -60,6 +55,28 @@ export function PublicNavbar() {
       setToolsDropdownOpen(false);
     }, 220);
   };
+
+  // Close tools dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (toolsDropdownRef.current && !toolsDropdownRef.current.contains(event.target as Node)) {
+        setToolsDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      if (toolsTimeoutRef.current) {
+        clearTimeout(toolsTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Close menus when route changes
+  useEffect(() => {
+    setToolsDropdownOpen(false);
+    setMobileMenuOpen(false);
+  }, [pathname]);
 
   const navLinks = [
     { title: t('nav.home', 'صفحه اصلی'), href: '/' },
@@ -144,51 +161,57 @@ export function PublicNavbar() {
             );
           })}
 
-          {/* Tools Dropdown Menu with Hover & Flyout Submenu */}
+          {/* Tools Dropdown Menu with Hover & Click */}
           <div
+            ref={toolsDropdownRef}
             onMouseEnter={handleToolsMouseEnter}
             onMouseLeave={handleToolsMouseLeave}
-            className="relative"
+            className="relative group/navtools"
           >
-            <DropdownMenu open={toolsDropdownOpen} onOpenChange={setToolsDropdownOpen}>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  onClick={() => setToolsDropdownOpen((prev) => !prev)}
-                  className={cn(
-                    'transition-colors py-1 relative hover:text-cyan-500 flex items-center gap-1.5 outline-none cursor-pointer',
-                    isToolsActive ? 'text-cyan-500 font-bold' : ''
-                  )}
-                >
-                  <Wrench className="w-3.5 h-3.5 text-cyan-500" />
-                  <span>{t('nav.tools', 'امکانات جانبی')}</span>
-                  <ChevronDown
-                    className={cn(
-                      'w-3.5 h-3.5 opacity-70 transition-transform duration-200',
-                      toolsDropdownOpen ? 'rotate-180' : ''
-                    )}
-                  />
-                  {isToolsActive && (
-                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-cyan-500 rounded-full" />
-                  )}
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align={dir === 'rtl' ? 'start' : 'end'}
-                onMouseEnter={handleToolsMouseEnter}
-                onMouseLeave={handleToolsMouseLeave}
-                className="w-72 p-2 rounded-2xl bg-white/95 dark:bg-zinc-950/95 backdrop-blur-xl border border-border shadow-2xl z-50 animate-in fade-in-50 zoom-in-95 space-y-1.5"
-              >
-                {/* Header */}
-                <div className="px-2 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center justify-between border-b border-border/50 pb-1.5">
-                  <span className="flex items-center gap-1.5">
-                    <Sparkles className="w-3 h-3 text-cyan-500" />
-                    <span>جعبه ابزار دیجیتال</span>
-                  </span>
-                  <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-500 font-mono font-bold">
-                    PRO
-                  </span>
-                </div>
+            <button
+              type="button"
+              onClick={() => setToolsDropdownOpen((prev) => !prev)}
+              aria-expanded={toolsDropdownOpen}
+              className={cn(
+                'transition-colors py-1 relative hover:text-cyan-500 flex items-center gap-1.5 outline-none cursor-pointer text-xs font-semibold select-none',
+                isToolsActive ? 'text-cyan-500 font-bold' : ''
+              )}
+            >
+              <Wrench className="w-3.5 h-3.5 text-cyan-500" />
+              <span>{t('nav.tools', 'خدمات جانبی')}</span>
+              <ChevronDown
+                className={cn(
+                  'w-3.5 h-3.5 opacity-70 transition-transform duration-200',
+                  toolsDropdownOpen ? 'rotate-180' : 'group-hover/navtools:rotate-180'
+                )}
+              />
+              {isToolsActive && (
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-cyan-500 rounded-full" />
+              )}
+            </button>
+
+            {/* Dropdown Content Panel */}
+            <div
+              onMouseEnter={handleToolsMouseEnter}
+              onMouseLeave={handleToolsMouseLeave}
+              className={cn(
+                'absolute top-full mt-2 w-80 p-2.5 rounded-2xl bg-white/95 dark:bg-zinc-950/95 backdrop-blur-2xl border border-border/80 shadow-2xl z-50 transition-all duration-200 space-y-2',
+                dir === 'rtl' ? 'right-0' : 'left-0',
+                toolsDropdownOpen
+                  ? 'opacity-100 visible pointer-events-auto scale-100 translate-y-0'
+                  : 'opacity-0 invisible pointer-events-none scale-95 -translate-y-1 lg:group-hover/navtools:opacity-100 lg:group-hover/navtools:visible lg:group-hover/navtools:pointer-events-auto lg:group-hover/navtools:scale-100 lg:group-hover/navtools:translate-y-0'
+              )}
+            >
+              {/* Header */}
+              <div className="px-2 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center justify-between border-b border-border/50 pb-1.5">
+                <span className="flex items-center gap-1.5">
+                  <Sparkles className="w-3 h-3 text-cyan-500" />
+                  <span>جعبه ابزار دیجیتال و خدمات کاربردی</span>
+                </span>
+                <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-500 font-mono font-bold">
+                  FREE
+                </span>
+              </div>
 
                 {/* Item 1: کیوآر کد با Flyout Submenu */}
                 <div className="relative group/qr">
@@ -329,17 +352,17 @@ export function PublicNavbar() {
                   <Link
                     href="/tools/history"
                     onClick={() => setToolsDropdownOpen(false)}
-                    className="flex items-center justify-between p-2 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-500 transition-colors group"
+                    className="flex items-center justify-between p-2 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-500 transition-colors group/hist font-bold text-xs"
                   >
                     <div className="flex items-center gap-2">
-                      <History className="w-4 h-4 text-cyan-500 group-hover:scale-110 transition-transform" />
-                      <span className="text-xs font-bold">تاریخچه ابزارهای من</span>
+                      <History className="w-4 h-4 text-cyan-500 group-hover/hist:rotate-12 transition-transform" />
+                      <span>تاریخچه ابزارهای من (کدهای ذخیره‌شده)</span>
                     </div>
-                    <ArrowRight className="w-3.5 h-3.5 text-cyan-500 group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5 transition-transform" />
+                    <ArrowLeft className="w-3.5 h-3.5 rtl:block ltr:hidden group-hover/hist:-translate-x-0.5 transition-transform" />
+                    <ArrowRight className="w-3.5 h-3.5 ltr:block rtl:hidden group-hover/hist:translate-x-0.5 transition-transform" />
                   </Link>
                 </div>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            </div>
           </div>
 
           {navLinks.slice(3).map((link) => {

@@ -7,7 +7,7 @@ export const translations: Record<SupportedLanguage, Record<string, string>> = {
     'nav.features': 'امکانات',
     'nav.services': 'خدمات',
     'nav.pricing': 'تعرفه‌ها',
-    'nav.tools': 'امکانات جانبی',
+    'nav.tools': 'خدمات جانبی',
     'nav.tools_desc': 'جعبه ابزار دیجیتال و کاربردی رایگان',
     'nav.barcode': 'بارکد ساز جامع',
     'nav.qr': 'کیوآر کد ساز پیشرفته',
