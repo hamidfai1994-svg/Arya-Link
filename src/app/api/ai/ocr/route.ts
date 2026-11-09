@@ -125,7 +125,9 @@ export async function POST(req: NextRequest) {
     "twitter": "",
     "facebook": ""
   }
-}`;
+}
+
+You are a strict data extraction machine. YOU MUST ONLY RETURN RAW VALID JSON. DO NOT output any conversational text, greetings, markdown formatting, or explanations. Just output the pure JSON object starting with { and ending with }.`;
 
     const messages = [
       {
@@ -162,7 +164,8 @@ export async function POST(req: NextRequest) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'llama-3.2-11b-vision-preview',
+          model: 'qwen/qwen3.8-27b',
+          response_format: { type: 'json_object' },
           messages,
         }),
       });
