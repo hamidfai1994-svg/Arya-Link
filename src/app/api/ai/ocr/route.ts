@@ -32,13 +32,13 @@ function cleanJsonOutput(rawText: string): string {
 }
 
 export async function POST(req: NextRequest) {
-  const rawApiKey = process.env.OPENROUTER_API_KEY || '';
+  const rawApiKey = process.env.GROQ_API_KEY || '';
   const apiKey = rawApiKey.replace(/["'\r\n]/g, '').trim();
 
-  if (!process.env.OPENROUTER_API_KEY || !apiKey) {
-    console.error('[OpenRouter OCR] OPENROUTER_API_KEY is not defined in environment variables.');
+  if (!process.env.GROQ_API_KEY || !apiKey) {
+    console.error('[Groq OCR] GROQ_API_KEY is not defined in environment variables.');
     return NextResponse.json(
-      { success: false, data: null, message: 'OPENROUTER_API_KEY is missing in server environment' },
+      { success: false, data: null, message: 'GROQ_API_KEY is missing in server environment' },
       { status: 500 }
     );
   }
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
 
     // Allow authenticated web users, Telegram mini-app requests, or local development
     if (!session?.user && !authHeader && !initDataHeader && !isDev) {
-      console.warn('[OpenRouter OCR] Unauthenticated request rejected.');
+      console.warn('[Groq OCR] Unauthenticated request rejected.');
       return NextResponse.json(
         { success: false, data: null, message: 'لطفاً ابتدا وارد حساب کاربری خود شوید.' },
         { status: 401 }
@@ -138,19 +138,14 @@ export async function POST(req: NextRequest) {
   }
 }`;
 
-    const formattedImageDataUrl = `data:${mimeType || 'image/jpeg'};base64,${base64Data}`;
-
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
-        'HTTP-Referer': 'https://aryalink.com',
-        'X-Title': 'Arya Link',
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-1.5-flash',
-        models: ['google/gemini-1.5-flash', 'google/gemini-2.0-flash-001'],
+        model: 'llama-3.2-90b-vision-preview',
         messages: [
           {
             role: 'user',
@@ -162,32 +157,29 @@ export async function POST(req: NextRequest) {
               {
                 type: 'image_url',
                 image_url: {
-                  url: formattedImageDataUrl,
+                  url: `data:image/jpeg;base64,${base64Data}`,
                 },
               },
             ],
           },
         ],
-        temperature: 0.1,
-        max_tokens: 1000,
       }),
     });
 
     if (!response.ok) {
-      const errBody = await response.json().catch(() => ({}));
-      const errMsg = errBody?.error?.message || `OpenRouter API error: HTTP ${response.status} ${response.statusText}`;
-      throw new Error(errMsg);
+      const errText = await response.text();
+      throw new Error(errText);
     }
 
     const data = await response.json();
-    const rawText = data?.choices?.[0]?.message?.content?.trim() || '{}';
+    const rawText = data?.choices?.[0]?.message?.content || '{}';
     const cleanedText = cleanJsonOutput(rawText);
 
     let parsedResult: any = {};
     try {
       parsedResult = JSON.parse(cleanedText);
     } catch {
-      console.warn('[OpenRouter OCR] JSON parse fallback via regex:', rawText);
+      console.warn('[Groq OCR] JSON parse fallback via regex:', rawText);
       const nameMatch = rawText.match(/"name"\s*:\s*"([^"]*)"/);
       const phoneMatch = rawText.match(/"phone"\s*:\s*"([^"]*)"/);
       const emailMatch = rawText.match(/"email"\s*:\s*"([^"]*)"/);
@@ -227,7 +219,7 @@ export async function POST(req: NextRequest) {
       message: 'کارت ویزیت با موفقیت توسط هوش مصنوعی تحلیل شد.',
     });
   } catch (error: any) {
-    console.error('RAW_OPENROUTER_ERROR:', error);
+    console.error('RAW_GROQ_ERROR:', error);
 
     return NextResponse.json(
       { success: false, message: error instanceof Error ? error.message : String(error) },
