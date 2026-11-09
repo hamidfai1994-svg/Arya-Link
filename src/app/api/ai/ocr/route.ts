@@ -13,6 +13,9 @@ function normalizeToEnglishDigits(str: string): string {
 
 function cleanJsonOutput(rawText: string): string {
   if (!rawText) return '{}';
+  if (typeof rawText !== 'string') {
+    return JSON.stringify(rawText);
+  }
 
   // 1. Extract markdown code block content if present
   const codeBlockMatch = rawText.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
@@ -222,9 +225,10 @@ You are a strict data extraction machine. YOU MUST ONLY RETURN RAW VALID JSON. D
           throw new Error(`Cloudflare API error (${cfResponse.status}): ${cfErrText}`);
         }
 
-        const cfData = await cfResponse.json();
-        const cfContent = cfData?.result?.response || cfData?.response || cfData?.choices?.[0]?.message?.content;
-        const fallbackRawText = typeof cfContent === 'string' ? cfContent : JSON.stringify(cfContent || cfData || {});
+        const data = await cfResponse.json();
+        const fallbackRawText = typeof data?.result?.response === 'string'
+          ? data.result.response
+          : JSON.stringify(data?.result?.response || data);
         rawText = fallbackRawText;
       } catch (cfError: any) {
         console.error('RAW_FALLBACK_FAIL:', {
