@@ -175,6 +175,7 @@ export async function POST(req: NextRequest) {
       const data = await response.json();
       rawText = data?.choices?.[0]?.message?.content || '{}';
     } catch (groqError: any) {
+      console.error('Groq Layer Error:', groqError);
       console.warn('[OCR Fallback] Groq primary service failed, falling back to Cloudflare AI:', groqError?.message || groqError);
 
       // ========================================================
@@ -197,7 +198,16 @@ export async function POST(req: NextRequest) {
               {
                 role: 'user',
                 content: [
-                  { type: 'text', text: 'agree' },
+                  {
+                    type: 'text',
+                    text: prompt,
+                  },
+                  {
+                    type: 'image_url',
+                    image_url: {
+                      url: `data:image/jpeg;base64,${base64Data}`,
+                    },
+                  },
                 ],
               },
             ],
