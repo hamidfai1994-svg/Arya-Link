@@ -223,7 +223,9 @@ You are a strict data extraction machine. YOU MUST ONLY RETURN RAW VALID JSON. D
         }
 
         const cfData = await cfResponse.json();
-        rawText = cfData?.result?.response || cfData?.response || cfData?.choices?.[0]?.message?.content || '{}';
+        const cfContent = cfData?.result?.response || cfData?.response || cfData?.choices?.[0]?.message?.content;
+        const fallbackRawText = typeof cfContent === 'string' ? cfContent : JSON.stringify(cfContent || cfData || {});
+        rawText = fallbackRawText;
       } catch (cfError: any) {
         console.error('RAW_FALLBACK_FAIL:', {
           groq: groqError?.message || String(groqError),
