@@ -32,17 +32,6 @@ function cleanJsonOutput(rawText: string): string {
 }
 
 export async function POST(req: NextRequest) {
-  const rawApiKey = process.env.GROQ_API_KEY || '';
-  const apiKey = rawApiKey.replace(/["'\r\n]/g, '').trim();
-
-  if (!process.env.GROQ_API_KEY || !apiKey) {
-    console.error('[Groq OCR] GROQ_API_KEY is not defined in environment variables.');
-    return NextResponse.json(
-      { success: false, data: null, message: 'GROQ_API_KEY is missing in server environment' },
-      { status: 500 }
-    );
-  }
-
   try {
     const session = await getServerSession(authOptions);
     const authHeader = req.headers.get('authorization');
@@ -51,7 +40,7 @@ export async function POST(req: NextRequest) {
 
     // Allow authenticated web users, Telegram mini-app requests, or local development
     if (!session?.user && !authHeader && !initDataHeader && !isDev) {
-      console.warn('[Groq OCR] Unauthenticated request rejected.');
+      console.warn('[AI OCR] Unauthenticated request rejected.');
       return NextResponse.json(
         { success: false, data: null, message: 'لطفاً ابتدا وارد حساب کاربری خود شوید.' },
         { status: 401 }
@@ -138,48 +127,102 @@ export async function POST(req: NextRequest) {
   }
 }`;
 
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'llama-3.2-90b-vision-preview',
-        messages: [
+    const messages = [
+      {
+        role: 'user',
+        content: [
           {
-            role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: prompt,
-              },
-              {
-                type: 'image_url',
-                image_url: {
-                  url: `data:image/jpeg;base64,${base64Data}`,
-                },
-              },
-            ],
+            type: 'text',
+            text: prompt,
+          },
+          {
+            type: 'image_url',
+            image_url: {
+              url: `data:image/jpeg;base64,${base64Data}`,
+            },
           },
         ],
-      }),
-    });
+      },
+    ];
 
-    if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(errText);
+    let rawText = '';
+
+    // ========================================================
+    // LAYER 1: Groq API (Primary Service)
+    // ========================================================
+    try {
+      if (!process.env.GROQ_API_KEY) {
+        throw new Error('GROQ_API_KEY is not configured in server environment');
+      }
+
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + process.env.GROQ_API_KEY,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'llama-3.2-90b-vision-preview',
+          messages,
+        }),
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`Groq API error (${response.status}): ${errText}`);
+      }
+
+      const data = await response.json();
+      rawText = data?.choices?.[0]?.message?.content || '{}';
+    } catch (groqError: any) {
+      console.warn('[OCR Fallback] Groq primary service failed, falling back to Cloudflare AI:', groqError?.message || groqError);
+
+      // ========================================================
+      // LAYER 2: Cloudflare API (Fallback Service)
+      // ========================================================
+      try {
+        if (!process.env.CF_ACCOUNT_ID || !process.env.CF_API_TOKEN) {
+          throw new Error('Cloudflare credentials (CF_ACCOUNT_ID or CF_API_TOKEN) are missing in environment variables.');
+        }
+
+        const cfUrl = `https://api.cloudflare.com/client/v4/accounts/${process.env.CF_ACCOUNT_ID}/ai/run/@cf/meta/llama-3.2-11b-vision-instruct`;
+        const cfResponse = await fetch(cfUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + process.env.CF_API_TOKEN,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            messages,
+          }),
+        });
+
+        if (!cfResponse.ok) {
+          const cfErrText = await cfResponse.text();
+          throw new Error(`Cloudflare API error (${cfResponse.status}): ${cfErrText}`);
+        }
+
+        const cfData = await cfResponse.json();
+        rawText = cfData?.result?.response || cfData?.response || cfData?.choices?.[0]?.message?.content || '{}';
+      } catch (cfError: any) {
+        console.error('RAW_FALLBACK_FAIL:', {
+          groq: groqError?.message || String(groqError),
+          cloudflare: cfError?.message || String(cfError),
+        });
+
+        return NextResponse.json(
+          { success: false, message: cfError instanceof Error ? cfError.message : String(cfError) },
+          { status: 500 }
+        );
+      }
     }
-
-    const data = await response.json();
-    const rawText = data?.choices?.[0]?.message?.content || '{}';
     const cleanedText = cleanJsonOutput(rawText);
 
     let parsedResult: any = {};
     try {
       parsedResult = JSON.parse(cleanedText);
     } catch {
-      console.warn('[Groq OCR] JSON parse fallback via regex:', rawText);
+      console.warn('[OCR JSON Fallback] JSON parse fallback via regex:', rawText);
       const nameMatch = rawText.match(/"name"\s*:\s*"([^"]*)"/);
       const phoneMatch = rawText.match(/"phone"\s*:\s*"([^"]*)"/);
       const emailMatch = rawText.match(/"email"\s*:\s*"([^"]*)"/);
@@ -219,7 +262,7 @@ export async function POST(req: NextRequest) {
       message: 'کارت ویزیت با موفقیت توسط هوش مصنوعی تحلیل شد.',
     });
   } catch (error: any) {
-    console.error('RAW_GROQ_ERROR:', error);
+    console.error('UNEXPECTED_OCR_ERROR:', error);
 
     return NextResponse.json(
       { success: false, message: error instanceof Error ? error.message : String(error) },
