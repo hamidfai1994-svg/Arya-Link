@@ -100,34 +100,35 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const prompt = `شما یک مدل هوش مصنوعی بینایی ماشین با دقت 100% برای خواندن و استخراج اطلاعات از کارت‌های ویزیت هستید.
-متن این کارت ویزیت را بخوان و فقط یک آبجکت JSON با کلیدهای name, phone, email, website, company, job_title, socials برگردان. زبان کارت ممکن است فارسی، دری، پشتو یا انگلیسی باشد.
+    const prompt = `شما یک مدل هوش مصنوعی بینایی ماشین با دقت 100% برای استخراج اطلاعات از کارت‌های ویزیت هستید.
+تمام اطلاعات موجود روی این کارت ویزیت (شامل نام، سمت، شرکت، شماره‌های تماس، ایمیل، وب‌سایت، آدرس فیزیکی، شبکه‌های اجتماعی، فکس، شعار و...) را با دقت بخوان و یک ساختار JSON کاملاً پویا و ماژولار تولید کن. زبان کارت ممکن است فارسی، دری، پشتو یا انگلیسی باشد.
 
 قوانین حیاتی:
-1. تمام اعداد، شماره تلفن‌ها و ارقام باید صرفاً با ارقام انگلیسی (0123456789) باشند.
-2. فیلد name: نام و نام خانوادگی فرد روی کارت.
-3. فیلد phone: شماره تماس مستقیم یا موبایل با پیش‌شماره در صورت وجود (صرفاً ارقام انگلیسی).
-4. فیلد email: آدرس ایمیل معتبر.
-5. فیلد website: آدرس وب‌سایت اینترنتی (مثلاً https://example.com یا example.com).
-6. فیلد company: نام شرکت، سازمان یا برند.
-7. فیلد job_title: سمت یا عنوان شغلی فرد.
-8. فیلد socials: آبجکتی از آیدی یا لینک شبکه‌های اجتماعی یافت‌شده روی کارت شامل whatsapp, telegram, instagram, linkedin, twitter, facebook.
-9. خروجی باید صرفاً یک JSON استاندارد باشد:
+1. تمام اعداد، ارقام و شماره تلفن‌ها باید صرفاً با ارقام انگلیسی (0123456789) نوشته شوند.
+2. بخش basic_info: شامل نام و نام خانوادگی فرد (name)، سمت یا عنوان شغلی (job_title) و نام شرکت/سازمان/برند (company).
+3. بخش modules: آرایه‌ای پویا از تمام اطلاعات و راه‌های ارتباطی یافت‌شده روی کارت ویزیت است:
+   - اگر شماره تلفن، موبایل یا خط ثابت بود: { "type": "phone", "value": "+93..." }
+   - اگر ایمیل بود: { "type": "email", "value": "..." }
+   - اگر وب‌سایت بود: { "type": "website", "value": "https://..." }
+   - اگر آدرس پستی، فیزیکی یا موقعیت مکانی بود: { "type": "address", "value": "..." }
+   - اگر شبکه اجتماعی یا پیام‌رسان بود (whatsapp, telegram, instagram, linkedin, twitter, facebook و...): { "type": "social", "platform": "whatsapp", "value": "..." }
+   - اگر فکس بود: { "type": "fax", "value": "..." }
+   - اگر هر فیلد دیگری (مانند شعار شرکت، معرفی، شماره ثبت و...) بود: { "type": "text", "label": "عنوان", "value": "..." }
+4. قانون عدم ارسال فیلد خالی: شما مجازید هر فیلد جدیدی که پیدا کردید را با type مناسب به آرایه modules اضافه کنید. اما اگر فیلدی (مانند وب‌سایت یا آدرس) روی کارت وجود نداشت، اصلاً آن را در آرایه modules قرار ندهید.
+5. ساختار خروجی باید دقیقاً این قالب JSON معتبر باشد:
 {
-  "name": "",
-  "phone": "",
-  "email": "",
-  "website": "",
-  "company": "",
-  "job_title": "",
-  "socials": {
-    "whatsapp": "",
-    "telegram": "",
-    "instagram": "",
-    "linkedin": "",
-    "twitter": "",
-    "facebook": ""
-  }
+  "basic_info": {
+    "name": "",
+    "job_title": "",
+    "company": ""
+  },
+  "modules": [
+    { "type": "phone", "value": "" },
+    { "type": "email", "value": "" },
+    { "type": "website", "value": "" },
+    { "type": "address", "value": "" },
+    { "type": "social", "platform": "telegram", "value": "" }
+  ]
 }
 
 You are a strict data extraction machine. YOU MUST ONLY RETURN RAW VALID JSON. DO NOT output any conversational text, greetings, markdown formatting, or explanations. Just output the pure JSON object starting with { and ending with }.`;
@@ -255,34 +256,85 @@ You are a strict data extraction machine. YOU MUST ONLY RETURN RAW VALID JSON. D
       const websiteMatch = rawText.match(/"website"\s*:\s*"([^"]*)"/);
       const companyMatch = rawText.match(/"company"\s*:\s*"([^"]*)"/);
       const jobTitleMatch = rawText.match(/"job_title"\s*:\s*"([^"]*)"/);
+      const addressMatch = rawText.match(/"address"\s*:\s*"([^"]*)"/);
       parsedResult = {
-        name: nameMatch ? nameMatch[1] : '',
-        phone: phoneMatch ? phoneMatch[1] : '',
-        email: emailMatch ? emailMatch[1] : '',
-        website: websiteMatch ? websiteMatch[1] : '',
-        company: companyMatch ? companyMatch[1] : '',
-        job_title: jobTitleMatch ? jobTitleMatch[1] : '',
-        socials: {},
+        basic_info: {
+          name: nameMatch ? nameMatch[1] : '',
+          job_title: jobTitleMatch ? jobTitleMatch[1] : '',
+          company: companyMatch ? companyMatch[1] : '',
+        },
+        modules: [
+          ...(phoneMatch ? [{ type: 'phone', value: phoneMatch[1] }] : []),
+          ...(emailMatch ? [{ type: 'email', value: emailMatch[1] }] : []),
+          ...(websiteMatch ? [{ type: 'website', value: websiteMatch[1] }] : []),
+          ...(addressMatch ? [{ type: 'address', value: addressMatch[1] }] : []),
+        ],
       };
     }
 
-    const name = (parsedResult.name || '').trim();
-    const phone = normalizeToEnglishDigits((parsedResult.phone || '').trim().replace(/[\s-]/g, ''));
-    const email = (parsedResult.email || '').trim().toLowerCase();
-    const website = (parsedResult.website || '').trim();
-    const company = (parsedResult.company || '').trim();
-    const job_title = (parsedResult.job_title || '').trim();
-    const socials = parsedResult.socials || {};
+    const rawBasic = parsedResult.basic_info || {};
+    const name = (rawBasic.name || parsedResult.name || '').trim();
+    const job_title = (rawBasic.job_title || parsedResult.job_title || '').trim();
+    const company = (rawBasic.company || parsedResult.company || '').trim();
+
+    let rawModules: any[] = Array.isArray(parsedResult.modules) ? parsedResult.modules : [];
+    if (rawModules.length === 0) {
+      if (parsedResult.phone) rawModules.push({ type: 'phone', value: parsedResult.phone });
+      if (parsedResult.email) rawModules.push({ type: 'email', value: parsedResult.email });
+      if (parsedResult.website) rawModules.push({ type: 'website', value: parsedResult.website });
+      if (parsedResult.address) rawModules.push({ type: 'address', value: parsedResult.address });
+      if (parsedResult.socials && typeof parsedResult.socials === 'object') {
+        Object.entries(parsedResult.socials).forEach(([platform, val]) => {
+          if (val && typeof val === 'string') {
+            rawModules.push({ type: 'social', platform, value: val });
+          }
+        });
+      }
+    }
+
+    const modules = rawModules
+      .filter((m) => m && typeof m === 'object' && m.value && String(m.value).trim().length > 0)
+      .map((m) => {
+        const type = String(m.type || 'text').toLowerCase().trim();
+        let value = String(m.value).trim();
+        if (type === 'phone' || type === 'telephone' || type === 'fax' || type === 'mobile') {
+          value = normalizeToEnglishDigits(value.replace(/[\s-]/g, ''));
+        }
+        return {
+          type,
+          value,
+          ...(m.platform ? { platform: String(m.platform).toLowerCase().trim() } : {}),
+          ...(m.label ? { label: String(m.label).trim() } : {}),
+        };
+      });
+
+    const primaryPhone = modules.find((m) => m.type === 'phone' || m.type === 'telephone')?.value || '';
+    const primaryEmail = modules.find((m) => m.type === 'email')?.value || '';
+    const primaryWebsite = modules.find((m) => m.type === 'website')?.value || '';
+    const primaryAddress = modules.find((m) => m.type === 'address' || m.type === 'location')?.value || '';
+
+    const socials: Record<string, string> = {};
+    modules.filter((m) => m.type === 'social' && m.platform).forEach((m) => {
+      socials[m.platform!] = m.value;
+    });
 
     return NextResponse.json({
       success: true,
       data: {
+        basic_info: {
+          name,
+          job_title,
+          company,
+        },
+        modules,
+        // Legacy keys for backward compatibility
         name,
-        phone,
-        email,
-        website,
+        phone: primaryPhone,
+        email: primaryEmail,
+        website: primaryWebsite,
         company,
         job_title,
+        address: primaryAddress,
         socials,
       },
       message: 'کارت ویزیت با موفقیت توسط هوش مصنوعی تحلیل شد.',

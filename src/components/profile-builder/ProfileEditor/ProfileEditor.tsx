@@ -441,142 +441,308 @@ export const ProfileEditor: React.FC = () => {
       },
     });
 
-    // 1. Phone number -> Direct Phone Call
-    if (scanned.phone && scanned.phone.trim()) {
-      const cleanPhone = scanned.phone.trim().replace(/\s+/g, '');
-      const formattedTel = cleanPhone.startsWith('+')
-        ? cleanPhone
-        : cleanPhone.startsWith('00')
-        ? `+${cleanPhone.slice(2)}`
-        : `+${cleanPhone}`;
-      newModules.push(
-        createModule(
-          'phone_call',
-          scanned.name ? `تماس با ${scanned.name}` : 'تماس تلفنی مستقیم',
-          `tel:${formattedTel}`,
-          { phoneNumber: cleanPhone }
-        )
-      );
+    const contactName = (scanned.basic_info?.name || scanned.name || '').trim();
+    const companyName = (scanned.basic_info?.company || scanned.company || '').trim();
+    const jobTitle = (scanned.basic_info?.job_title || scanned.job_title || '').trim();
+
+    // 1. Process Dynamic Modules if available
+    if (scanned.modules && scanned.modules.length > 0) {
+      scanned.modules.forEach((mod) => {
+        if (!mod.value || !mod.value.trim()) return;
+        const val = mod.value.trim();
+        const type = (mod.type || '').toLowerCase();
+        const platform = (mod.platform || '').toLowerCase();
+
+        if (type === 'phone' || type === 'telephone' || type === 'mobile') {
+          const cleanPhone = val.replace(/\s+/g, '');
+          const formattedTel = cleanPhone.startsWith('+')
+            ? cleanPhone
+            : cleanPhone.startsWith('00')
+            ? `+${cleanPhone.slice(2)}`
+            : `+${cleanPhone}`;
+          newModules.push(
+            createModule(
+              'phone_call',
+              contactName ? `تماس با ${contactName}` : 'تماس تلفنی مستقیم',
+              `tel:${formattedTel}`,
+              { phoneNumber: cleanPhone }
+            )
+          );
+        } else if (type === 'fax') {
+          const cleanFax = val.replace(/\s+/g, '');
+          newModules.push(
+            createModule(
+              'phone_call',
+              companyName ? `شماره فکس ${companyName}` : 'شماره فکس',
+              `tel:${cleanFax}`,
+              { phoneNumber: cleanFax }
+            )
+          );
+        } else if (type === 'email') {
+          newModules.push(
+            createModule(
+              'email_direct',
+              contactName ? `ارسال ایمیل به ${contactName}` : 'ارسال ایمیل کاری',
+              `mailto:${val}`,
+              { emailAddress: val, emailSubject: 'پیام از طریق کارت هوشمند آریا لینک' }
+            )
+          );
+        } else if (type === 'website' || type === 'url' || type === 'link') {
+          const webUrl = val.startsWith('http://') || val.startsWith('https://') ? val : `https://${val}`;
+          newModules.push(
+            createModule(
+              'standard_link',
+              companyName ? `وب‌سایت رسمی ${companyName}` : 'وب‌سایت رسمی',
+              webUrl,
+              {}
+            )
+          );
+        } else if (type === 'address' || type === 'location') {
+          const mapQuery = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(val)}`;
+          newModules.push(
+            createModule(
+              'location_hours',
+              'نشانی و آدرس دفتر',
+              mapQuery,
+              { address: val, mapLink: mapQuery }
+            )
+          );
+        } else if (type === 'social') {
+          const p = platform || (
+            val.includes('instagram.com') ? 'instagram' :
+            val.includes('t.me') || val.includes('telegram') ? 'telegram' :
+            val.includes('wa.me') || val.includes('whatsapp') ? 'whatsapp' :
+            val.includes('linkedin.com') ? 'linkedin' :
+            val.includes('twitter.com') || val.includes('x.com') ? 'twitter' :
+            val.includes('facebook.com') ? 'facebook' :
+            val.includes('youtube.com') ? 'youtube' :
+            val.includes('aparat.com') ? 'aparat' :
+            val.includes('github.com') ? 'github' : ''
+          );
+
+          if (p === 'instagram') {
+            const igHandle = val.replace(/^@/, '').replace(/^https?:\/\/(www\.)?instagram\.com\//, '').replace(/\/$/, '');
+            newModules.push(
+              createModule('instagram_profile', 'صفحه اینستاگرام', `https://instagram.com/${igHandle}`, { username: igHandle })
+            );
+          } else if (p === 'telegram') {
+            const tgHandle = val.replace(/^@/, '').replace(/^https?:\/\/(www\.)?t\.me\//, '').replace(/\/$/, '');
+            newModules.push(
+              createModule('telegram_channel', 'کانال یا ارتباط در تلگرام', `https://t.me/${tgHandle}`, { username: tgHandle })
+            );
+          } else if (p === 'whatsapp') {
+            const rawWa = val.replace(/[^0-9]/g, '');
+            newModules.push(
+              createModule('whatsapp_direct', 'ارتباط در واتساپ', `https://wa.me/${rawWa}`, {
+                phoneNumber: `+${rawWa}`,
+                prefilledMessage: 'سلام، از طریق کارت هوشمند شما پیام می‌دهم.',
+              })
+            );
+          } else if (p === 'linkedin') {
+            const li = val.replace(/^@/, '');
+            const liUrl = li.startsWith('http') ? li : `https://linkedin.com/in/${li}`;
+            newModules.push(
+              createModule('linkedin_profile', 'پروفایل لینکدین', liUrl, { username: li })
+            );
+          } else if (p === 'twitter' || p === 'x') {
+            const tw = val.replace(/^@/, '').replace(/^https?:\/\/(www\.)?(twitter|x)\.com\//, '').replace(/\/$/, '');
+            newModules.push(
+              createModule('twitter_x', 'صفحه توییتر / ایکس', `https://x.com/${tw}`, { username: tw })
+            );
+          } else if (p === 'facebook') {
+            const fb = val.startsWith('http') ? val : `https://facebook.com/${val}`;
+            newModules.push(
+              createModule('facebook', 'صفحه فیسبوک', fb, { username: val })
+            );
+          } else if (p === 'youtube') {
+            const yt = val.replace(/^@/, '').replace(/^https?:\/\/(www\.)?youtube\.com\/@?/, '').replace(/\/$/, '');
+            newModules.push(
+              createModule('youtube_channel', 'کانال یوتیوب', `https://youtube.com/@${yt}`, { username: yt })
+            );
+          } else if (p === 'aparat') {
+            const ap = val.replace(/^@/, '').replace(/^https?:\/\/(www\.)?aparat\.com\//, '').replace(/\/$/, '');
+            newModules.push(
+              createModule('aparat_channel', 'کانال آپارات', `https://aparat.com/${ap}`, { username: ap })
+            );
+          } else if (p === 'github') {
+            const gh = val.replace(/^@/, '').replace(/^https?:\/\/(www\.)?github\.com\//, '').replace(/\/$/, '');
+            newModules.push(
+              createModule('github', 'گیت‌هاب', `https://github.com/${gh}`, { username: gh })
+            );
+          } else {
+            const linkUrl = val.startsWith('http') ? val : `https://${val}`;
+            newModules.push(
+              createModule('standard_link', mod.label || `شبکه اجتماعی ${platform || ''}`.trim(), linkUrl, {})
+            );
+          }
+        } else {
+          // Unknown / generic text / slogan / notes
+          newModules.push(
+            createModule(
+              'simple_text',
+              mod.label || 'اطلاعات تکمیلی کارت ویزیت',
+              '#text',
+              { simpleTextContent: val }
+            )
+          );
+        }
+      });
+    } else {
+      // 2. Fallback to legacy flat fields for backward compatibility
+      if (scanned.phone && scanned.phone.trim()) {
+        const cleanPhone = scanned.phone.trim().replace(/\s+/g, '');
+        const formattedTel = cleanPhone.startsWith('+')
+          ? cleanPhone
+          : cleanPhone.startsWith('00')
+          ? `+${cleanPhone.slice(2)}`
+          : `+${cleanPhone}`;
+        newModules.push(
+          createModule(
+            'phone_call',
+            scanned.name ? `تماس با ${scanned.name}` : 'تماس تلفنی مستقیم',
+            `tel:${formattedTel}`,
+            { phoneNumber: cleanPhone }
+          )
+        );
+      }
+
+      if (scanned.email && scanned.email.trim()) {
+        const cleanEmail = scanned.email.trim();
+        newModules.push(
+          createModule(
+            'email_direct',
+            'ارسال ایمیل کاری',
+            `mailto:${cleanEmail}`,
+            { emailAddress: cleanEmail, emailSubject: 'پیام از طریق کارت هوشمند آریا لینک' }
+          )
+        );
+      }
+
+      if (scanned.website && scanned.website.trim()) {
+        const cleanWeb = scanned.website.trim();
+        const webUrl = cleanWeb.startsWith('http://') || cleanWeb.startsWith('https://')
+          ? cleanWeb
+          : `https://${cleanWeb}`;
+        newModules.push(
+          createModule(
+            'standard_link',
+            scanned.company ? `وب‌سایت رسمی ${scanned.company}` : 'وب‌سایت رسمی',
+            webUrl,
+            {}
+          )
+        );
+      }
+
+      if (scanned.address && scanned.address.trim()) {
+        const cleanAddr = scanned.address.trim();
+        const mapQuery = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(cleanAddr)}`;
+        newModules.push(
+          createModule(
+            'location_hours',
+            'نشانی و آدرس دفتر',
+            mapQuery,
+            { address: cleanAddr, mapLink: mapQuery }
+          )
+        );
+      }
+
+      if (scanned.socials) {
+        if (scanned.socials.whatsapp && scanned.socials.whatsapp.trim()) {
+          const rawWa = scanned.socials.whatsapp.trim().replace(/[^0-9]/g, '');
+          newModules.push(
+            createModule(
+              'whatsapp_direct',
+              'ارتباط در واتساپ',
+              `https://wa.me/${rawWa}`,
+              { phoneNumber: `+${rawWa}`, prefilledMessage: 'سلام، از طریق کارت هوشمند شما پیام می‌دهم.' }
+            )
+          );
+        }
+
+        if (scanned.socials.telegram && scanned.socials.telegram.trim()) {
+          const tgHandle = scanned.socials.telegram.trim().replace(/^@/, '').replace(/^https?:\/\/t\.me\//, '');
+          newModules.push(
+            createModule(
+              'telegram_channel',
+              'کانال یا آیدی تلگرام',
+              `https://t.me/${tgHandle}`,
+              { username: tgHandle }
+            )
+          );
+        }
+
+        if (scanned.socials.instagram && scanned.socials.instagram.trim()) {
+          const igHandle = scanned.socials.instagram.trim().replace(/^@/, '').replace(/^https?:\/\/instagram\.com\//, '');
+          newModules.push(
+            createModule(
+              'instagram_profile',
+              'صفحه اینستاگرام',
+              `https://instagram.com/${igHandle}`,
+              { username: igHandle }
+            )
+          );
+        }
+
+        if (scanned.socials.linkedin && scanned.socials.linkedin.trim()) {
+          const li = scanned.socials.linkedin.trim();
+          const liUrl = li.startsWith('http') ? li : `https://linkedin.com/in/${li.replace(/^@/, '')}`;
+          newModules.push(
+            createModule(
+              'linkedin_profile',
+              'پروفایل لینکدین',
+              liUrl,
+              { username: li }
+            )
+          );
+        }
+
+        if (scanned.socials.twitter && scanned.socials.twitter.trim()) {
+          const tw = scanned.socials.twitter.trim().replace(/^@/, '').replace(/^https?:\/\/(twitter|x)\.com\//, '');
+          newModules.push(
+            createModule(
+              'twitter_x',
+              'صفحه توییتر / ایکس',
+              `https://x.com/${tw}`,
+              { username: tw }
+            )
+          );
+        }
+
+        if (scanned.socials.facebook && scanned.socials.facebook.trim()) {
+          const fb = scanned.socials.facebook.trim();
+          const fbUrl = fb.startsWith('http') ? fb : `https://facebook.com/${fb}`;
+          newModules.push(
+            createModule(
+              'facebook',
+              'صفحه فیسبوک',
+              fbUrl,
+              { username: fb }
+            )
+          );
+        }
+      }
     }
 
-    // 2. Email -> Direct Email
-    if (scanned.email && scanned.email.trim()) {
-      const cleanEmail = scanned.email.trim();
-      newModules.push(
-        createModule(
-          'email_direct',
-          'ارسال ایمیل کاری',
-          `mailto:${cleanEmail}`,
-          { emailAddress: cleanEmail, emailSubject: 'پیام از طریق کارت هوشمند آریا لینک' }
-        )
-      );
-    }
-
-    // 3. Website -> Standard Link
-    if (scanned.website && scanned.website.trim()) {
-      const cleanWeb = scanned.website.trim();
-      const webUrl = cleanWeb.startsWith('http://') || cleanWeb.startsWith('https://')
-        ? cleanWeb
-        : `https://${cleanWeb}`;
-      newModules.push(
-        createModule(
-          'standard_link',
-          scanned.company ? `وب‌سایت رسمی ${scanned.company}` : 'وب‌سایت رسمی',
-          webUrl,
-          {}
-        )
-      );
-    }
-
-    // 4. Social Networks
-    if (scanned.socials) {
-      if (scanned.socials.whatsapp && scanned.socials.whatsapp.trim()) {
-        const rawWa = scanned.socials.whatsapp.trim().replace(/[^0-9]/g, '');
-        newModules.push(
-          createModule(
-            'whatsapp_direct',
-            'ارتباط در واتساپ',
-            `https://wa.me/${rawWa}`,
-            { phoneNumber: `+${rawWa}`, prefilledMessage: 'سلام، از طریق کارت هوشمند شما پیام می‌دهم.' }
-          )
-        );
-      }
-
-      if (scanned.socials.telegram && scanned.socials.telegram.trim()) {
-        const tgHandle = scanned.socials.telegram.trim().replace(/^@/, '').replace(/^https?:\/\/t\.me\//, '');
-        newModules.push(
-          createModule(
-            'telegram_channel',
-            'کانال یا آیدی تلگرام',
-            `https://t.me/${tgHandle}`,
-            { username: tgHandle }
-          )
-        );
-      }
-
-      if (scanned.socials.instagram && scanned.socials.instagram.trim()) {
-        const igHandle = scanned.socials.instagram.trim().replace(/^@/, '').replace(/^https?:\/\/instagram\.com\//, '');
-        newModules.push(
-          createModule(
-            'instagram_profile',
-            'صفحه اینستاگرام',
-            `https://instagram.com/${igHandle}`,
-            { username: igHandle }
-          )
-        );
-      }
-
-      if (scanned.socials.linkedin && scanned.socials.linkedin.trim()) {
-        const li = scanned.socials.linkedin.trim();
-        const liUrl = li.startsWith('http') ? li : `https://linkedin.com/in/${li.replace(/^@/, '')}`;
-        newModules.push(
-          createModule(
-            'linkedin_profile',
-            'پروفایل لینکدین',
-            liUrl,
-            { username: li }
-          )
-        );
-      }
-
-      if (scanned.socials.twitter && scanned.socials.twitter.trim()) {
-        const tw = scanned.socials.twitter.trim().replace(/^@/, '').replace(/^https?:\/\/(twitter|x)\.com\//, '');
-        newModules.push(
-          createModule(
-            'twitter_x',
-            'صفحه توییتر / ایکس',
-            `https://x.com/${tw}`,
-            { username: tw }
-          )
-        );
-      }
-
-      if (scanned.socials.facebook && scanned.socials.facebook.trim()) {
-        const fb = scanned.socials.facebook.trim();
-        const fbUrl = fb.startsWith('http') ? fb : `https://facebook.com/${fb}`;
-        newModules.push(
-          createModule(
-            'facebook',
-            'صفحه فیسبوک',
-            fbUrl,
-            { username: fb }
-          )
-        );
-      }
-    }
-
-    // 5. Fallback if name or company exists and no specific links were generated
+    // 3. Fallback if no specific modules were generated
     if (newModules.length === 0) {
-      if (scanned.name || scanned.company || scanned.job_title) {
+      if (contactName || companyName || jobTitle) {
         newModules.push(
           createModule(
             'simple_text',
             'اطلاعات کارت ویزیت',
             '#text',
-            { simpleTextContent: `${scanned.name || ''} - ${scanned.job_title || ''} (${scanned.company || ''})`.trim() }
+            { simpleTextContent: `${contactName} - ${jobTitle} (${companyName})`.trim() }
           )
         );
       }
+    }
+
+    // Auto-populate profile header if currently empty
+    if (!profile.displayName && contactName) {
+      updateBasicInfo({ displayName: contactName });
+    }
+    if (!profile.headline && (jobTitle || companyName)) {
+      updateBasicInfo({ headline: [jobTitle, companyName].filter(Boolean).join(' | ') });
     }
 
     if (newModules.length > 0) {
@@ -680,7 +846,7 @@ export const ProfileEditor: React.FC = () => {
       clearTimeout(timeoutId);
       setIsAiGenerating(false);
       if (err?.name === 'AbortError') {
-        toast.error('پاسخ هوش مصنوعی بیش از حد (۱۵ ثانیه) طول کشید. لطفاً دوباره تلاش کنید.');
+        toast.error('پاسخ هوش مصنوعی بیش از حد (15 ثانیه) طول کشید. لطفاً دوباره تلاش کنید.');
       } else {
         toast.error('خطای ارتباط با سرور.');
       }
@@ -1359,7 +1525,7 @@ export const ProfileEditor: React.FC = () => {
                         >
                           <Upload className="w-4 h-4 text-cyan-400 shrink-0" />
                           <div>
-                            <span className="font-semibold block">۱. آپلود از دستگاه</span>
+                            <span className="font-semibold block">1. آپلود از دستگاه</span>
                             <span className="text-[10px] text-slate-400 block font-normal">انتخاب تصویر از گالری/کامپیوتر</span>
                           </div>
                         </button>
@@ -1376,7 +1542,7 @@ export const ProfileEditor: React.FC = () => {
                         >
                           <Link2 className="w-4 h-4 text-purple-400 shrink-0" />
                           <div>
-                            <span className="font-semibold block">۲. جایگذاری لینک عکس</span>
+                            <span className="font-semibold block">2. جایگذاری لینک عکس</span>
                             <span className="text-[10px] text-slate-400 block font-normal">ورود URL اینترنتی تصویر</span>
                           </div>
                         </button>
@@ -1393,7 +1559,7 @@ export const ProfileEditor: React.FC = () => {
                         >
                           <Clipboard className="w-4 h-4 text-emerald-400 shrink-0" />
                           <div>
-                            <span className="font-semibold block">۳. خواندن از کلیپ‌بورد</span>
+                            <span className="font-semibold block">3. خواندن از کلیپ‌بورد</span>
                             <span className="text-[10px] text-slate-400 block font-normal">استخراج مستقیم تصویر کپی‌شده</span>
                           </div>
                         </button>
@@ -2264,7 +2430,7 @@ export const ProfileEditor: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="text-base select-none">🇦🇫</span>
-                    <span className="text-xs font-bold text-foreground">۱. کانتینر پیش‌نمایش متن دری</span>
+                    <span className="text-xs font-bold text-foreground">1. کانتینر پیش‌نمایش متن دری</span>
                   </div>
                   <span className="text-[10px] font-sans font-bold text-cyan-600 dark:text-cyan-400 bg-cyan-500/10 px-2.5 py-0.5 rounded-full border border-cyan-500/20">
                     {localTypography.fontFa}
@@ -2330,7 +2496,7 @@ export const ProfileEditor: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="text-base select-none">🇦🇫</span>
-                    <span className="text-xs font-bold text-foreground">۲. کانتینر پیش‌نمایش متن پښتو</span>
+                    <span className="text-xs font-bold text-foreground">2. کانتینر پیش‌نمایش متن پښتو</span>
                   </div>
                   <span className="text-[10px] font-sans font-bold text-cyan-600 dark:text-cyan-400 bg-cyan-500/10 px-2.5 py-0.5 rounded-full border border-cyan-500/20">
                     {localTypography.fontFa}

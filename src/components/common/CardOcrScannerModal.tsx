@@ -29,25 +29,38 @@ import {
   Zap,
   ArrowRight,
   Globe,
+  MapPin,
+  Trash2,
+  Plus,
+  Share2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+export interface ScannedContactModule {
+  id?: string;
+  type: string;
+  value: string;
+  platform?: string;
+  label?: string;
+}
+
+export interface ScannedBasicInfo {
+  name: string;
+  job_title: string;
+  company: string;
+}
+
 export interface ScannedContactData {
+  basic_info: ScannedBasicInfo;
+  modules: ScannedContactModule[];
   name: string;
   phone: string;
   email: string;
   website?: string;
   company?: string;
   job_title?: string;
-  socials?: {
-    whatsapp?: string;
-    telegram?: string;
-    instagram?: string;
-    linkedin?: string;
-    twitter?: string;
-    facebook?: string;
-    [key: string]: string | undefined;
-  };
+  address?: string;
+  socials?: Record<string, string | undefined>;
   notes?: string;
   rawText?: string;
 }
@@ -66,6 +79,85 @@ export function convertToEnglishDigits(str: string): string {
   return str
     .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 1776))
     .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 1632));
+}
+
+export function getModuleMeta(mod: ScannedContactModule) {
+  const type = (mod.type || '').toLowerCase();
+  const platform = (mod.platform || '').toLowerCase();
+
+  switch (type) {
+    case 'phone':
+    case 'telephone':
+    case 'mobile':
+      return {
+        label: mod.label || 'شماره تماس',
+        icon: Phone,
+        color: 'text-emerald-400',
+        borderColor: 'focus:border-emerald-400',
+        placeholder: '0912...',
+        isLtr: true,
+      };
+    case 'fax':
+      return {
+        label: mod.label || 'فکس',
+        icon: Phone,
+        color: 'text-cyan-400',
+        borderColor: 'focus:border-cyan-400',
+        placeholder: '021...',
+        isLtr: true,
+      };
+    case 'email':
+      return {
+        label: mod.label || 'آدرس ایمیل',
+        icon: Mail,
+        color: 'text-amber-400',
+        borderColor: 'focus:border-amber-400',
+        placeholder: 'info@example.com',
+        isLtr: true,
+      };
+    case 'website':
+    case 'url':
+    case 'link':
+      return {
+        label: mod.label || 'آدرس وب‌سایت',
+        icon: Globe,
+        color: 'text-cyan-400',
+        borderColor: 'focus:border-cyan-400',
+        placeholder: 'https://...',
+        isLtr: true,
+      };
+    case 'address':
+    case 'location':
+      return {
+        label: mod.label || 'آدرس فیزیکی',
+        icon: MapPin,
+        color: 'text-rose-400',
+        borderColor: 'focus:border-rose-400',
+        placeholder: 'نشانی دقیق دفتر یا شرکت...',
+        isLtr: false,
+      };
+    case 'social':
+      return {
+        label: mod.label || (platform ? `شبکه اجتماعی (${platform})` : 'شبکه اجتماعی'),
+        icon: Share2,
+        color: 'text-indigo-400',
+        borderColor: 'focus:border-indigo-400',
+        placeholder: '@username یا آدرس پیج...',
+        isLtr: true,
+      };
+    case 'slogan':
+    case 'bio':
+    case 'text':
+    default:
+      return {
+        label: mod.label || (type ? `ماژول (${type})` : 'توضیحات'),
+        icon: Briefcase,
+        color: 'text-purple-400',
+        borderColor: 'focus:border-purple-400',
+        placeholder: 'توضیحات یا شعار...',
+        isLtr: false,
+      };
+  }
 }
 
 export const CardOcrScannerModal: React.FC<CardOcrScannerModalProps> = ({
@@ -327,46 +419,154 @@ export const CardOcrScannerModal: React.FC<CardOcrScannerModalProps> = ({
         throw new Error(result.message || 'خطا در اسکن تصویر کارت با هوش مصنوعی.');
       }
 
-      const { name, phone, email, website, company, job_title, socials } = result.data;
-      setScanProgress(100);
-      setStatusText('اطلاعات با دقت بالا استخراج شد!');
+      const rawData = result.data || {};
+      const basic_info: ScannedBasicInfo = {
+        name: (rawData.basic_info?.name || rawData.name || '').trim(),
+        job_title: (rawData.basic_info?.job_title || rawData.job_title || '').trim(),
+        company: (rawData.basic_info?.company || rawData.company || '').trim(),
+      };
+
+      let modules: ScannedContactModule[] = [];
+      if (Array.isArray(rawData.modules) && rawData.modules.length > 0) {
+        modules = rawData.modules
+          .map((m: any, idx: number) => ({
+            id: `mod_${Date.now()}_${idx}`,
+            type: String(m.type || 'text').toLowerCase().trim(),
+            value: String(m.value || '').trim(),
+            platform: m.platform ? String(m.platform).toLowerCase().trim() : undefined,
+            label: m.label ? String(m.label).trim() : undefined,
+          }))
+          .filter((m: ScannedContactModule) => m.value.length > 0);
+      } else {
+        if (rawData.phone) modules.push({ id: 'm_phone', type: 'phone', value: rawData.phone });
+        if (rawData.email) modules.push({ id: 'm_email', type: 'email', value: rawData.email });
+        if (rawData.website) modules.push({ id: 'm_website', type: 'website', value: rawData.website });
+        if (rawData.address) modules.push({ id: 'm_address', type: 'address', value: rawData.address });
+        if (rawData.socials && typeof rawData.socials === 'object') {
+          Object.entries(rawData.socials).forEach(([platform, val]) => {
+            if (val && typeof val === 'string') {
+              modules.push({ id: `m_${platform}`, type: 'social', platform, value: val });
+            }
+          });
+        }
+      }
+
+      const primaryPhone = modules.find((m) => m.type === 'phone' || m.type === 'telephone')?.value || rawData.phone || '';
+      const primaryEmail = modules.find((m) => m.type === 'email')?.value || rawData.email || '';
+      const primaryWebsite = modules.find((m) => m.type === 'website')?.value || rawData.website || '';
+      const primaryAddress = modules.find((m) => m.type === 'address' || m.type === 'location')?.value || rawData.address || '';
 
       const notesArr = [
-        company ? `شرکت: ${company}` : '',
-        job_title ? `سمت: ${job_title}` : '',
-        website ? `وب‌سایت: ${website}` : '',
+        basic_info.company ? `شرکت: ${basic_info.company}` : '',
+        basic_info.job_title ? `سمت: ${basic_info.job_title}` : '',
+        primaryAddress ? `آدرس: ${primaryAddress}` : '',
+        primaryWebsite ? `وب‌سایت: ${primaryWebsite}` : '',
         'اسکن شده با هوش مصنوعی در Arya Link',
       ].filter(Boolean);
 
       const parsed: ScannedContactData = {
-        name: name || '',
-        phone: phone || '',
-        email: email || '',
-        website: website || '',
-        company: company || '',
-        job_title: job_title || '',
-        socials: socials || {},
+        basic_info,
+        modules,
+        name: basic_info.name,
+        company: basic_info.company,
+        job_title: basic_info.job_title,
+        phone: primaryPhone,
+        email: primaryEmail,
+        website: primaryWebsite,
+        address: primaryAddress,
+        socials: rawData.socials || {},
         notes: notesArr.join(' - '),
       };
 
       setParsedData(parsed);
       toast.success('کارت ویزیت با هوش مصنوعی تحلیل شد!');
     } catch (err: any) {
-      console.error('Gemini OCR Error:', err);
+      console.error('OCR Error:', err);
       toast.error(err.message || 'خطا در تحلیل تصویر کارت ویزیت.');
     } finally {
       setIsScanning(false);
     }
   };
 
+  const handleUpdateBasicInfo = (key: keyof ScannedBasicInfo, value: string) => {
+    if (!parsedData) return;
+    setParsedData({
+      ...parsedData,
+      basic_info: {
+        ...(parsedData.basic_info || { name: '', job_title: '', company: '' }),
+        [key]: value,
+      },
+      [key]: value,
+    });
+  };
+
   const handleSaveContact = () => {
     if (!parsedData) return;
-    if (!parsedData.name && !parsedData.phone) {
-      toast.error('لطفاً حداقل نام یا شماره تماس را وارد کنید.');
+    const bName = (parsedData.basic_info?.name || parsedData.name || '').trim();
+    const bJob = (parsedData.basic_info?.job_title || parsedData.job_title || '').trim();
+    const bCompany = (parsedData.basic_info?.company || parsedData.company || '').trim();
+    const currentModules = parsedData.modules || [];
+
+    if (!bName && currentModules.length === 0) {
+      toast.error('لطفاً حداقل نام یا یک ماژول ارتباطی را وارد کنید.');
       return;
     }
-    onScanComplete(parsedData);
+
+    const updatedModules = currentModules.filter((m) => m.value && m.value.trim().length > 0);
+    const primaryPhone = updatedModules.find((m) => m.type === 'phone' || m.type === 'telephone')?.value || parsedData.phone || '';
+    const primaryEmail = updatedModules.find((m) => m.type === 'email')?.value || parsedData.email || '';
+    const primaryWebsite = updatedModules.find((m) => m.type === 'website')?.value || parsedData.website || '';
+    const primaryAddress = updatedModules.find((m) => m.type === 'address' || m.type === 'location')?.value || parsedData.address || '';
+
+    const finalData: ScannedContactData = {
+      ...parsedData,
+      basic_info: {
+        name: bName,
+        job_title: bJob,
+        company: bCompany,
+      },
+      modules: updatedModules,
+      name: bName,
+      job_title: bJob,
+      company: bCompany,
+      phone: primaryPhone,
+      email: primaryEmail,
+      website: primaryWebsite,
+      address: primaryAddress,
+    };
+
+    onScanComplete(finalData);
     handleClose();
+  };
+
+  const handleUpdateModule = (index: number, newValue: string) => {
+    if (!parsedData) return;
+    const nextModules = [...(parsedData.modules || [])];
+    const mod = nextModules[index];
+    if (!mod) return;
+    const isNumber = mod.type === 'phone' || mod.type === 'telephone' || mod.type === 'fax';
+    nextModules[index] = {
+      ...mod,
+      value: isNumber ? convertToEnglishDigits(newValue) : newValue,
+    };
+    setParsedData({ ...parsedData, modules: nextModules });
+  };
+
+  const handleRemoveModule = (index: number) => {
+    if (!parsedData) return;
+    const nextModules = (parsedData.modules || []).filter((_, i) => i !== index);
+    setParsedData({ ...parsedData, modules: nextModules });
+  };
+
+  const handleAddModule = (type: string, label: string) => {
+    if (!parsedData) return;
+    const newMod: ScannedContactModule = {
+      id: `mod_${Date.now()}`,
+      type,
+      value: '',
+      label,
+    };
+    setParsedData({ ...parsedData, modules: [...(parsedData.modules || []), newMod] });
   };
 
   // Listen to paste inside the modal
@@ -453,7 +653,7 @@ export const CardOcrScannerModal: React.FC<CardOcrScannerModalProps> = ({
                       <div className="w-10 h-10 rounded-xl bg-cyan-500/20 flex items-center justify-center text-cyan-400 group-hover:scale-110 transition-transform">
                         <Upload className="w-5 h-5" />
                       </div>
-                      <span>۱. آپلود از دستگاه</span>
+                      <span>1. آپلود از دستگاه</span>
                       <span className="text-[10px] text-slate-400 font-normal">انتخاب فایل از گالری/کامپیوتر</span>
                     </button>
 
@@ -466,7 +666,7 @@ export const CardOcrScannerModal: React.FC<CardOcrScannerModalProps> = ({
                       <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center text-purple-400 group-hover:scale-110 transition-transform">
                         <LinkIcon className="w-5 h-5" />
                       </div>
-                      <span>۲. جایگذاری لینک عکس</span>
+                      <span>2. جایگذاری لینک عکس</span>
                       <span className="text-[10px] text-slate-400 font-normal">ورود URL مستقیم تصویر اینترنتی</span>
                     </button>
 
@@ -479,7 +679,7 @@ export const CardOcrScannerModal: React.FC<CardOcrScannerModalProps> = ({
                       <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform">
                         <Clipboard className="w-5 h-5" />
                       </div>
-                      <span>۳. خواندن از کلیپ‌بورد</span>
+                      <span>3. خواندن از کلیپ‌بورد</span>
                       <span className="text-[10px] text-slate-400 font-normal">کپی و خواندن تصویر یا متن لینک</span>
                     </button>
 
@@ -492,7 +692,7 @@ export const CardOcrScannerModal: React.FC<CardOcrScannerModalProps> = ({
                       <div className="w-10 h-10 rounded-xl bg-slate-700/60 flex items-center justify-center text-slate-300 group-hover:scale-110 transition-transform">
                         <Camera className="w-5 h-5" />
                       </div>
-                      <span>۴. عکس با دوربین</span>
+                      <span>4. عکس با دوربین</span>
                       <span className="text-[10px] text-slate-400 font-normal">عکاسی زنده با وبکم یا موبایل</span>
                     </button>
                   </div>
@@ -664,119 +864,173 @@ export const CardOcrScannerModal: React.FC<CardOcrScannerModalProps> = ({
             </div>
           )}
 
-          {/* Extracted Contact Form (Autofilled with Gemini JSON keys) */}
+          {/* Extracted Contact Form (Dynamic Modules & Basic Info) */}
           {parsedData && !isScanning && (
-            <div className="space-y-3 p-4 rounded-2xl bg-slate-900/90 border border-emerald-500/30">
+            <div className="space-y-3.5 p-4 rounded-2xl bg-slate-900/90 border border-emerald-500/30">
               <div className="flex items-center justify-between border-b border-white/10 pb-2">
                 <span className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
                   <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                  <span>اطلاعات استخراج شده</span>
+                  <span>اطلاعات استخراج شده از کارت</span>
                 </span>
-                <span className="text-[10px] text-slate-400 font-sans">قابل ویرایش</span>
+                <span className="text-[10px] text-slate-400 font-sans">کاملاً داینامیک و قابل ویرایش</span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {/* Name */}
-                <div className="space-y-1">
-                  <label className="text-[10px] text-slate-400 flex items-center gap-1">
-                    <User className="w-3 h-3 text-cyan-400" />
-                    <span>نام و نام خانوادگی:</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={parsedData.name}
-                    onChange={(e) => setParsedData({ ...parsedData, name: e.target.value })}
-                    placeholder="نام مخاطب..."
-                    className="w-full bg-slate-950 border border-slate-700 focus:border-cyan-400 rounded-xl px-2.5 py-1.5 text-xs text-white outline-none"
-                  />
+              {/* Basic Info: Name, Job Title, Company */}
+              <div className="space-y-1.5">
+                <span className="text-[11px] font-semibold text-slate-300 flex items-center gap-1.5">
+                  <User className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>مشخصات فردی و سازمانی</span>
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  {/* Name */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-slate-400">نام و نام خانوادگی:</label>
+                    <input
+                      type="text"
+                      value={parsedData.basic_info?.name || parsedData.name || ''}
+                      onChange={(e) => handleUpdateBasicInfo('name', e.target.value)}
+                      placeholder="نام مخاطب..."
+                      className="w-full bg-slate-950 border border-slate-700 focus:border-cyan-400 rounded-xl px-2.5 py-1.5 text-xs text-white outline-none"
+                    />
+                  </div>
+
+                  {/* Job Title */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-slate-400">سمت / شغل:</label>
+                    <input
+                      type="text"
+                      value={parsedData.basic_info?.job_title || parsedData.job_title || ''}
+                      onChange={(e) => handleUpdateBasicInfo('job_title', e.target.value)}
+                      placeholder="سمت شغلی..."
+                      className="w-full bg-slate-950 border border-slate-700 focus:border-purple-400 rounded-xl px-2.5 py-1.5 text-xs text-white outline-none"
+                    />
+                  </div>
+
+                  {/* Company */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-slate-400">نام برند / شرکت:</label>
+                    <input
+                      type="text"
+                      value={parsedData.basic_info?.company || parsedData.company || ''}
+                      onChange={(e) => handleUpdateBasicInfo('company', e.target.value)}
+                      placeholder="نام شرکت..."
+                      className="w-full bg-slate-950 border border-slate-700 focus:border-indigo-400 rounded-xl px-2.5 py-1.5 text-xs text-white outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Dynamic Modules List */}
+              <div className="space-y-2 pt-2 border-t border-white/5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-semibold text-slate-300 flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>ماژول‌های شناسایی‌شده ({parsedData.modules?.length || 0})</span>
+                  </span>
+                  <span className="text-[10px] text-slate-500 font-sans">تلفن، فکس، ایمیل، آدرس، شبکه اجتماعی و...</span>
                 </div>
 
-                {/* Phone */}
-                <div className="space-y-1">
-                  <label className="text-[10px] text-slate-400 flex items-center gap-1">
-                    <Phone className="w-3 h-3 text-emerald-400" />
-                    <span>شماره تماس:</span>
-                  </label>
-                  <input
-                    type="text"
-                    dir="ltr"
-                    value={parsedData.phone}
-                    onChange={(e) =>
-                      setParsedData({
-                        ...parsedData,
-                        phone: convertToEnglishDigits(e.target.value),
-                      })
-                    }
-                    placeholder="0700 000 000"
-                    className="w-full bg-slate-950 border border-slate-700 focus:border-emerald-400 rounded-xl px-2.5 py-1.5 text-xs text-white font-sans text-left outline-none"
-                  />
+                <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                  {(!parsedData.modules || parsedData.modules.length === 0) ? (
+                    <div className="p-3 text-center rounded-xl bg-slate-950/60 border border-dashed border-slate-800 text-[11px] text-slate-400">
+                      هیچ ماژول جانبی یافت نشد. می‌توانید با دکمه‌های زیر فیلدهای دلخواه را اضافه کنید.
+                    </div>
+                  ) : (
+                    parsedData.modules.map((mod, idx) => {
+                      const meta = getModuleMeta(mod);
+                      const IconComponent = meta.icon;
+                      return (
+                        <div
+                          key={mod.id || `mod_${idx}`}
+                          className="flex items-center gap-2 p-2 rounded-xl bg-slate-950 border border-slate-800/80 hover:border-slate-700 transition-colors"
+                        >
+                          <div className={`p-1.5 rounded-lg bg-slate-900 ${meta.color} flex-shrink-0`}>
+                            <IconComponent className="w-3.5 h-3.5" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between pb-0.5">
+                              <span className="text-[10px] text-slate-400">{meta.label}</span>
+                              {mod.platform && (
+                                <span className="text-[9px] text-indigo-400 font-sans px-1.5 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/20">
+                                  {mod.platform}
+                                </span>
+                              )}
+                            </div>
+                            <input
+                              type="text"
+                              dir={meta.isLtr ? 'ltr' : 'rtl'}
+                              value={mod.value}
+                              onChange={(e) => handleUpdateModule(idx, e.target.value)}
+                              placeholder={meta.placeholder}
+                              className={`w-full bg-slate-900 border border-slate-700/70 ${meta.borderColor} rounded-lg px-2.5 py-1 text-xs text-white outline-none font-sans ${meta.isLtr ? 'text-left' : 'text-right'
+                                }`}
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveModule(idx)}
+                            className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer flex-shrink-0"
+                            title="حذف این فیلد"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
 
-                {/* Company */}
-                <div className="space-y-1">
-                  <label className="text-[10px] text-slate-400 flex items-center gap-1">
-                    <Building2 className="w-3 h-3 text-indigo-400" />
-                    <span>نام شرکت / برند:</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={parsedData.company || ''}
-                    onChange={(e) => setParsedData({ ...parsedData, company: e.target.value })}
-                    placeholder="نام شرکت..."
-                    className="w-full bg-slate-950 border border-slate-700 focus:border-indigo-400 rounded-xl px-2.5 py-1.5 text-xs text-white outline-none"
-                  />
-                </div>
-
-                {/* Job Title */}
-                <div className="space-y-1">
-                  <label className="text-[10px] text-slate-400 flex items-center gap-1">
-                    <Briefcase className="w-3 h-3 text-purple-400" />
-                    <span>سمت یا عنوان شغلی:</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={parsedData.job_title || ''}
-                    onChange={(e) => setParsedData({ ...parsedData, job_title: e.target.value })}
-                    placeholder="مدیرعامل، طراح و..."
-                    className="w-full bg-slate-950 border border-slate-700 focus:border-purple-400 rounded-xl px-2.5 py-1.5 text-xs text-white outline-none"
-                  />
-                </div>
-
-                {/* Email */}
-                <div className="space-y-1">
-                  <label className="text-[10px] text-slate-400 flex items-center gap-1">
-                    <Mail className="w-3 h-3 text-amber-400" />
-                    <span>آدرس ایمیل:</span>
-                  </label>
-                  <input
-                    type="email"
-                    dir="ltr"
-                    value={parsedData.email}
-                    onChange={(e) => setParsedData({ ...parsedData, email: e.target.value })}
-                    placeholder="contact@example.com"
-                    className="w-full bg-slate-950 border border-slate-700 focus:border-amber-400 rounded-xl px-2.5 py-1.5 text-xs text-white font-sans text-left outline-none"
-                  />
-                </div>
-
-                {/* Website */}
-                <div className="space-y-1">
-                  <label className="text-[10px] text-slate-400 flex items-center gap-1">
-                    <Globe className="w-3 h-3 text-cyan-400" />
-                    <span>آدرس وب‌سایت:</span>
-                  </label>
-                  <input
-                    type="url"
-                    dir="ltr"
-                    value={parsedData.website || ''}
-                    onChange={(e) => setParsedData({ ...parsedData, website: e.target.value })}
-                    placeholder="https://example.com"
-                    className="w-full bg-slate-950 border border-slate-700 focus:border-cyan-400 rounded-xl px-2.5 py-1.5 text-xs text-white font-sans text-left outline-none"
-                  />
+                {/* Quick Add Pills */}
+                <div className="flex flex-wrap items-center gap-1.5 pt-1.5">
+                  <span className="text-[10px] text-slate-400 flex items-center gap-1">
+                    <Plus className="w-3 h-3 text-cyan-400" />
+                    <span>افزودن فیلد:</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleAddModule('phone', 'شماره تماس')}
+                    className="py-1 px-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] border border-white/10 flex items-center gap-1 transition-all cursor-pointer"
+                  >
+                    <Phone className="w-2.5 h-2.5 text-emerald-400" />
+                    <span>+ تلفن</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleAddModule('email', 'آدرس ایمیل')}
+                    className="py-1 px-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] border border-white/10 flex items-center gap-1 transition-all cursor-pointer"
+                  >
+                    <Mail className="w-2.5 h-2.5 text-amber-400" />
+                    <span>+ ایمیل</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleAddModule('website', 'وب‌سایت')}
+                    className="py-1 px-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] border border-white/10 flex items-center gap-1 transition-all cursor-pointer"
+                  >
+                    <Globe className="w-2.5 h-2.5 text-cyan-400" />
+                    <span>+ وب‌سایت</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleAddModule('address', 'آدرس فیزیکی')}
+                    className="py-1 px-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] border border-white/10 flex items-center gap-1 transition-all cursor-pointer"
+                  >
+                    <MapPin className="w-2.5 h-2.5 text-rose-400" />
+                    <span>+ آدرس</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleAddModule('social', 'شبکه اجتماعی')}
+                    className="py-1 px-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] border border-white/10 flex items-center gap-1 transition-all cursor-pointer"
+                  >
+                    <Share2 className="w-2.5 h-2.5 text-indigo-400" />
+                    <span>+ شبکه اجتماعی</span>
+                  </button>
                 </div>
               </div>
 
               {/* Action Buttons */}
-              <div className="flex items-center gap-2 pt-2">
+              <div className="flex items-center gap-2 pt-2 border-t border-white/10">
                 <button
                   type="button"
                   onClick={handleSaveContact}
