@@ -193,6 +193,7 @@ export async function POST(req: NextRequest) {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
+            prompt: 'agree',
             messages: [
               { role: 'user', content: 'agree' },
             ],
