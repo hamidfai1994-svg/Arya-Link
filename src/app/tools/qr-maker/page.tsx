@@ -58,12 +58,12 @@ type ContentTab =
 type DotStyle =
   | 'square'
   | 'rounded'
-  | 'stripes'
-  | 'diamond'
-  | 'cross'
+  | 'extra-rounded'
+  | 'dots'
   | 'classy'
   | 'classy-rounded'
-  | 'dots';
+  | 'diamond'
+  | 'stripes';
 
 type CornerSquareStyle =
   | 'square'
@@ -314,32 +314,37 @@ function AdvancedQrMakerContent() {
         return 'square';
       case 'rounded':
         return 'rounded';
-      case 'stripes':
-      case 'diamond':
-        return 'classy';
-      case 'cross':
-      case 'classy-rounded':
-        return 'classy-rounded';
-      case 'classy':
-        return 'classy';
+      case 'extra-rounded':
+        return 'extra-rounded';
       case 'dots':
         return 'dots';
+      case 'classy':
+      case 'diamond':
+        return 'classy';
+      case 'classy-rounded':
+      case 'stripes':
+        return 'classy-rounded';
       default:
         return 'square';
     }
   };
 
-  const mapCornerSquareStyle = (style: CornerSquareStyle): 'square' | 'extra-rounded' | 'dot' => {
+  const mapCornerSquareStyle = (style: CornerSquareStyle): any => {
     switch (style) {
       case 'square':
         return 'square';
+      case 'rounded-square':
+        return 'extra-rounded';
       case 'circle':
         return 'dot';
-      case 'rounded-square':
       case 'leaf-left':
+        return 'classy';
       case 'leaf-right':
+        return 'classy-rounded';
       case 'leaf-both':
+        return 'rounded';
       case 'square-cutout':
+        return 'dots';
       case 'teardrop':
         return 'extra-rounded';
       default:
@@ -347,20 +352,26 @@ function AdvancedQrMakerContent() {
     }
   };
 
-  const mapCornerDotStyle = (style: CornerDotStyle): 'square' | 'dot' => {
+  const mapCornerDotStyle = (style: CornerDotStyle): any => {
     switch (style) {
       case 'square':
-      case 'diamond':
-      case 'cross':
         return 'square';
       case 'rounded-square':
+        return 'extra-rounded';
       case 'circle':
-      case 'leaf':
-      case 'sunburst':
-      case 'star':
         return 'dot';
-      default:
+      case 'leaf':
+        return 'classy';
+      case 'sunburst':
+        return 'dots';
+      case 'star':
+        return 'classy-rounded';
+      case 'diamond':
+        return 'rounded';
+      case 'cross':
         return 'square';
+      default:
+        return 'dot';
     }
   };
 
@@ -583,10 +594,13 @@ function AdvancedQrMakerContent() {
       }
     }
 
-    syncQr();
+    const timer = setTimeout(() => {
+      syncQr();
+    }, 40);
 
     return () => {
       isMounted = false;
+      clearTimeout(timer);
     };
   }, [
     computedPayload,
@@ -1537,38 +1551,38 @@ function AdvancedQrMakerContent() {
               </div>
 
               {/* Step 2: Visual Styling & Design System - Exact Match to Screenshots */}
-              <div className="rounded-3xl border border-slate-200 bg-white shadow-xl overflow-hidden text-slate-800">
+              <div className="rounded-3xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-xl overflow-hidden text-slate-800 dark:text-slate-100">
                 {/* Tabs Bar: Frame | Shape | Logo */}
-                <div className="flex items-center border-b border-slate-200 bg-slate-50/70 px-4 pt-3 gap-2">
+                <div className="flex items-center border-b border-slate-200 dark:border-slate-800/80 bg-slate-50/70 dark:bg-slate-950/60 px-4 pt-3 gap-2">
                   <button
                     type="button"
                     onClick={() => setDesignTab('frame')}
                     className={`px-6 py-2.5 rounded-t-xl font-medium text-sm transition-all border border-b-0 relative ${designTab === 'frame'
-                      ? 'bg-white text-teal-600 font-semibold border-slate-200 shadow-xs -mb-px z-10'
-                      : 'bg-transparent text-slate-500 hover:text-slate-800 border-transparent'
+                      ? 'bg-white dark:bg-slate-900 text-cyan-600 dark:text-cyan-400 font-semibold border-slate-200 dark:border-slate-800/80 shadow-xs -mb-px z-10'
+                      : 'bg-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 border-transparent'
                       }`}
                   >
-                    {language === 'en' ? 'Frame' : language === 'ps' ? 'Frame (چوکاټ)' : 'Frame (فریم و قالب)'}
+                    {language === 'en' ? 'Frame' : language === 'ps' ? 'چوکاټ (Frame)' : 'فریم و قالب'}
                   </button>
                   <button
                     type="button"
                     onClick={() => setDesignTab('shape')}
                     className={`px-6 py-2.5 rounded-t-xl font-medium text-sm transition-all border border-b-0 relative ${designTab === 'shape'
-                      ? 'bg-white text-teal-600 font-semibold border-slate-200 shadow-xs -mb-px z-10'
-                      : 'bg-transparent text-slate-500 hover:text-slate-800 border-transparent'
+                      ? 'bg-white dark:bg-slate-900 text-cyan-600 dark:text-cyan-400 font-semibold border-slate-200 dark:border-slate-800/80 shadow-xs -mb-px z-10'
+                      : 'bg-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 border-transparent'
                       }`}
                   >
-                    {language === 'en' ? 'Shape' : language === 'ps' ? 'Shape (شکل او رنګ)' : 'Shape (شکل و ظاهر)'}
+                    {language === 'en' ? 'Shape' : language === 'ps' ? 'شکل او رنګ (Shape)' : 'طرح و ظاهر'}
                   </button>
                   <button
                     type="button"
                     onClick={() => setDesignTab('logo')}
                     className={`px-6 py-2.5 rounded-t-xl font-medium text-sm transition-all border border-b-0 relative ${designTab === 'logo'
-                      ? 'bg-white text-teal-600 font-semibold border-slate-200 shadow-xs -mb-px z-10'
-                      : 'bg-transparent text-slate-500 hover:text-slate-800 border-transparent'
+                      ? 'bg-white dark:bg-slate-900 text-cyan-600 dark:text-cyan-400 font-semibold border-slate-200 dark:border-slate-800/80 shadow-xs -mb-px z-10'
+                      : 'bg-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 border-transparent'
                       }`}
                   >
-                    {language === 'en' ? 'Logo' : language === 'ps' ? 'Logo (لوګو)' : 'Logo (لوگو)'}
+                    {language === 'en' ? 'Logo' : language === 'ps' ? 'لوګو (Logo)' : 'لوگو و نماد'}
                   </button>
                 </div>
 
@@ -1578,16 +1592,16 @@ function AdvancedQrMakerContent() {
                   {designTab === 'frame' && (
                     <div className="space-y-5 animate-in fade-in duration-200">
                       <div className="relative">
-                        <div className="flex items-center gap-3 overflow-x-auto pb-4 pt-1 px-1 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100">
+                        <div className="flex items-center gap-3 overflow-x-auto pb-4 pt-1 px-1 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700 scrollbar-track-slate-100 dark:scrollbar-track-slate-800">
                           {/* Frame 1: None (X) */}
                           <button
                             type="button"
                             onClick={() => setFrameStyle('none')}
                             className={`shrink-0 w-20 h-20 rounded-2xl border flex flex-col items-center justify-center transition-all ${frameStyle === 'none'
-                              ? 'border-blue-500 bg-sky-50 text-slate-800 ring-2 ring-blue-300/60 shadow-xs'
-                              : 'border-slate-200 bg-white text-slate-400 hover:border-slate-300 hover:text-slate-700 shadow-2xs'
+                              ? 'border-cyan-500 dark:border-cyan-400 bg-cyan-50 dark:bg-cyan-950/40 text-cyan-600 dark:text-cyan-400 ring-2 ring-cyan-500/30 shadow-xs'
+                              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/60 text-slate-400 hover:border-slate-300 dark:hover:border-slate-700 hover:text-slate-700 dark:hover:text-slate-200 shadow-2xs'
                               }`}
-                            title="No Frame"
+                            title={language === 'en' ? 'No Frame' : 'بدون فریم'}
                           >
                             <X className="w-7 h-7 stroke-[2.5]" />
                           </button>
@@ -1597,15 +1611,15 @@ function AdvancedQrMakerContent() {
                             type="button"
                             onClick={() => setFrameStyle('bottom-banner')}
                             className={`shrink-0 w-20 h-20 rounded-2xl border flex flex-col items-center justify-center p-1.5 transition-all ${frameStyle === 'bottom-banner'
-                              ? 'border-blue-500 bg-sky-50 text-slate-800 ring-2 ring-blue-300/60 shadow-xs'
-                              : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
+                              ? 'border-cyan-500 dark:border-cyan-400 bg-cyan-50 dark:bg-cyan-950/40 text-cyan-600 dark:text-cyan-400 ring-2 ring-cyan-500/30 shadow-xs'
+                              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/60 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-700 shadow-2xs'
                               }`}
-                            title="Bottom Banner"
+                            title={language === 'en' ? 'Bottom Banner' : 'بنر پایین'}
                           >
                             <svg viewBox="0 0 50 60" className="w-12 h-14">
-                              <rect x="4" y="4" width="42" height="52" rx="4" stroke="#000000" strokeWidth="2.5" fill="none" />
-                              <rect x="10" y="8" width="30" height="30" rx="1" fill="#000000" fillOpacity="0.85" />
-                              <rect x="8" y="42" width="34" height="10" rx="5" fill="#000000" />
+                              <rect x="4" y="4" width="42" height="52" rx="4" stroke="currentColor" strokeWidth="2.5" fill="none" />
+                              <rect x="10" y="8" width="30" height="30" rx="1" fill="currentColor" fillOpacity="0.85" />
+                              <rect x="8" y="42" width="34" height="10" rx="5" fill="currentColor" />
                               <circle cx="14" cy="47" r="2.5" fill="#ffffff" />
                               <text x="28" y="49.5" fontSize="4.5" fill="#ffffff" fontWeight="bold" textAnchor="middle">SCAN ME</text>
                             </svg>
@@ -1616,15 +1630,15 @@ function AdvancedQrMakerContent() {
                             type="button"
                             onClick={() => setFrameStyle('black-banner')}
                             className={`shrink-0 w-20 h-20 rounded-2xl border flex flex-col items-center justify-center p-1.5 transition-all ${frameStyle === 'black-banner'
-                              ? 'border-blue-500 bg-sky-50 text-slate-800 ring-2 ring-blue-300/60 shadow-xs'
-                              : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
+                              ? 'border-cyan-500 dark:border-cyan-400 bg-cyan-50 dark:bg-cyan-950/40 text-cyan-600 dark:text-cyan-400 ring-2 ring-cyan-500/30 shadow-xs'
+                              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/60 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-700 shadow-2xs'
                               }`}
-                            title="Solid Black Banner"
+                            title={language === 'en' ? 'Solid Black Banner' : 'بنر کامل'}
                           >
                             <svg viewBox="0 0 50 60" className="w-12 h-14">
-                              <rect x="4" y="4" width="42" height="52" rx="4" stroke="#000000" strokeWidth="2.5" fill="none" />
-                              <rect x="10" y="8" width="30" height="30" rx="1" fill="#000000" fillOpacity="0.85" />
-                              <rect x="4" y="42" width="42" height="14" rx="2" fill="#000000" />
+                              <rect x="4" y="4" width="42" height="52" rx="4" stroke="currentColor" strokeWidth="2.5" fill="none" />
+                              <rect x="10" y="8" width="30" height="30" rx="1" fill="currentColor" fillOpacity="0.85" />
+                              <rect x="4" y="42" width="42" height="14" rx="2" fill="currentColor" />
                               <text x="25" y="51" fontSize="5.5" fill="#ffffff" fontWeight="bold" textAnchor="middle">SCAN ME</text>
                             </svg>
                           </button>
@@ -1634,15 +1648,15 @@ function AdvancedQrMakerContent() {
                             type="button"
                             onClick={() => setFrameStyle('hanging-tab')}
                             className={`shrink-0 w-20 h-20 rounded-2xl border flex flex-col items-center justify-center p-1.5 transition-all ${frameStyle === 'hanging-tab'
-                              ? 'border-blue-500 bg-sky-50 text-slate-800 ring-2 ring-blue-300/60 shadow-xs'
-                              : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
+                              ? 'border-cyan-500 dark:border-cyan-400 bg-cyan-50 dark:bg-cyan-950/40 text-cyan-600 dark:text-cyan-400 ring-2 ring-cyan-500/30 shadow-xs'
+                              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/60 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-700 shadow-2xs'
                               }`}
-                            title="Hanging Tab"
+                            title={language === 'en' ? 'Hanging Tab' : 'برچسب آویز'}
                           >
                             <svg viewBox="0 0 50 60" className="w-12 h-14">
-                              <rect x="4" y="4" width="42" height="42" rx="3" stroke="#000000" strokeWidth="2.5" fill="none" />
-                              <rect x="10" y="8" width="30" height="30" rx="1" fill="#000000" fillOpacity="0.85" />
-                              <path d="M10 46h30v10a2 2 0 0 1-2 2H12a2 2 0 0 1-2-2V46z" fill="#000000" />
+                              <rect x="4" y="4" width="42" height="42" rx="3" stroke="currentColor" strokeWidth="2.5" fill="none" />
+                              <rect x="10" y="8" width="30" height="30" rx="1" fill="currentColor" fillOpacity="0.85" />
+                              <path d="M10 46h30v10a2 2 0 0 1-2 2H12a2 2 0 0 1-2-2V46z" fill="currentColor" />
                               <text x="25" y="53.5" fontSize="4.5" fill="#ffffff" fontWeight="bold" textAnchor="middle">SCAN ME</text>
                             </svg>
                           </button>
@@ -1652,15 +1666,15 @@ function AdvancedQrMakerContent() {
                             type="button"
                             onClick={() => setFrameStyle('circle')}
                             className={`shrink-0 w-20 h-20 rounded-2xl border flex flex-col items-center justify-center p-1.5 transition-all ${frameStyle === 'circle'
-                              ? 'border-blue-500 bg-sky-50 text-slate-800 ring-2 ring-blue-300/60 shadow-xs'
-                              : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
+                              ? 'border-cyan-500 dark:border-cyan-400 bg-cyan-50 dark:bg-cyan-950/40 text-cyan-600 dark:text-cyan-400 ring-2 ring-cyan-500/30 shadow-xs'
+                              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/60 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-700 shadow-2xs'
                               }`}
-                            title="Circle Frame"
+                            title={language === 'en' ? 'Circle Frame' : 'فریم دایره‌ای'}
                           >
                             <svg viewBox="0 0 50 60" className="w-12 h-14">
-                              <circle cx="25" cy="24" r="20" stroke="#000000" strokeWidth="2" fill="none" />
-                              <rect x="13" y="12" width="24" height="24" rx="1" fill="#000000" fillOpacity="0.85" />
-                              <text x="25" y="52" fontSize="5.5" fill="#000000" fontWeight="bold" textAnchor="middle">SCAN ME</text>
+                              <circle cx="25" cy="24" r="20" stroke="currentColor" strokeWidth="2" fill="none" />
+                              <rect x="13" y="12" width="24" height="24" rx="1" fill="currentColor" fillOpacity="0.85" />
+                              <text x="25" y="52" fontSize="5.5" fill="currentColor" fontWeight="bold" textAnchor="middle">SCAN ME</text>
                             </svg>
                           </button>
 
@@ -1669,17 +1683,17 @@ function AdvancedQrMakerContent() {
                             type="button"
                             onClick={() => setFrameStyle('phone')}
                             className={`shrink-0 w-20 h-20 rounded-2xl border flex flex-col items-center justify-center p-1.5 transition-all ${frameStyle === 'phone'
-                              ? 'border-blue-500 bg-sky-50 text-slate-800 ring-2 ring-blue-300/60 shadow-xs'
-                              : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
+                              ? 'border-cyan-500 dark:border-cyan-400 bg-cyan-50 dark:bg-cyan-950/40 text-cyan-600 dark:text-cyan-400 ring-2 ring-cyan-500/30 shadow-xs'
+                              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/60 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-700 shadow-2xs'
                               }`}
-                            title="Phone Mockup"
+                            title={language === 'en' ? 'Phone Mockup' : 'موکاپ موبایل'}
                           >
                             <svg viewBox="0 0 50 60" className="w-12 h-14">
-                              <rect x="8" y="3" width="34" height="54" rx="7" stroke="#000000" strokeWidth="2" fill="none" />
-                              <rect x="20" y="6" width="10" height="2" rx="1" fill="#000000" />
-                              <circle cx="25" cy="10" r="0.8" fill="#000000" />
-                              <rect x="12" y="13" width="26" height="26" rx="1" fill="#000000" fillOpacity="0.85" />
-                              <rect x="10" y="42" width="30" height="10" rx="2" fill="#000000" />
+                              <rect x="8" y="3" width="34" height="54" rx="7" stroke="currentColor" strokeWidth="2" fill="none" />
+                              <rect x="20" y="6" width="10" height="2" rx="1" fill="currentColor" />
+                              <circle cx="25" cy="10" r="0.8" fill="currentColor" />
+                              <rect x="12" y="13" width="26" height="26" rx="1" fill="currentColor" fillOpacity="0.85" />
+                              <rect x="10" y="42" width="30" height="10" rx="2" fill="currentColor" />
                               <text x="25" y="49" fontSize="4.5" fill="#ffffff" fontWeight="bold" textAnchor="middle">SCAN ME</text>
                             </svg>
                           </button>
@@ -1689,16 +1703,16 @@ function AdvancedQrMakerContent() {
                             type="button"
                             onClick={() => setFrameStyle('clipboard')}
                             className={`shrink-0 w-20 h-20 rounded-2xl border flex flex-col items-center justify-center p-1.5 transition-all ${frameStyle === 'clipboard'
-                              ? 'border-blue-500 bg-sky-50 text-slate-800 ring-2 ring-blue-300/60 shadow-xs'
-                              : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
+                              ? 'border-cyan-500 dark:border-cyan-400 bg-cyan-50 dark:bg-cyan-950/40 text-cyan-600 dark:text-cyan-400 ring-2 ring-cyan-500/30 shadow-xs'
+                              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/60 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-700 shadow-2xs'
                               }`}
-                            title="Clipboard Mockup"
+                            title={language === 'en' ? 'Clipboard Mockup' : 'موکاپ تخته‌شاسی'}
                           >
                             <svg viewBox="0 0 50 60" className="w-12 h-14">
-                              <rect x="7" y="8" width="36" height="48" rx="4" stroke="#000000" strokeWidth="2" fill="none" />
-                              <rect x="17" y="4" width="16" height="6" rx="2" fill="#000000" />
-                              <rect x="12" y="14" width="26" height="26" rx="1" fill="#000000" fillOpacity="0.85" />
-                              <rect x="9" y="43" width="32" height="9" rx="2" fill="#000000" />
+                              <rect x="7" y="8" width="36" height="48" rx="4" stroke="currentColor" strokeWidth="2" fill="none" />
+                              <rect x="17" y="4" width="16" height="6" rx="2" fill="currentColor" />
+                              <rect x="12" y="14" width="26" height="26" rx="1" fill="currentColor" fillOpacity="0.85" />
+                              <rect x="9" y="43" width="32" height="9" rx="2" fill="currentColor" />
                               <text x="25" y="50" fontSize="4.5" fill="#ffffff" fontWeight="bold" textAnchor="middle">SCAN ME</text>
                             </svg>
                           </button>
@@ -1708,15 +1722,15 @@ function AdvancedQrMakerContent() {
                             type="button"
                             onClick={() => setFrameStyle('screen')}
                             className={`shrink-0 w-20 h-20 rounded-2xl border flex flex-col items-center justify-center p-1.5 transition-all ${frameStyle === 'screen'
-                              ? 'border-blue-500 bg-sky-50 text-slate-800 ring-2 ring-blue-300/60 shadow-xs'
-                              : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
+                              ? 'border-cyan-500 dark:border-cyan-400 bg-cyan-50 dark:bg-cyan-950/40 text-cyan-600 dark:text-cyan-400 ring-2 ring-cyan-500/30 shadow-xs'
+                              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/60 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-700 shadow-2xs'
                               }`}
-                            title="Screen / Monitor"
+                            title={language === 'en' ? 'Screen / Monitor' : 'مانیتور و صفحه نمایش'}
                           >
                             <svg viewBox="0 0 50 60" className="w-12 h-14">
-                              <rect x="5" y="6" width="40" height="44" rx="4" stroke="#000000" strokeWidth="2" fill="none" />
-                              <rect x="11" y="10" width="28" height="28" rx="1" fill="#000000" fillOpacity="0.85" />
-                              <rect x="10" y="41" width="30" height="8" rx="4" fill="#000000" />
+                              <rect x="5" y="6" width="40" height="44" rx="4" stroke="currentColor" strokeWidth="2" fill="none" />
+                              <rect x="11" y="10" width="28" height="28" rx="1" fill="currentColor" fillOpacity="0.85" />
+                              <rect x="10" y="41" width="30" height="8" rx="4" fill="currentColor" />
                               <text x="25" y="47" fontSize="4.5" fill="#ffffff" fontWeight="bold" textAnchor="middle">SCAN ME</text>
                             </svg>
                           </button>
@@ -1726,16 +1740,16 @@ function AdvancedQrMakerContent() {
                             type="button"
                             onClick={() => setFrameStyle('bag')}
                             className={`shrink-0 w-20 h-20 rounded-2xl border flex flex-col items-center justify-center p-1.5 transition-all ${frameStyle === 'bag'
-                              ? 'border-blue-500 bg-sky-50 text-slate-800 ring-2 ring-blue-300/60 shadow-xs'
-                              : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
+                              ? 'border-cyan-500 dark:border-cyan-400 bg-cyan-50 dark:bg-cyan-950/40 text-cyan-600 dark:text-cyan-400 ring-2 ring-cyan-500/30 shadow-xs'
+                              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/60 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-700 shadow-2xs'
                               }`}
-                            title="Shopping Bag"
+                            title={language === 'en' ? 'Shopping Bag' : 'ساک خرید'}
                           >
                             <svg viewBox="0 0 50 60" className="w-12 h-14">
-                              <path d="M19 14V8a6 6 0 0 1 12 0v6" stroke="#000000" strokeWidth="2" fill="none" />
-                              <rect x="6" y="14" width="38" height="42" rx="4" stroke="#000000" strokeWidth="2" fill="none" />
-                              <rect x="12" y="18" width="26" height="26" fill="#000000" fillOpacity="0.85" />
-                              <rect x="9" y="46" width="32" height="7" rx="1" fill="#000000" />
+                              <path d="M19 14V8a6 6 0 0 1 12 0v6" stroke="currentColor" strokeWidth="2" fill="none" />
+                              <rect x="6" y="14" width="38" height="42" rx="4" stroke="currentColor" strokeWidth="2" fill="none" />
+                              <rect x="12" y="18" width="26" height="26" fill="currentColor" fillOpacity="0.85" />
+                              <rect x="9" y="46" width="32" height="7" rx="1" fill="currentColor" />
                               <text x="25" y="51.5" fontSize="4.5" fill="#ffffff" fontWeight="bold" textAnchor="middle">SCAN ME</text>
                             </svg>
                           </button>
@@ -1744,30 +1758,30 @@ function AdvancedQrMakerContent() {
 
                       {/* Frame Customization when active */}
                       {frameStyle !== 'none' && (
-                        <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950/50 border border-slate-200/80 dark:border-slate-800/80 grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div>
-                            <label className="block text-xs text-slate-600 font-medium mb-1.5">
-                              Frame Text:
+                            <label className="block text-xs text-slate-600 dark:text-slate-400 font-medium mb-1.5">
+                              {language === 'en' ? 'Frame Text:' : 'متن روی فریم:'}
                             </label>
                             <input
                               type="text"
                               value={frameText}
                               onChange={(e) => setFrameText(e.target.value)}
-                              className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold uppercase text-slate-800 focus:outline-none focus:border-cyan-500 shadow-xs"
+                              className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold uppercase text-slate-800 dark:text-slate-100 focus:outline-none focus:border-cyan-500 shadow-xs"
                             />
                           </div>
                           <div>
-                            <label className="block text-xs text-slate-600 font-medium mb-1.5">
-                              Frame Color:
+                            <label className="block text-xs text-slate-600 dark:text-slate-400 font-medium mb-1.5">
+                              {language === 'en' ? 'Frame Color:' : 'رنگ فریم:'}
                             </label>
                             <div className="flex items-center gap-2">
                               <input
                                 type="text"
                                 value={frameColor}
                                 onChange={(e) => setFrameColor(e.target.value)}
-                                className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-mono uppercase text-slate-800 focus:outline-none focus:border-cyan-500 shadow-xs"
+                                className="flex-1 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-mono uppercase text-slate-800 dark:text-slate-100 focus:outline-none focus:border-cyan-500 shadow-xs"
                               />
-                              <div className="relative w-9 h-9 rounded-lg border border-slate-200 shadow-xs overflow-hidden shrink-0 cursor-pointer">
+                              <div className="relative w-9 h-9 rounded-lg border border-slate-200 dark:border-slate-700 shadow-xs overflow-hidden shrink-0 cursor-pointer">
                                 <input
                                   type="color"
                                   value={frameColor}
@@ -1786,29 +1800,29 @@ function AdvancedQrMakerContent() {
                     </div>
                   )}
 
-                  {/* TAB 2: SHAPE (Exact match to Reference Screenshot 2) */}
+                  {/* TAB 2: SHAPE */}
                   {designTab === 'shape' && (
                     <div className="space-y-6 animate-in fade-in duration-200">
-                      <div className="text-sm font-bold text-slate-800">
-                        Shape & Color
+                      <div className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                        {language === 'en' ? 'Shape & Color' : 'طرح، پترن و رنگ‌بندی'}
                       </div>
 
                       {/* 1. Shape Style (Dots) */}
                       <div className="space-y-2">
-                        <label className="block text-xs font-medium text-slate-600">
-                          Shape style
+                        <label className="block text-xs font-medium text-slate-600 dark:text-slate-400">
+                          {language === 'en' ? 'Shape style' : 'استایل پترن (شکل نقاط کیوآر)'}
                         </label>
                         <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
                           {(
                             [
-                              { id: 'square', label: 'Square' },
-                              { id: 'rounded', label: 'Rounded' },
-                              { id: 'stripes', label: 'Stripes' },
-                              { id: 'diamond', label: 'Diamond' },
-                              { id: 'cross', label: 'Cross' },
-                              { id: 'classy', label: 'Classy' },
-                              { id: 'classy-rounded', label: 'Classy-R' },
-                              { id: 'dots', label: 'Dots' },
+                              { id: 'square', label: language === 'en' ? 'Square' : 'مربعی کلاسیک' },
+                              { id: 'rounded', label: language === 'en' ? 'Rounded' : 'گوشه‌گرد' },
+                              { id: 'extra-rounded', label: language === 'en' ? 'Pill / Smooth' : 'قرصی / کپسولی' },
+                              { id: 'dots', label: language === 'en' ? 'Dots' : 'نقطه‌ای دایره‌ای' },
+                              { id: 'classy', label: language === 'en' ? 'Classy' : 'کلاسیک هندسی' },
+                              { id: 'classy-rounded', label: language === 'en' ? 'Classy Rounded' : 'کلاسیک منحنی' },
+                              { id: 'diamond', label: language === 'en' ? 'Diamond' : 'الماسی / لوزی' },
+                              { id: 'stripes', label: language === 'en' ? 'Stripes' : 'خطوط موازی' },
                             ] as const
                           ).map((pattern) => {
                             const isSelected = dotStyle === pattern.id;
@@ -1818,108 +1832,101 @@ function AdvancedQrMakerContent() {
                                 type="button"
                                 onClick={() => setDotStyle(pattern.id)}
                                 className={`h-14 rounded-xl border flex items-center justify-center p-1.5 transition-all ${isSelected
-                                  ? 'border-blue-500 bg-sky-50 text-slate-900 ring-2 ring-blue-300/60 shadow-xs'
-                                  : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
+                                  ? 'border-cyan-500 dark:border-cyan-400 bg-cyan-50 dark:bg-cyan-950/40 text-cyan-600 dark:text-cyan-400 ring-2 ring-cyan-500/30 shadow-xs'
+                                  : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/60 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-700 shadow-2xs'
                                   }`}
                                 title={pattern.label}
                               >
                                 {pattern.id === 'square' ? (
                                   <svg viewBox="0 0 40 40" className="w-8 h-8">
-                                    <rect x="5" y="5" width="8" height="8" fill="#000000" />
-                                    <rect x="16" y="5" width="8" height="8" fill="#000000" />
-                                    <rect x="27" y="5" width="8" height="8" fill="#000000" />
-                                    <rect x="5" y="16" width="8" height="8" fill="#000000" />
-                                    <rect x="16" y="16" width="8" height="8" fill="#000000" />
-                                    <rect x="27" y="16" width="8" height="8" fill="#000000" />
-                                    <rect x="5" y="27" width="8" height="8" fill="#000000" />
-                                    <rect x="16" y="27" width="8" height="8" fill="#000000" />
-                                    <rect x="27" y="27" width="8" height="8" fill="#000000" />
+                                    <rect x="5" y="5" width="8" height="8" fill="currentColor" />
+                                    <rect x="16" y="5" width="8" height="8" fill="currentColor" />
+                                    <rect x="27" y="5" width="8" height="8" fill="currentColor" />
+                                    <rect x="5" y="16" width="8" height="8" fill="currentColor" />
+                                    <rect x="16" y="16" width="8" height="8" fill="currentColor" />
+                                    <rect x="27" y="16" width="8" height="8" fill="currentColor" />
+                                    <rect x="5" y="27" width="8" height="8" fill="currentColor" />
+                                    <rect x="16" y="27" width="8" height="8" fill="currentColor" />
+                                    <rect x="27" y="27" width="8" height="8" fill="currentColor" />
                                   </svg>
                                 ) : pattern.id === 'rounded' ? (
                                   <svg viewBox="0 0 40 40" className="w-8 h-8">
-                                    <rect x="5" y="5" width="8" height="8" rx="2.5" fill="#000000" />
-                                    <rect x="16" y="5" width="8" height="8" rx="2.5" fill="#000000" />
-                                    <rect x="27" y="5" width="8" height="8" rx="2.5" fill="#000000" />
-                                    <rect x="5" y="16" width="8" height="8" rx="2.5" fill="#000000" />
-                                    <rect x="16" y="16" width="8" height="8" rx="2.5" fill="#000000" />
-                                    <rect x="27" y="16" width="8" height="8" rx="2.5" fill="#000000" />
-                                    <rect x="5" y="27" width="8" height="8" rx="2.5" fill="#000000" />
-                                    <rect x="16" y="27" width="8" height="8" rx="2.5" fill="#000000" />
-                                    <rect x="27" y="27" width="8" height="8" rx="2.5" fill="#000000" />
+                                    <rect x="5" y="5" width="8" height="8" rx="2.5" fill="currentColor" />
+                                    <rect x="16" y="5" width="8" height="8" rx="2.5" fill="currentColor" />
+                                    <rect x="27" y="5" width="8" height="8" rx="2.5" fill="currentColor" />
+                                    <rect x="5" y="16" width="8" height="8" rx="2.5" fill="currentColor" />
+                                    <rect x="16" y="16" width="8" height="8" rx="2.5" fill="currentColor" />
+                                    <rect x="27" y="16" width="8" height="8" rx="2.5" fill="currentColor" />
+                                    <rect x="5" y="27" width="8" height="8" rx="2.5" fill="currentColor" />
+                                    <rect x="16" y="27" width="8" height="8" rx="2.5" fill="currentColor" />
+                                    <rect x="27" y="27" width="8" height="8" rx="2.5" fill="currentColor" />
                                   </svg>
-                                ) : pattern.id === 'stripes' ? (
+                                ) : pattern.id === 'extra-rounded' ? (
                                   <svg viewBox="0 0 40 40" className="w-8 h-8">
-                                    <rect x="5" y="7" width="12" height="4" rx="1.5" fill="#000000" />
-                                    <rect x="21" y="7" width="14" height="4" rx="1.5" fill="#000000" />
-                                    <rect x="5" y="14" width="18" height="4" rx="1.5" fill="#000000" />
-                                    <rect x="27" y="14" width="8" height="4" rx="1.5" fill="#000000" />
-                                    <rect x="8" y="21" width="10" height="4" rx="1.5" fill="#000000" />
-                                    <rect x="22" y="21" width="13" height="4" rx="1.5" fill="#000000" />
-                                    <rect x="5" y="28" width="16" height="4" rx="1.5" fill="#000000" />
-                                    <rect x="25" y="28" width="10" height="4" rx="1.5" fill="#000000" />
+                                    <rect x="5" y="5" width="8" height="8" rx="4" fill="currentColor" />
+                                    <rect x="16" y="5" width="8" height="8" rx="4" fill="currentColor" />
+                                    <rect x="27" y="5" width="8" height="8" rx="4" fill="currentColor" />
+                                    <rect x="5" y="16" width="8" height="8" rx="4" fill="currentColor" />
+                                    <rect x="16" y="16" width="8" height="8" rx="4" fill="currentColor" />
+                                    <rect x="27" y="16" width="8" height="8" rx="4" fill="currentColor" />
+                                    <rect x="5" y="27" width="8" height="8" rx="4" fill="currentColor" />
+                                    <rect x="16" y="27" width="8" height="8" rx="4" fill="currentColor" />
+                                    <rect x="27" y="27" width="8" height="8" rx="4" fill="currentColor" />
                                   </svg>
-                                ) : pattern.id === 'diamond' ? (
+                                ) : pattern.id === 'dots' ? (
                                   <svg viewBox="0 0 40 40" className="w-8 h-8">
-                                    <polygon points="10,6 14,10 10,14 6,10" fill="#000000" />
-                                    <polygon points="20,6 24,10 20,14 16,10" fill="#000000" />
-                                    <polygon points="30,6 34,10 30,14 26,10" fill="#000000" />
-                                    <polygon points="10,16 14,20 10,24 6,20" fill="#000000" />
-                                    <polygon points="20,16 24,20 20,24 16,20" fill="#000000" />
-                                    <polygon points="30,16 34,20 30,24 26,20" fill="#000000" />
-                                    <polygon points="10,26 14,30 10,34 6,30" fill="#000000" />
-                                    <polygon points="20,26 24,30 20,34 16,30" fill="#000000" />
-                                    <polygon points="30,26 34,30 30,34 26,30" fill="#000000" />
-                                  </svg>
-                                ) : pattern.id === 'cross' ? (
-                                  <svg viewBox="0 0 40 40" className="w-8 h-8">
-                                    <path d="M 8 7 h 4 v 2 h 2 v 4 h -2 v 2 h -4 v -2 h -2 v -4 h 2 z" fill="#000000" />
-                                    <path d="M 26 7 h 4 v 2 h 2 v 4 h -2 v 2 h -4 v -2 h -2 v -4 h 2 z" fill="#000000" />
-                                    <path d="M 17 16 h 4 v 2 h 2 v 4 h -2 v 2 h -4 v -2 h -2 v -4 h 2 z" fill="#000000" />
-                                    <path d="M 8 25 h 4 v 2 h 2 v 4 h -2 v 2 h -4 v -2 h -2 v -4 h 2 z" fill="#000000" />
-                                    <path d="M 26 25 h 4 v 2 h 2 v 4 h -2 v 2 h -4 v -2 h -2 v -4 h 2 z" fill="#000000" />
+                                    <circle cx="9" cy="9" r="4" fill="currentColor" />
+                                    <circle cx="20" cy="9" r="4" fill="currentColor" />
+                                    <circle cx="31" cy="9" r="4" fill="currentColor" />
+                                    <circle cx="9" cy="20" r="4" fill="currentColor" />
+                                    <circle cx="20" cy="20" r="4" fill="currentColor" />
+                                    <circle cx="31" cy="20" r="4" fill="currentColor" />
+                                    <circle cx="9" cy="31" r="4" fill="currentColor" />
+                                    <circle cx="20" cy="31" r="4" fill="currentColor" />
+                                    <circle cx="31" cy="31" r="4" fill="currentColor" />
                                   </svg>
                                 ) : pattern.id === 'classy' ? (
                                   <svg viewBox="0 0 40 40" className="w-8 h-8">
-                                    <rect x="6" y="6" width="7" height="7" rx="3.5" fill="currentColor" />
-                                    <rect x="17" y="6" width="7" height="7" fill="currentColor" />
-                                    <rect x="28" y="6" width="7" height="7" rx="3.5" fill="currentColor" />
-                                    <rect x="6" y="17" width="7" height="7" fill="currentColor" />
-                                    <rect x="17" y="17" width="7" height="7" rx="3.5" fill="currentColor" />
-                                    <rect x="28" y="17" width="7" height="7" fill="currentColor" />
-                                    <rect x="6" y="28" width="7" height="7" rx="3.5" fill="currentColor" />
-                                    <rect x="17" y="28" width="7" height="7" fill="currentColor" />
-                                    <rect x="28" y="28" width="7" height="7" rx="3.5" fill="currentColor" />
+                                    <path d="M5 9 A4 4 0 0 1 9 5 L13 5 L13 9 A4 4 0 0 1 9 13 L5 13 Z" fill="currentColor" />
+                                    <rect x="16" y="5" width="8" height="8" rx="1.5" fill="currentColor" />
+                                    <path d="M27 9 A4 4 0 0 1 31 5 L35 5 L35 9 A4 4 0 0 1 31 13 L27 13 Z" fill="currentColor" />
+                                    <rect x="5" y="16" width="8" height="8" rx="1.5" fill="currentColor" />
+                                    <path d="M16 20 A4 4 0 0 1 20 16 L24 16 L24 20 A4 4 0 0 1 20 24 L16 24 Z" fill="currentColor" />
+                                    <rect x="27" y="16" width="8" height="8" rx="1.5" fill="currentColor" />
+                                    <path d="M5 31 A4 4 0 0 1 9 27 L13 27 L13 31 A4 4 0 0 1 9 35 L5 35 Z" fill="currentColor" />
+                                    <rect x="16" y="27" width="8" height="8" rx="1.5" fill="currentColor" />
+                                    <path d="M27 31 A4 4 0 0 1 31 27 L35 27 L35 31 A4 4 0 0 1 31 35 L27 35 Z" fill="currentColor" />
                                   </svg>
                                 ) : pattern.id === 'classy-rounded' ? (
                                   <svg viewBox="0 0 40 40" className="w-8 h-8">
-                                    <rect x="6" y="6" width="7" height="7" rx="3" fill="currentColor" />
-                                    <circle cx="20.5" cy="9.5" r="3.5" fill="currentColor" />
-                                    <rect x="28" y="6" width="7" height="7" rx="3" fill="currentColor" />
-                                    <circle cx="9.5" cy="20.5" r="3.5" fill="currentColor" />
-                                    <rect x="17" y="17" width="7" height="7" rx="3" fill="currentColor" />
-                                    <circle cx="31.5" cy="20.5" r="3.5" fill="currentColor" />
-                                    <rect x="6" y="28" width="7" height="7" rx="3" fill="currentColor" />
-                                    <circle cx="20.5" cy="31.5" r="3.5" fill="currentColor" />
-                                    <rect x="28" y="28" width="7" height="7" rx="3" fill="currentColor" />
+                                    <path d="M5 13 C5 8 9 5 13 5 L13 13 Z" fill="currentColor" />
+                                    <circle cx="20" cy="9" r="3.5" fill="currentColor" />
+                                    <path d="M27 5 C31 5 35 8 35 13 L27 13 Z" fill="currentColor" />
+                                    <circle cx="9" cy="20" r="3.5" fill="currentColor" />
+                                    <rect x="16" y="16" width="8" height="8" rx="2" fill="currentColor" />
+                                    <circle cx="31" cy="20" r="3.5" fill="currentColor" />
+                                    <path d="M13 35 C9 35 5 31 5 27 L13 27 Z" fill="currentColor" />
+                                    <circle cx="20" cy="31" r="3.5" fill="currentColor" />
+                                    <path d="M35 27 C35 31 31 35 27 35 L27 27 Z" fill="currentColor" />
+                                  </svg>
+                                ) : pattern.id === 'diamond' ? (
+                                  <svg viewBox="0 0 40 40" className="w-8 h-8">
+                                    <polygon points="9,5 13,9 9,13 5,9" fill="currentColor" />
+                                    <polygon points="20,5 24,9 20,13 16,9" fill="currentColor" />
+                                    <polygon points="31,5 35,9 31,13 27,9" fill="currentColor" />
+                                    <polygon points="9,16 13,20 9,24 5,20" fill="currentColor" />
+                                    <polygon points="20,16 24,20 20,24 16,20" fill="currentColor" />
+                                    <polygon points="31,16 35,20 31,24 27,20" fill="currentColor" />
+                                    <polygon points="9,27 13,31 9,35 5,31" fill="currentColor" />
+                                    <polygon points="20,27 24,31 20,35 16,31" fill="currentColor" />
+                                    <polygon points="31,27 35,31 31,35 27,31" fill="currentColor" />
                                   </svg>
                                 ) : (
                                   <svg viewBox="0 0 40 40" className="w-8 h-8">
-                                    <circle cx="7" cy="7" r="2" fill="#000000" />
-                                    <circle cx="15" cy="7" r="2" fill="#000000" />
-                                    <circle cx="23" cy="7" r="2" fill="#000000" />
-                                    <circle cx="31" cy="7" r="2" fill="#000000" />
-                                    <circle cx="7" cy="15" r="2" fill="#000000" />
-                                    <circle cx="15" cy="15" r="2" fill="#000000" />
-                                    <circle cx="23" cy="15" r="2" fill="#000000" />
-                                    <circle cx="31" cy="15" r="2" fill="#000000" />
-                                    <circle cx="7" cy="23" r="2" fill="#000000" />
-                                    <circle cx="15" cy="23" r="2" fill="#000000" />
-                                    <circle cx="23" cy="23" r="2" fill="#000000" />
-                                    <circle cx="31" cy="23" r="2" fill="#000000" />
-                                    <circle cx="7" cy="31" r="2" fill="#000000" />
-                                    <circle cx="15" cy="31" r="2" fill="#000000" />
-                                    <circle cx="23" cy="31" r="2" fill="#000000" />
-                                    <circle cx="31" cy="31" r="2" fill="#000000" />
+                                    <rect x="5" y="6" width="30" height="4" rx="2" fill="currentColor" />
+                                    <rect x="5" y="14" width="30" height="4" rx="2" fill="currentColor" />
+                                    <rect x="5" y="22" width="30" height="4" rx="2" fill="currentColor" />
+                                    <rect x="5" y="30" width="30" height="4" rx="2" fill="currentColor" />
                                   </svg>
                                 )}
                               </button>
@@ -1929,12 +1936,12 @@ function AdvancedQrMakerContent() {
                       </div>
 
                       {/* 2. Colors Box (2 columns) */}
-                      <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80">
+                      <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950/50 border border-slate-200/80 dark:border-slate-800/80">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                           {/* Left: Background color */}
                           <div className="space-y-2.5">
-                            <label className="block text-xs font-medium text-slate-600">
-                              Background color
+                            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400">
+                              {language === 'en' ? 'Background color' : 'رنگ پس‌زمینه'}
                             </label>
                             <div className="flex items-center gap-3">
                               <input
@@ -1944,9 +1951,9 @@ function AdvancedQrMakerContent() {
                                   if (!isTransparentBg) setBgColor(e.target.value);
                                 }}
                                 disabled={isTransparentBg}
-                                className="w-32 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono text-slate-800 focus:outline-none focus:border-cyan-500 uppercase shadow-2xs"
+                                className="w-32 px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-mono text-slate-800 dark:text-slate-100 focus:outline-none focus:border-cyan-500 uppercase shadow-2xs"
                               />
-                              <div className="relative w-8 h-8 rounded-lg border border-slate-300 shadow-2xs overflow-hidden shrink-0 cursor-pointer">
+                              <div className="relative w-8 h-8 rounded-lg border border-slate-300 dark:border-slate-700 shadow-2xs overflow-hidden shrink-0 cursor-pointer">
                                 <input
                                   type="color"
                                   value={bgColor}
@@ -1980,17 +1987,19 @@ function AdvancedQrMakerContent() {
                                     onChange={(e) => setIsTransparentBg(e.target.checked)}
                                     className="sr-only peer"
                                   />
-                                  <div className="w-8 h-4 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-cyan-600"></div>
+                                  <div className="w-8 h-4 bg-slate-300 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-cyan-600"></div>
                                 </div>
-                                <span className="text-xs text-slate-600 font-medium">Transparent background</span>
+                                <span className="text-xs text-slate-600 dark:text-slate-400 font-medium">
+                                  {language === 'en' ? 'Transparent background' : 'پس‌زمینه شفاف (بدون رنگ)'}
+                                </span>
                               </label>
                             </div>
                           </div>
 
                           {/* Right: Shape color */}
                           <div className="space-y-2.5">
-                            <label className="block text-xs font-medium text-slate-600">
-                              Shape color
+                            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400">
+                              {language === 'en' ? 'Shape color' : 'رنگ کدهای کیوآر'}
                             </label>
                             <div className="flex items-center gap-3">
                               <input
@@ -2000,9 +2009,9 @@ function AdvancedQrMakerContent() {
                                   setSingleColor(e.target.value);
                                   setGradientColor1(e.target.value);
                                 }}
-                                className="w-32 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono text-slate-800 focus:outline-none focus:border-cyan-500 uppercase shadow-2xs"
+                                className="w-32 px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-mono text-slate-800 dark:text-slate-100 focus:outline-none focus:border-cyan-500 uppercase shadow-2xs"
                               />
-                              <div className="relative w-8 h-8 rounded-lg border border-slate-300 shadow-2xs overflow-hidden shrink-0 cursor-pointer">
+                              <div className="relative w-8 h-8 rounded-lg border border-slate-300 dark:border-slate-700 shadow-2xs overflow-hidden shrink-0 cursor-pointer">
                                 <input
                                   type="color"
                                   value={singleColor}
@@ -2028,9 +2037,11 @@ function AdvancedQrMakerContent() {
                                     onChange={(e) => setColorMode(e.target.checked ? 'gradient' : 'single')}
                                     className="sr-only peer"
                                   />
-                                  <div className="w-8 h-4 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-cyan-600"></div>
+                                  <div className="w-8 h-4 bg-slate-300 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-cyan-600"></div>
                                 </div>
-                                <span className="text-xs text-slate-600 font-medium">Gradient</span>
+                                <span className="text-xs text-slate-600 dark:text-slate-400 font-medium">
+                                  {language === 'en' ? 'Gradient' : 'گرادیان (دورنگ)'}
+                                </span>
                               </label>
                             </div>
                           </div>
@@ -2038,19 +2049,19 @@ function AdvancedQrMakerContent() {
 
                         {/* Gradient Extra Settings */}
                         {colorMode === 'gradient' && (
-                          <div className="mt-4 pt-3 border-t border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="mt-4 pt-3 border-t border-slate-200 dark:border-slate-800 grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                              <label className="block text-[11px] text-slate-600 mb-1 font-medium">
-                                End Color (رنگ دوم گرادیان):
+                              <label className="block text-[11px] text-slate-600 dark:text-slate-400 mb-1 font-medium">
+                                {language === 'en' ? 'End Color:' : 'رنگ دوم گرادیان:'}
                               </label>
                               <div className="flex items-center gap-2">
                                 <input
                                   type="text"
                                   value={gradientColor2.toUpperCase()}
                                   onChange={(e) => setGradientColor2(e.target.value)}
-                                  className="w-32 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono text-slate-800 uppercase shadow-2xs"
+                                  className="w-32 px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-mono text-slate-800 dark:text-slate-100 uppercase shadow-2xs"
                                 />
-                                <div className="relative w-8 h-8 rounded-lg border border-slate-300 shadow-2xs overflow-hidden shrink-0 cursor-pointer">
+                                <div className="relative w-8 h-8 rounded-lg border border-slate-300 dark:border-slate-700 shadow-2xs overflow-hidden shrink-0 cursor-pointer">
                                   <input
                                     type="color"
                                     value={gradientColor2}
@@ -2062,18 +2073,18 @@ function AdvancedQrMakerContent() {
                               </div>
                             </div>
                             <div>
-                              <div className="flex justify-between text-[11px] text-slate-600 mb-1 font-medium">
-                                <span>Gradient Angle</span>
-                                <span className="font-mono text-cyan-600">{gradientRotation}°</span>
+                              <div className="flex justify-between text-[11px] text-slate-600 dark:text-slate-400 mb-1 font-medium">
+                                <span>{language === 'en' ? 'Gradient Angle' : 'زاویه گرادیان'}</span>
+                                <span className="font-mono text-cyan-600 dark:text-cyan-400">{gradientRotation}°</span>
                               </div>
                               <input
                                 type="range"
                                 min="0"
                                 max="360"
-                                step="15"
+                                step="1"
                                 value={gradientRotation}
                                 onChange={(e) => setGradientRotation(Number(e.target.value))}
-                                className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-cyan-600 mt-2"
+                                className="w-full h-1.5 bg-slate-200 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-600 mt-2"
                               />
                             </div>
                           </div>
@@ -2082,20 +2093,20 @@ function AdvancedQrMakerContent() {
 
                       {/* 3. Border style (Corner Squares) */}
                       <div className="space-y-2">
-                        <label className="block text-xs font-medium text-slate-600">
-                          Border style
+                        <label className="block text-xs font-medium text-slate-600 dark:text-slate-400">
+                          {language === 'en' ? 'Border style' : 'استایل کادر گوشه‌ها (Border)'}
                         </label>
                         <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
                           {(
                             [
-                              { id: 'square', label: 'Square' },
-                              { id: 'rounded-square', label: 'Rounded Square' },
-                              { id: 'circle', label: 'Circle' },
-                              { id: 'leaf-left', label: 'Leaf Left' },
-                              { id: 'leaf-right', label: 'Leaf Right' },
-                              { id: 'leaf-both', label: 'Leaf Both' },
-                              { id: 'square-cutout', label: 'Square Cutout' },
-                              { id: 'teardrop', label: 'Teardrop' },
+                              { id: 'square', label: language === 'en' ? 'Square' : 'مربعی کلاسیک' },
+                              { id: 'rounded-square', label: language === 'en' ? 'Rounded Square' : 'گوشه‌گرد' },
+                              { id: 'circle', label: language === 'en' ? 'Circle' : 'دایره‌ای' },
+                              { id: 'leaf-left', label: language === 'en' ? 'Leaf Left' : 'کلاسیک هندسی' },
+                              { id: 'leaf-right', label: language === 'en' ? 'Leaf Right' : 'کلاسیک منحنی' },
+                              { id: 'leaf-both', label: language === 'en' ? 'Leaf Both' : 'گرد متوازن' },
+                              { id: 'square-cutout', label: language === 'en' ? 'Dotted Frame' : 'کادر نقطه‌ای' },
+                              { id: 'teardrop', label: language === 'en' ? 'Teardrop' : 'نرم و قطره‌ای' },
                             ] as const
                           ).map((b) => {
                             const isSelected = cornerSquareStyle === b.id;
@@ -2105,43 +2116,49 @@ function AdvancedQrMakerContent() {
                                 type="button"
                                 onClick={() => setCornerSquareStyle(b.id)}
                                 className={`h-14 rounded-xl border flex items-center justify-center p-1.5 transition-all ${isSelected
-                                  ? 'border-blue-500 bg-sky-50 text-slate-900 ring-2 ring-blue-300/60 shadow-xs'
-                                  : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
+                                  ? 'border-cyan-500 dark:border-cyan-400 bg-cyan-50 dark:bg-cyan-950/40 text-cyan-600 dark:text-cyan-400 ring-2 ring-cyan-500/30 shadow-xs'
+                                  : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/60 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-700 shadow-2xs'
                                   }`}
                                 title={b.label}
                               >
                                 {b.id === 'square' ? (
                                   <svg viewBox="0 0 40 40" className="w-8 h-8">
-                                    <rect x="6" y="6" width="28" height="28" stroke="#1e293b" strokeWidth="4.5" fill="none" />
+                                    <rect x="6" y="6" width="28" height="28" stroke="currentColor" strokeWidth="4.5" fill="none" />
                                   </svg>
                                 ) : b.id === 'rounded-square' ? (
                                   <svg viewBox="0 0 40 40" className="w-8 h-8">
-                                    <rect x="6" y="6" width="28" height="28" rx="8" stroke="#1e293b" strokeWidth="4.5" fill="none" />
+                                    <rect x="6" y="6" width="28" height="28" rx="8" stroke="currentColor" strokeWidth="4.5" fill="none" />
                                   </svg>
                                 ) : b.id === 'circle' ? (
                                   <svg viewBox="0 0 40 40" className="w-8 h-8">
-                                    <circle cx="20" cy="20" r="14" stroke="#1e293b" strokeWidth="4.5" fill="none" />
+                                    <circle cx="20" cy="20" r="14" stroke="currentColor" strokeWidth="4.5" fill="none" />
                                   </svg>
                                 ) : b.id === 'leaf-left' ? (
                                   <svg viewBox="0 0 40 40" className="w-8 h-8">
-                                    <path d="M 20 6 C 12 6 6 12 6 20 L 6 34 L 20 34 C 28 34 34 28 34 20 L 34 6 Z" stroke="#1e293b" strokeWidth="4" fill="none" />
+                                    <path d="M 20 6 C 12 6 6 12 6 20 L 6 34 L 20 34 C 28 34 34 28 34 20 L 34 6 Z" stroke="currentColor" strokeWidth="4" fill="none" />
                                   </svg>
                                 ) : b.id === 'leaf-right' ? (
                                   <svg viewBox="0 0 40 40" className="w-8 h-8">
-                                    <path d="M 6 6 L 20 6 C 28 6 34 12 34 20 L 34 34 L 20 34 C 12 34 6 28 6 20 Z" stroke="#1e293b" strokeWidth="4" fill="none" />
+                                    <path d="M 6 6 L 20 6 C 28 6 34 12 34 20 L 34 34 L 20 34 C 12 34 6 28 6 20 Z" stroke="currentColor" strokeWidth="4" fill="none" />
                                   </svg>
                                 ) : b.id === 'leaf-both' ? (
                                   <svg viewBox="0 0 40 40" className="w-8 h-8">
-                                    <path d="M 20 6 C 12 6 6 12 6 20 L 6 20 C 6 28 12 34 20 34 C 28 34 34 28 34 20 C 34 12 28 6 20 6 Z" stroke="#1e293b" strokeWidth="4" fill="none" />
+                                    <path d="M 20 6 C 12 6 6 12 6 20 L 6 20 C 6 28 12 34 20 34 C 28 34 34 28 34 20 C 34 12 28 6 20 6 Z" stroke="currentColor" strokeWidth="4" fill="none" />
                                   </svg>
                                 ) : b.id === 'square-cutout' ? (
                                   <svg viewBox="0 0 40 40" className="w-8 h-8">
-                                    <rect x="6" y="6" width="28" height="28" rx="4" fill="#1e293b" />
-                                    <circle cx="20" cy="20" r="8" fill="#ffffff" />
+                                    <circle cx="8" cy="8" r="3" fill="currentColor" />
+                                    <circle cx="20" cy="8" r="3" fill="currentColor" />
+                                    <circle cx="32" cy="8" r="3" fill="currentColor" />
+                                    <circle cx="8" cy="20" r="3" fill="currentColor" />
+                                    <circle cx="32" cy="20" r="3" fill="currentColor" />
+                                    <circle cx="8" cy="32" r="3" fill="currentColor" />
+                                    <circle cx="20" cy="32" r="3" fill="currentColor" />
+                                    <circle cx="32" cy="32" r="3" fill="currentColor" />
                                   </svg>
                                 ) : (
                                   <svg viewBox="0 0 40 40" className="w-8 h-8">
-                                    <path d="M 20 6 L 33 20 C 33 27.2 27.2 33 20 33 C 12.8 33 7 27.2 7 20 Z" stroke="#1e293b" strokeWidth="4" fill="none" />
+                                    <path d="M 20 6 L 33 20 C 33 27.2 27.2 33 20 33 C 12.8 33 7 27.2 7 20 Z" stroke="currentColor" strokeWidth="4" fill="none" />
                                   </svg>
                                 )}
                               </button>
@@ -2150,9 +2167,9 @@ function AdvancedQrMakerContent() {
                         </div>
 
                         {/* Border Color */}
-                        <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
-                          <label className="block text-xs font-medium text-slate-600 mb-1.5">
-                            Border color
+                        <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950/50 border border-slate-200/80 dark:border-slate-800/80">
+                          <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
+                            {language === 'en' ? 'Border color' : 'رنگ کادر گوشه‌ها'}
                           </label>
                           <div className="flex items-center gap-3">
                             <input
@@ -2162,9 +2179,9 @@ function AdvancedQrMakerContent() {
                                 setEyeSquareColor(e.target.value);
                                 setCustomEyeColors(true);
                               }}
-                              className="flex-1 max-w-[280px] px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono text-slate-800 uppercase shadow-2xs"
+                              className="flex-1 max-w-[280px] px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-mono text-slate-800 dark:text-slate-100 uppercase shadow-2xs"
                             />
-                            <div className="relative w-14 h-8 rounded-lg border border-slate-300 shadow-2xs overflow-hidden shrink-0 cursor-pointer">
+                            <div className="relative w-14 h-8 rounded-lg border border-slate-300 dark:border-slate-700 shadow-2xs overflow-hidden shrink-0 cursor-pointer">
                               <input
                                 type="color"
                                 value={customEyeColors ? eyeSquareColor : singleColor}
@@ -2185,20 +2202,20 @@ function AdvancedQrMakerContent() {
 
                       {/* 4. Center style (Corner Dots) */}
                       <div className="space-y-2">
-                        <label className="block text-xs font-medium text-slate-600">
-                          Center style
+                        <label className="block text-xs font-medium text-slate-600 dark:text-slate-400">
+                          {language === 'en' ? 'Center style' : 'استایل نقطه مرکزی گوشه‌ها (Center)'}
                         </label>
                         <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
                           {(
                             [
-                              { id: 'square', label: 'Square' },
-                              { id: 'rounded-square', label: 'Rounded Square' },
-                              { id: 'circle', label: 'Circle' },
-                              { id: 'leaf', label: 'Leaf' },
-                              { id: 'sunburst', label: 'Sunburst' },
-                              { id: 'star', label: 'Star' },
-                              { id: 'diamond', label: 'Diamond' },
-                              { id: 'cross', label: 'Cross' },
+                              { id: 'square', label: language === 'en' ? 'Square' : 'مربعی' },
+                              { id: 'rounded-square', label: language === 'en' ? 'Rounded Square' : 'گوشه‌گرد' },
+                              { id: 'circle', label: language === 'en' ? 'Circle' : 'دایره‌ای' },
+                              { id: 'leaf', label: language === 'en' ? 'Leaf' : 'کلاسیک هندسی' },
+                              { id: 'sunburst', label: language === 'en' ? 'Sunburst' : 'نقطه‌ای چندتایی' },
+                              { id: 'star', label: language === 'en' ? 'Star' : 'منحنی نرم' },
+                              { id: 'diamond', label: language === 'en' ? 'Diamond' : 'گرد ملایم' },
+                              { id: 'cross', label: language === 'en' ? 'Cross' : 'چهارگوش کلاسیک' },
                             ] as const
                           ).map((c) => {
                             const isSelected = cornerDotStyle === c.id;
@@ -2208,42 +2225,45 @@ function AdvancedQrMakerContent() {
                                 type="button"
                                 onClick={() => setCornerDotStyle(c.id)}
                                 className={`h-14 rounded-xl border flex items-center justify-center p-1.5 transition-all ${isSelected
-                                  ? 'border-blue-500 bg-sky-50 text-slate-900 ring-2 ring-blue-300/60 shadow-xs'
-                                  : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 shadow-2xs'
+                                  ? 'border-cyan-500 dark:border-cyan-400 bg-cyan-50 dark:bg-cyan-950/40 text-cyan-600 dark:text-cyan-400 ring-2 ring-cyan-500/30 shadow-xs'
+                                  : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/60 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-700 shadow-2xs'
                                   }`}
                                 title={c.label}
                               >
                                 {c.id === 'square' ? (
                                   <svg viewBox="0 0 40 40" className="w-8 h-8">
-                                    <rect x="9" y="9" width="22" height="22" fill="#1e293b" />
+                                    <rect x="9" y="9" width="22" height="22" fill="currentColor" />
                                   </svg>
                                 ) : c.id === 'rounded-square' ? (
                                   <svg viewBox="0 0 40 40" className="w-8 h-8">
-                                    <rect x="9" y="9" width="22" height="22" rx="6" fill="#1e293b" />
+                                    <rect x="9" y="9" width="22" height="22" rx="6" fill="currentColor" />
                                   </svg>
                                 ) : c.id === 'circle' ? (
                                   <svg viewBox="0 0 40 40" className="w-8 h-8">
-                                    <circle cx="20" cy="20" r="11" fill="#1e293b" />
+                                    <circle cx="20" cy="20" r="11" fill="currentColor" />
                                   </svg>
                                 ) : c.id === 'leaf' ? (
                                   <svg viewBox="0 0 40 40" className="w-8 h-8">
-                                    <path d="M 20 8 C 27 8 32 13 32 20 C 32 27 27 32 20 32 L 8 32 L 8 20 C 8 13 13 8 20 8 Z" fill="#1e293b" />
+                                    <path d="M 20 8 C 27 8 32 13 32 20 C 32 27 27 32 20 32 L 8 32 L 8 20 C 8 13 13 8 20 8 Z" fill="currentColor" />
                                   </svg>
                                 ) : c.id === 'sunburst' ? (
                                   <svg viewBox="0 0 40 40" className="w-8 h-8">
-                                    <path d="M 20 8 l 3 2 l 3.5 -1 l 1.5 3.5 l 3.5 1 l -0.5 3.5 l 3 2 l -2 3 l 2 3 l -3 2 l 0.5 3.5 l -3.5 1 l -1.5 3.5 l -3.5 -1 l -3 2 l -3 -2 l -3.5 1 l -1.5 -3.5 l -3.5 -1 l 0.5 -3.5 l -3 -2 l 2 -3 l -2 -3 l 3 -2 l -0.5 -3.5 l 3.5 -1 l 1.5 -3.5 l 3.5 1 z" fill="#1e293b" />
+                                    <circle cx="15" cy="15" r="3.5" fill="currentColor" />
+                                    <circle cx="25" cy="15" r="3.5" fill="currentColor" />
+                                    <circle cx="15" cy="25" r="3.5" fill="currentColor" />
+                                    <circle cx="25" cy="25" r="3.5" fill="currentColor" />
                                   </svg>
                                 ) : c.id === 'star' ? (
                                   <svg viewBox="0 0 40 40" className="w-8 h-8">
-                                    <polygon points="20,7 23.8,15.2 32.8,16.2 26.2,22.2 28,31 20,26.4 12,31 13.8,22.2 7.2,16.2 16.2,15.2" fill="#1e293b" />
+                                    <path d="M 20 9 C 23 15 25 17 31 20 C 25 23 23 25 20 31 C 17 25 15 23 9 20 C 15 17 17 15 20 9 Z" fill="currentColor" />
                                   </svg>
                                 ) : c.id === 'diamond' ? (
                                   <svg viewBox="0 0 40 40" className="w-8 h-8">
-                                    <polygon points="20,7 33,20 20,33 7,20" fill="#1e293b" />
+                                    <polygon points="20,7 33,20 20,33 7,20" fill="currentColor" />
                                   </svg>
                                 ) : (
                                   <svg viewBox="0 0 40 40" className="w-8 h-8">
-                                    <path d="M 16 8 h 8 v 8 h 8 v 8 h -8 v 8 h -8 v -8 h -8 v -8 h 8 z" fill="#1e293b" />
+                                    <path d="M 16 8 h 8 v 8 h 8 v 8 h -8 v 8 h -8 v -8 h -8 v -8 h 8 z" fill="currentColor" />
                                   </svg>
                                 )}
                               </button>
@@ -2252,9 +2272,9 @@ function AdvancedQrMakerContent() {
                         </div>
 
                         {/* Center Color */}
-                        <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
-                          <label className="block text-xs font-medium text-slate-600 mb-1.5">
-                            Center color
+                        <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950/50 border border-slate-200/80 dark:border-slate-800/80">
+                          <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
+                            {language === 'en' ? 'Center color' : 'رنگ نقطه مرکزی گوشه‌ها'}
                           </label>
                           <div className="flex items-center gap-3">
                             <input
@@ -2264,9 +2284,9 @@ function AdvancedQrMakerContent() {
                                 setEyeDotColor(e.target.value);
                                 setCustomEyeColors(true);
                               }}
-                              className="flex-1 max-w-[280px] px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono text-slate-800 uppercase shadow-2xs"
+                              className="flex-1 max-w-[280px] px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-mono text-slate-800 dark:text-slate-100 uppercase shadow-2xs"
                             />
-                            <div className="relative w-14 h-8 rounded-lg border border-slate-300 shadow-2xs overflow-hidden shrink-0 cursor-pointer">
+                            <div className="relative w-14 h-8 rounded-lg border border-slate-300 dark:border-slate-700 shadow-2xs overflow-hidden shrink-0 cursor-pointer">
                               <input
                                 type="color"
                                 value={customEyeColors ? eyeDotColor : singleColor}
@@ -2292,20 +2312,20 @@ function AdvancedQrMakerContent() {
                     <div className="space-y-6 animate-in fade-in duration-200">
                       {/* Upload Logo Section */}
                       <div className="space-y-2">
-                        <label className="block text-sm font-semibold text-slate-700">
-                          Upload Logo
+                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">
+                          {language === 'en' ? 'Upload Custom Logo' : 'بارگذاری لوگوی اختصاصی'}
                         </label>
                         <div
                           onClick={() => fileInputRef.current?.click()}
-                          className="flex items-center justify-between px-4 py-2 border border-slate-200 rounded-xl bg-white hover:border-slate-300 cursor-pointer transition-colors shadow-2xs group"
+                          className="flex items-center justify-between px-4 py-2 border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700 cursor-pointer transition-colors shadow-2xs group"
                         >
-                          <span className="text-xs text-slate-400 group-hover:text-slate-600 truncate">
+                          <span className="text-xs text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300 truncate">
                             {logoDataUrl && selectedPresetLogoId === 'custom'
                               ? (language === 'en' ? 'Logo file selected (click to replace)' : 'فایل لوگو انتخاب شد (کلیک برای تغییر)')
-                              : 'Choose file'}
+                              : (language === 'en' ? 'Choose image file...' : 'انتخاب فایل تصویر...')}
                           </span>
-                          <span className="text-xs font-medium text-slate-600 bg-slate-100 group-hover:bg-slate-200 px-3 py-1.5 rounded-lg border border-slate-200/80 transition-colors">
-                            Browse
+                          <span className="text-xs font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 group-hover:bg-slate-200 dark:group-hover:bg-slate-700 px-3 py-1.5 rounded-lg border border-slate-200/80 dark:border-slate-700/80 transition-colors">
+                            {language === 'en' ? 'Browse' : 'انتخاب فایل'}
                           </span>
                           <input
                             ref={fileInputRef}
@@ -2319,8 +2339,8 @@ function AdvancedQrMakerContent() {
 
                       {/* Or choose from here Section (Preset Icons & Badges) */}
                       <div className="space-y-3">
-                        <label className="block text-sm font-semibold text-slate-700">
-                          Or choose from here
+                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">
+                          {language === 'en' ? 'Or choose from presets and badges' : 'یا از نشان‌ها و نمادهای آماده انتخاب کنید'}
                         </label>
 
                         {/* Row 1: 9 preset circular / branded logos */}
@@ -2333,10 +2353,10 @@ function AdvancedQrMakerContent() {
                               setSelectedPresetLogoId(null);
                             }}
                             className={`w-full h-12 rounded-xl border flex items-center justify-center transition-all ${!logoDataUrl
-                              ? 'border-blue-500 bg-sky-50 text-slate-900 ring-2 ring-blue-300/60 shadow-xs'
-                              : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 shadow-2xs'
+                              ? 'border-blue-500 bg-sky-50 dark:bg-blue-950/40 text-slate-900 dark:text-blue-200 ring-2 ring-blue-300/60 dark:ring-blue-800/60 shadow-xs'
+                              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-700 shadow-2xs'
                               }`}
-                            title="Clear Logo"
+                            title={language === 'en' ? 'Clear Logo' : 'حذف نشان یا لوگو'}
                           >
                             <X className="w-5 h-5 stroke-[2.5]" />
                           </button>
@@ -2355,8 +2375,8 @@ function AdvancedQrMakerContent() {
                                   toast.success(`Logo ${item.label} selected.`);
                                 }}
                                 className={`w-full h-12 rounded-xl border transition-all p-1.5 flex items-center justify-center shadow-2xs ${isSelected
-                                  ? 'border-blue-500 bg-sky-50 text-slate-900 ring-2 ring-blue-300/60 shadow-xs'
-                                  : 'border-slate-200 bg-white hover:border-slate-300 hover:scale-105'
+                                  ? 'border-blue-500 bg-sky-50 dark:bg-blue-950/40 text-slate-900 dark:text-blue-200 ring-2 ring-blue-300/60 dark:ring-blue-800/60 shadow-xs'
+                                  : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700 hover:scale-105'
                                   }`}
                                 title={item.label}
                               >
@@ -2386,8 +2406,8 @@ function AdvancedQrMakerContent() {
                                   toast.success(`Badge ${badge.label} selected.`);
                                 }}
                                 className={`h-12 rounded-xl border transition-all p-1.5 flex items-center justify-center shadow-2xs ${isSelected
-                                  ? 'border-blue-500 bg-sky-50 text-slate-900 ring-2 ring-blue-300/60 shadow-xs'
-                                  : 'border-slate-200 bg-white hover:border-slate-300 hover:scale-105'
+                                  ? 'border-blue-500 bg-sky-50 dark:bg-blue-950/40 text-slate-900 dark:text-blue-200 ring-2 ring-blue-300/60 dark:ring-blue-800/60 shadow-xs'
+                                  : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700 hover:scale-105'
                                   }`}
                                 title={badge.label}
                               >
@@ -2405,23 +2425,23 @@ function AdvancedQrMakerContent() {
 
                       {/* Logo Options (if logo selected) */}
                       {logoDataUrl && (
-                        <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-3">
+                        <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 space-y-3">
                           <div className="flex items-center justify-between">
-                            <span className="text-xs text-slate-700 font-medium">
-                              Logo Size (اندازه لوگو در مرکز):
+                            <span className="text-xs text-slate-700 dark:text-slate-300 font-medium">
+                              {language === 'en' ? 'Logo Size:' : 'اندازه لوگو در مرکز:'}
                             </span>
-                            <span className="text-xs font-mono font-bold text-cyan-600">
+                            <span className="text-xs font-mono font-bold text-cyan-600 dark:text-cyan-400">
                               {Math.round(logoSize * 100)}%
                             </span>
                           </div>
                           <input
                             type="range"
-                            min="0.15"
-                            max="0.45"
-                            step="0.05"
-                            value={logoSize}
-                            onChange={(e) => setLogoSize(Number(e.target.value))}
-                            className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-cyan-600"
+                            min="10"
+                            max="50"
+                            step="1"
+                            value={Math.round(logoSize * 100)}
+                            onChange={(e) => setLogoSize(Number(e.target.value) / 100)}
+                            className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-600"
                           />
 
                           <div className="pt-1 flex items-center justify-between">
@@ -2430,16 +2450,21 @@ function AdvancedQrMakerContent() {
                                 type="checkbox"
                                 checked={hideBehindLogo}
                                 onChange={(e) => setHideBehindLogo(e.target.checked)}
-                                className="rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
+                                className="rounded border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-cyan-600 focus:ring-cyan-500"
                               />
-                              <span className="text-xs text-slate-600 font-medium">Hide dots behind logo (پنهان کردن نقاط زیر لوگو)</span>
+                              <span className="text-xs text-slate-600 dark:text-slate-400 font-medium">
+                                {language === 'en' ? 'Hide dots behind logo' : 'پنهان کردن نقاط زیر لوگو'}
+                              </span>
                             </label>
                             <button
                               type="button"
-                              onClick={() => setLogoDataUrl(null)}
-                              className="text-xs text-rose-500 hover:text-rose-600 font-medium"
+                              onClick={() => {
+                                setLogoDataUrl(null);
+                                setSelectedPresetLogoId(null);
+                              }}
+                              className="text-xs text-rose-500 hover:text-rose-600 dark:text-rose-400 dark:hover:text-rose-300 font-medium transition-colors"
                             >
-                              حذف لوگو
+                              {language === 'en' ? 'Remove Logo' : 'حذف لوگو'}
                             </button>
                           </div>
                         </div>
@@ -2448,9 +2473,9 @@ function AdvancedQrMakerContent() {
                   )}
 
                   {/* Advanced General Settings (Error Correction & Margin) */}
-                  <div className="pt-4 border-t border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="pt-4 border-t border-slate-200 dark:border-slate-800 grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                      <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">
                         {language === 'en'
                           ? 'Error Correction Level'
                           : 'سطح تصحیح خطا (Error Correction)'}
@@ -2469,8 +2494,8 @@ function AdvancedQrMakerContent() {
                             type="button"
                             onClick={() => setErrorCorrectionLevel(lvl.id)}
                             className={`py-1.5 rounded-lg text-xs font-medium border text-center transition-colors ${errorCorrectionLevel === lvl.id
-                              ? 'bg-sky-50 border-blue-500 text-slate-900 font-bold ring-1 ring-blue-300'
-                              : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-white'
+                              ? 'bg-sky-50 dark:bg-blue-950/40 border-blue-500 text-slate-900 dark:text-blue-200 font-bold ring-1 ring-blue-300 dark:ring-blue-800'
+                              : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800/80'
                               }`}
                           >
                             {lvl.label}
@@ -2480,20 +2505,20 @@ function AdvancedQrMakerContent() {
                     </div>
 
                     <div>
-                      <div className="flex justify-between text-xs text-slate-600 mb-1.5 font-medium">
+                      <div className="flex justify-between text-xs text-slate-600 dark:text-slate-400 mb-1.5 font-medium">
                         <span>
                           {language === 'en' ? 'Outer Margin' : 'حاشیه بیرونی'}
                         </span>
-                        <span className="font-mono text-cyan-600">{margin}px</span>
+                        <span className="font-mono text-cyan-600 dark:text-cyan-400">{margin}px</span>
                       </div>
                       <input
                         type="range"
                         min="0"
                         max="30"
-                        step="2"
+                        step="1"
                         value={margin}
                         onChange={(e) => setMargin(Number(e.target.value))}
-                        className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-cyan-600 mt-2"
+                        className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-600 mt-2"
                       />
                     </div>
                   </div>
@@ -2523,7 +2548,7 @@ function AdvancedQrMakerContent() {
                 </div>
 
                 {/* QR Render Box with Live Frame Preview */}
-                <div className="relative flex items-center justify-center p-6 rounded-2xl bg-slate-950/80 border border-slate-800 shadow-inner min-h-[360px] overflow-hidden">
+                <div className="relative flex items-center justify-center p-6 rounded-2xl bg-slate-950/80 border border-slate-800 shadow-inner min-h-[360px] overflow-hidden transition-all duration-300">
                   {/* Visual checkboard pattern behind transparent QR */}
                   {isTransparentBg && (
                     <div
@@ -2538,7 +2563,7 @@ function AdvancedQrMakerContent() {
 
                   {/* Single outer card containing qrContainerRef (prevents unmount / canvas detachment) */}
                   <div
-                    className={`relative flex flex-col items-center justify-center transition-all ${frameStyle === 'none'
+                    className={`relative flex flex-col items-center justify-center transition-all duration-300 ease-out ${frameStyle === 'none'
                       ? 'hover:scale-105'
                       : frameStyle === 'bottom-banner' || frameStyle === 'black-banner'
                         ? 'rounded-2xl overflow-hidden shadow-2xl bg-white p-3 pb-0'
@@ -2589,7 +2614,7 @@ function AdvancedQrMakerContent() {
                     {/* QR Canvas Container (Always Mounted) */}
                     <div
                       ref={qrContainerRef}
-                      className="flex items-center justify-center"
+                      className="w-[280px] h-[280px] sm:w-[300px] sm:h-[300px] max-w-full aspect-square flex items-center justify-center transition-all duration-300 ease-out"
                     />
 
                     {/* Bottom Frame Elements */}
