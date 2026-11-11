@@ -86,7 +86,7 @@ export async function PATCH(req: NextRequest) {
     const { id, status } = body;
 
     if (!id || !mongoose.isValidObjectId(id)) {
-      return NextResponse.json({ success: false, message: 'شناسه پیام نامعتبر است' }, { status: 400 });
+      return NextResponse.json({ success: false, message: 'آی دی پیام نامعتبر است' }, { status: 400 });
     }
 
     const updated = await Lead.findByIdAndUpdate(
@@ -115,7 +115,7 @@ export async function DELETE(req: NextRequest) {
     const id = searchParams.get('id');
 
     if (!id || !mongoose.isValidObjectId(id)) {
-      return NextResponse.json({ success: false, message: 'شناسه نامعتبر است' }, { status: 400 });
+      return NextResponse.json({ success: false, message: 'آی دی نامعتبر است' }, { status: 400 });
     }
 
     await Lead.findByIdAndDelete(id);

@@ -1064,7 +1064,7 @@ export const LivePreview: React.FC = () => {
             ) : (
               <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 text-xs p-4 text-center">
                 <Play className="w-6 h-6 mb-1 text-rose-500" />
-                <span>ویدیو آپارات (در انتظار تنظیم شناسه)</span>
+                <span>ویدیو آپارات (در انتظار تنظیم آی دی)</span>
               </div>
             )}
           </div>
@@ -2067,15 +2067,14 @@ export const LivePreview: React.FC = () => {
                           strategy={horizontalListSortingStrategy}
                         >
                           <div
-                            className={`inline-flex flex-wrap justify-center mx-auto max-w-full w-max items-center gap-2.5 p-2 ${
-                              themeConfig.buttonShape === 'pill' || themeConfig.borderRadius === 'rounded-full'
+                            className={`inline-flex flex-wrap justify-center mx-auto max-w-full w-max items-center gap-2.5 p-2 ${themeConfig.buttonShape === 'pill' || themeConfig.borderRadius === 'rounded-full'
                                 ? 'rounded-full px-3.5'
                                 : themeConfig.buttonShape === 'sharp' || themeConfig.borderRadius === 'rounded-none'
-                                ? 'rounded-none'
-                                : themeConfig.borderRadius === 'rounded-xl' || themeConfig.borderRadius === 'rounded-lg'
-                                ? 'rounded-xl'
-                                : 'rounded-2xl'
-                            } bg-black/10 dark:bg-white/5 border border-white/10 backdrop-blur-md`}
+                                  ? 'rounded-none'
+                                  : themeConfig.borderRadius === 'rounded-xl' || themeConfig.borderRadius === 'rounded-lg'
+                                    ? 'rounded-xl'
+                                    : 'rounded-2xl'
+                              } bg-black/10 dark:bg-white/5 border border-white/10 backdrop-blur-md`}
                           >
                             {profile.whatsapp && !compactSocialLinks.some((l) => l.moduleType === 'whatsapp_direct') && (
                               <button
@@ -2085,11 +2084,10 @@ export const LivePreview: React.FC = () => {
                                   e.stopPropagation();
                                   toast.info('این آیکون مربوط به شماره واتساپ در اطلاعات شناسنامه‌ای پروفایل است.');
                                 }}
-                                className={`w-11 h-11 ${
-                                  themeConfig.buttonShape === 'pill' || themeConfig.borderRadius === 'rounded-full'
+                                className={`w-11 h-11 ${themeConfig.buttonShape === 'pill' || themeConfig.borderRadius === 'rounded-full'
                                     ? 'rounded-full'
                                     : 'rounded-2xl'
-                                } bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm cursor-pointer`}
+                                  } bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm cursor-pointer`}
                                 title="واتساپ (پروفایل)"
                               >
                                 <WhatsAppIcon className="w-5 h-5 fill-current" />
@@ -2112,11 +2110,10 @@ export const LivePreview: React.FC = () => {
                                   e.stopPropagation();
                                   toast.info('این آیکون مربوط به شماره تماس در اطلاعات شناسنامه‌ای پروفایل است.');
                                 }}
-                                className={`w-11 h-11 ${
-                                  themeConfig.buttonShape === 'pill' || themeConfig.borderRadius === 'rounded-full'
+                                className={`w-11 h-11 ${themeConfig.buttonShape === 'pill' || themeConfig.borderRadius === 'rounded-full'
                                     ? 'rounded-full'
                                     : 'rounded-2xl'
-                                } bg-teal-500/15 hover:bg-teal-500/25 border border-teal-500/30 text-teal-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm cursor-pointer`}
+                                  } bg-teal-500/15 hover:bg-teal-500/25 border border-teal-500/30 text-teal-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-sm cursor-pointer`}
                                 title="تماس (پروفایل)"
                               >
                                 <Phone className="w-5 h-5" />

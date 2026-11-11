@@ -154,7 +154,7 @@ export async function POST(req: NextRequest) {
       } catch (e) {
         console.error('Insights bot order alert error:', e);
       }
-    })().catch(() => {});
+    })().catch(() => { });
 
     return NextResponse.json({
       success: true,
@@ -189,7 +189,7 @@ export async function PATCH(req: NextRequest) {
     else if (orderNumber) query.orderNumber = orderNumber;
     else {
       return NextResponse.json(
-        { success: false, message: 'شناسه یا شماره سفارش الزامی است.' },
+        { success: false, message: 'آی دی یا شماره سفارش الزامی است.' },
         { status: 400 }
       );
     }
@@ -297,7 +297,7 @@ export async function DELETE(req: NextRequest) {
 
     if (!orderId) {
       return NextResponse.json(
-        { success: false, message: 'شناسه سفارش الزامی است.' },
+        { success: false, message: 'آی دی سفارش الزامی است.' },
         { status: 400 }
       );
     }

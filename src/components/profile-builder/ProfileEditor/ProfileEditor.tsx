@@ -2403,7 +2403,7 @@ export const ProfileEditor: React.FC = () => {
                     <ChevronDown className="w-4 h-4 text-muted-foreground absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                   </div>
                   <span className="text-[10px] text-muted-foreground block">
-                    اعمال بر روی نام‌های کاربری، شناسه‌ها و نمای انگلیسی کارت
+                    اعمال بر روی نام‌های کاربری، آی دی‌ها و نمای انگلیسی کارت
                   </span>
                 </div>
               </div>

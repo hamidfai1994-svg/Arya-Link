@@ -150,11 +150,10 @@ export function SuperAdminApiSettings() {
           <Button
             onClick={handleSave}
             disabled={!isDirty || isSaving}
-            className={`h-10 px-5 rounded-2xl font-bold text-xs shadow-md transition-all flex items-center gap-2 shrink-0 self-start sm:self-auto ${
-              isDirty && !isSaving
+            className={`h-10 px-5 rounded-2xl font-bold text-xs shadow-md transition-all flex items-center gap-2 shrink-0 self-start sm:self-auto ${isDirty && !isSaving
                 ? 'bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-cyan-500/20 cursor-pointer active:scale-95'
                 : 'bg-muted text-muted-foreground border border-border cursor-not-allowed opacity-50 shadow-none'
-            }`}
+              }`}
           >
             {isSaving ? (
               <>
@@ -206,11 +205,11 @@ export function SuperAdminApiSettings() {
             <div className="flex items-center gap-2">
               <MessageSquare className="w-4 h-4 text-emerald-500" />
               <label className="text-xs font-bold text-foreground block">
-                شناسه ربات پشتیبانی و تیکت‌ها (Support Bot Chat ID)
+                آی دی ربات پشتیبانی و تیکت‌ها (Support Bot Chat ID)
               </label>
             </div>
             <p className="text-[11px] text-muted-foreground leading-normal">
-              شناسه چت یا کانال تلگرام برای دریافت تیکت‌های پشتیبانی و ارتباطات کاربران
+              آی دی چت یا کانال تلگرام برای دریافت تیکت‌های پشتیبانی و ارتباطات کاربران
             </p>
             <Input
               type="text"
@@ -227,11 +226,11 @@ export function SuperAdminApiSettings() {
             <div className="flex items-center gap-2">
               <ShoppingCart className="w-4 h-4 text-sky-500" />
               <label className="text-xs font-bold text-foreground block">
-                شناسه ربات آمار و سفارشات (Insights & Orders Chat ID)
+                آی دی ربات آمار و سفارشات (Insights & Orders Chat ID)
               </label>
             </div>
             <p className="text-[11px] text-muted-foreground leading-normal">
-              شناسه چت یا کانال تلگرام جهت تفکیک اعلان‌های خرید کارت و آمار رشد پلتفرم
+              آی دی چت یا کانال تلگرام جهت تفکیک اعلان‌های خرید کارت و آمار رشد پلتفرم
             </p>
             <Input
               type="text"

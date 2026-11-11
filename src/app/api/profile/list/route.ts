@@ -151,10 +151,10 @@ export async function POST(req: NextRequest) {
       const cloneAlias = await generateUniqueAlias(`${source.alias}_copy`);
       const clonedLinks = Array.isArray(source.links)
         ? source.links.map((link: any) => ({
-            ...link,
-            id: `mod_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-            clickCount: 0,
-          }))
+          ...link,
+          id: `mod_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+          clickCount: 0,
+        }))
         : [];
 
       const duplicatedProfile = await Profile.create({
@@ -222,7 +222,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          message: 'این شناسه آدرس قبلاً ثبت شده است. لطفاً شناسه دیگری انتخاب کنید.',
+          message: 'این آی دی آدرس قبلاً ثبت شده است. لطفاً آی دی دیگری انتخاب کنید.',
         },
         { status: 409 }
       );
@@ -244,8 +244,8 @@ export async function POST(req: NextRequest) {
     const bgGradient = isEmerald
       ? 'linear-gradient(135deg, #022c22 0%, #064e3b 50%, #065f46 100%)'
       : isGlass
-      ? 'linear-gradient(135deg, #180d2c 0%, #2e1065 50%, #0f172a 100%)'
-      : 'linear-gradient(135deg, #090d16 0%, #0f172a 50%, #1e1b4b 100%)';
+        ? 'linear-gradient(135deg, #180d2c 0%, #2e1065 50%, #0f172a 100%)'
+        : 'linear-gradient(135deg, #090d16 0%, #0f172a 50%, #1e1b4b 100%)';
 
     const primaryColor = roleType === 'business' || isEmerald ? '#059669' : isGlass ? '#8b5cf6' : '#0ea5e9';
     const accentColor = roleType === 'business' || isEmerald ? '#10b981' : isGlass ? '#c084fc' : '#06b6d4';
@@ -333,7 +333,7 @@ export async function DELETE(req: NextRequest) {
 
     if (!profileId) {
       return NextResponse.json(
-        { success: false, message: 'شناسه پروفایل جهت حذف الزامی است.' },
+        { success: false, message: 'آی دی پروفایل جهت حذف الزامی است.' },
         { status: 400 }
       );
     }

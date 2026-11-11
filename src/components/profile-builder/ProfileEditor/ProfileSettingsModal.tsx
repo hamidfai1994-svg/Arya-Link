@@ -512,7 +512,7 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
                 {/* Chat ID Input */}
                 <div className="pt-2 border-t border-border/70 space-y-2">
                   <label className="block text-xs font-semibold text-foreground">
-                    شناسه تلگرام شما (crmTelegramChatId)
+                    آی دی تلگرام شما (crmTelegramChatId)
                   </label>
                   <input
                     type="text"

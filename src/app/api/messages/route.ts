@@ -154,7 +154,7 @@ export async function PATCH(req: NextRequest) {
     const { id, isRead } = body;
 
     if (!id) {
-      return NextResponse.json({ success: false, message: 'شناسه پیام الزامی است.' }, { status: 400 });
+      return NextResponse.json({ success: false, message: 'آی دی پیام الزامی است.' }, { status: 400 });
     }
 
     const updated = await Message.findByIdAndUpdate(

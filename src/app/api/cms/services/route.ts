@@ -122,7 +122,7 @@ export async function PUT(req: NextRequest) {
     const { id, ...updates } = body;
 
     if (!id) {
-      return NextResponse.json({ success: false, message: 'شناسه خدمت الزامی است.' }, { status: 400 });
+      return NextResponse.json({ success: false, message: 'آی دی خدمت الزامی است.' }, { status: 400 });
     }
 
     const updated = await ServiceItem.findByIdAndUpdate(id, { $set: updates }, { new: true });
@@ -144,7 +144,7 @@ export async function DELETE(req: NextRequest) {
     const id = searchParams.get('id');
 
     if (!id) {
-      return NextResponse.json({ success: false, message: 'شناسه خدمت الزامی است.' }, { status: 400 });
+      return NextResponse.json({ success: false, message: 'آی دی خدمت الزامی است.' }, { status: 400 });
     }
 
     await ServiceItem.findByIdAndDelete(id);

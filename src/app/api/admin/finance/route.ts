@@ -140,7 +140,7 @@ export async function DELETE(req: NextRequest) {
 
     if (!recordId || !recordType) {
       return NextResponse.json(
-        { success: false, message: 'شناسه و نوع رکورد مالی الزامی است.' },
+        { success: false, message: 'آی دی و نوع رکورد مالی الزامی است.' },
         { status: 400 }
       );
     }

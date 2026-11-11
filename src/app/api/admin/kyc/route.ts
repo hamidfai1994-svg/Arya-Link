@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
 
     if (!userId || !action || !['approve', 'reject'].includes(action)) {
       return NextResponse.json(
-        { success: false, message: 'شناسه کاربر و نوع عملیات الزامی است.' },
+        { success: false, message: 'آی دی کاربر و نوع عملیات الزامی است.' },
         { status: 400 }
       );
     }

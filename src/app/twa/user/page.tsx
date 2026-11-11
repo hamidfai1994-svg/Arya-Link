@@ -342,7 +342,7 @@ export default function UserTWA() {
         </div>
         <h2 className="text-base font-bold text-amber-500">پروفایل یافت نشد یا دسترسی نامعتبر است</h2>
         <p className="text-xs max-w-xs leading-relaxed" style={{ color: 'var(--tg-theme-hint-color, #94a3b8)' }}>
-          لطفاً مطمئن شوید که شناسه تلگرام خود را در تنظیمات کارت خود در سایت آریا لینک ثبت کرده‌اید و مینی‌اپ را از طریق ربات باز نموده‌اید.
+          لطفاً مطمئن شوید که آی دی تلگرام خود را در تنظیمات کارت خود در سایت آریا لینک ثبت کرده‌اید و مینی‌اپ را از طریق ربات باز نموده‌اید.
         </p>
       </div>
     );
@@ -796,8 +796,8 @@ export default function UserTWA() {
                         type="button"
                         onClick={() => setCrmStatusFilter(tab.id as any)}
                         className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${crmStatusFilter === tab.id
-                            ? 'bg-cyan-500 text-white shadow-md shadow-cyan-500/20'
-                            : 'bg-slate-900/40 text-slate-400 border border-white/5 hover:text-white'
+                          ? 'bg-cyan-500 text-white shadow-md shadow-cyan-500/20'
+                          : 'bg-slate-900/40 text-slate-400 border border-white/5 hover:text-white'
                           }`}
                       >
                         {tab.label}
@@ -826,10 +826,10 @@ export default function UserTWA() {
                               <h3 className="text-sm font-bold text-white">{msg.name}</h3>
                               <span
                                 className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${msg.status === 'resolved'
-                                    ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                                    : msg.status === 'contacted'
-                                      ? 'bg-blue-500/15 text-blue-400 border border-blue-500/30'
-                                      : 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                                  ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                                  : msg.status === 'contacted'
+                                    ? 'bg-blue-500/15 text-blue-400 border border-blue-500/30'
+                                    : 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
                                   }`}
                               >
                                 {msg.status === 'resolved'
@@ -970,7 +970,7 @@ export default function UserTWA() {
 
                   <div className="divide-y divide-white/5 text-xs">
                     <div className="py-2.5 flex items-center justify-between">
-                      <span className="text-slate-400">شناسه کارت (آدرس اینترنتی):</span>
+                      <span className="text-slate-400">آی دی کارت (آدرس اینترنتی):</span>
                       <span className="font-mono text-cyan-400 font-bold">aryal.ink/{profile?.alias || '—'}</span>
                     </div>
 

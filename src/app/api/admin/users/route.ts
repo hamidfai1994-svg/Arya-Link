@@ -90,7 +90,7 @@ export async function PATCH(req: NextRequest) {
 
     if (!userId) {
       return NextResponse.json(
-        { success: false, message: 'شناسه کاربر الزامی است.' },
+        { success: false, message: 'آی دی کاربر الزامی است.' },
         { status: 400 }
       );
     }

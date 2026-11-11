@@ -21,13 +21,13 @@ const JobSchema = new Schema<IJobDocument>(
     },
     categoryId: {
       type: String,
-      required: [true, 'شناسه دسته‌بندی الزامی است'],
+      required: [true, 'آی دی دسته‌بندی الزامی است'],
       trim: true,
       index: true,
     },
     templateId: {
       type: String,
-      required: [true, 'شناسه قالب مرجع الزامی است'],
+      required: [true, 'آی دی قالب مرجع الزامی است'],
       default: 'general',
       trim: true,
       index: true,

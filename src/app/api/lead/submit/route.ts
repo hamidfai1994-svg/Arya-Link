@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
 
     if (!profileAlias || typeof profileAlias !== 'string') {
       return NextResponse.json(
-        { success: false, message: 'شناسه پروفایل نامعتبر است.' },
+        { success: false, message: 'آی دی پروفایل نامعتبر است.' },
         { status: 400 }
       );
     }

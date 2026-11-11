@@ -168,7 +168,7 @@ export async function PUT(req: NextRequest) {
     const { id, ...updates } = body;
 
     if (!id) {
-      return NextResponse.json({ success: false, message: 'شناسه مقاله الزامی است.' }, { status: 400 });
+      return NextResponse.json({ success: false, message: 'آی دی مقاله الزامی است.' }, { status: 400 });
     }
 
     const updated = await BlogPost.findByIdAndUpdate(id, { $set: updates }, { new: true });
@@ -191,7 +191,7 @@ export async function DELETE(req: NextRequest) {
     const id = searchParams.get('id');
 
     if (!id) {
-      return NextResponse.json({ success: false, message: 'شناسه الزامی است.' }, { status: 400 });
+      return NextResponse.json({ success: false, message: 'آی دی الزامی است.' }, { status: 400 });
     }
 
     await BlogPost.findByIdAndDelete(id);

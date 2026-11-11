@@ -1025,7 +1025,7 @@ export const SectionModulesList: React.FC = () => {
               <span className="text-xs font-bold text-sky-600 dark:text-sky-400">تلگرام (Telegram)</span>
             </div>
             <div>
-              <label className="block text-[11px] font-medium text-foreground mb-1">شناسه یا کانال تلگرام</label>
+              <label className="block text-[11px] font-medium text-foreground mb-1">آی دی یا کانال تلگرام</label>
               {renderFixedPrefixInput(
                 't.me/',
                 meta.username || meta.channelUsername || link.url || '',
@@ -1069,7 +1069,7 @@ export const SectionModulesList: React.FC = () => {
               <span className="text-xs font-bold text-blue-600 dark:text-blue-400">پروفایل لینکدین (LinkedIn)</span>
             </div>
             <div>
-              <label className="block text-[11px] font-medium text-foreground mb-1">شناسه یا آدرس پروفایل لینکدین</label>
+              <label className="block text-[11px] font-medium text-foreground mb-1">آی دی یا آدرس پروفایل لینکدین</label>
               {renderFixedPrefixInput(
                 'linkedin.com/in/',
                 meta.username || meta.linkedinUsername || link.url || '',
@@ -1135,7 +1135,7 @@ export const SectionModulesList: React.FC = () => {
               <span className="text-xs font-bold text-blue-600 dark:text-blue-400">فیسبوک (Facebook)</span>
             </div>
             <div>
-              <label className="block text-[11px] font-medium text-foreground mb-1">شناسه یا نام کاربری فیسبوک</label>
+              <label className="block text-[11px] font-medium text-foreground mb-1">آی دی یا نام کاربری فیسبوک</label>
               {renderFixedPrefixInput(
                 'facebook.com/',
                 meta.username || meta.targetId || link.url || '',
@@ -1245,7 +1245,7 @@ export const SectionModulesList: React.FC = () => {
               <span className="text-xs font-bold text-rose-600 dark:text-rose-400">پاترئون (Patreon)</span>
             </div>
             <div>
-              <label className="block text-[11px] font-medium text-foreground mb-1">شناسه یا نام کاربری پاترئون</label>
+              <label className="block text-[11px] font-medium text-foreground mb-1">آی دی یا نام کاربری پاترئون</label>
               {renderFixedPrefixInput(
                 'patreon.com/',
                 meta.username || link.url || '',
@@ -1377,7 +1377,7 @@ export const SectionModulesList: React.FC = () => {
               <span className="text-xs font-bold text-red-600 dark:text-red-400">یوتیوب موزیک (YouTube Music)</span>
             </div>
             <div>
-              <label className="block text-[11px] font-medium text-foreground mb-1">لینک یا شناسه در YouTube Music</label>
+              <label className="block text-[11px] font-medium text-foreground mb-1">لینک یا آی دی در YouTube Music</label>
               <input
                 type="text"
                 value={link.url}
@@ -1398,7 +1398,7 @@ export const SectionModulesList: React.FC = () => {
               <span className="text-xs font-bold text-amber-600 dark:text-amber-400">کست‌باکس (Castbox)</span>
             </div>
             <div>
-              <label className="block text-[11px] font-medium text-foreground mb-1">شناسه یا لینک کانال پادکست کست‌باکس</label>
+              <label className="block text-[11px] font-medium text-foreground mb-1">آی دی یا لینک کانال پادکست کست‌باکس</label>
               <input
                 type="text"
                 value={meta.targetId || link.url || ''}
@@ -1407,7 +1407,7 @@ export const SectionModulesList: React.FC = () => {
                   updateLinkMetadata(link.id, { targetId: val });
                   updateLink(link.id, { url: getSmartLink('castbox', val) });
                 }}
-                placeholder="شناسه عددی کانال یا لینک پادکست"
+                placeholder="آی دی عددی کانال یا لینک پادکست"
                 className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 font-sans"
                 dir={meta.targetId || link.url ? 'ltr' : 'auto'}
               />
@@ -1426,7 +1426,7 @@ export const SectionModulesList: React.FC = () => {
               <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">رادیو جوان (Radio Javan)</span>
             </div>
             <div>
-              <label className="block text-[11px] font-medium text-foreground mb-1">شناسه یا آیدی پادکست رادیو جوان</label>
+              <label className="block text-[11px] font-medium text-foreground mb-1">آی دی یا آیدی پادکست رادیو جوان</label>
               <input
                 type="text"
                 value={meta.targetId || ''}
@@ -1473,7 +1473,7 @@ export const SectionModulesList: React.FC = () => {
               <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">اسپاتیفای (Spotify)</span>
             </div>
             <div>
-              <label className="block text-[11px] font-medium text-foreground mb-1">شناسه یا لینک هنرمند / کاربر در Spotify</label>
+              <label className="block text-[11px] font-medium text-foreground mb-1">آی دی یا لینک هنرمند / کاربر در Spotify</label>
               <input
                 type="text"
                 value={link.url}
@@ -1495,7 +1495,7 @@ export const SectionModulesList: React.FC = () => {
               <span className="text-xs font-bold text-orange-600 dark:text-orange-400">ساوندکلاود (SoundCloud)</span>
             </div>
             <div>
-              <label className="block text-[11px] font-medium text-foreground mb-1">شناسه یا نام کاربری ساوندکلاود</label>
+              <label className="block text-[11px] font-medium text-foreground mb-1">آی دی یا نام کاربری ساوندکلاود</label>
               <input
                 type="text"
                 value={meta.username || meta.targetId || ''}
@@ -1522,7 +1522,7 @@ export const SectionModulesList: React.FC = () => {
               <span className="text-xs font-bold text-sky-600 dark:text-sky-400">اسکایپ (Skype)</span>
             </div>
             <div>
-              <label className="block text-[11px] font-medium text-foreground mb-1">نام کاربری یا شناسه اسکایپ (Skype Handle)</label>
+              <label className="block text-[11px] font-medium text-foreground mb-1">نام کاربری یا آی دی اسکایپ (Skype Handle)</label>
               <input
                 type="text"
                 value={meta.username || ''}
@@ -1548,7 +1548,7 @@ export const SectionModulesList: React.FC = () => {
               <span className="text-xs font-bold text-green-600 dark:text-green-400">ویچت (WeChat)</span>
             </div>
             <div>
-              <label className="block text-[11px] font-medium text-foreground mb-1">شناسه کاربری ویچت (WeChat ID)</label>
+              <label className="block text-[11px] font-medium text-foreground mb-1">آی دی کاربری ویچت (WeChat ID)</label>
               <input
                 type="text"
                 value={meta.targetId || ''}
@@ -1574,7 +1574,7 @@ export const SectionModulesList: React.FC = () => {
               <span className="text-xs font-bold text-blue-600 dark:text-blue-400">مسنجر فیسبوک (Messenger)</span>
             </div>
             <div>
-              <label className="block text-[11px] font-medium text-foreground mb-1">شناسه یا نام کاربری مسنجر</label>
+              <label className="block text-[11px] font-medium text-foreground mb-1">آی دی یا نام کاربری مسنجر</label>
               {renderFixedPrefixInput(
                 'm.me/',
                 meta.targetId || meta.username || link.url || '',
@@ -1905,11 +1905,10 @@ export const SectionModulesList: React.FC = () => {
               {currentWeek.map((day) => (
                 <div
                   key={day.dayIndex}
-                  className={`p-3 rounded-xl border transition-all ${
-                    day.isOpen
+                  className={`p-3 rounded-xl border transition-all ${day.isOpen
                       ? 'bg-card/90 border-border shadow-xs'
                       : 'bg-muted/30 border-border/60 opacity-80'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center justify-between gap-3 flex-wrap">
                     <div className="flex items-center gap-2.5 min-w-[100px]">
@@ -1917,11 +1916,10 @@ export const SectionModulesList: React.FC = () => {
                         {day.dayName}
                       </span>
                       <span
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                          day.isOpen
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${day.isOpen
                             ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
                             : 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30'
-                        }`}
+                          }`}
                       >
                         {day.isOpen ? 'روز کاری' : 'روز تعطیل'}
                       </span>
@@ -2055,7 +2053,7 @@ export const SectionModulesList: React.FC = () => {
         return (
           <div className="space-y-3 pt-1">
             <div>
-              <label className="block text-[11px] font-medium text-foreground mb-1">لینک یا شناسه ویدیو یوتیوب</label>
+              <label className="block text-[11px] font-medium text-foreground mb-1">لینک یا آی دی ویدیو یوتیوب</label>
               <input
                 type="url"
                 value={meta.youtubeUrl || link.url || ''}
@@ -2078,7 +2076,7 @@ export const SectionModulesList: React.FC = () => {
         return (
           <div className="space-y-3 pt-1">
             <div>
-              <label className="block text-[11px] font-medium text-foreground mb-1">لینک یا شناسه ویدیو آپارات</label>
+              <label className="block text-[11px] font-medium text-foreground mb-1">لینک یا آی دی ویدیو آپارات</label>
               <input
                 type="url"
                 value={meta.aparatUrl || link.url || ''}
@@ -2837,11 +2835,10 @@ export const SectionModulesList: React.FC = () => {
                           },
                         })
                       }
-                      className={`p-2 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all text-center ${
-                        isSelected
+                      className={`p-2 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all text-center ${isSelected
                           ? 'bg-cyan-500/15 border-cyan-500 text-cyan-400 ring-2 ring-cyan-500/30 font-bold shadow-sm'
                           : 'bg-card/80 border-border text-muted-foreground hover:text-foreground hover:bg-muted/50'
-                      }`}
+                        }`}
                     >
                       <div className="h-6 flex items-center justify-center">{r.renderWireframe()}</div>
                       <span className="text-[11px] font-bold block truncate w-full">{r.label}</span>
@@ -3434,8 +3431,8 @@ const SortableSidebarModuleItem: React.FC<SortableSidebarModuleItemProps> = ({
               {link.moduleType === 'divider_heading'
                 ? 'خط جداکننده'
                 : link.moduleType === 'spacer_divider'
-                ? 'فاصله خالی'
-                : link.title || 'بدون عنوان'}
+                  ? 'فاصله خالی'
+                  : link.title || 'بدون عنوان'}
             </span>
             {isUnconfirmed && (
               <span className="text-[10px] bg-amber-500/15 text-amber-600 dark:text-amber-400 font-bold px-2 py-0.5 rounded-full border border-amber-500/30 shrink-0">

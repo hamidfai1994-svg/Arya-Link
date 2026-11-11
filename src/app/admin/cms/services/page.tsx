@@ -444,7 +444,7 @@ export default function AdminServicesPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-foreground">شناسه آدرس (Slug) *</label>
+                <label className="text-xs font-bold text-foreground">آی دی آدرس (Slug) *</label>
                 <Input
                   value={slug}
                   onChange={(e) => setSlug(e.target.value)}

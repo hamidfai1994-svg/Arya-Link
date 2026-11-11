@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
 
     if (!logId) {
       return NextResponse.json(
-        { success: false, message: 'شناسه گزارش لاگ الزامی است.' },
+        { success: false, message: 'آی دی گزارش لاگ الزامی است.' },
         { status: 400 }
       );
     }

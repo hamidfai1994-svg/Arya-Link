@@ -886,8 +886,8 @@ function OrderWizardInner() {
                         isCurrent
                           ? 'bg-cyan-500/10 border border-cyan-500/40 text-cyan-400 shadow-lg shadow-cyan-500/10'
                           : isCompleted
-                          ? 'bg-white/5 border border-white/10 text-white hover:bg-white/10 cursor-pointer'
-                          : 'bg-transparent border border-transparent text-slate-500 opacity-60 cursor-not-allowed'
+                            ? 'bg-white/5 border border-white/10 text-white hover:bg-white/10 cursor-pointer'
+                            : 'bg-transparent border border-transparent text-slate-500 opacity-60 cursor-not-allowed'
                       )}
                     >
                       <div
@@ -896,8 +896,8 @@ function OrderWizardInner() {
                           isCurrent
                             ? 'bg-cyan-500 text-black shadow-md shadow-cyan-500/40'
                             : isCompleted
-                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
-                            : 'bg-white/10 text-slate-400'
+                              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                              : 'bg-white/10 text-slate-400'
                         )}
                       >
                         {isCompleted ? <Check className="w-4 h-4 stroke-[3]" /> : item.step}
@@ -991,7 +991,7 @@ function OrderWizardInner() {
                   {/* Option B: Enter Custom Alias or Handle */}
                   <div className="space-y-3 pt-2">
                     <label className="text-xs font-bold text-slate-300 block">
-                      یا تعیین شناسه لینک اختصاصی:
+                      یا تعیین آی دی لینک اختصاصی:
                     </label>
                     <div
                       onClick={() => setSelectedLinkType('custom')}
@@ -1012,7 +1012,7 @@ function OrderWizardInner() {
                           {selectedLinkType === 'custom' && <Check className="w-3.5 h-3.5 stroke-[3]" />}
                         </div>
                         <div className="flex-1">
-                          <span className="text-xs font-bold text-white">شناسه دلخواه (Handle)</span>
+                          <span className="text-xs font-bold text-white">آی دی دلخواه (Handle)</span>
                           <p className="text-[11px] text-slate-400">
                             میتوانید نام تجاری یا نام انگلیسی خود را وارد نمایید.
                           </p>

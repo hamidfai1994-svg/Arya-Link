@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
       query.alias = String(profileAlias).toLowerCase().trim();
     } else {
       return NextResponse.json(
-        { success: false, message: 'شناسه پروفایل مشخص نیست.' },
+        { success: false, message: 'آی دی پروفایل مشخص نیست.' },
         { status: 400 }
       );
     }

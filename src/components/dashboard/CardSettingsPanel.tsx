@@ -97,7 +97,7 @@ export function CardSettingsPanel({ cardId }: { cardId?: string }) {
                 تنظیمات، سئو و وایت‌لیبل
               </h1>
               <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-                مدیریت نحوه نمایش کارت در موتورهای جستجو، شناسه دامنه اختصاصی و برندینگ شخصی
+                مدیریت نحوه نمایش کارت در موتورهای جستجو، آی دی دامنه اختصاصی و برندینگ شخصی
               </p>
             </div>
           </div>
@@ -248,14 +248,14 @@ export function CardSettingsPanel({ cardId }: { cardId?: string }) {
             <div className="flex items-center gap-2 border-b border-slate-100 dark:border-white/10 pb-3">
               <Globe className="w-4 h-4 text-cyan-500" />
               <h2 className="text-sm font-extrabold text-slate-900 dark:text-white">
-                شناسه آدرس و دامنه اختصاصی (Custom Domain & Alias)
+                آی دی آدرس و دامنه اختصاصی (Custom Domain & Alias)
               </h2>
             </div>
 
             <div className="space-y-4">
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                  شناسه عمومی کارت شما (Alias)
+                  آی دی عمومی کارت شما (Alias)
                 </label>
                 <div className="flex items-center rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-white/10 overflow-hidden" dir="ltr">
                   <span className="px-3.5 text-xs text-slate-400 font-sans border-r border-slate-200 dark:border-white/10 select-none">

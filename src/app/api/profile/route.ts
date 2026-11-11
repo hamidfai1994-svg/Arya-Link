@@ -210,7 +210,7 @@ export async function POST(req: NextRequest) {
 
     if (!alias || typeof alias !== 'string' || !alias.trim()) {
       return NextResponse.json(
-        { success: false, message: 'شناسه اختصاصی آدرس (Alias) الزامی است.' },
+        { success: false, message: 'آی دی اختصاصی آدرس (Alias) الزامی است.' },
         { status: 400 }
       );
     }
@@ -218,7 +218,7 @@ export async function POST(req: NextRequest) {
     const cleanAlias = alias.toLowerCase().replace(/[^a-z0-9_-]/g, '').trim();
     if (!cleanAlias) {
       return NextResponse.json(
-        { success: false, message: 'شناسه آدرس باید فقط شامل حروف انگلیسی، اعداد، خط تیره یا زیرخط باشد.' },
+        { success: false, message: 'آی دی آدرس باید فقط شامل حروف انگلیسی، اعداد، خط تیره یا زیرخط باشد.' },
         { status: 400 }
       );
     }

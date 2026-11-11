@@ -367,29 +367,26 @@ export default function AdminBlogCmsPage() {
                       <TableCell>
                         <div className="flex items-center gap-1">
                           <span
-                            className={`text-[9px] px-1.5 py-0.5 rounded font-bold ${
-                              titleDa ? 'bg-cyan-500/15 text-cyan-500' : 'bg-muted text-muted-foreground'
-                            }`}
+                            className={`text-[9px] px-1.5 py-0.5 rounded font-bold ${titleDa ? 'bg-cyan-500/15 text-cyan-500' : 'bg-muted text-muted-foreground'
+                              }`}
                             title="دری"
                           >
                             🇦🇫 DA
                           </span>
                           <span
-                            className={`text-[9px] px-1.5 py-0.5 rounded font-bold ${
-                              titlePs && titlePs !== titleDa
+                            className={`text-[9px] px-1.5 py-0.5 rounded font-bold ${titlePs && titlePs !== titleDa
                                 ? 'bg-amber-500/15 text-amber-500'
                                 : 'bg-muted text-muted-foreground opacity-50'
-                            }`}
+                              }`}
                             title="پشتو"
                           >
                             🇦🇫 PS
                           </span>
                           <span
-                            className={`text-[9px] px-1.5 py-0.5 rounded font-bold ${
-                              titleEn && titleEn !== titleDa
+                            className={`text-[9px] px-1.5 py-0.5 rounded font-bold ${titleEn && titleEn !== titleDa
                                 ? 'bg-purple-500/15 text-purple-400'
                                 : 'bg-muted text-muted-foreground opacity-50'
-                            }`}
+                              }`}
                             title="انگلیسی"
                           >
                             🇬🇧 EN
@@ -511,7 +508,7 @@ export default function AdminBlogCmsPage() {
             {/* Slug & Cover */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-foreground">شناسه آدرس (Slug) *</label>
+                <label className="text-xs font-bold text-foreground">آی دی آدرس (Slug) *</label>
                 <Input
                   value={slug}
                   onChange={(e) => setSlug(e.target.value)}
