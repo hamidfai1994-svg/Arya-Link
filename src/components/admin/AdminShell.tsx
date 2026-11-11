@@ -37,7 +37,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
             <div className="flex items-center gap-2">
               <span className="font-extrabold text-foreground text-sm tracking-tight hidden sm:inline">
-                سامانه جامع مدیریت سازمانی آریا لینک
+                سیستم جامع مدیریت سازمانی آریا لینک
               </span>
               <Badge className="bg-rose-500/15 text-rose-500 border border-rose-500/30 text-[10px] font-sans">
                 {role.toUpperCase()}

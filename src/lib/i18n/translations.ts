@@ -75,7 +75,7 @@ export const translations: Record<SupportedLanguage, Record<string, string>> = {
     'pricing.pro_feat5': 'دریافت تیک آبی اصالت و احراز هویت',
 
     // Footer
-    'footer.desc': 'پیشرفته‌ترین سامانه هویت دیجیتال، کارت ویزیت لمسی NFC و درگاه اختصاصی لینک‌بایو در افغانستان.',
+    'footer.desc': 'پیشرفته‌ترین سیستم هویت دیجیتال، کارت ویزیت لمسی NFC و درگاه اختصاصی لینک‌بایو در افغانستان.',
     'footer.rights': 'تمامی حقوق برای پلتفرم آریا لینک محفوظ است.',
   },
 

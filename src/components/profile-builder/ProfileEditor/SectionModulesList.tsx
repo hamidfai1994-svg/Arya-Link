@@ -35,6 +35,16 @@ import {
 } from '@/components/icons';
 import { getSmartLink, formatDisplayValue } from '@/lib/smart-link';
 import { PhoneInput } from '@/components/ui/phone-input';
+import {
+  PAYMENT_PROVIDERS,
+  AFGHAN_WALLETS,
+  AFGHAN_BANKS,
+  CRYPTO_NETWORKS,
+  calculateInstallmentSchedule,
+  PaymentProviderType,
+  AfghanBankType,
+  InstallmentInterval,
+} from '@/lib/constants/paymentProviders';
 import { toast } from 'sonner';
 import {
   MessageSquare,
@@ -88,6 +98,13 @@ import {
   KeyRound,
   MousePointerClick,
   Hourglass,
+  Wallet,
+  Building2,
+  Landmark,
+  Coins,
+  Truck,
+  CalendarClock,
+  Calculator,
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import {
@@ -288,6 +305,7 @@ export const SectionModulesList: React.FC = () => {
   const isInteractiveModule = (type: LinkModuleType): boolean => {
     return [
       'standard_link',
+      'payment',
       'product_card',
       'sale_checkout',
       'donation_hesabpay',
@@ -426,6 +444,8 @@ export const SectionModulesList: React.FC = () => {
         return <Sliders className="w-4 h-4 text-cyan-500" />;
       case 'product_card':
         return <ShoppingBag className="w-4 h-4 text-teal-500" />;
+      case 'payment':
+        return <CreditCard className="w-4 h-4 text-emerald-500" />;
       case 'sale_checkout':
         return <DollarSign className="w-4 h-4 text-emerald-500" />;
       case 'donation_hesabpay':

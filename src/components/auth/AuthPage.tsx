@@ -92,7 +92,7 @@ const authDictionary = {
     welcomeHelloDesc:
       'به جای اشتراک ده‌ها لینک پراکنده، یک صفحه بیو لینک حرفه‌ای بسازید و با کارت ویزیت هوشمند NFC ارتباطات حضوری خود را متحول کنید.',
     welcomeHelloBtn: 'ورود به اکانت',
-    footerCopyright: 'سامانه هوشمند آریا لینک © 2026',
+    footerCopyright: 'سیستم هوشمند آریا لینک © 2026',
     // 3-Step Password Recovery Modal
     recoveryStep1Title: 'بازیابی رمز عبور',
     recoveryStep1Subtitle: 'ایمیل اکانت خود را وارد نمایید تا کد تایید 6 رقمی برای شما ارسال گردد.',
@@ -954,22 +954,20 @@ export function AuthPage({
             <button
               type="button"
               onClick={() => handleToggleMode('login')}
-              className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
-                isLogin
+              className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${isLogin
                   ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-md shadow-cyan-500/25'
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
+                }`}
             >
               {t.loginTab}
             </button>
             <button
               type="button"
               onClick={() => handleToggleMode('register')}
-              className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
-                !isLogin
+              className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${!isLogin
                   ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-md shadow-cyan-500/25'
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
+                }`}
             >
               {t.registerTab}
             </button>
@@ -982,9 +980,8 @@ export function AuthPage({
           {/* COLUMN 1: Login Form                                     */}
           {/* ======================================================== */}
           <div
-            className={`w-full md:w-1/2 p-6 sm:p-8 md:p-10 flex flex-col justify-center transition-opacity duration-300 ${
-              !isLogin ? 'hidden md:flex md:pointer-events-none md:opacity-0' : 'flex opacity-100'
-            }`}
+            className={`w-full md:w-1/2 p-6 sm:p-8 md:p-10 flex flex-col justify-center transition-opacity duration-300 ${!isLogin ? 'hidden md:flex md:pointer-events-none md:opacity-0' : 'flex opacity-100'
+              }`}
           >
             {/* Header Branding using Official SiteLogo */}
             <div className="text-center space-y-2 mb-4">
@@ -1025,9 +1022,8 @@ export function AuthPage({
               type="button"
               onClick={handleGoogleSignIn}
               disabled={isGoogleLoading || isLoading || isLockedOut}
-              className={`w-full flex items-center justify-center gap-3 h-11 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 text-slate-700 dark:text-white font-medium text-xs sm:text-sm transition-all shadow-sm active:scale-[0.99] mb-4 group cursor-pointer ${
-                isLockedOut ? 'opacity-50 pointer-events-none cursor-not-allowed' : ''
-              }`}
+              className={`w-full flex items-center justify-center gap-3 h-11 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 text-slate-700 dark:text-white font-medium text-xs sm:text-sm transition-all shadow-sm active:scale-[0.99] mb-4 group cursor-pointer ${isLockedOut ? 'opacity-50 pointer-events-none cursor-not-allowed' : ''
+                }`}
             >
               {isGoogleLoading ? (
                 <Loader2 className="w-4 h-4 animate-spin text-cyan-500" />
@@ -1085,9 +1081,8 @@ export function AuthPage({
                         onChange={(e) => setLoginEmail(e.target.value)}
                         placeholder={t.emailPlaceholder}
                         required
-                        className={`w-full h-11 rounded-xl bg-slate-100/70 dark:bg-slate-950/60 border border-slate-300/80 dark:border-white/10 text-slate-900 dark:text-white text-left placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 pl-10 pr-3 font-sans text-sm transition-all ${
-                          isLockedOut ? 'opacity-50 cursor-not-allowed' : ''
-                        }`}
+                        className={`w-full h-11 rounded-xl bg-slate-100/70 dark:bg-slate-950/60 border border-slate-300/80 dark:border-white/10 text-slate-900 dark:text-white text-left placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 pl-10 pr-3 font-sans text-sm transition-all ${isLockedOut ? 'opacity-50 cursor-not-allowed' : ''
+                          }`}
                       />
                       <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                     </div>
@@ -1215,9 +1210,8 @@ export function AuthPage({
                       onChange={(e) => setLoginEmail(e.target.value)}
                       placeholder={t.emailPlaceholder}
                       required
-                      className={`w-full h-11 rounded-xl bg-slate-100/70 dark:bg-slate-950/60 border border-slate-300/80 dark:border-white/10 text-slate-900 dark:text-white text-left placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 pl-10 pr-3 font-sans text-sm transition-all ${
-                        isLockedOut ? 'opacity-50 cursor-not-allowed' : ''
-                      }`}
+                      className={`w-full h-11 rounded-xl bg-slate-100/70 dark:bg-slate-950/60 border border-slate-300/80 dark:border-white/10 text-slate-900 dark:text-white text-left placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 pl-10 pr-3 font-sans text-sm transition-all ${isLockedOut ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
                     />
                     <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                   </div>
@@ -1237,9 +1231,8 @@ export function AuthPage({
                       onChange={(e) => setLoginPassword(e.target.value)}
                       placeholder={t.passwordPlaceholder}
                       required
-                      className={`w-full h-11 rounded-xl bg-slate-100/70 dark:bg-slate-950/60 border border-slate-300/80 dark:border-white/10 text-slate-900 dark:text-white text-left placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 pl-10 pr-10 font-sans text-sm transition-all ${
-                        isLockedOut ? 'opacity-50 cursor-not-allowed' : ''
-                      }`}
+                      className={`w-full h-11 rounded-xl bg-slate-100/70 dark:bg-slate-950/60 border border-slate-300/80 dark:border-white/10 text-slate-900 dark:text-white text-left placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 pl-10 pr-10 font-sans text-sm transition-all ${isLockedOut ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
                     />
                     <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                     <button
@@ -1263,11 +1256,10 @@ export function AuthPage({
                   <label className="flex items-center gap-2 cursor-pointer select-none group">
                     <div
                       onClick={() => !isLockedOut && setRememberMe(!rememberMe)}
-                      className={`w-4 h-4 rounded-md flex items-center justify-center transition-all ${
-                        rememberMe
+                      className={`w-4 h-4 rounded-md flex items-center justify-center transition-all ${rememberMe
                           ? 'bg-gradient-to-tr from-cyan-500 to-blue-600 border border-cyan-400 text-white shadow-sm shadow-cyan-500/30'
                           : 'border border-slate-300 dark:border-white/20 bg-slate-100 dark:bg-slate-900/60 group-hover:border-cyan-500/60'
-                      } ${isLockedOut ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        } ${isLockedOut ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                       {rememberMe && <Check className="w-3 h-3 stroke-[3]" />}
                     </div>
@@ -1345,9 +1337,8 @@ export function AuthPage({
           {/* COLUMN 2: Register Form                                  */}
           {/* ======================================================== */}
           <div
-            className={`w-full md:w-1/2 p-6 sm:p-8 md:p-10 flex flex-col justify-center transition-opacity duration-300 ${
-              isLogin ? 'hidden md:flex md:pointer-events-none md:opacity-0' : 'flex opacity-100'
-            }`}
+            className={`w-full md:w-1/2 p-6 sm:p-8 md:p-10 flex flex-col justify-center transition-opacity duration-300 ${isLogin ? 'hidden md:flex md:pointer-events-none md:opacity-0' : 'flex opacity-100'
+              }`}
           >
             {/* Header Branding using Official SiteLogo */}
             <div className="text-center space-y-1.5 mb-4">
@@ -1719,13 +1710,12 @@ export function AuthPage({
                 {[1, 2, 3].map((stepNum) => (
                   <div
                     key={stepNum}
-                    className={`h-1.5 rounded-full transition-all duration-300 ${
-                      recoveryStep === stepNum
+                    className={`h-1.5 rounded-full transition-all duration-300 ${recoveryStep === stepNum
                         ? 'w-8 bg-gradient-to-r from-cyan-500 to-blue-600'
                         : recoveryStep > stepNum
-                        ? 'w-4 bg-emerald-500'
-                        : 'w-4 bg-slate-200 dark:bg-white/20'
-                    }`}
+                          ? 'w-4 bg-emerald-500'
+                          : 'w-4 bg-slate-200 dark:bg-white/20'
+                      }`}
                   />
                 ))}
               </div>

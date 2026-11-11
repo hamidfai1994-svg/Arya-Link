@@ -549,6 +549,34 @@ export function getDefaultModuleConfig(moduleType: LinkModuleType): { title: str
           productBuyUrl: 'https://aryal.ink/shop/metal-card',
         },
       };
+    case 'payment':
+      return {
+        title: 'پرداخت و حمایت مالی',
+        url: '#payment-modal',
+        metadata: {
+          paymentProviderType: 'wallet',
+          paymentTitle: 'واریز حق‌الزحمه و پرداخت مستقیم',
+          walletService: 'HesabPay',
+          walletAccount: '',
+          bankName: 'AIB',
+          bankAccountHolder: '',
+          bankAccountNumber: '',
+          hawalaExchangeName: '',
+          hawalaReceiverName: '',
+          hawalaReceiverPhone: '',
+          hawalaCityBranch: 'کابل، سرای شهزاده',
+          cryptoNetwork: 'TRC20',
+          cryptoWalletAddress: '',
+          codDeliveryCompany: 'پیک اکسپرس کابل و ولایات',
+          codDeliveryFee: 150,
+          codTerms: 'پرداخت به مأمور تحویل پس از تسلیمی و دریافت کارت',
+          installmentTotalAmount: 6000,
+          installmentDownPayment: 2000,
+          installmentCount: 4,
+          installmentInterval: 'monthly',
+          paymentCurrency: 'AFN',
+        },
+      };
     case 'donation_hesabpay':
       return {
         title: 'حمایت مالی / انعام (HesabPay)',

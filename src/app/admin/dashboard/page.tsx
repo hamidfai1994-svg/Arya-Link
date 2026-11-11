@@ -137,7 +137,7 @@ export default function AdminDashboardPage() {
             </Badge>
           </div>
           <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-            شاخص‌های کلیدی عملکرد (KPIs)، وضعیت سلامت سرور و نمودار فعالیت هفتگی سامانه
+            شاخص‌های کلیدی عملکرد (KPIs)، وضعیت سلامت سرور و نمودار فعالیت هفتگی سیستم
           </p>
         </div>
 
@@ -223,7 +223,7 @@ export default function AdminDashboardPage() {
               {stats.printingOrdersCount.toLocaleString('en-US')}
             </div>
             <div className="text-[11px] text-muted-foreground mt-1">
-              از مجموع {stats.totalOrders.toLocaleString('en-US')} سفارش ثبت‌شده در سامانه
+              از مجموع {stats.totalOrders.toLocaleString('en-US')} سفارش ثبت‌شده در سیستم
             </div>
           </div>
         </Card>
@@ -231,7 +231,7 @@ export default function AdminDashboardPage() {
 
       {/* Visual Chart & System Health Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
+
         {/* Simple Elegant Activity Chart (Col 8) */}
         <Card className="lg:col-span-8 rounded-3xl border-border bg-card/90 p-6 shadow-sm space-y-6">
           <div className="flex items-center justify-between pb-3 border-b border-border">
@@ -284,7 +284,7 @@ export default function AdminDashboardPage() {
           <div className="space-y-4">
             <div className="flex items-center gap-2 pb-3 border-b border-border">
               <Server className="w-4 h-4 text-emerald-500" />
-              <h2 className="text-sm font-bold text-foreground">وضعیت سلامت سامانه (Health)</h2>
+              <h2 className="text-sm font-bold text-foreground">وضعیت سلامت سیستم (Health)</h2>
             </div>
 
             <div className="space-y-3">

@@ -51,7 +51,7 @@ export async function PUT(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'تنظیمات محتوای سامانه با موفقیت در پایگاه داده ذخیره شد.',
+      message: 'تنظیمات محتوای سیستم با موفقیت در پایگاه داده ذخیره شد.',
       data: result,
     });
   } catch (error: any) {

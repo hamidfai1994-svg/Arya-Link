@@ -440,6 +440,15 @@ const SECTION_3_MODULES: ModuleOption[] = [
     colorClass: 'hover:border-emerald-500/50',
   },
   {
+    type: 'payment',
+    title: 'درگاه و روش‌های پرداخت افغان',
+    category: 'commerce',
+    description: 'پشتیبانی از کیف پول، بانک‌های افغانستان، حواله صرافی، تتر USDT، پرداخت در محل و اقساطی',
+    icon: <CreditCard className="w-5 h-5 text-emerald-500" />,
+    badge: 'سیستم جامع افغان',
+    colorClass: 'hover:border-emerald-500/50',
+  },
+  {
     type: 'donation_hesabpay',
     title: 'حمایت مالی و انعام',
     category: 'commerce',

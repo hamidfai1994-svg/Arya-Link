@@ -38,7 +38,7 @@ async function autoInitSiteSettings(mongooseInstance: typeof mongoose) {
             companyLogo: '',
             favicon: '',
             siteName: 'Arya Link',
-            siteDescription: 'پیشرفته‌ترین سامانه هویت دیجیتال، کارت ویزیت هوشمند NFC و درگاه لینک‌بایو در افغانستان',
+            siteDescription: 'پیشرفته‌ترین سیستم هویت دیجیتال، کارت ویزیت هوشمند NFC و درگاه لینک‌بایو در افغانستان',
             createdAt: new Date(),
             updatedAt: new Date(),
           },

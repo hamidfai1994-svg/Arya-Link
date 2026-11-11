@@ -60,6 +60,7 @@ export type LinkModuleType =
   | 'product_card'
   | 'sale_checkout'
   | 'donation_hesabpay'
+  | 'payment'
   | 'countdown_timer'
   
   // Location & Navigation
@@ -217,10 +218,38 @@ export interface ModuleMetadata {
   countdownTargetDate?: string;
   countdownTitle?: string;
   
-  // Payment
+  // Payment & Modular Provider System (Afghanistan Native)
+  paymentProviderType?: 'bank' | 'wallet' | 'hawala' | 'crypto' | 'cod' | 'installment';
+  paymentTitle?: string;
   paymentAccount?: string;
-  paymentAmount?: string;
+  paymentAmount?: string | number;
   paymentCurrency?: string;
+  paymentInstructions?: string;
+  // wallet
+  walletService?: string;
+  walletAccount?: string;
+  // bank
+  bankName?: string;
+  bankAccountHolder?: string;
+  bankAccountNumber?: string;
+  bankIban?: string;
+  // hawala
+  hawalaExchangeName?: string;
+  hawalaReceiverName?: string;
+  hawalaReceiverPhone?: string;
+  hawalaCityBranch?: string;
+  // crypto
+  cryptoNetwork?: string;
+  cryptoWalletAddress?: string;
+  // cod
+  codDeliveryCompany?: string;
+  codDeliveryFee?: number;
+  codTerms?: string;
+  // installment
+  installmentTotalAmount?: number;
+  installmentDownPayment?: number;
+  installmentCount?: number;
+  installmentInterval?: 'monthly' | 'weekly';
   
   // Lead Capture
   leadHeadline?: string;

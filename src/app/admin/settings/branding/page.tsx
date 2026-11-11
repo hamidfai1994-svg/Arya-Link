@@ -39,7 +39,7 @@ export default function AdminBrandingSettingsPage() {
   const [siteName, setSiteName] = useState(settings?.siteName || 'Arya Link');
   const [siteDescription, setSiteDescription] = useState(
     settings?.siteDescription ||
-      'پیشرفته‌ترین سامانه هویت دیجیتال، کارت ویزیت هوشمند NFC و درگاه لینک‌بایو در افغانستان'
+    'پیشرفته‌ترین سیستم هویت دیجیتال، کارت ویزیت هوشمند NFC و درگاه لینک‌بایو در افغانستان'
   );
   const [isSaving, setIsSaving] = useState(false);
   const [previewTab, setPreviewTab] = useState<'desktop' | 'mobile' | 'auth'>('desktop');
@@ -52,7 +52,7 @@ export default function AdminBrandingSettingsPage() {
       setSiteName(settings.siteName || 'Arya Link');
       setSiteDescription(
         settings.siteDescription ||
-          'پیشرفته‌ترین سامانه هویت دیجیتال، کارت ویزیت هوشمند NFC و درگاه لینک‌بایو در افغانستان'
+        'پیشرفته‌ترین سیستم هویت دیجیتال، کارت ویزیت هوشمند NFC و درگاه لینک‌بایو در افغانستان'
       );
     }
   }, [settings]);
@@ -165,11 +165,10 @@ export default function AdminBrandingSettingsPage() {
             <button
               type="button"
               onClick={() => setPreviewTab('desktop')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
-                previewTab === 'desktop'
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${previewTab === 'desktop'
                   ? 'bg-cyan-500 text-white shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
-              }`}
+                }`}
             >
               <Laptop className="w-3.5 h-3.5" />
               <span>هدر ناوبار دسکتاپ</span>
@@ -177,11 +176,10 @@ export default function AdminBrandingSettingsPage() {
             <button
               type="button"
               onClick={() => setPreviewTab('mobile')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
-                previewTab === 'mobile'
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${previewTab === 'mobile'
                   ? 'bg-cyan-500 text-white shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
-              }`}
+                }`}
             >
               <Smartphone className="w-3.5 h-3.5" />
               <span>هدر سایدبار موبایل</span>
@@ -189,11 +187,10 @@ export default function AdminBrandingSettingsPage() {
             <button
               type="button"
               onClick={() => setPreviewTab('auth')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
-                previewTab === 'auth'
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${previewTab === 'auth'
                   ? 'bg-cyan-500 text-white shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
-              }`}
+                }`}
             >
               <ShieldCheck className="w-3.5 h-3.5" />
               <span>کارت ورود / ثبت‌نام</span>
@@ -513,7 +510,7 @@ export default function AdminBrandingSettingsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div className="space-y-2">
             <label className="text-xs font-semibold text-foreground">
-              نام تجاری سامانه (Site Name)
+              نام تجاری سیستم (Site Name)
             </label>
             <Input
               type="text"
@@ -535,7 +532,7 @@ export default function AdminBrandingSettingsPage() {
               type="text"
               value={siteDescription}
               onChange={(e) => setSiteDescription(e.target.value)}
-              placeholder="پیشرفته‌ترین سامانه هویت دیجیتال..."
+              placeholder="پیشرفته‌ترین سیستم هویت دیجیتال..."
               className="h-11 rounded-xl bg-background border-border text-xs focus:border-cyan-500"
             />
             <p className="text-[11px] text-muted-foreground font-sans">

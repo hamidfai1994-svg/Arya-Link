@@ -34,11 +34,32 @@ export interface IOrderDocument extends Document {
   orderType?: string;
   status?: 'pending' | 'processing' | 'shipped' | 'completed' | 'cancelled';
   price?: number;
-  paymentMethod: 'online' | 'cod' | string;
+  paymentMethod: 'online' | 'cod' | 'bank' | 'wallet' | 'hawala' | 'crypto' | 'installment' | string;
   deliveryFee?: number;
   deliveryCompany?: string;
   isDeliverySettled?: boolean;
   trackingNumber?: string;
+  paymentProviderDetails?: {
+    providerType?: 'bank' | 'wallet' | 'hawala' | 'crypto' | 'cod' | 'installment' | string;
+    walletService?: string;
+    walletAccount?: string;
+    bankName?: string;
+    bankAccountHolder?: string;
+    bankAccountNumber?: string;
+    hawalaExchangeName?: string;
+    hawalaReceiverName?: string;
+    hawalaReceiverPhone?: string;
+    hawalaCityBranch?: string;
+    cryptoNetwork?: string;
+    cryptoWalletAddress?: string;
+    codTerms?: string;
+    installmentTotalAmount?: number;
+    installmentDownPayment?: number;
+    installmentCount?: number;
+    installmentInterval?: string;
+    receiptUrl?: string;
+    transactionRef?: string;
+  };
   cardSpecs?: IOrderCardSpecs;
   notes?: string;
   isDeleted?: boolean;
@@ -109,6 +130,27 @@ const OrderSchema = new Schema<IOrderDocument>(
       index: true,
     },
     trackingNumber: { type: String, default: '' },
+    paymentProviderDetails: {
+      providerType: { type: String, default: '' },
+      walletService: { type: String, default: '' },
+      walletAccount: { type: String, default: '' },
+      bankName: { type: String, default: '' },
+      bankAccountHolder: { type: String, default: '' },
+      bankAccountNumber: { type: String, default: '' },
+      hawalaExchangeName: { type: String, default: '' },
+      hawalaReceiverName: { type: String, default: '' },
+      hawalaReceiverPhone: { type: String, default: '' },
+      hawalaCityBranch: { type: String, default: '' },
+      cryptoNetwork: { type: String, default: '' },
+      cryptoWalletAddress: { type: String, default: '' },
+      codTerms: { type: String, default: '' },
+      installmentTotalAmount: { type: Number, default: 0 },
+      installmentDownPayment: { type: Number, default: 0 },
+      installmentCount: { type: Number, default: 0 },
+      installmentInterval: { type: String, default: 'monthly' },
+      receiptUrl: { type: String, default: '' },
+      transactionRef: { type: String, default: '' },
+    },
     cardSpecs: {
       material: { type: String, default: '' },
       templateId: { type: String, default: '' },

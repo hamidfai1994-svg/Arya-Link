@@ -107,7 +107,7 @@ export async function POST(req: NextRequest) {
           </div>
           <h2 style="font-size: 20px; font-weight: bold; margin-bottom: 12px; color: #ffffff;">کد تایید یک‌بار مصرف ورود</h2>
           <p style="font-size: 13px; color: #94a3b8; line-height: 1.6; margin-bottom: 28px;">
-            جهت ورود یا ساخت اکانت در سامانه هوشمند آریا لینک، کد ۶ رقمی زیر را در کادر مربوطه وارد نمایید:
+            جهت ورود یا ساخت اکانت در سیستم هوشمند آریا لینک، کد ۶ رقمی زیر را در کادر مربوطه وارد نمایید:
           </p>
           <div style="display: inline-block; background: rgba(6, 182, 212, 0.1); border: 2px dashed #06b6d4; border-radius: 16px; padding: 14px 28px; margin-bottom: 28px;">
             <span style="font-size: 32px; font-weight: 900; letter-spacing: 8px; font-family: monospace; color: #22d3ee;" dir="ltr">${code}</span>

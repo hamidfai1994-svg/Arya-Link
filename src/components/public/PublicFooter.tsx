@@ -17,7 +17,7 @@ export function PublicFooter() {
           <div className="md:col-span-2 space-y-4">
             <SiteLogo href="/" width={40} height={40} showText={true} />
             <p className="text-xs text-muted-foreground leading-relaxed max-w-md">
-              {t('footer.desc', 'پیشرفته‌ترین سامانه هویت دیجیتال، کارت ویزیت لمسی NFC و درگاه اختصاصی لینک‌بایو در افغانستان.')}
+              {t('footer.desc', 'پیشرفته‌ترین سیستم هویت دیجیتال، کارت ویزیت لمسی NFC و درگاه اختصاصی لینک‌بایو در افغانستان.')}
             </p>
             <div className="flex items-center gap-4 text-xs text-muted-foreground pt-2">
               <span className="flex items-center gap-1.5">
@@ -90,7 +90,7 @@ export function PublicFooter() {
           <p>© {new Date().getFullYear()} Arya Link Tech. {t('footer.rights', 'تمامی حقوق محفوظ است.')}</p>
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-[11px]">سامانه آنلاین و فعال در سرورهای ابری</span>
+            <span className="text-[11px]">سیستم آنلاین و فعال در سرورهای ابری</span>
           </div>
         </div>
       </div>

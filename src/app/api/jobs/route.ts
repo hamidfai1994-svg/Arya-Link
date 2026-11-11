@@ -114,7 +114,7 @@ export async function POST(req: NextRequest) {
     if (existingJob) {
       return NextResponse.json({
         success: true,
-        message: 'این شغل قبلاً در سامانه ثبت شده است.',
+        message: 'این شغل قبلاً در سیستم ثبت شده است.',
         data: {
           id: (existingJob as any)._id.toString(),
           title: existingJob.title,
@@ -136,7 +136,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         success: true,
-        message: 'شغل جدید با موفقیت ثبت شد و به سامانه اضافه گردید.',
+        message: 'شغل جدید با موفقیت ثبت شد و به سیستم اضافه گردید.',
         data: {
           id: createdDoc._id.toString(),
           title: createdDoc.title,

@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
     if (action === 'pay') {
       payout.status = 'completed';
       payout.referenceId = referenceId || `TX-${Date.now().toString().slice(-6)}`;
-      payout.adminNote = adminNote || 'واریز از طریق سامانه مالی انجام شد.';
+      payout.adminNote = adminNote || 'واریز از طریق سیستم مالی انجام شد.';
       payout.processedAt = new Date();
       await payout.save();
 

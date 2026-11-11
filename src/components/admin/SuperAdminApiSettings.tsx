@@ -151,8 +151,8 @@ export function SuperAdminApiSettings() {
             onClick={handleSave}
             disabled={!isDirty || isSaving}
             className={`h-10 px-5 rounded-2xl font-bold text-xs shadow-md transition-all flex items-center gap-2 shrink-0 self-start sm:self-auto ${isDirty && !isSaving
-                ? 'bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-cyan-500/20 cursor-pointer active:scale-95'
-                : 'bg-muted text-muted-foreground border border-border cursor-not-allowed opacity-50 shadow-none'
+              ? 'bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-cyan-500/20 cursor-pointer active:scale-95'
+              : 'bg-muted text-muted-foreground border border-border cursor-not-allowed opacity-50 shadow-none'
               }`}
           >
             {isSaving ? (
@@ -266,7 +266,7 @@ export function SuperAdminApiSettings() {
                 اعلان ثبت‌نام کاربر جدید (notifyNewUsers)
               </span>
               <span className="text-[11px] text-muted-foreground block mt-0.5">
-                ارسال پیام خوش‌آمد و مشخصات ثبت‌نام هنگام ایجاد حساب جدید در سامانه
+                ارسال پیام خوش‌آمد و مشخصات ثبت‌نام هنگام ایجاد حساب جدید در سیستم
               </span>
             </div>
           </div>

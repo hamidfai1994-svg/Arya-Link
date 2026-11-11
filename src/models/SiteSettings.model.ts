@@ -29,7 +29,7 @@ const SiteSettingsSchema = new Schema<ISiteSettingsDocument>(
     },
     siteDescription: {
       type: String,
-      default: 'پیشرفته‌ترین سامانه هویت دیجیتال، کارت ویزیت هوشمند NFC و درگاه لینک‌بایو در افغانستان',
+      default: 'پیشرفته‌ترین سیستم هویت دیجیتال، کارت ویزیت هوشمند NFC و درگاه لینک‌بایو در افغانستان',
       trim: true,
     },
     updatedBy: {

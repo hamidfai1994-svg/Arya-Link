@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     if (!profile) {
       return {
         title: 'کارت ویزیت یافت نشد | Arya Link',
-        description: 'کارت هوشمند مورد نظر در سامانه آریا لینک پیدا نشد.',
+        description: 'کارت هوشمند مورد نظر در سیستم آریا لینک پیدا نشد.',
       };
     }
 

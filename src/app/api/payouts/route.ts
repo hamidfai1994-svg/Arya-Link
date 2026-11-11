@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
         {
           success: false,
           isVerified: false,
-          message: 'جهت درخواست تسویه حساب، ابتدا باید هویت خود را در سامانه احراز کنید.',
+          message: 'جهت درخواست تسویه حساب، ابتدا باید هویت خود را در سیستم احراز کنید.',
         },
         { status: 403 }
       );

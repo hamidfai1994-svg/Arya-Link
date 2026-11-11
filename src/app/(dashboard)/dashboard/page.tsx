@@ -832,7 +832,7 @@ export default function UserDashboardPage() {
             {/* Alias / URL Slug */}
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-foreground block">
-                آی دی آدرس اینترنتی<span className="text-rose-500">*</span>
+                آی دی کاربری<span className="text-rose-500">*</span>
               </label>
               <div className="relative">
                 <Input
@@ -849,7 +849,7 @@ export default function UserDashboardPage() {
                 </span>
               </div>
               <p className="text-[11px] text-muted-foreground">
-                آدرس صفحه شما: <span className="font-sans text-cyan-500">{domainHost}/{newAlias || 'your-alias'}</span>
+                آدرس صفحه شما اینگونه خواهد بود: <span className="font-sans text-cyan-500">{domainHost}/{newAlias || 'your-alias'}</span>
               </p>
             </div>
 

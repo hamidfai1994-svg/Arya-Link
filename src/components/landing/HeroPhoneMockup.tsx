@@ -224,10 +224,10 @@ export function HeroPhoneMockup({ smoothX, smoothY }: HeroPhoneMockupProps) {
           </div>
           <div className="text-right">
             <span className="text-[11px] font-bold text-foreground font-sans">
-              +2,450 Clicks
+              +2,450 کلیک
             </span>
             <span className="text-[9px] text-emerald-500 block font-sans font-semibold">
-              84% Conversion
+              84% بازدیدها
             </span>
           </div>
         </motion.div>
@@ -253,10 +253,10 @@ export function HeroPhoneMockup({ smoothX, smoothY }: HeroPhoneMockupProps) {
 
         {/* Outer Titanium Bezel & Chamfered Frame */}
         <div className="relative rounded-[50px] p-[10px] bg-gradient-to-b from-slate-600 via-slate-800 to-slate-950 border-[3px] border-slate-500/60 shadow-[0_35px_75px_-15px_rgba(0,0,0,0.85),0_0_50px_rgba(6,182,212,0.22),inset_0_1px_2px_rgba(255,255,255,0.3)]">
-          
+
           {/* Inner OLED Display Rim */}
           <div className="relative rounded-[42px] overflow-hidden bg-slate-950 border border-white/10 shadow-inner">
-            
+
             {/* Dynamic 45-degree Specular Glass Glare Sweep */}
             <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.04] to-white/[0.09] pointer-events-none z-20" />
 

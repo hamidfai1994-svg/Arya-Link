@@ -85,7 +85,7 @@ export const INITIAL_LANDING_CMS: Omit<ILandingCmsDocument, keyof Document | 'cr
     supportPhone: '+93 799 123 456',
     supportEmail: 'contact@aryal.ink',
     address: 'کابل، شهر نو، جاده انصاری، مجتمع فناوری آریا، طبقه 4',
-    rulesTerms: 'کلیه حقوق مادی و معنوی این سامانه متعلق به شرکت فناوری آریا لینک می‌باشد. استفاده از کارت‌های هوشمند و سرویس بیولینک مطابق با قوانین تجارت الکترونیک و ارتباطات افغانستان است.',
+    rulesTerms: 'کلیه حقوق مادی و معنوی این سیستم متعلق به شرکت فناوری آریا لینک می‌باشد. استفاده از کارت‌های هوشمند و سرویس بیولینک مطابق با قوانین تجارت الکترونیک و ارتباطات افغانستان است.',
     socialLinks: {
       instagram: 'https://instagram.com/aryalink.af',
       telegram: 'https://t.me/aryalink_af',

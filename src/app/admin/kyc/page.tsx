@@ -405,11 +405,10 @@ export default function AdminKycPage() {
               key={f.id}
               type="button"
               onClick={() => setStatusFilter(f.id as any)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
-                statusFilter === f.id
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${statusFilter === f.id
                   ? 'bg-background text-foreground shadow-sm font-bold'
                   : 'text-muted-foreground hover:text-foreground'
-              }`}
+                }`}
             >
               {f.label}
             </button>
@@ -475,8 +474,8 @@ export default function AdminKycPage() {
                       {req.kycData?.documentType === 'passport'
                         ? 'پاسپورت'
                         : req.kycData?.documentType === 'driving_license'
-                        ? 'گواهینامه رانندگی'
-                        : 'تذکره تابعیت'}
+                          ? 'گواهینامه رانندگی'
+                          : 'تذکره تابعیت'}
                     </TableCell>
 
                     {/* National ID */}
@@ -829,7 +828,7 @@ export default function AdminKycPage() {
                 <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-start gap-2 text-[11px] text-amber-300/90 leading-relaxed">
                   <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
                   <span>
-                    <strong>قانون امنیتی سامانه:</strong> هوش مصنوعی فقط داده‌های متنی را از مدرک استخراج و فیلدها را پر می‌کند. تایید یا رد نهایی الزاماً منوط به بررسی چشمی و کلیک دستی شما بر دکمه‌های زیر است.
+                    <strong>قانون امنیتی سیستم:</strong> هوش مصنوعی فقط داده‌های متنی را از مدرک استخراج و فیلدها را پر می‌کند. تایید یا رد نهایی الزاماً منوط به بررسی چشمی و کلیک دستی شما بر دکمه‌های زیر است.
                   </span>
                 </div>
               </div>
