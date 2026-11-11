@@ -135,8 +135,8 @@ export function PublicNavbar() {
             language === 'en'
               ? 'Smart NFC & Bio Link Platform'
               : language === 'ps'
-              ? 'د سمارټ NFC او بایو لینک پلیټفارم'
-              : 'کارت ویزیت هوشمند و لینک‌بایو'
+                ? 'د سمارټ NFC او بایو لینک پلیټفارم'
+                : 'کارت ویزیت هوشمند و لینک‌بایو'
           }
         />
 
@@ -177,7 +177,7 @@ export function PublicNavbar() {
                 isToolsActive ? 'text-cyan-500 font-bold' : ''
               )}
             >
-              <Wrench className="w-3.5 h-3.5 text-cyan-500" />
+
               <span>{t('nav.tools', 'خدمات جانبی')}</span>
               <ChevronDown
                 className={cn(
@@ -397,7 +397,7 @@ export function PublicNavbar() {
             {/* Mobile Tools Section */}
             <div className="py-2.5 border-y border-border/50 my-1 space-y-2">
               <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 mb-1">
-                <Wrench className="w-3.5 h-3.5 text-cyan-500" />
+
                 <span>{t('nav.tools', 'خدمات جانبی (جعبه ابزار دیجیتال)')}</span>
               </span>
               <div className="grid grid-cols-2 gap-1.5">

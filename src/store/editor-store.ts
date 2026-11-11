@@ -29,7 +29,7 @@ export interface EditorState {
   profilesCache: Record<string, ProfileData>;
   fetchProfilesList: () => Promise<UserProfileSummary[]>;
   switchProfile: (profileId: string) => Promise<void>;
-  createProfile: (data: { alias: string; displayName: string; roleType: 'personal' | 'business' | 'creator'; headline?: string }) => Promise<UserProfileSummary | null>;
+  createProfile: (data: { alias: string; displayName: string; roleType: 'personal' | 'business' | 'creator'; headline?: string; job?: string; templateId?: string; jobCategory?: string }) => Promise<UserProfileSummary | null>;
   deleteProfile: (profileId: string) => Promise<boolean>;
   cleanupProfiles: () => Promise<boolean>;
 

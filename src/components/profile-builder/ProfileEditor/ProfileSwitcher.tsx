@@ -15,7 +15,10 @@ import {
   X,
   Loader2,
   Trash2,
+  Briefcase,
 } from 'lucide-react';
+import { JOB_TEMPLATES } from '@/lib/constants/jobTemplates';
+import { JobCombobox } from '@/components/ui/JobCombobox';
 import { toast } from 'sonner';
 import {
   Dialog,
@@ -46,6 +49,9 @@ export const ProfileSwitcher: React.FC = () => {
   const [newDisplayName, setNewDisplayName] = useState('');
   const [newAlias, setNewAlias] = useState('');
   const [newRoleType, setNewRoleType] = useState<'personal' | 'business' | 'creator'>('business');
+  const [newJobTitle, setNewJobTitle] = useState<string>('عمومی / سایر مشاغل');
+  const [newJobTemplateId, setNewJobTemplateId] = useState<string>('general');
+  const [newJobCategoryId, setNewJobCategoryId] = useState<string>('other');
   const [errorMsg, setErrorMsg] = useState('');
 
   // Fetch real profiles from MongoDB on mount
@@ -98,12 +104,18 @@ export const ProfileSwitcher: React.FC = () => {
       alias: cleanAlias,
       displayName: newDisplayName.trim(),
       roleType: newRoleType,
+      job: newJobTitle,
+      templateId: newJobTemplateId,
+      jobCategory: newJobCategoryId,
     });
     setIsSubmitting(false);
 
     if (created) {
       setNewDisplayName('');
       setNewAlias('');
+      setNewJobTitle('عمومی / سایر مشاغل');
+      setNewJobTemplateId('general');
+      setNewJobCategoryId('other');
       setErrorMsg('');
       setIsCreateModalOpen(false);
       setIsOpen(false);
@@ -350,6 +362,30 @@ export const ProfileSwitcher: React.FC = () => {
               </div>
               <p className="text-[10px] text-muted-foreground mt-1">
                 فقط از حروف کوچک انگلیسی، اعداد و خط فاصله استفاده کنید.
+              </p>
+            </div>
+
+            {/* Job / Field of Activity */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-800 dark:text-slate-200 mb-1">
+                حوزه فعالیت / شغل
+              </label>
+              <JobCombobox
+                value={newJobTitle}
+                onChange={(selected) => {
+                  setNewJobTitle(selected.title);
+                  setNewJobTemplateId(selected.templateId);
+                  setNewJobCategoryId(selected.categoryId);
+                  if (selected.templateId === 'corporate' || selected.templateId === 'medical') {
+                    setNewRoleType('business');
+                  } else if (selected.templateId === 'creative') {
+                    setNewRoleType('creator');
+                  }
+                }}
+                placeholder="جستجو و انتخاب شغل یا حوزه فعالیت..."
+              />
+              <p className="text-[10px] text-muted-foreground mt-1">
+                ماژول‌های پیش‌فرض این کارت متناسب با شغل انتخابی به طور هوشمند چیده می‌شوند.
               </p>
             </div>
 

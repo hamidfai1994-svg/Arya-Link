@@ -133,7 +133,7 @@ export const INITIAL_LANDING_CMS: Omit<ILandingCmsDocument, keyof Document | 'cr
       priceMonthly: 590,
       priceYearlyMonthly: 380,
       currency: 'AFN',
-      description: 'برای مدیران، کسب‌وکارها، پزشکان، وکلا، فریلنسرها و شرکت‌های معتبر که می‌خواهند حداکثر اعتبار را ایجاد کنند.',
+      description: 'برای مدیران، کسب‌وکارها، داکتران، وکلا، فریلنسرها و شرکت‌های معتبر که می‌خواهند حداکثر اعتبار را ایجاد کنند.',
       features: [
         'تیک آبی رسمی تایید هویت (KYC)',
         'فروشگاه آنلاین با درگاه حساب‌پی',
@@ -267,8 +267,8 @@ export const INITIAL_LANDING_CMS: Omit<ILandingCmsDocument, keyof Document | 'cr
     },
     {
       id: 'test-2',
-      name: 'دکتر سمیرا رحیمی',
-      title: 'جراح و متخصص دندان‌پزشکی | کلینیک تخصصی رحیمی',
+      name: 'داکتر سمیرا رحیمی',
+      title: 'جراح و متخصص طب دندان | کلینیک تخصصی رحیمی',
       avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
       rating: 5.0,
       reviewText: '«بزرگ‌ترین مزیت آریا لینک برای من، حذف کامل کارت‌های کاغذی قدیمی و امکان رزرو نوبت آنلاین مریضان بود. مراجعین کلینیک با یک لمس ساده به شماره واتساپ، آدرس دقیق روی نقشه و کانال آموزشی وصل می‌شوند.»',

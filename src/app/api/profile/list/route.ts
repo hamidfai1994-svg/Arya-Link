@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { connectToDatabase } from '@/lib/db/mongodb';
 import { Profile } from '@/models/Profile.model';
 import { buildUserIsolationQuery, isValidUserSession } from '@/lib/db/data-isolation';
+import { getJobTemplate, generateDefaultModulesForJob } from '@/lib/constants/jobTemplates';
 import mongoose from 'mongoose';
 
 export const dynamic = 'force-dynamic';
@@ -75,7 +76,9 @@ export async function GET() {
           textColor: '#ffffff',
           borderRadius: 'rounded-2xl',
         },
-        links: [],
+        links: generateDefaultModulesForJob('general'),
+        occupation: 'عمومی / سایر مشاغل',
+        jobCategory: 'general',
         isActive: true,
       });
 
@@ -132,7 +135,7 @@ export async function POST(req: NextRequest) {
     await connectToDatabase();
 
     const body = await req.json();
-    const { action, sourceProfileId, alias, displayName, roleType, headline } = body;
+    const { action, sourceProfileId, alias, displayName, roleType, headline, job, templateId, jobCategory } = body;
 
     // Handle Duplicate Profile Request
     if (action === 'duplicate' && sourceProfileId) {
@@ -225,14 +228,41 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const resolvedTemplateId =
+      templateId ||
+      jobCategory ||
+      job ||
+      (roleType === 'business' ? 'corporate' : 'general');
+    const jobTemplate = getJobTemplate(resolvedTemplateId);
+    const initialModules = generateDefaultModulesForJob(resolvedTemplateId);
+    const jobTitleToSave = (typeof job === 'string' && job.trim()) || jobTemplate.title;
+
+    const themePreset = jobTemplate.defaultThemePreset || (roleType === 'business' ? 'emerald_luxury' : 'dark_neon');
+    const isEmerald = themePreset === 'emerald_luxury';
+    const isGlass = themePreset === 'glass_morphism';
+
+    const bgGradient = isEmerald
+      ? 'linear-gradient(135deg, #022c22 0%, #064e3b 50%, #065f46 100%)'
+      : isGlass
+      ? 'linear-gradient(135deg, #180d2c 0%, #2e1065 50%, #0f172a 100%)'
+      : 'linear-gradient(135deg, #090d16 0%, #0f172a 50%, #1e1b4b 100%)';
+
+    const primaryColor = roleType === 'business' || isEmerald ? '#059669' : isGlass ? '#8b5cf6' : '#0ea5e9';
+    const accentColor = roleType === 'business' || isEmerald ? '#10b981' : isGlass ? '#c084fc' : '#06b6d4';
+
     const newProfile = await Profile.create({
       userId: currentUserId,
       email: currentUserEmail,
       userEmail: currentUserEmail,
       alias: cleanAlias,
       displayName: displayName.trim(),
-      headline: headline || (roleType === 'business' ? 'پروفایل کاری و تجاری' : 'پروفایل شخصی'),
-      bio: 'به کارت دیجیتال هوشمند جدید من در آریا لینک خوش آمدید.',
+      headline:
+        headline ||
+        (jobTitleToSave && jobTitleToSave !== 'عمومی / سایر مشاغل'
+          ? jobTitleToSave
+          : jobTemplate.defaultHeadline) ||
+        (roleType === 'business' ? 'پروفایل کاری و تجاری' : 'پروفایل شخصی'),
+      bio: jobTemplate.defaultBio || 'به کارت دیجیتال هوشمند جدید من در آریا لینک خوش آمدید.',
       avatarUrl: '',
       phone: '',
       whatsapp: '',
@@ -240,19 +270,19 @@ export async function POST(req: NextRequest) {
       directModeEnabled: false,
       hideBranding: false,
       seoTitle: `${displayName.trim()} | کارت دیجیتال آریا لینک`,
-      seoDescription: `صفحه اختصاصی ${displayName.trim()}`,
+      seoDescription: `${jobTitleToSave} - صفحه اختصاصی ${displayName.trim()}`,
       themeConfig: {
-        preset: roleType === 'business' ? 'emerald_luxury' : 'dark_neon',
-        primaryColor: roleType === 'business' ? '#059669' : '#0ea5e9',
-        accentColor: roleType === 'business' ? '#10b981' : '#06b6d4',
-        backgroundColor: roleType === 'business'
-          ? 'linear-gradient(135deg, #022c22 0%, #064e3b 50%, #065f46 100%)'
-          : 'linear-gradient(135deg, #090d16 0%, #0f172a 50%, #1e1b4b 100%)',
+        preset: themePreset,
+        primaryColor,
+        accentColor,
+        backgroundColor: bgGradient,
         cardBlur: 'backdrop-blur-md bg-white/10 border-white/20',
         textColor: '#ffffff',
         borderRadius: 'rounded-2xl',
       },
-      links: [],
+      links: initialModules,
+      occupation: jobTitleToSave,
+      jobCategory: jobTemplate.id,
       isActive: true,
     });
 

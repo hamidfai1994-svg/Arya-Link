@@ -5,6 +5,7 @@ import { connectToDatabase } from '@/lib/db/mongodb';
 import { Profile } from '@/models/Profile.model';
 import { buildUserIsolationQuery, isValidUserSession } from '@/lib/db/data-isolation';
 import { profileUpdateSchema } from '@/lib/validations/profile';
+import { getJobTemplate, generateDefaultModulesForJob } from '@/lib/constants/jobTemplates';
 import mongoose from 'mongoose';
 import { revalidatePath } from 'next/cache';
 
@@ -114,7 +115,9 @@ export async function GET(req: NextRequest) {
             buttonTextColor: '#ffffff',
             buttonBorderColor: '#38bdf8',
           },
-          links: [],
+          links: generateDefaultModulesForJob('general'),
+          occupation: 'عمومی / سایر مشاغل',
+          jobCategory: 'general',
           isActive: true,
         });
 
@@ -192,6 +195,9 @@ export async function POST(req: NextRequest) {
       profileLanguage,
       crmTelegramChatId,
       crmTelegramEnable,
+      job,
+      templateId,
+      jobCategory,
     } = body;
 
     // 1. Validation
@@ -401,7 +407,9 @@ export async function POST(req: NextRequest) {
           buttonTextColor: '#ffffff',
           buttonBorderColor: '#38bdf8',
         },
-        links: Array.isArray(links) ? links : [],
+        links: Array.isArray(links) && links.length > 0 ? links : generateDefaultModulesForJob(templateId || jobCategory || job || 'general'),
+        occupation: (typeof job === 'string' && job.trim()) || (job || jobCategory || templateId ? getJobTemplate(templateId || jobCategory || job).title : ''),
+        jobCategory: job || jobCategory || templateId ? getJobTemplate(templateId || jobCategory || job).id : '',
         seoTitle: seoTitle || '',
         seoDescription: seoDescription || '',
         hideBranding: !!hideBranding,

@@ -35,8 +35,8 @@ export const PRESET_IMAGES: PresetImage[] = [
   },
   {
     id: 'medical_health',
-    title: 'پزشکی و سلامت',
-    category: 'درمان',
+    title: 'سلامت',
+    category: 'صحت',
     url: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=1080&q=80',
   },
   {

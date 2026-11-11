@@ -6,13 +6,14 @@ import { Profile } from '@/models/Profile.model';
 import { SystemSettings } from '@/models/systemSettings.model';
 import { sendSupportMessage } from '@/lib/telegram';
 import { verifyRecaptcha } from '@/lib/recaptcha';
+import { getJobTemplate, generateDefaultModulesForJob } from '@/lib/constants/jobTemplates';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, email, password, phone, recaptchaToken } = body;
+    const { name, email, password, phone, job, templateId, jobCategory, recaptchaToken } = body;
 
     // Verify Google reCAPTCHA v3
     const remoteIp =
@@ -69,19 +70,27 @@ export async function POST(req: NextRequest) {
     // 3. Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // 4. Create user
+    // 4. Resolve Job Template & Default Modules for Smart Onboarding
+    const resolvedTemplateId = templateId || jobCategory || job || 'general';
+    const jobTemplate = getJobTemplate(resolvedTemplateId);
+    const initialModules = generateDefaultModulesForJob(resolvedTemplateId);
+    const jobTitleToSave = (typeof job === 'string' && job.trim()) || jobTemplate.title;
+
+    // 5. Create user
     const newUser = await User.create({
       name: name.trim(),
       email: cleanEmail,
       password: hashedPassword,
       phone: typeof phone === 'string' ? phone.trim() : '',
+      occupation: jobTitleToSave,
+      jobCategory: jobTemplate.id,
       role: 'user',
       subscriptionPlan: 'free',
       providers: [{ provider: 'credentials' }],
       isActive: true,
     });
 
-    // 5. Generate unique default alias for this user's first profile (e.g. hamidfasihi_123)
+    // 6. Generate unique default alias for this user's first profile (e.g. hamidfasihi_123)
     let cleanName = name
       .toLowerCase()
       .replace(/\s+/g, '')
@@ -97,32 +106,48 @@ export async function POST(req: NextRequest) {
       candidateAlias = `${cleanName}_${Math.floor(100 + Math.random() * 900)}`;
     }
 
-    // 6. Create single personal starter profile for user with clean empty modules
+    // 7. Resolve theme style according to selected job preset
+    const themePreset = jobTemplate.defaultThemePreset || 'dark_neon';
+    const isEmerald = themePreset === 'emerald_luxury';
+    const isGlass = themePreset === 'glass_morphism';
+
+    const bgGradient = isEmerald
+      ? 'linear-gradient(135deg, #022c22 0%, #064e3b 50%, #065f46 100%)'
+      : isGlass
+      ? 'linear-gradient(135deg, #180d2c 0%, #2e1065 50%, #0f172a 100%)'
+      : 'linear-gradient(135deg, #090d16 0%, #0f172a 50%, #1e1b4b 100%)';
+
+    const primaryColor = isEmerald ? '#059669' : isGlass ? '#8b5cf6' : '#0ea5e9';
+    const accentColor = isEmerald ? '#10b981' : isGlass ? '#c084fc' : '#06b6d4';
+
+    // 8. Create single personal starter profile populated with smart job-specific modules
     await Profile.create({
       userId: newUser._id,
       alias: candidateAlias,
       displayName: newUser.name,
-      headline: 'پروفایل شخصی',
-      bio: 'به کارت هوشمند دیجیتال من در آریا لینک خوش آمدید.',
+      headline: jobTitleToSave && jobTitleToSave !== 'عمومی / سایر مشاغل' ? jobTitleToSave : jobTemplate.defaultHeadline || 'پروفایل شخصی',
+      bio: jobTemplate.defaultBio || 'به کارت هوشمند دیجیتال من در آریا لینک خوش آمدید.',
       avatarUrl: '',
-      phone: '',
+      phone: typeof phone === 'string' ? phone.trim() : '',
       whatsapp: '',
       email: cleanEmail,
       location: 'افغانستان',
       directModeEnabled: false,
       hideBranding: false,
       seoTitle: `${newUser.name} | کارت دیجیتال آریا لینک`,
-      seoDescription: 'صفحه رسمی و کارت ویزیت هوشمند',
+      seoDescription: `${jobTitleToSave} - صفحه رسمی و کارت ویزیت هوشمند`,
       themeConfig: {
-        preset: 'dark_neon',
-        primaryColor: '#0ea5e9',
-        accentColor: '#06b6d4',
-        backgroundColor: 'linear-gradient(135deg, #090d16 0%, #0f172a 50%, #1e1b4b 100%)',
+        preset: themePreset,
+        primaryColor,
+        accentColor,
+        backgroundColor: bgGradient,
         cardBlur: 'backdrop-blur-md bg-white/10 border-white/20',
         textColor: '#ffffff',
         borderRadius: 'rounded-2xl',
       },
-      links: [],
+      links: initialModules,
+      occupation: jobTitleToSave,
+      jobCategory: jobTemplate.id,
       isActive: true,
     });
 
@@ -136,7 +161,7 @@ export async function POST(req: NextRequest) {
           settings.telegramSupportChatId &&
           settings.notifyNewUsers
         ) {
-          const msg = `🎉 <b>کاربر جدید در آریا لینک ثبت‌نام کرد</b>\n\n👤 <b>نام:</b> ${newUser.name}\n✉️ <b>ایمیل:</b> ${newUser.email}\n📞 <b>تلفن:</b> ${newUser.phone || 'ندارد'}\n🔗 <b>لینک اولیه:</b> aryal.ink/${candidateAlias}`;
+          const msg = `🎉 <b>کاربر جدید در آریا لینک ثبت‌نام کرد</b>\n\n👤 <b>نام:</b> ${newUser.name}\n💼 <b>شغل/حوزه:</b> ${jobTitleToSave} (${jobTemplate.title})\n✉️ <b>ایمیل:</b> ${newUser.email}\n📞 <b>تلفن:</b> ${newUser.phone || 'ندارد'}\n🔗 <b>لینک اولیه:</b> aryal.ink/${candidateAlias}\n🧩 <b>ماژول‌های هوشمند:</b> ${initialModules.length} ماژول چیده‌شده`;
           await sendSupportMessage(settings.telegramSupportChatId, msg);
         }
       } catch (err) {

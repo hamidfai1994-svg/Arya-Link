@@ -53,6 +53,7 @@ import { cn } from '@/lib/utils';
 import { useEditorStore } from '@/store/editor-store';
 import { PaginationBar } from '@/components/ui/pagination-bar';
 import { CreditCard } from 'lucide-react';
+import { JobCombobox } from '@/components/ui/JobCombobox';
 
 interface ProfileItem {
   id: string;
@@ -91,6 +92,8 @@ export default function UserDashboardPage() {
   const [newDisplayName, setNewDisplayName] = useState('');
   const [newAlias, setNewAlias] = useState('');
   const [newHeadline, setNewHeadline] = useState('');
+  const [newJobTemplateId, setNewJobTemplateId] = useState<string>('general');
+  const [newJobCategoryId, setNewJobCategoryId] = useState<string>('other');
   const [newRoleType, setNewRoleType] = useState<'personal' | 'business'>('personal');
   const [isCreating, setIsCreating] = useState(false);
 
@@ -197,6 +200,9 @@ export default function UserDashboardPage() {
           displayName: newDisplayName.trim(),
           alias: newAlias.trim(),
           headline: newHeadline.trim(),
+          job: newHeadline.trim(),
+          templateId: newJobTemplateId,
+          jobCategory: newJobCategoryId,
           roleType: newRoleType,
         }),
       });
@@ -218,6 +224,8 @@ export default function UserDashboardPage() {
       setNewDisplayName('');
       setNewAlias('');
       setNewHeadline('');
+      setNewJobTemplateId('general');
+      setNewJobCategoryId('other');
       loadProfiles();
 
       // Switch to this profile and direct to isolated editor
@@ -804,7 +812,7 @@ export default function UserDashboardPage() {
               </label>
               <Input
                 type="text"
-                placeholder="مثلاً: احمد رضایی یا شرکت بازرگانی آریا"
+                placeholder="مثلاً: هارون احمدی یا شرکت تجارتی آریا"
                 value={newDisplayName}
                 onChange={(e) => {
                   setNewDisplayName(e.target.value);
@@ -824,7 +832,7 @@ export default function UserDashboardPage() {
             {/* Alias / URL Slug */}
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-foreground block">
-                شناسه آدرس اینترنتی (Alias) <span className="text-rose-500">*</span>
+                شناسه آدرس اینترنتی<span className="text-rose-500">*</span>
               </label>
               <div className="relative">
                 <Input
@@ -845,17 +853,24 @@ export default function UserDashboardPage() {
               </p>
             </div>
 
-            {/* Headline */}
+            {/* Headline / Job */}
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-foreground block">
                 عنوان شغلی یا تیتر کارت
               </label>
-              <Input
-                type="text"
-                placeholder="مثلاً: توسعه‌دهنده وب و مشاور فناوری"
+              <JobCombobox
                 value={newHeadline}
-                onChange={(e) => setNewHeadline(e.target.value)}
-                className="h-11 rounded-xl text-xs"
+                onChange={(selected) => {
+                  setNewHeadline(selected.title);
+                  setNewJobTemplateId(selected.templateId);
+                  setNewJobCategoryId(selected.categoryId);
+                  if (selected.templateId === 'corporate' || selected.templateId === 'medical') {
+                    setNewRoleType('business');
+                  } else if (selected.templateId === 'creative') {
+                    setNewRoleType('personal');
+                  }
+                }}
+                placeholder="انتخاب یا جستجوی عنوان شغلی / زمینه فعالیت..."
               />
             </div>
 

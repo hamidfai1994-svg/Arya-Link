@@ -25,6 +25,8 @@ export interface IProfileDocument extends Document {
   themeConfig: ProfileThemeConfig;
   links: ProfileLinkItem[];
   profileType?: 'personal' | 'business';
+  occupation?: string;
+  jobCategory?: string;
   isVerified?: boolean;
   verificationStatus?: 'unverified' | 'pending' | 'verified' | 'rejected';
   verificationData?: any;
@@ -188,6 +190,8 @@ const ProfileSchema = new Schema<IProfileDocument>(
       type: String,
       default: 'personal',
     },
+    occupation: { type: String, default: '' },
+    jobCategory: { type: String, default: '' },
     isVerified: { type: Boolean, default: false, index: true },
     verificationStatus: {
       type: String,

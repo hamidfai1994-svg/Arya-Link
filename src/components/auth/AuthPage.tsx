@@ -31,7 +31,11 @@ import {
   RotateCcw,
   Send,
   Sparkles,
+  Briefcase,
+  ChevronDown,
 } from 'lucide-react';
+import { JOB_TEMPLATES } from '@/lib/constants/jobTemplates';
+import { JobCombobox } from '@/components/ui/JobCombobox';
 
 interface AuthPageProps {
   initialMode?: 'login' | 'register';
@@ -64,6 +68,8 @@ const authDictionary = {
     nameLabel: 'نام و تخلص',
     namePlaceholder: 'مثال: احمد نیازی',
     phoneLabel: 'شماره تماس (اختیاری)',
+    jobLabel: 'حوزه فعالیت / شغل',
+    jobHelpText: 'ماژول‌های هوشمند کارت شما بر اساس شغل انتخابی چیده می‌شوند.',
     confirmPasswordLabel: 'تکرار رمز عبور',
     submitLogin: 'ورود به اکانت',
     submitRegister: 'ساخت اکانت و ورود',
@@ -162,6 +168,8 @@ const authDictionary = {
     nameLabel: 'نوم او تخلص',
     namePlaceholder: 'مثال: احمد نیازی',
     phoneLabel: 'د اړیکې شمېره (اختیاري)',
+    jobLabel: 'د کار او فعالیت ډګر / دنده',
+    jobHelpText: 'ستاسو د سمارټ کارټ ماډلونه به د ټاکل شوې دندې سره سم چمتو شي.',
     confirmPasswordLabel: 'د رمز تکرار',
     submitLogin: 'اکاونټ ته ننوتل',
     submitRegister: 'اکاونټ جوړول او ننوتل',
@@ -260,6 +268,8 @@ const authDictionary = {
     nameLabel: 'Full Name',
     namePlaceholder: 'e.g. Ahmad Niazi',
     phoneLabel: 'Phone Number (optional)',
+    jobLabel: 'Field of Activity / Profession',
+    jobHelpText: 'Your smart card modules will be automatically populated based on your profession.',
     confirmPasswordLabel: 'Confirm Password',
     submitLogin: 'Sign In',
     submitRegister: 'Create Account & Sign In',
@@ -418,6 +428,9 @@ export function AuthPage({
   const [registerName, setRegisterName] = useState('');
   const [registerEmail, setRegisterEmail] = useState('');
   const [registerPhone, setRegisterPhone] = useState('');
+  const [registerJob, setRegisterJob] = useState('عمومی / سایر مشاغل');
+  const [registerTemplateId, setRegisterTemplateId] = useState<string>('general');
+  const [registerCategoryId, setRegisterCategoryId] = useState<string>('other');
   const [registerPassword, setRegisterPassword] = useState('');
   const [registerConfirmPassword, setRegisterConfirmPassword] = useState('');
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
@@ -796,6 +809,9 @@ export function AuthPage({
           email: registerEmail.trim(),
           phone: registerPhone ? registerPhone.trim() : '',
           password: registerPassword,
+          job: registerJob,
+          templateId: registerTemplateId,
+          jobCategory: registerCategoryId,
           recaptchaToken,
         }),
       });
@@ -1441,6 +1457,25 @@ export function AuthPage({
                   defaultCountry="AF"
                   className="bg-slate-100/70 dark:bg-slate-950/60 border-slate-300/80 dark:border-white/10 text-slate-900 dark:text-white h-10 rounded-xl"
                 />
+              </div>
+
+              {/* Job / Field of Activity */}
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-slate-700 dark:text-slate-300 block">
+                  {t.jobLabel}
+                </label>
+                <JobCombobox
+                  value={registerJob}
+                  onChange={(selected) => {
+                    setRegisterJob(selected.title);
+                    setRegisterTemplateId(selected.templateId);
+                    setRegisterCategoryId(selected.categoryId);
+                  }}
+                  placeholder={t.jobLabel}
+                />
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">
+                  {t.jobHelpText}
+                </p>
               </div>
 
               {/* Password & Confirm */}

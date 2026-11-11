@@ -11,3 +11,4 @@ export { default as LandingCms, type ILandingCmsDocument, INITIAL_LANDING_CMS } 
 export { default as Transaction, type ITransactionDocument } from './Transaction.model';
 export { default as Otp, type IOtpDocument } from './Otp.model';
 export { default as ToolHistory, type IToolHistoryDocument } from './ToolHistory.model';
+export { default as Job, type IJobDocument } from './Job.model';

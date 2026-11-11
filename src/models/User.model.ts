@@ -14,6 +14,8 @@ export interface IUserDocument extends Document {
   password?: string;
   avatar?: string;
   phone?: string;
+  occupation?: string;
+  jobCategory?: string;
   role: UserRole;
   subscriptionPlan: SubscriptionPlan;
   providers: IAuthProvider[];
@@ -84,6 +86,16 @@ const UserSchema = new Schema<IUserDocument>(
       default: '',
     },
     phone: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    occupation: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    jobCategory: {
       type: String,
       default: '',
       trim: true,
