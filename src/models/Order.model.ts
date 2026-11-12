@@ -54,6 +54,8 @@ export interface IOrderDocument extends Document {
   status?: OrderStatus | string;
   price?: number;
   paymentMethod: 'online' | 'cod' | 'bank' | 'wallet' | 'hawala' | 'crypto' | 'installment' | string;
+  paymentGateway?: string;
+  paymentMode?: 'api' | 'manual' | string;
   deliveryFee?: number;
   deliveryCompany?: string;
   isDeliverySettled?: boolean;
@@ -146,6 +148,17 @@ const OrderSchema = new Schema<IOrderDocument>(
     paymentMethod: {
       type: String,
       default: 'online',
+    },
+    paymentGateway: {
+      type: String,
+      default: 'hesabpay',
+      index: true,
+    },
+    paymentMode: {
+      type: String,
+      enum: ['api', 'manual'],
+      default: 'api',
+      index: true,
     },
     deliveryFee: {
       type: Number,

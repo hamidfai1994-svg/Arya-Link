@@ -2,7 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
+import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
+import { QRCodeSVG } from 'qrcode.react';
 import {
   UserCog,
   Mail,
@@ -23,6 +25,13 @@ import {
   Eye,
   EyeOff,
   X,
+  Wallet,
+  Smartphone,
+  Store,
+  QrCode,
+  AlertCircle,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -80,6 +89,65 @@ export default function AccountSettingsPage() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Tab State
+  const searchParams = useSearchParams();
+  const [activeTab, setActiveTab] = useState<'profile' | 'finance'>(
+    searchParams?.get('tab') === 'finance' ? 'finance' : 'profile'
+  );
+
+  // HesabPay Financial Settings states
+  const [hesabPayConfig, setHesabPayConfig] = useState({
+    isApiEnabled: false,
+    merchantId: '',
+    apiKey: '',
+    accountNumber: '',
+    accountName: '',
+  });
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [isSavingFinancial, setIsSavingFinancial] = useState(false);
+  const [isLoadingFinancial, setIsLoadingFinancial] = useState(false);
+  const [copiedPayload, setCopiedPayload] = useState(false);
+
+  const fetchFinancialSettings = async () => {
+    setIsLoadingFinancial(true);
+    try {
+      const res = await fetch('/api/user/financial-settings');
+      const data = await res.json();
+      if (data.success && data.settings?.hesabPay) {
+        setHesabPayConfig(data.settings.hesabPay);
+      }
+    } catch (err) {
+      console.error('Error loading financial settings:', err);
+    } finally {
+      setIsLoadingFinancial(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchFinancialSettings();
+  }, []);
+
+  const handleSaveFinancial = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingFinancial(true);
+    try {
+      const res = await fetch('/api/user/financial-settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hesabPay: hesabPayConfig }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || 'خطا در ذخیره‌سازی تنظیمات درگاه.');
+      }
+      toast.success('تنظیمات اختصاصی درگاه حساب‌پی با موفقیت ذخیره گردید و در مینی‌سایت شما فعال شد.');
+    } catch (err: any) {
+      toast.error(err.message || 'خطا در ارتباط با سرور.');
+    } finally {
+      setIsSavingFinancial(false);
+    }
+  };
 
   useEffect(() => {
     fetchAccountData();
@@ -298,7 +366,7 @@ export default function AccountSettingsPage() {
               </h1>
             </div>
             <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-              مدیریت اطلاعات هویتی شخصی، تغییر گذرواژه ورود و بررسی وضعیت اشتراک سراسری پلتفرم
+              مدیریت اطلاعات هویتی شخصی، تغییر گذرواژه، درگاه پرداخت حساب‌پی و وضعیت اشتراک سراسری پلتفرم
             </p>
           </div>
         </div>
@@ -307,351 +375,597 @@ export default function AccountSettingsPage() {
         <Button
           variant="outline"
           size="sm"
-          onClick={fetchAccountData}
-          disabled={isLoading}
+          onClick={() => {
+            fetchAccountData();
+            fetchFinancialSettings();
+          }}
+          disabled={isLoading || isLoadingFinancial}
           className="h-9 px-3 rounded-xl border-border bg-card flex items-center gap-2 self-start sm:self-auto text-xs"
         >
-          <RefreshCw className={`w-3.5 h-3.5 text-cyan-500 ${isLoading ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`w-3.5 h-3.5 text-cyan-500 ${isLoading || isLoadingFinancial ? 'animate-spin' : ''}`} />
           <span>بروزرسانی اطلاعات</span>
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Left / Main Forms (8 cols on lg) */}
-        <div className="lg:col-span-8 space-y-6">
-          {/* Section 1: Personal Info Form */}
-          <Card className="p-6 rounded-3xl bg-card/80 backdrop-blur-xl border border-border shadow-sm space-y-5">
-            <div className="flex items-center gap-2.5 border-b border-border pb-4">
-              <div className="w-8 h-8 rounded-xl bg-cyan-500/10 text-cyan-500 flex items-center justify-center">
-                <User className="w-4 h-4" />
-              </div>
-              <div>
-                <h2 className="text-sm font-bold text-foreground">مشخصات عمومی و هویتی حساب</h2>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
-                  این اطلاعات به عنوان مشخصات اصلی مالک حساب کاربری در سرور ثبت می‌شود.
-                </p>
-              </div>
-            </div>
+      {/* Tab Switcher */}
+      <div className="flex items-center gap-2 border-b border-border pb-3">
+        <button
+          type="button"
+          onClick={() => setActiveTab('profile')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${activeTab === 'profile'
+              ? 'bg-cyan-500 text-white shadow-md shadow-cyan-500/20'
+              : 'bg-muted/50 text-muted-foreground hover:text-foreground'
+            }`}
+        >
+          <User className="w-4 h-4" />
+          <span>مشخصات فردی و امنیت</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('finance')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${activeTab === 'finance'
+              ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20'
+              : 'bg-muted/50 text-muted-foreground hover:text-foreground'
+            }`}
+        >
+          <Wallet className="w-4 h-4" />
+          <span>تنظیمات مالی و درگاه پرداخت (حساب‌پی)</span>
+        </button>
+      </div>
 
-            <form onSubmit={handleUpdateProfile} className="space-y-4">
-              {/* Avatar Uploader Preview */}
-              <div className="flex items-center gap-4 p-3 rounded-2xl bg-muted/30 border border-border">
-                <div className="relative w-16 h-16 rounded-2xl overflow-hidden bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white font-bold text-xl shrink-0 shadow-md">
-                  {avatar ? (
-                    <img src={avatar} alt="Avatar" className="w-full h-full object-cover" />
-                  ) : (
-                    <span>{name.charAt(0) || 'U'}</span>
-                  )}
+      {activeTab === 'finance' ? (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          <div className="lg:col-span-8 space-y-6">
+            <Card className="p-6 rounded-3xl bg-card/80 backdrop-blur-xl border border-border shadow-sm space-y-5">
+              <div className="flex items-center justify-between pb-4 border-b border-border">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center font-bold">
+                    <Wallet className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-sm font-bold text-foreground">درگاه و کیف پول اختصاصی حساب‌پی (HesabPay)</h2>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      اطلاعات اختصاصی خود را وارد نمایید تا کلیه واریزی‌های مینی‌سایت شما مستقیماً به حساب شخصی‌تان هدایت گردد.
+                    </p>
+                  </div>
                 </div>
-                <div className="flex-1 space-y-1">
-                  <label className="text-xs font-bold text-foreground block">آدرس تصویر نمایه (آواتار)</label>
-                  <Input
-                    type="url"
-                    value={avatar}
-                    onChange={(e) => setAvatar(e.target.value)}
-                    placeholder="https://example.com/avatar.jpg"
-                    className="h-9 rounded-xl text-xs font-sans"
-                    dir="ltr"
-                  />
-                  <p className="text-[10px] text-muted-foreground">
-                    لینک مستقیم عکس شخصی خود را درج نمایید تا در تمامی بخش‌های پنل نمایش یابد.
+                <Badge variant={hesabPayConfig.isApiEnabled ? 'default' : 'secondary'} className="text-[10px]">
+                  {hesabPayConfig.isApiEnabled ? 'پرداخت دوگانه فعال (مستقیم + صراف)' : 'صرفاً دستی (صراف/دکاندار)'}
+                </Badge>
+              </div>
+
+              <form onSubmit={handleSaveFinancial} className="space-y-5">
+                {/* Switch for Online Direct API */}
+                <div className="p-4 rounded-2xl bg-muted/40 border border-border flex items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-foreground block">
+                      اتصال مستقیم آنلاین حساب‌پی (Direct API Checkout):
+                    </label>
+                    <p className="text-[11px] text-muted-foreground leading-relaxed">
+                      با فعال‌سازی این گزینه، کاربرانی که اپلیکیشن حساب‌پی دارند می‌توانند مستقیماً و بدون نیاز به آپلود فیش، وجه را آنی پرداخت کنند.
+                    </p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                    <input
+                      type="checkbox"
+                      checked={hesabPayConfig.isApiEnabled}
+                      onChange={(e) =>
+                        setHesabPayConfig((prev) => ({ ...prev, isApiEnabled: e.target.checked }))
+                      }
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                  </label>
+                </div>
+
+                {/* API Credentials */}
+                {hesabPayConfig.isApiEnabled && (
+                  <div className="p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 space-y-4">
+                    <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold">
+                      <Smartphone className="w-4 h-4" />
+                      <span>مشخصات وب‌سرویس و درگاه اختصاصی تجاری</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-foreground block">
+                          شناسه پذیرنده (Merchant ID):
+                        </label>
+                        <Input
+                          type="text"
+                          value={hesabPayConfig.merchantId}
+                          onChange={(e) =>
+                            setHesabPayConfig((prev) => ({ ...prev, merchantId: e.target.value }))
+                          }
+                          placeholder="مثلاً: ARYA_HAMID_901"
+                          className="h-10 rounded-xl text-xs font-mono text-left"
+                          dir="ltr"
+                          required={hesabPayConfig.isApiEnabled}
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-foreground block">
+                          کلید اختصاصی API (API Key):
+                        </label>
+                        <div className="relative">
+                          <Input
+                            type={showApiKey ? 'text' : 'password'}
+                            value={hesabPayConfig.apiKey}
+                            onChange={(e) =>
+                              setHesabPayConfig((prev) => ({ ...prev, apiKey: e.target.value }))
+                            }
+                            placeholder="hp_live_..."
+                            className="h-10 rounded-xl text-xs font-mono text-left pr-10"
+                            dir="ltr"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowApiKey((prev) => !prev)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                          >
+                            {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Offline Account Info for Sarraf / Dukkandar */}
+                <div className="p-4 rounded-2xl bg-muted/40 border border-border space-y-4">
+                  <div className="flex items-center gap-2 text-foreground text-xs font-bold">
+                    <Store className="w-4 h-4 text-cyan-500" />
+                    <span>مشخصات حساب جهت واریز توسط صراف یا دکاندار (آفلاین)</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-foreground block">
+                        شماره حساب یا مبایل حساب‌پی:
+                      </label>
+                      <Input
+                        type="text"
+                        value={hesabPayConfig.accountNumber}
+                        onChange={(e) =>
+                          setHesabPayConfig((prev) => ({ ...prev, accountNumber: e.target.value }))
+                        }
+                        placeholder="مثلاً: 0729736813"
+                        className="h-10 rounded-xl text-xs font-mono text-left"
+                        dir="ltr"
+                        required
+                      />
+                      <p className="text-[10px] text-muted-foreground">
+                        شماره ثبت شده در اپلیکیشن حساب‌پی شما جهت دریافت پول
+                      </p>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-foreground block">
+                        نام دارنده حساب (حروف بزرگ انگلیسی جهت بارکد QR):
+                      </label>
+                      <Input
+                        type="text"
+                        value={hesabPayConfig.accountName}
+                        onChange={(e) =>
+                          setHesabPayConfig((prev) => ({ ...prev, accountName: e.target.value.toUpperCase() }))
+                        }
+                        placeholder="مثلاً: HAMID FASIHI"
+                        className="h-10 rounded-xl text-xs font-mono text-left uppercase"
+                        dir="ltr"
+                        required
+                      />
+                      <p className="text-[10px] text-muted-foreground">
+                        جهت ساخت دقیق کد QR برای اسکن با اپلیکیشن صراف
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-2 flex justify-end">
+                  <Button
+                    type="submit"
+                    disabled={isSavingFinancial}
+                    className="h-11 px-6 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs flex items-center gap-2 shadow-lg shadow-emerald-500/20"
+                  >
+                    {isSavingFinancial ? (
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Save className="w-4 h-4" />
+                    )}
+                    <span>ذخیره تنظیمات درگاه مالی</span>
+                  </Button>
+                </div>
+              </form>
+            </Card>
+          </div>
+
+          {/* Right Column: Live QR Preview */}
+          <div className="lg:col-span-4 space-y-6">
+            <Card className="p-5 rounded-3xl bg-gradient-to-b from-card to-muted/40 border border-border shadow-sm space-y-4 text-center">
+              <span className="text-xs font-bold text-foreground block">
+                پیش‌نمایش زنده بارکد اسکن صراف
+              </span>
+
+              {hesabPayConfig.accountNumber ? (
+                <div className="space-y-3">
+                  <div className="p-3 bg-white rounded-2xl shadow-md border border-white/20 inline-block mx-auto">
+                    {(() => {
+                      const fPhone = (hesabPayConfig.accountNumber || '').trim().replace(/^0+/, '');
+                      const fName = (hesabPayConfig.accountName || '').trim().toUpperCase() || 'ARYALINK';
+                      const payload = `1:01*2:p*3:93.${fPhone}*4:general*5:${fName}*6:971*7:1307100`;
+                      return <QRCodeSVG value={payload} size={130} level="M" />;
+                    })()}
+                  </div>
+
+                  <p className="text-[11px] text-muted-foreground px-2 leading-relaxed">
+                    این بارکد را به صراف یا دکاندار نشان دهید تا با اپلیکیشن حساب‌پی خود اسکن کند.
+                  </p>
+
+                  <div className="p-2.5 rounded-xl bg-muted/60 border border-border text-[11px] space-y-1 text-right">
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">شماره حساب:</span>
+                      <span className="font-mono font-bold text-foreground" dir="ltr">
+                        {hesabPayConfig.accountNumber}
+                      </span>
+                    </div>
+                    {hesabPayConfig.accountName && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground">نام حساب:</span>
+                        <span className="font-mono text-foreground" dir="ltr">
+                          {hesabPayConfig.accountName}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="py-8 text-center text-muted-foreground space-y-2">
+                  <QrCode className="w-10 h-10 mx-auto opacity-30" />
+                  <p className="text-xs">پس از درج شماره حساب، بارکد اسکن اختصاصی در اینجا ظاهر می‌شود.</p>
+                </div>
+              )}
+            </Card>
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* Left / Main Forms (8 cols on lg) */}
+          <div className="lg:col-span-8 space-y-6">
+            {/* Section 1: Personal Info Form */}
+            <Card className="p-6 rounded-3xl bg-card/80 backdrop-blur-xl border border-border shadow-sm space-y-5">
+              <div className="flex items-center gap-2.5 border-b border-border pb-4">
+                <div className="w-8 h-8 rounded-xl bg-cyan-500/10 text-cyan-500 flex items-center justify-center">
+                  <User className="w-4 h-4" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-bold text-foreground">مشخصات عمومی و هویتی حساب</h2>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    این اطلاعات به عنوان مشخصات اصلی مالک حساب کاربری در سرور ثبت می‌شود.
                   </p>
                 </div>
               </div>
 
-              {/* Name Field */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-foreground block">نام و تخلص کامل</label>
-                <div className="relative">
-                  <Input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="مثال: احمد فیاض رسولی"
-                    className="h-10 rounded-xl text-xs pr-10"
-                    required
-                  />
-                  <User className="w-4 h-4 text-muted-foreground absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                </div>
-              </div>
-
-              {/* Email Field (Editable with 2-Step OTP Verification) */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                    <Mail className="w-3.5 h-3.5 text-cyan-500" />
-                    <span>آدرس ایمیل ثبت‌نامی</span>
-                  </label>
-                  {email.trim().toLowerCase() !== (accountData?.email || '').toLowerCase() ? (
-                    <span className="text-[10px] text-amber-500 font-bold bg-amber-500/10 border border-amber-500/25 px-2 py-0.5 rounded-md flex items-center gap-1">
-                      <span>تغییریافته (نیازمند تایید با کد OTP)</span>
-                    </span>
-                  ) : (
-                    <span className="text-[10px] text-emerald-500 font-medium bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md">
-                      ایمیل فعال حساب
-                    </span>
-                  )}
-                </div>
-                <div className="flex gap-2 items-center">
-                  <div className="relative flex-1">
+              <form onSubmit={handleUpdateProfile} className="space-y-4">
+                {/* Avatar Uploader Preview */}
+                <div className="flex items-center gap-4 p-3 rounded-2xl bg-muted/30 border border-border">
+                  <div className="relative w-16 h-16 rounded-2xl overflow-hidden bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white font-bold text-xl shrink-0 shadow-md">
+                    {avatar ? (
+                      <img src={avatar} alt="Avatar" className="w-full h-full object-cover" />
+                    ) : (
+                      <span>{name.charAt(0) || 'U'}</span>
+                    )}
+                  </div>
+                  <div className="flex-1 space-y-1">
+                    <label className="text-xs font-bold text-foreground block">آدرس تصویر نمایه (آواتار)</label>
                     <Input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="you@domain.com"
-                      className="h-10 rounded-xl text-xs pr-10 font-inter text-left"
+                      type="url"
+                      value={avatar}
+                      onChange={(e) => setAvatar(e.target.value)}
+                      placeholder="https://example.com/avatar.jpg"
+                      className="h-9 rounded-xl text-xs font-sans"
                       dir="ltr"
+                    />
+                    <p className="text-[10px] text-muted-foreground">
+                      لینک مستقیم عکس شخصی خود را درج نمایید تا در تمامی بخش‌های پنل نمایش یابد.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Name Field */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-foreground block">نام و تخلص کامل</label>
+                  <div className="relative">
+                    <Input
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="مثال: احمد فیاض رسولی"
+                      className="h-10 rounded-xl text-xs pr-10"
                       required
                     />
-                    <Mail className="w-4 h-4 text-muted-foreground absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <User className="w-4 h-4 text-muted-foreground absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                   </div>
-                  {email.trim().toLowerCase() !== (accountData?.email || '').toLowerCase() && (
-                    <Button
-                      type="button"
-                      size="sm"
-                      onClick={() => handleSendOtp(email.trim().toLowerCase())}
-                      disabled={isSendingOtp}
-                      className="h-10 px-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs shrink-0 flex items-center gap-1.5 shadow-sm"
-                    >
-                      {isSendingOtp ? (
-                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                      ) : (
-                        <ShieldCheck className="w-3.5 h-3.5" />
-                      )}
-                      <span>ارسال کد تایید</span>
-                    </Button>
-                  )}
                 </div>
-                <p className="text-[10px] text-muted-foreground">
-                  برای تغییر آدرس ایمیل، کد تایید 6 رقمی به آدرس جدید ارسال و تایید دو مرحله‌ای انجام خواهد شد.
-                </p>
-              </div>
 
-              {/* Phone Field */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-foreground block">شماره تماس اصلی</label>
-                <div className="relative">
-                  <Input
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+93 799 123 456"
-                    className="h-10 rounded-xl text-xs pr-10 font-sans"
-                    dir="ltr"
-                  />
-                  <Phone className="w-4 h-4 text-muted-foreground absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                </div>
-              </div>
-
-              <div className="pt-2 flex justify-end">
-                <Button
-                  type="submit"
-                  disabled={isSavingProfile}
-                  className="h-10 px-5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs flex items-center gap-2 shadow-md shadow-cyan-500/20"
-                >
-                  {isSavingProfile ? (
-                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <Save className="w-3.5 h-3.5" />
-                  )}
-                  <span>ذخیره مشخصات هویتی</span>
-                </Button>
-              </div>
-            </form>
-          </Card>
-
-          {/* Section 2: Password and Security Form */}
-          <Card className="p-6 rounded-3xl bg-card/80 backdrop-blur-xl border border-border shadow-sm space-y-5">
-            <div className="flex items-center gap-2.5 border-b border-border pb-4">
-              <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
-                <KeyRound className="w-4 h-4" />
-              </div>
-              <div>
-                <h2 className="text-sm font-bold text-foreground">امنیت و تغییر گذرواژه ورود</h2>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
-                  جهت حفظ امنیت حساب خود، گذرواژه‌ای امن متشکل از حروف، اعداد و نشانه‌ها انتخاب نمایید.
-                </p>
-              </div>
-            </div>
-
-            <form onSubmit={handleChangePassword} className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-foreground block">گذرواژه فعلی</label>
-                <div className="relative">
-                  <Input
-                    type={showCurrentPassword ? 'text' : 'password'}
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="h-10 rounded-xl text-xs pr-10 pl-10 font-sans text-left"
-                    dir="ltr"
-                  />
-                  <Lock className="w-4 h-4 text-muted-foreground absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  <button
-                    type="button"
-                    onClick={() => setShowCurrentPassword((prev) => !prev)}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1 cursor-pointer"
-                    title={showCurrentPassword ? 'پنهان کردن گذرواژه' : 'نمایش گذرواژه'}
-                  >
-                    {showCurrentPassword ? (
-                      <EyeOff className="w-4 h-4 text-cyan-500" />
+                {/* Email Field (Editable with 2-Step OTP Verification) */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                      <Mail className="w-3.5 h-3.5 text-cyan-500" />
+                      <span>آدرس ایمیل ثبت‌نامی</span>
+                    </label>
+                    {email.trim().toLowerCase() !== (accountData?.email || '').toLowerCase() ? (
+                      <span className="text-[10px] text-amber-500 font-bold bg-amber-500/10 border border-amber-500/25 px-2 py-0.5 rounded-md flex items-center gap-1">
+                        <span>تغییریافته (نیازمند تایید با کد OTP)</span>
+                      </span>
                     ) : (
-                      <Eye className="w-4 h-4" />
+                      <span className="text-[10px] text-emerald-500 font-medium bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md">
+                        ایمیل فعال حساب
+                      </span>
                     )}
-                  </button>
+                  </div>
+                  <div className="flex gap-2 items-center">
+                    <div className="relative flex-1">
+                      <Input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="you@domain.com"
+                        className="h-10 rounded-xl text-xs pr-10 font-inter text-left"
+                        dir="ltr"
+                        required
+                      />
+                      <Mail className="w-4 h-4 text-muted-foreground absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    </div>
+                    {email.trim().toLowerCase() !== (accountData?.email || '').toLowerCase() && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => handleSendOtp(email.trim().toLowerCase())}
+                        disabled={isSendingOtp}
+                        className="h-10 px-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs shrink-0 flex items-center gap-1.5 shadow-sm"
+                      >
+                        {isSendingOtp ? (
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <ShieldCheck className="w-3.5 h-3.5" />
+                        )}
+                        <span>ارسال کد تایید</span>
+                      </Button>
+                    )}
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">
+                    برای تغییر آدرس ایمیل، کد تایید 6 رقمی به آدرس جدید ارسال و تایید دو مرحله‌ای انجام خواهد شد.
+                  </p>
                 </div>
-              </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Phone Field */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-foreground block">گذرواژه جدید</label>
+                  <label className="text-xs font-bold text-foreground block">شماره تماس اصلی</label>
                   <div className="relative">
                     <Input
-                      type={showNewPassword ? 'text' : 'password'}
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder="حداقل 6 نویسه"
-                      className="h-10 rounded-xl text-xs pr-10 pl-10 font-sans text-left"
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="+93 799 123 456"
+                      className="h-10 rounded-xl text-xs pr-10 font-sans"
                       dir="ltr"
                     />
-                    <KeyRound className="w-4 h-4 text-muted-foreground absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    <button
-                      type="button"
-                      onClick={() => setShowNewPassword((prev) => !prev)}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1 cursor-pointer"
-                      title={showNewPassword ? 'پنهان کردن گذرواژه' : 'نمایش گذرواژه'}
-                    >
-                      {showNewPassword ? (
-                        <EyeOff className="w-4 h-4 text-cyan-500" />
-                      ) : (
-                        <Eye className="w-4 h-4" />
-                      )}
-                    </button>
+                    <Phone className="w-4 h-4 text-muted-foreground absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                   </div>
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-foreground block">تکرار گذرواژه جدید</label>
-                  <div className="relative">
-                    <Input
-                      type={showConfirmPassword ? 'text' : 'password'}
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="تکرار همان گذرواژه"
-                      className="h-10 rounded-xl text-xs pr-10 pl-10 font-sans text-left"
-                      dir="ltr"
-                    />
-                    <KeyRound className="w-4 h-4 text-muted-foreground absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword((prev) => !prev)}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1 cursor-pointer"
-                      title={showConfirmPassword ? 'پنهان کردن گذرواژه' : 'نمایش گذرواژه'}
-                    >
-                      {showConfirmPassword ? (
-                        <EyeOff className="w-4 h-4 text-cyan-500" />
-                      ) : (
-                        <Eye className="w-4 h-4" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="pt-2 flex justify-end">
-                <Button
-                  type="submit"
-                  disabled={isSavingPassword || !newPassword}
-                  className="h-10 px-5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-bold text-xs flex items-center gap-2 shadow-md shadow-amber-500/20"
-                >
-                  {isSavingPassword ? (
-                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <Lock className="w-3.5 h-3.5" />
-                  )}
-                  <span>به‌روزرسانی گذرواژه</span>
-                </Button>
-              </div>
-            </form>
-          </Card>
-        </div>
-
-        {/* Right Column: Account Status & Plan Overview (4 cols on lg) */}
-        <div className="lg:col-span-4 space-y-6">
-          {/* Membership Card */}
-          <Card className="p-5 rounded-3xl bg-gradient-to-b from-card to-muted/40 border border-border shadow-sm space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-foreground">نوع اشتراک پلتفرم</span>
-              <Badge variant="cyan" className="font-sans uppercase text-[10px] font-bold">
-                {accountData?.subscriptionPlan || 'PRO'}
-              </Badge>
-            </div>
-
-            <div className="flex items-center gap-3 p-3 rounded-2xl bg-cyan-500/10 border border-cyan-500/20">
-              <Crown className="w-6 h-6 text-cyan-500 shrink-0" />
-              <div>
-                <span className="text-xs font-bold text-foreground block">
-                  پلن حرفه‌ای نامحدود
-                </span>
-                <span className="text-[11px] text-muted-foreground block">
-                  دسترسی به تمامی ماژول‌ها، قالب‌های لوکس و وایت‌لیبل
-                </span>
-              </div>
-            </div>
-
-            <div className="space-y-2 text-xs border-t border-border/80 pt-3">
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">نقش دسترسی:</span>
-                <span className="font-bold font-sans text-foreground uppercase">
-                  {accountData?.role || session?.user?.role || 'user'}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">تاریخ عضویت:</span>
-                <span className="font-sans text-foreground font-semibold">
-                  {accountData?.createdAt
-                    ? new Date(accountData.createdAt).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'short',
-                      day: 'numeric',
-                    })
-                    : '2026'}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">احراز هویت:</span>
-                {accountData?.isVerified ? (
-                  <span className="text-emerald-500 font-bold flex items-center gap-1">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    <span>تایید شده رسمی</span>
-                  </span>
-                ) : (
-                  <Link
-                    href="/dashboard/kyc"
-                    className="text-cyan-500 hover:underline font-bold flex items-center gap-1"
+                <div className="pt-2 flex justify-end">
+                  <Button
+                    type="submit"
+                    disabled={isSavingProfile}
+                    className="h-10 px-5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs flex items-center gap-2 shadow-md shadow-cyan-500/20"
                   >
-                    <span>ارسال مدارک هویتی</span>
-                    <ExternalLink className="w-3 h-3" />
-                  </Link>
-                )}
-              </div>
-            </div>
-          </Card>
+                    {isSavingProfile ? (
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Save className="w-3.5 h-3.5" />
+                    )}
+                    <span>ذخیره مشخصات هویتی</span>
+                  </Button>
+                </div>
+              </form>
+            </Card>
 
-          {/* Direct Support Note */}
-          <div className="p-4 rounded-2xl bg-muted/30 border border-border text-xs space-y-2">
-            <div className="flex items-center gap-2 text-foreground font-bold">
-              <ShieldCheck className="w-4 h-4 text-cyan-500" />
-              <span>پشتیبانی و حریم خصوصی</span>
+            {/* Section 2: Password and Security Form */}
+            <Card className="p-6 rounded-3xl bg-card/80 backdrop-blur-xl border border-border shadow-sm space-y-5">
+              <div className="flex items-center gap-2.5 border-b border-border pb-4">
+                <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
+                  <KeyRound className="w-4 h-4" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-bold text-foreground">امنیت و تغییر گذرواژه ورود</h2>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    جهت حفظ امنیت حساب خود، گذرواژه‌ای امن متشکل از حروف، اعداد و نشانه‌ها انتخاب نمایید.
+                  </p>
+                </div>
+              </div>
+
+              <form onSubmit={handleChangePassword} className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-foreground block">گذرواژه فعلی</label>
+                  <div className="relative">
+                    <Input
+                      type={showCurrentPassword ? 'text' : 'password'}
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="h-10 rounded-xl text-xs pr-10 pl-10 font-sans text-left"
+                      dir="ltr"
+                    />
+                    <Lock className="w-4 h-4 text-muted-foreground absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <button
+                      type="button"
+                      onClick={() => setShowCurrentPassword((prev) => !prev)}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1 cursor-pointer"
+                      title={showCurrentPassword ? 'پنهان کردن گذرواژه' : 'نمایش گذرواژه'}
+                    >
+                      {showCurrentPassword ? (
+                        <EyeOff className="w-4 h-4 text-cyan-500" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-foreground block">گذرواژه جدید</label>
+                    <div className="relative">
+                      <Input
+                        type={showNewPassword ? 'text' : 'password'}
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="حداقل 6 نویسه"
+                        className="h-10 rounded-xl text-xs pr-10 pl-10 font-sans text-left"
+                        dir="ltr"
+                      />
+                      <KeyRound className="w-4 h-4 text-muted-foreground absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      <button
+                        type="button"
+                        onClick={() => setShowNewPassword((prev) => !prev)}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1 cursor-pointer"
+                        title={showNewPassword ? 'پنهان کردن گذرواژه' : 'نمایش گذرواژه'}
+                      >
+                        {showNewPassword ? (
+                          <EyeOff className="w-4 h-4 text-cyan-500" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-foreground block">تکرار گذرواژه جدید</label>
+                    <div className="relative">
+                      <Input
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="تکرار همان گذرواژه"
+                        className="h-10 rounded-xl text-xs pr-10 pl-10 font-sans text-left"
+                        dir="ltr"
+                      />
+                      <KeyRound className="w-4 h-4 text-muted-foreground absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword((prev) => !prev)}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1 cursor-pointer"
+                        title={showConfirmPassword ? 'پنهان کردن گذرواژه' : 'نمایش گذرواژه'}
+                      >
+                        {showConfirmPassword ? (
+                          <EyeOff className="w-4 h-4 text-cyan-500" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-2 flex justify-end">
+                  <Button
+                    type="submit"
+                    disabled={isSavingPassword || !newPassword}
+                    className="h-10 px-5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-bold text-xs flex items-center gap-2 shadow-md shadow-amber-500/20"
+                  >
+                    {isSavingPassword ? (
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Lock className="w-3.5 h-3.5" />
+                    )}
+                    <span>به‌روزرسانی گذرواژه</span>
+                  </Button>
+                </div>
+              </form>
+            </Card>
+          </div>
+
+          {/* Right Column: Account Status & Plan Overview (4 cols on lg) */}
+          <div className="lg:col-span-4 space-y-6">
+            {/* Membership Card */}
+            <Card className="p-5 rounded-3xl bg-gradient-to-b from-card to-muted/40 border border-border shadow-sm space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-foreground">نوع اشتراک پلتفرم</span>
+                <Badge variant="cyan" className="font-sans uppercase text-[10px] font-bold">
+                  {accountData?.subscriptionPlan || 'PRO'}
+                </Badge>
+              </div>
+
+              <div className="flex items-center gap-3 p-3 rounded-2xl bg-cyan-500/10 border border-cyan-500/20">
+                <Crown className="w-6 h-6 text-cyan-500 shrink-0" />
+                <div>
+                  <span className="text-xs font-bold text-foreground block">
+                    پلن حرفه‌ای نامحدود
+                  </span>
+                  <span className="text-[11px] text-muted-foreground block">
+                    دسترسی به تمامی ماژول‌ها، قالب‌های لوکس و وایت‌لیبل
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-2 text-xs border-t border-border/80 pt-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">نقش دسترسی:</span>
+                  <span className="font-bold font-sans text-foreground uppercase">
+                    {accountData?.role || session?.user?.role || 'user'}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">تاریخ عضویت:</span>
+                  <span className="font-sans text-foreground font-semibold">
+                    {accountData?.createdAt
+                      ? new Date(accountData.createdAt).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                      })
+                      : '2026'}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">احراز هویت:</span>
+                  {accountData?.isVerified ? (
+                    <span className="text-emerald-500 font-bold flex items-center gap-1">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>تایید شده رسمی</span>
+                    </span>
+                  ) : (
+                    <Link
+                      href="/dashboard/kyc"
+                      className="text-cyan-500 hover:underline font-bold flex items-center gap-1"
+                    >
+                      <span>ارسال مدارک هویتی</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </Link>
+                  )}
+                </div>
+              </div>
+            </Card>
+
+            {/* Direct Support Note */}
+            <div className="p-4 rounded-2xl bg-muted/30 border border-border text-xs space-y-2">
+              <div className="flex items-center gap-2 text-foreground font-bold">
+                <ShieldCheck className="w-4 h-4 text-cyan-500" />
+                <span>پشتیبانی و حریم خصوصی</span>
+              </div>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                اطلاعات هویتی و کدهای امنیتی شما با پیشرفته‌ترین پروتکل‌های رمزگذاری استاندارد ذخیره و محافظت می‌گردند.
+              </p>
             </div>
-            <p className="text-[11px] text-muted-foreground leading-relaxed">
-              اطلاعات هویتی و کدهای امنیتی شما با پیشرفته‌ترین پروتکل‌های رمزگذاری استاندارد ذخیره و محافظت می‌گردند.
-            </p>
           </div>
         </div>
-      </div>
+      )}
 
       {/* 2-Step OTP Modal for Email Change */}
       <Dialog open={isOtpModalOpen} onOpenChange={setIsOtpModalOpen}>

@@ -142,6 +142,7 @@ export const SectionModulesList: React.FC = () => {
     reorderLinks,
     moveLink,
     saveProfileData,
+    updateFinancialSettings,
     expandedModuleId,
     setExpandedModuleId,
     activeModuleId,
@@ -153,6 +154,7 @@ export const SectionModulesList: React.FC = () => {
   const [activeSettingsTab, setActiveSettingsTab] = useState<Record<string, 'content' | 'advanced'>>({});
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [storePaymentSettings, setStorePaymentSettings] = useState<any>(null);
+  const [showApiKeys, setShowApiKeys] = useState<Record<string, boolean>>({});
   const snapshotsRef = React.useRef<Record<string, ProfileLinkItem>>({});
 
   useEffect(() => {
@@ -257,6 +259,38 @@ export const SectionModulesList: React.FC = () => {
   };
 
   const handleConfirm = (id: string) => {
+    // If confirming a payment module, ensure financialSettings is synced to User and Profile in DB
+    const currentLink = profile.links.find((l) => l.id === id);
+    if (currentLink && (currentLink.moduleType === 'payment' || currentLink.moduleType === 'donation_hesabpay')) {
+      const meta = currentLink.metadata || {};
+      const methods: PaymentMethodItem[] = Array.isArray(meta.supportedMethods) ? meta.supportedMethods : [];
+      const hp = methods.find(
+        (m) =>
+          (m.providerType === 'wallet' && (m.walletService || '').toLowerCase().includes('hesabpay')) ||
+          m.providerType === 'wallet'
+      );
+      if (hp) {
+        const hpPayload = {
+          isApiEnabled: Boolean(hp.isApiEnabled),
+          merchantId: (hp.merchantId || '').trim(),
+          apiKey: (hp.apiKey || '').trim(),
+          accountNumber: (hp.walletAccount || '').trim(),
+          accountName: (hp.walletAccountName || '').trim(),
+          isActive: true,
+        };
+
+        try {
+          fetch('/api/user/financial-settings', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ hesabPay: hpPayload }),
+          }).catch((err) => console.warn('Financial settings auto-sync error:', err));
+        } catch {
+          // non-blocking
+        }
+      }
+    }
+
     delete snapshotsRef.current[id];
     setUnconfirmedModuleId(null);
     setExpandedModuleId(null);
@@ -816,8 +850,9 @@ export const SectionModulesList: React.FC = () => {
   // PAYMENT MODULE INPUTS (سیستم پرداخت ماژولار افغانستان با پشتیبانی از چند روش همزمان)
   const renderPaymentInputs = (link: ProfileLinkItem) => {
     const meta = link.metadata || {};
+    const hpFinancial = profile.financialSettings?.hesabPay;
 
-    // Multi-method list: if empty, initialize from legacy metadata
+    // Multi-method list: if empty, initialize from legacy metadata or user financialSettings
     const rawMethods: PaymentMethodItem[] = Array.isArray(meta.supportedMethods) && meta.supportedMethods.length > 0
       ? meta.supportedMethods
       : [
@@ -825,7 +860,11 @@ export const SectionModulesList: React.FC = () => {
           id: 'pm_primary',
           providerType: (meta.paymentProviderType as any) || 'wallet',
           walletService: (meta.paymentWalletService || meta.walletService || 'HesabPay') as any,
-          walletAccount: meta.paymentWalletAccount || meta.walletAccount || '',
+          walletAccount: meta.paymentWalletAccount || meta.walletAccount || hpFinancial?.accountNumber || '',
+          walletAccountName: meta.paymentWalletAccountName || meta.walletAccountName || hpFinancial?.accountName || '',
+          isApiEnabled: meta.paymentIsApiEnabled ?? meta.isApiEnabled ?? hpFinancial?.isApiEnabled ?? false,
+          merchantId: meta.paymentMerchantId || meta.merchantId || hpFinancial?.merchantId || '',
+          apiKey: meta.paymentApiKey || meta.apiKey || hpFinancial?.apiKey || '',
           bankName: (meta.paymentBankName || meta.bankName || 'AIB') as any,
           bankAccountHolder: meta.paymentAccountHolder || meta.bankAccountHolder || '',
           bankAccountNumber: meta.paymentAccountNumber || meta.bankAccountNumber || '',
@@ -848,6 +887,14 @@ export const SectionModulesList: React.FC = () => {
         walletService: primary.walletService,
         paymentWalletAccount: primary.walletAccount,
         walletAccount: primary.walletAccount,
+        paymentWalletAccountName: primary.walletAccountName,
+        walletAccountName: primary.walletAccountName,
+        paymentIsApiEnabled: primary.isApiEnabled,
+        isApiEnabled: primary.isApiEnabled,
+        paymentMerchantId: primary.merchantId,
+        merchantId: primary.merchantId,
+        paymentApiKey: primary.apiKey,
+        apiKey: primary.apiKey,
         paymentBankName: primary.bankName,
         bankName: primary.bankName,
         paymentAccountHolder: primary.bankAccountHolder,
@@ -867,6 +914,25 @@ export const SectionModulesList: React.FC = () => {
         paymentCryptoAddress: primary.cryptoWalletAddress,
         cryptoWalletAddress: primary.cryptoWalletAddress,
       });
+
+      // Synchronize HesabPay credentials to profile financial settings in state
+      const hp = newMethods.find(
+        (m) =>
+          (m.providerType === 'wallet' && (m.walletService || '').toLowerCase().includes('hesabpay')) ||
+          m.providerType === 'wallet'
+      );
+      if (hp && updateFinancialSettings) {
+        updateFinancialSettings({
+          hesabPay: {
+            isApiEnabled: Boolean(hp.isApiEnabled),
+            merchantId: (hp.merchantId || '').trim(),
+            apiKey: (hp.apiKey || '').trim(),
+            accountNumber: (hp.walletAccount || '').trim(),
+            accountName: (hp.walletAccountName || '').trim(),
+            isActive: true,
+          },
+        });
+      }
     };
 
     const handleAddMethod = () => {
@@ -878,6 +944,10 @@ export const SectionModulesList: React.FC = () => {
         bankAccountNumber: '',
         walletService: 'HesabPay',
         walletAccount: '',
+        walletAccountName: '',
+        isApiEnabled: false,
+        merchantId: '',
+        apiKey: '',
         cryptoNetwork: 'TRC20',
       };
       updateMethods([...rawMethods, newMethod]);
@@ -1065,7 +1135,7 @@ export const SectionModulesList: React.FC = () => {
                   {/* فیلدهای اختصاصی هر روش */}
                   {/* ۱. کیف پول دیجیتال */}
                   {currentProvider === 'wallet' && (
-                    <div className="space-y-2.5 pt-1">
+                    <div className="space-y-3 pt-1">
                       <div>
                         <label className="block text-[11px] font-semibold text-foreground mb-1">
                           سرویس کیف پول (با لوگوی رسمی):
@@ -1090,6 +1160,101 @@ export const SectionModulesList: React.FC = () => {
                           dir="ltr"
                         />
                       </div>
+
+                      {/* ۱. فیلد نام صاحب حساب (انگلیسی) دقیقاً زیر شماره حساب */}
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="block text-[11px] font-semibold text-foreground">
+                            نام صاحب حساب (انگلیسی):
+                          </label>
+                          <span className="text-[10px] text-muted-foreground">جهت تولید بارکد صراف / دکاندار</span>
+                        </div>
+                        <input
+                          type="text"
+                          value={method.walletAccountName || ''}
+                          onChange={(e) => handleMethodChange(index, { walletAccountName: e.target.value.toUpperCase() })}
+                          placeholder="مثال: AHMAD WALI RASOOLI"
+                          className="w-full bg-background border border-border rounded-xl px-3 py-2 text-xs text-foreground placeholder-muted-foreground focus:outline-none focus:border-emerald-500 font-sans uppercase text-left"
+                          dir="ltr"
+                        />
+                        <p className="text-[10px] text-muted-foreground mt-1">
+                          این نام برای ساخت پیلود بارکد آفلاین/دستی و اسکن توسط صراف یا دکاندار ضروری است.
+                        </p>
+                      </div>
+
+                      {/* ۲. تاگل سوئیچ فعالسازی اتصال مستقیم به درگاه (API) */}
+                      <div className="p-3 rounded-2xl bg-muted/40 border border-border/80 flex items-center justify-between gap-3">
+                        <div className="space-y-0.5">
+                          <label className="text-[11px] font-bold text-foreground block cursor-pointer">
+                            فعالسازی اتصال مستقیم به درگاه (API)
+                          </label>
+                          <p className="text-[10px] text-muted-foreground">
+                            هدایت مستقیم پرداخت‌کننده به اپلیکیشن حساب‌پی بدون نیاز به آپلود فیش
+                          </p>
+                        </div>
+                        <Switch
+                          checked={Boolean(method.isApiEnabled)}
+                          onCheckedChange={(checked) =>
+                            handleMethodChange(index, { isApiEnabled: checked })
+                          }
+                        />
+                      </div>
+
+                      {/* ۳. نمایش شرطی فیلدهای API */}
+                      {Boolean(method.isApiEnabled) && (
+                        <div className="p-3.5 rounded-2xl bg-emerald-500/5 border border-emerald-500/25 space-y-3 animate-in fade-in slide-in-from-top-1 duration-150">
+                          <div>
+                            <label className="block text-[11px] font-semibold text-foreground mb-1">
+                              شناسه پذیرنده (Merchant ID):
+                            </label>
+                            <input
+                              type="text"
+                              value={method.merchantId || ''}
+                              onChange={(e) => handleMethodChange(index, { merchantId: e.target.value.trim() })}
+                              placeholder="مثال: MER-93799123456"
+                              className="w-full bg-background border border-border rounded-xl px-3 py-2 text-xs text-foreground placeholder-muted-foreground focus:outline-none focus:border-emerald-500 font-mono text-left"
+                              dir="ltr"
+                            />
+                          </div>
+
+                          <div>
+                            <div className="flex items-center justify-between mb-1">
+                              <label className="block text-[11px] font-semibold text-foreground">
+                                کلید ارتباطی درگاه (API Key / Secret):
+                              </label>
+                              <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">محرمانه و امن</span>
+                            </div>
+                            <div className="relative">
+                              <input
+                                type={showApiKeys[method.id || index] ? 'text' : 'password'}
+                                value={method.apiKey || ''}
+                                onChange={(e) => handleMethodChange(index, { apiKey: e.target.value.trim() })}
+                                placeholder="کلید امنیتی اتصال حساب‌پی را وارد فرمایید"
+                                className="w-full bg-background border border-border rounded-xl pr-3 pl-9 py-2 text-xs text-foreground placeholder-muted-foreground focus:outline-none focus:border-emerald-500 font-mono text-left"
+                                dir="ltr"
+                              />
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setShowApiKeys((prev) => ({
+                                    ...prev,
+                                    [method.id || index]: !prev[method.id || index],
+                                  }))
+                                }
+                                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1"
+                                tabIndex={-1}
+                                title={showApiKeys[method.id || index] ? 'مخفی‌سازی کلید' : 'نمایش کلید'}
+                              >
+                                {showApiKeys[method.id || index] ? (
+                                  <EyeOff className="w-3.5 h-3.5" />
+                                ) : (
+                                  <Eye className="w-3.5 h-3.5" />
+                                )}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 

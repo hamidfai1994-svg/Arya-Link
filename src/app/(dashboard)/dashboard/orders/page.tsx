@@ -93,6 +93,8 @@ interface UserOrder {
     | 'shipped'
     | 'pending';
   paymentMethod: string;
+  paymentGateway?: string;
+  paymentMode?: string;
   trackingNumber?: string;
   trackingShortCode?: string;
   provisionedBy?: string;
@@ -914,9 +916,21 @@ function OrdersDashboardInner() {
                                 </span>
                               </div>
                               <div className="p-3 rounded-xl bg-muted/40 border border-border/60">
-                                <span className="text-[10px] text-muted-foreground block">روش پرداخت:</span>
-                                <span className="font-bold text-foreground block truncate mt-0.5">
-                                  {order.paymentMethod === 'cod' ? 'پرداخت در محل (COD)' : 'پرداخت آنلاین'}
+                                <span className="text-[10px] text-muted-foreground block">روش و درگاه پرداخت:</span>
+                                <span className="font-bold text-foreground block truncate mt-0.5 text-xs">
+                                  {order.paymentGateway === 'hesabpay' || order.paymentMethod === 'wallet'
+                                    ? order.paymentMode === 'api'
+                                      ? 'حساب‌پی - مستقیم (API)'
+                                      : 'حساب‌پی - فیش صراف'
+                                    : order.paymentMethod === 'bank'
+                                    ? 'بانک - فیش واریزی'
+                                    : order.paymentMethod === 'hawala'
+                                    ? 'حواله صرافی'
+                                    : order.paymentMethod === 'crypto'
+                                    ? 'ارز دیجیتال (تتر)'
+                                    : order.paymentMethod === 'cod'
+                                    ? 'پرداخت در محل (COD)'
+                                    : 'پرداخت آنلاین'}
                                 </span>
                               </div>
                               <div className="p-3 rounded-xl bg-muted/40 border border-border/60">

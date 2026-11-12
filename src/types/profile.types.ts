@@ -158,6 +158,10 @@ export interface PaymentMethodItem {
   isDefault?: boolean;
   walletService?: string;
   walletAccount?: string;
+  walletAccountName?: string;
+  isApiEnabled?: boolean;
+  merchantId?: string;
+  apiKey?: string;
   bankName?: string;
   bankAccountHolder?: string;
   bankAccountNumber?: string;
@@ -249,6 +253,14 @@ export interface ModuleMetadata {
   // wallet
   walletService?: string;
   walletAccount?: string;
+  walletAccountName?: string;
+  isApiEnabled?: boolean;
+  merchantId?: string;
+  apiKey?: string;
+  paymentWalletAccountName?: string;
+  paymentIsApiEnabled?: boolean;
+  paymentMerchantId?: string;
+  paymentApiKey?: string;
   // bank
   bankName?: string;
   bankAccountHolder?: string;
@@ -396,6 +408,17 @@ export interface ProfileData {
   selectedTemplateId?: string;
   crmTelegramChatId?: string;
   crmTelegramEnable?: boolean;
+  financialSettings?: {
+    hesabPay?: {
+      isActive?: boolean;
+      isApiEnabled?: boolean;
+      merchantId?: string;
+      apiKey?: string;
+      accountName?: string;
+      accountNumber?: string;
+    };
+    [key: string]: any;
+  };
 }
 
 export interface UserProfileSummary {

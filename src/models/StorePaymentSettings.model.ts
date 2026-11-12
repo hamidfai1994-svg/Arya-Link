@@ -28,12 +28,15 @@ export interface IStoreHawalaInfo {
 
 export interface IHesabPayGatewayConfig {
   isActive: boolean;
+  isApiEnabled?: boolean;
   isSandbox: boolean;
   merchantId: string;
   apiKey: string;
   apiSecret?: string;
   endpointUrl: string;
   callbackUrl?: string;
+  accountName?: string;
+  accountNumber?: string;
 }
 
 export interface IStoreWalletToggle {
@@ -75,6 +78,10 @@ export interface IStoreWalletItem {
   providerCompany: string;
   accountNumber: string;
   accountHolder: string;
+  accountName?: string;
+  isApiEnabled?: boolean;
+  merchantId?: string;
+  apiKey?: string;
   instructions: string;
   qrCodeUrl?: string;
   logoUrl?: string;
@@ -207,8 +214,12 @@ const StoreWalletItemSchema = new Schema<IStoreWalletItem>(
     name: { type: String, required: true },
     nameFa: { type: String, required: true },
     providerCompany: { type: String, default: '' },
-    accountNumber: { type: String, default: '' },
-    accountHolder: { type: String, default: '' },
+    accountNumber: { type: String, default: '0729736813' },
+    accountHolder: { type: String, default: 'حمید فصیحی' },
+    accountName: { type: String, default: 'HAMID FASIHI' },
+    isApiEnabled: { type: Boolean, default: true },
+    merchantId: { type: String, default: 'ARYALINK_MERCHANT_01' },
+    apiKey: { type: String, default: 'hp_live_test_key_aryalink_af' },
     instructions: { type: String, default: '' },
     qrCodeUrl: { type: String, default: '' },
     logoUrl: { type: String, default: '' },
@@ -269,23 +280,16 @@ const StoreCryptoItemSchema = new Schema<IStoreCryptoItem>(
 
 export const DEFAULT_DETAILED_WALLETS: IStoreWalletItem[] = [
   {
-    id: 'm-paisa',
-    name: 'M-Paisa',
-    nameFa: 'ام‌پیسه روشن',
-    providerCompany: 'روشن مخابراتی',
-    accountNumber: '0799001122',
-    accountHolder: 'شرکت فناوری‌های هوشمند آریا لینک',
-    instructions: 'انتقال آنی وجه از اپلیکیشن ام‌پیسه به شماره فوق و ارسال پیامک تأیید.',
-    logoUrl: '',
-    isActive: true,
-  },
-  {
     id: 'hesabpay',
     name: 'HesabPay',
     nameFa: 'حساب‌پی',
     providerCompany: 'افغان پی سنترال / د افغانستان بانک',
-    accountNumber: '0700112233',
-    accountHolder: 'Aryalink Smart Technologies LLC',
+    accountNumber: '0729736813',
+    accountHolder: 'حمید فصیحی',
+    accountName: 'HAMID FASIHI',
+    merchantId: 'ARYALINK_MERCHANT_01',
+    apiKey: 'hp_live_test_key_aryalink_af',
+    isApiEnabled: true,
     instructions: 'پرداخت آنی از طریق اپلیکیشن یا درگاه رسمی حساب‌پی.',
     logoUrl: '',
     isActive: true,
@@ -297,6 +301,18 @@ export const DEFAULT_DETAILED_WALLETS: IStoreWalletItem[] = [
       endpointUrl: 'https://api.hesabpay.af',
     },
   },
+  {
+    id: 'm-paisa',
+    name: 'M-Paisa',
+    nameFa: 'ام‌پیسه روشن',
+    providerCompany: 'روشن مخابراتی',
+    accountNumber: '0799001122',
+    accountHolder: 'شرکت فناوری‌های هوشمند آریا لینک',
+    instructions: 'انتقال آنی وجه از اپلیکیشن ام‌پیسه به شماره فوق و ارسال پیامک تأیید.',
+    logoUrl: '',
+    isActive: true,
+  },
+
   {
     id: 'atoma-pay',
     name: 'ATOMA Pay',
@@ -560,7 +576,10 @@ const StorePaymentSettingsSchema = new Schema<IStorePaymentSettingsDocument>(
     },
     hesabPay: {
       isActive: { type: Boolean, default: true },
+      isApiEnabled: { type: Boolean, default: true },
       isSandbox: { type: Boolean, default: true },
+      accountName: { type: String, default: 'HAMID FASIHI' },
+      accountNumber: { type: String, default: '0729736813' },
       merchantId: { type: String, default: 'ARYALINK_MERCHANT_01' },
       apiKey: { type: String, default: 'hp_live_test_key_aryalink_af' },
       apiSecret: { type: String, default: '' },

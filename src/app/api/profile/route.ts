@@ -195,6 +195,7 @@ export async function POST(req: NextRequest) {
       profileLanguage,
       crmTelegramChatId,
       crmTelegramEnable,
+      financialSettings,
       job,
       templateId,
       jobCategory,
@@ -272,6 +273,7 @@ export async function POST(req: NextRequest) {
       ...(profileLanguage && { profileLanguage }),
       ...(crmTelegramChatId !== undefined && { crmTelegramChatId: typeof crmTelegramChatId === 'string' ? crmTelegramChatId.trim() : '' }),
       ...(crmTelegramEnable !== undefined && { crmTelegramEnable: Boolean(crmTelegramEnable) }),
+      ...(financialSettings !== undefined && { financialSettings }),
     };
 
     if (themeConfig && typeof themeConfig === 'object') {

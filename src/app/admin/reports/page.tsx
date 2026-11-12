@@ -19,6 +19,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { RevenueByGatewayChart, RevenueGatewayItem } from '@/components/dashboard/RevenueByGatewayChart';
 
 interface ReportStats {
   totalUsers: number;
@@ -43,6 +44,8 @@ export default function AdminReportsPage() {
   const [stats, setStats] = useState<ReportStats | null>(null);
   const [provinces, setProvinces] = useState<ProvinceItem[]>([]);
   const [devices, setDevices] = useState<DeviceItem[]>([]);
+  const [revenueByGateway, setRevenueByGateway] = useState<RevenueGatewayItem[]>([]);
+  const [totalRevenue, setTotalRevenue] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -58,6 +61,8 @@ export default function AdminReportsPage() {
         setStats(data.stats);
         setProvinces(data.provinceDistribution || []);
         setDevices(data.deviceBreakdown || []);
+        setRevenueByGateway(data.revenueByGateway || []);
+        setTotalRevenue(data.totalRevenue || 0);
       }
     } catch (err) {
       toast.error('خطا در دریافت گزارشات سیستم');
@@ -166,6 +171,14 @@ export default function AdminReportsPage() {
               <p className="text-[11px] text-muted-foreground mt-1">مخاطبین جذب‌شده توسط مشتریان</p>
             </Card>
           </div>
+
+          {/* Platform Revenue Breakdown by Gateway */}
+          <RevenueByGatewayChart
+            data={revenueByGateway}
+            totalRevenue={totalRevenue}
+            title="درآمد کل پلتفرم به تفکیک درگاه و روش پرداخت"
+            subtitle="مجموع تراکنش‌های ثبت شده در سیستم بر اساس تفکیک درگاه مستقیم (API) و فیش واریزی صراف/بانک"
+          />
 
           {/* Regional & Device Breakdown */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

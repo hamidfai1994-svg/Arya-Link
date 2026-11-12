@@ -7,7 +7,7 @@ export default function UserSettingsRedirectPage() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace('/dashboard/account');
+    router.replace('/dashboard/account?tab=finance');
   }, [router]);
 
   return (

@@ -38,6 +38,17 @@ export interface IProfileDocument extends Document {
   hideBranding: boolean;
   crmTelegramChatId?: string;
   crmTelegramEnable?: boolean;
+  financialSettings?: {
+    hesabPay?: {
+      isActive?: boolean;
+      isApiEnabled?: boolean;
+      merchantId?: string;
+      apiKey?: string;
+      accountName?: string;
+      accountNumber?: string;
+    };
+    [key: string]: any;
+  };
   isActive: boolean;
   viewsCount: number;
   leadsCount: number;
@@ -216,6 +227,10 @@ const ProfileSchema = new Schema<IProfileDocument>(
     hideBranding: { type: Boolean, default: false },
     crmTelegramChatId: { type: String, default: '' },
     crmTelegramEnable: { type: Boolean, default: false },
+    financialSettings: {
+      type: Schema.Types.Mixed,
+      default: () => ({}),
+    },
     isActive: { type: Boolean, default: true, index: true },
     viewsCount: { type: Number, default: 0 },
     leadsCount: { type: Number, default: 0 },

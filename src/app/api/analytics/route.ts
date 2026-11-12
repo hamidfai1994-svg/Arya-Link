@@ -4,6 +4,8 @@ import { authOptions } from '@/lib/auth';
 import { connectToDatabase } from '@/lib/db/mongodb';
 import { Profile } from '@/models/Profile.model';
 import { PhysicalCard } from '@/models/PhysicalCard.model';
+import { Order } from '@/models/Order.model';
+import { Transaction } from '@/models/Transaction.model';
 import { buildUserIsolationQuery, isValidUserSession } from '@/lib/db/data-isolation';
 import mongoose from 'mongoose';
 
@@ -132,6 +134,98 @@ export async function GET(req: NextRequest) {
 
     allLinks.sort((a, b) => b.clickCount - a.clickCount);
 
+    // Revenue by Gateway and Mode Aggregation
+    const orderAggQuery: any = { isDeleted: { $ne: true } };
+    if (session?.user?.id) {
+      orderAggQuery.$or = [{ userId: session.user.id }, { sellerUserId: session.user.id }];
+    }
+    const orderRevenueByGateway = await Order.aggregate([
+      { $match: orderAggQuery },
+      {
+        $group: {
+          _id: {
+            gateway: { $ifNull: ['$paymentGateway', '$paymentMethod'] },
+            mode: { $ifNull: ['$paymentMode', 'manual'] },
+          },
+          totalAmount: { $sum: '$totalPrice' },
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const txAggQuery: any = { status: { $ne: 'failed' } };
+    if (session?.user?.id) {
+      txAggQuery.$or = [
+        { userId: session.user.id },
+        { profileId: { $in: targetProfiles.map((p) => p._id) } },
+      ];
+    }
+    const txRevenueByGateway = await Transaction.aggregate([
+      { $match: txAggQuery },
+      {
+        $group: {
+          _id: {
+            gateway: { $ifNull: ['$paymentGateway', 'hesabpay'] },
+            mode: { $ifNull: ['$paymentMode', 'api'] },
+          },
+          totalAmount: { $sum: '$amount' },
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const gatewayMap = new Map<string, { id: string; label: string; amount: number; count: number; color: string; mode: string }>();
+
+    const getGatewayMeta = (gw: string, mode: string) => {
+      const g = (gw || '').toLowerCase();
+      const m = (mode || '').toLowerCase();
+      if (g.includes('hesabpay') || g === 'wallet') {
+        if (m === 'api') {
+          return { id: 'hesabpay_api', label: 'حساب‌پی - مستقیم (API)', color: '#10b981' };
+        }
+        return { id: 'hesabpay_manual', label: 'حساب‌پی - صراف / دکاندار', color: '#14b8a6' };
+      }
+      if (g === 'bank') {
+        return { id: 'bank', label: 'حساب بانکی (واریز دستی)', color: '#3b82f6' };
+      }
+      if (g === 'hawala') {
+        return { id: 'hawala', label: 'حواله صرافی و نقدی', color: '#f59e0b' };
+      }
+      if (g === 'crypto') {
+        return { id: 'crypto', label: 'ارز دیجیتال (تتر USDT)', color: '#8b5cf6' };
+      }
+      if (g === 'cod') {
+        return { id: 'cod', label: 'پرداخت در محل (COD)', color: '#64748b' };
+      }
+      return { id: g || 'other', label: 'سایر روش‌ها', color: '#94a3b8' };
+    };
+
+    [...orderRevenueByGateway, ...txRevenueByGateway].forEach((item: any) => {
+      const gw = item._id?.gateway || 'other';
+      const mode = item._id?.mode || 'manual';
+      const meta = getGatewayMeta(gw, mode);
+      const existing = gatewayMap.get(meta.id) || {
+        id: meta.id,
+        label: meta.label,
+        amount: 0,
+        count: 0,
+        color: meta.color,
+        mode,
+      };
+      existing.amount += Number(item.totalAmount) || 0;
+      existing.count += Number(item.count) || 0;
+      gatewayMap.set(meta.id, existing);
+    });
+
+    const totalGatewayRevenue = Array.from(gatewayMap.values()).reduce((sum, g) => sum + g.amount, 0);
+
+    const revenueByGateway = Array.from(gatewayMap.values())
+      .map((g) => ({
+        ...g,
+        percentage: totalGatewayRevenue > 0 ? Number(((g.amount / totalGatewayRevenue) * 100).toFixed(1)) : 0,
+      }))
+      .sort((a, b) => b.amount - a.amount);
+
     return NextResponse.json({
       success: true,
       activeProfile: selectedProfileSummary,
@@ -146,6 +240,11 @@ export async function GET(req: NextRequest) {
       },
       chartData: daysData,
       topLinks: allLinks,
+      revenueByGateway: revenueByGateway.length > 0 ? revenueByGateway : [
+        { id: 'hesabpay_api', label: 'حساب‌پی - مستقیم (API)', amount: 0, count: 0, color: '#10b981', percentage: 0 },
+        { id: 'hesabpay_manual', label: 'حساب‌پی - صراف / دکاندار', amount: 0, count: 0, color: '#14b8a6', percentage: 0 },
+      ],
+      totalRevenue: totalGatewayRevenue,
     });
   } catch (error: any) {
     console.error('Error fetching analytics:', error);

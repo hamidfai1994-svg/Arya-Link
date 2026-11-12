@@ -42,6 +42,7 @@ export interface EditorState {
   toggleDirectMode: (enabled?: boolean, url?: string) => void;
   updateProSettings: (fields: Partial<Pick<ProfileData, 'seoTitle' | 'seoDescription' | 'hideBranding' | 'selectedTemplateId' | 'crmTelegramChatId' | 'crmTelegramEnable'>>) => void;
   updateCrmSettings: (fields: Partial<Pick<ProfileData, 'crmTelegramChatId' | 'crmTelegramEnable'>>) => void;
+  updateFinancialSettings: (financialSettings: any) => void;
 
   // Sub-tabs & CRM
   activeSubTab: 'content' | 'appearance' | 'fonts' | 'settings' | 'crm';
@@ -558,6 +559,10 @@ export function getDefaultModuleConfig(moduleType: LinkModuleType): { title: str
           paymentTitle: 'واریز حق‌الزحمه و پرداخت مستقیم',
           walletService: 'HesabPay',
           walletAccount: '',
+          walletAccountName: '',
+          isApiEnabled: false,
+          merchantId: '',
+          apiKey: '',
           bankName: 'AIB',
           bankAccountHolder: '',
           bankAccountNumber: '',
@@ -1027,6 +1032,22 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       profile: {
         ...state.profile,
         ...fields,
+      },
+      isDirty: true,
+    })),
+
+  updateFinancialSettings: (financialSettings) =>
+    set((state) => ({
+      profile: {
+        ...state.profile,
+        financialSettings: {
+          ...state.profile.financialSettings,
+          ...financialSettings,
+          hesabPay: {
+            ...state.profile.financialSettings?.hesabPay,
+            ...financialSettings?.hesabPay,
+          },
+        },
       },
       isDirty: true,
     })),

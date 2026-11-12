@@ -78,10 +78,15 @@ export async function PUT(req: NextRequest) {
         isActive: Boolean(w.isActive),
       }));
       const hp = body.wallets.find((w: any) => w.id === 'hesabpay');
-      if (hp && hp.hesabPayConfig) {
+      if (hp) {
         settings.hesabPay = {
           ...settings.hesabPay,
-          ...hp.hesabPayConfig,
+          ...(hp.hesabPayConfig || {}),
+          accountName: hp.accountName || hp.accountHolder || settings.hesabPay?.accountName || 'HAMID FASIHI',
+          accountNumber: hp.accountNumber || settings.hesabPay?.accountNumber || '0729736813',
+          merchantId: hp.merchantId || hp.hesabPayConfig?.merchantId || settings.hesabPay?.merchantId || 'ARYALINK_MERCHANT_01',
+          apiKey: hp.apiKey || hp.hesabPayConfig?.apiKey || settings.hesabPay?.apiKey || '',
+          isApiEnabled: hp.isApiEnabled !== undefined ? Boolean(hp.isApiEnabled) : (settings.hesabPay?.isApiEnabled ?? true),
           isActive: Boolean(hp.isActive),
         };
       }

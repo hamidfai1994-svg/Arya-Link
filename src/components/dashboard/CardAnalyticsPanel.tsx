@@ -34,6 +34,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useActiveCard } from '@/context/ActiveCardContext';
 import { useEditorStore } from '@/store/editor-store';
+import { RevenueByGatewayChart, RevenueGatewayItem } from '@/components/dashboard/RevenueByGatewayChart';
 
 export type TimeframeOption = 'today' | '7days' | '30days' | 'all';
 
@@ -64,6 +65,8 @@ interface AnalyticsData {
     moduleType: string;
     profileAlias: string;
   }[];
+  revenueByGateway?: RevenueGatewayItem[];
+  totalRevenue?: number;
 }
 
 // Platform icon & color mapper for module breakdown
@@ -1085,6 +1088,14 @@ export function CardAnalyticsPanel({ cardId }: { cardId?: string }) {
           )
         )}
       </Card>
+
+      {/* Revenue Breakdown by Payment Gateway */}
+      <RevenueByGatewayChart
+        data={data?.revenueByGateway || []}
+        totalRevenue={data?.totalRevenue}
+        title="درآمد کارت و حمایت‌های مالی به تفکیک درگاه پرداخت"
+        subtitle="تفکیک درآمد دریافتی بر اساس درگاه‌های پرداخت مستقیم و فیش‌های واریزی صراف/بانک"
+      />
 
       {/* Module and Link Performance Breakdown */}
       <Card className="rounded-3xl border border-border/80 bg-white/80 dark:bg-slate-900/75 backdrop-blur-xl shadow-sm p-6 sm:p-7">

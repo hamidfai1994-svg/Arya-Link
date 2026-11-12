@@ -119,6 +119,7 @@ interface PublicProfileClientProps {
       password?: string;
       hint?: string;
     };
+    financialSettings?: any;
     noIndex?: boolean;
   };
 }
@@ -2680,6 +2681,9 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
         link={paymentModalLink}
         profileName={profile.displayName || 'صاحب پروفایل'}
         recipientPhone={profile.phone || ''}
+        profileId={profile.id}
+        profileAlias={profile.alias}
+        profileFinancialSettings={profile.financialSettings}
       />
     </div>
   );

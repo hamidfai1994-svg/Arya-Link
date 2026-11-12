@@ -10,6 +10,8 @@ export interface IHesabPaySessionParams {
   customerName?: string;
   description?: string;
   hostUrl?: string;
+  merchantId?: string;
+  apiKey?: string;
 }
 
 export interface IHesabPaySessionResult {
@@ -44,11 +46,14 @@ export async function createHesabPayCheckoutSession(
     callbackUrl: '/api/checkout/hesabpay/callback',
   };
 
+  const effectiveMerchantId = params.merchantId || config.merchantId || 'ARYALINK_MERCHANT_01';
+  const effectiveApiKey = params.apiKey || config.apiKey || 'hp_live_test_key_aryalink_af';
+
   const host = params.hostUrl || process.env.NEXTAUTH_URL || 'http://localhost:3000';
   const callbackUrl = `${host}/api/checkout/hesabpay/callback`;
 
   // Sandbox or development mode
-  if (config.isSandbox || !config.apiKey || config.apiKey.includes('test_key')) {
+  if (config.isSandbox || !effectiveApiKey || effectiveApiKey.includes('test_key')) {
     const simulationUrl = `${host}/checkout/hesabpay/simulator?orderId=${encodeURIComponent(
       params.orderId
     )}&orderNumber=${encodeURIComponent(params.orderNumber)}&amount=${params.amount}&phone=${encodeURIComponent(
@@ -67,7 +72,7 @@ export async function createHesabPayCheckoutSession(
   // Live HesabPay API Integration
   try {
     const payload = {
-      merchant_id: config.merchantId,
+      merchant_id: effectiveMerchantId,
       amount: params.amount,
       currency: params.currency || 'AFN',
       order_id: params.orderId,
@@ -84,7 +89,7 @@ export async function createHesabPayCheckoutSession(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${config.apiKey}`,
+        Authorization: `Bearer ${effectiveApiKey}`,
       },
       body: JSON.stringify(payload),
     });

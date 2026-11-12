@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { connectToDatabase } from '@/lib/db/mongodb';
 import { Profile } from '@/models/Profile.model';
+import { User } from '@/models/User.model';
 import { PublicProfileClient } from '@/components/profile/PublicProfileClient';
 import { CreditCard, ArrowRight, ShieldAlert, Sparkles, Home, UserCheck } from 'lucide-react';
 import { SiteLogo } from '@/components/SiteLogo';
@@ -131,6 +132,34 @@ export default async function PublicProfilePage({ params }: PageProps) {
     console.error('Error incrementing profile viewsCount:', e);
   }
 
+  // Load owner user's financial settings if not stored directly on profile
+  let ownerFinancialSettings = profile.financialSettings;
+  if (!ownerFinancialSettings?.hesabPay?.accountNumber && !ownerFinancialSettings?.hesabPay?.merchantId) {
+    if (profile.userId) {
+      try {
+        const ownerUser = await User.findById(profile.userId).select('financialSettings').lean();
+        if (ownerUser?.financialSettings) {
+          ownerFinancialSettings = ownerUser.financialSettings;
+        }
+      } catch (uErr) {
+        console.warn('Could not load owner user financial settings:', uErr);
+      }
+    }
+  }
+
+  // Safe serialization of owner financial settings (SECRET API KEY MUST BE EXCLUDED!)
+  const sanitizedFinancialSettings = ownerFinancialSettings?.hesabPay
+    ? {
+        hesabPay: {
+          isActive: ownerFinancialSettings.hesabPay.isActive !== false,
+          isApiEnabled: Boolean(ownerFinancialSettings.hesabPay.isApiEnabled),
+          merchantId: ownerFinancialSettings.hesabPay.merchantId || '',
+          accountNumber: ownerFinancialSettings.hesabPay.accountNumber || '',
+          accountName: ownerFinancialSettings.hesabPay.accountName || '',
+        },
+      }
+    : null;
+
   // Serialize profile object to ensure safe transfer to client component
   const serializedProfile = {
     id: profile._id.toString(),
@@ -172,6 +201,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
     passwordProtection: profile.passwordProtection
       ? JSON.parse(JSON.stringify(profile.passwordProtection))
       : undefined,
+    financialSettings: sanitizedFinancialSettings,
     noIndex: Boolean(profile.noIndex),
   };
 

@@ -1018,142 +1018,260 @@ export default function AdminPaymentMethodsPage() {
 
                       {/* Technology-Specific Fields */}
                       {isHesabPay ? (
-                        /* Smart Gateway Technology (HesabPay) */
-                        <div className="p-4 rounded-2xl bg-card border border-border space-y-3 text-right" dir="rtl">
-                          <div className="flex items-center justify-between pb-2 border-b border-border/60">
+                        /* Smart Dual-Mode Gateway Technology (HesabPay) */
+                        <div className="p-4 rounded-2xl bg-card border border-emerald-500/30 space-y-4 text-right" dir="rtl">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-border/60 gap-3">
                             <div className="text-right">
-                              <span className="text-xs font-bold text-foreground block">تنظیمات درگاه هوشمند حساب‌پی:</span>
-                              <span className="text-[10px] text-muted-foreground">کلیدهای دسترسی امن و محیط درگاه</span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-bold text-foreground">معماری پرداخت دوگانه حساب‌پی (Dual-Mode):</span>
+                                <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-[10px]">
+                                  آنلاین + صراف
+                                </Badge>
+                              </div>
+                              <span className="text-[10px] text-muted-foreground block mt-0.5">
+                                خریدار می‌تواند بین پرداخت مستقیم آنلاین با اپلیکیشن یا پرداخت حضوری نزد صراف/دکاندار انتخاب کند.
+                              </span>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-[11px] text-muted-foreground">حالت آزمایشی:</span>
-                              <Switch
-                                checked={wallet.hesabPayConfig?.isSandbox ?? true}
-                                onCheckedChange={(checked) =>
+
+                            <div className="flex items-center gap-4 shrink-0">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[11px] font-bold text-foreground">اتصال درگاه آنلاین (API):</span>
+                                <Switch
+                                  checked={wallet.isApiEnabled ?? true}
+                                  onCheckedChange={(checked) =>
+                                    updateWallet(wallet.id, {
+                                      isApiEnabled: checked,
+                                    })
+                                  }
+                                />
+                              </div>
+
+                              <div className="flex items-center gap-2 border-r border-border/60 pr-3">
+                                <span className="text-[11px] text-muted-foreground">حالت آزمایشی:</span>
+                                <Switch
+                                  checked={wallet.hesabPayConfig?.isSandbox ?? true}
+                                  onCheckedChange={(checked) =>
+                                    updateWallet(wallet.id, {
+                                      hesabPayConfig: {
+                                        ...(wallet.hesabPayConfig || {
+                                          merchantId: '',
+                                          apiKey: '',
+                                          endpointUrl: 'https://api.hesabpay.af',
+                                        }),
+                                        isSandbox: checked,
+                                      },
+                                    })
+                                  }
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Section A: Online API Credentials */}
+                          <div className="p-3.5 rounded-xl bg-slate-950/60 border border-white/5 space-y-3">
+                            <span className="text-[11px] font-bold text-emerald-400 block">
+                              ۱. اطلاعات اتصال آنلاین (برای خریداران دارای اپلیکیشن حساب‌پی):
+                            </span>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              <div className="space-y-1 text-right">
+                                <label className="text-[11px] font-bold text-foreground block text-right">شناسه پذیرنده (Merchant ID):</label>
+                                <Input
+                                  value={wallet.merchantId || wallet.hesabPayConfig?.merchantId || ''}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    updateWallet(wallet.id, {
+                                      merchantId: val,
+                                      hesabPayConfig: {
+                                        ...(wallet.hesabPayConfig || {
+                                          isSandbox: true,
+                                          apiKey: '',
+                                          endpointUrl: 'https://api.hesabpay.af',
+                                        }),
+                                        merchantId: val,
+                                      },
+                                    });
+                                  }}
+                                  className="h-9 rounded-xl font-mono text-xs text-start"
+                                  dir="ltr"
+                                  placeholder="ARYALINK_MERCHANT_01"
+                                />
+                              </div>
+
+                              {/* API Key with Password Eye Toggle */}
+                              <PasswordInputField
+                                label="کلید دسترسی API (API Key)"
+                                value={wallet.apiKey || wallet.hesabPayConfig?.apiKey || ''}
+                                onChange={(val) =>
+                                  updateWallet(wallet.id, {
+                                    apiKey: val,
+                                    hesabPayConfig: {
+                                      ...(wallet.hesabPayConfig || {
+                                        isSandbox: true,
+                                        merchantId: '',
+                                        endpointUrl: 'https://api.hesabpay.af',
+                                      }),
+                                      apiKey: val,
+                                    },
+                                  })
+                                }
+                                placeholder="hp_live_key_..."
+                              />
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              {/* Secret Key with Password Eye Toggle */}
+                              <PasswordInputField
+                                label="کلید امنیتی محرمانه (Secret Key)"
+                                value={wallet.hesabPayConfig?.apiSecret || ''}
+                                onChange={(val) =>
                                   updateWallet(wallet.id, {
                                     hesabPayConfig: {
                                       ...(wallet.hesabPayConfig || {
+                                        isSandbox: true,
                                         merchantId: '',
                                         apiKey: '',
                                         endpointUrl: 'https://api.hesabpay.af',
                                       }),
-                                      isSandbox: checked,
+                                      apiSecret: val,
                                     },
                                   })
                                 }
+                                placeholder="hp_secret_key_..."
                               />
+
+                              <div className="space-y-1 text-right">
+                                <label className="text-[11px] font-bold text-foreground block text-right">آدرس سرور API:</label>
+                                <Input
+                                  value={wallet.hesabPayConfig?.endpointUrl || 'https://api.hesabpay.af'}
+                                  onChange={(e) =>
+                                    updateWallet(wallet.id, {
+                                      hesabPayConfig: {
+                                        ...(wallet.hesabPayConfig || {
+                                          isSandbox: true,
+                                          merchantId: '',
+                                          apiKey: '',
+                                        }),
+                                        endpointUrl: e.target.value,
+                                      },
+                                    })
+                                  }
+                                  className="h-9 rounded-xl font-mono text-xs text-start"
+                                  dir="ltr"
+                                />
+                              </div>
                             </div>
                           </div>
 
+                          {/* Section B: Account & Dynamic QR Code (Sarraf / Shopkeeper mode) */}
+                          <div className="p-3.5 rounded-xl bg-slate-950/60 border border-white/5 space-y-3">
+                            <span className="text-[11px] font-bold text-cyan-400 block">
+                              ۲. مشخصات حساب جهت تولید بارکد اختصاصی صراف / دکاندار:
+                            </span>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                              <div className="space-y-1 text-right">
+                                <label className="text-[11px] font-bold text-foreground block text-right">
+                                  شماره موبایل حساب حساب‌پی:
+                                </label>
+                                <Input
+                                  value={wallet.accountNumber || ''}
+                                  onChange={(e) => updateWallet(wallet.id, { accountNumber: e.target.value })}
+                                  className="h-9 rounded-xl font-mono text-xs text-start"
+                                  dir="ltr"
+                                  placeholder="0729736813"
+                                />
+                                <span className="text-[9px] text-muted-foreground block">
+                                  در بارکد بدون صفر اول محاسبه می‌شود
+                                </span>
+                              </div>
+
+                              <div className="space-y-1 text-right">
+                                <label className="text-[11px] font-bold text-foreground block text-right">
+                                  نام صاحب حساب (انگلیسی):
+                                </label>
+                                <Input
+                                  value={wallet.accountName || ''}
+                                  onChange={(e) => updateWallet(wallet.id, { accountName: e.target.value.toUpperCase() })}
+                                  className="h-9 rounded-xl font-mono text-xs text-start uppercase"
+                                  dir="ltr"
+                                  placeholder="HAMID FASIHI"
+                                />
+                                <span className="text-[9px] text-muted-foreground block">
+                                  جهت ساخت دقیق Payload بارکد
+                                </span>
+                              </div>
+
+                              <div className="space-y-1 text-right">
+                                <label className="text-[11px] font-bold text-foreground block text-right">
+                                  نام نمایشی دارنده حساب (فارسی):
+                                </label>
+                                <Input
+                                  value={wallet.accountHolder || ''}
+                                  onChange={(e) => updateWallet(wallet.id, { accountHolder: e.target.value })}
+                                  className="h-9 rounded-xl text-xs text-right"
+                                  placeholder="حمید فصیحی"
+                                />
+                              </div>
+                            </div>
+
+                            {/* Real-time Dynamic HesabPay QR Code Preview */}
+                            {(() => {
+                              const cleanP = (wallet.accountNumber || '0729736813').replace(/^0+/, '');
+                              const cleanN = (wallet.accountName || wallet.accountHolder || 'HAMID FASIHI').toUpperCase();
+                              const previewQr = `1:01*2:p*3:93.${cleanP}*4:general*5:${cleanN}*6:971*7:1307100`;
+
+                              return (
+                                <div className="p-3 rounded-xl bg-card border border-border/80 flex flex-col sm:flex-row items-center gap-4">
+                                  <div className="p-2 bg-white rounded-xl shadow-md shrink-0">
+                                    <QRCodeSVG value={previewQr} size={96} level="M" />
+                                  </div>
+                                  <div className="space-y-1 text-right flex-1 min-w-0">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-xs font-bold text-foreground">پیش‌نمایش زنده بارکد حساب‌پی:</span>
+                                      <Badge variant="outline" className="text-[9px] bg-emerald-500/10 text-emerald-400 border-emerald-500/30">
+                                        تولید خودکار
+                                      </Badge>
+                                    </div>
+                                    <p className="text-[10px] text-muted-foreground">
+                                      این بارکد دقیقاً با الگوی استاندارد حساب‌پی برای خریدارانی که گزینه «صراف / دکاندار» را برمی‌گزینند رندر خواهد شد.
+                                    </p>
+                                    <div className="p-1.5 rounded-lg bg-muted/40 font-mono text-[10px] text-muted-foreground truncate" dir="ltr">
+                                      {previewQr}
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })()}
+                          </div>
+                        </div>
+                      ) : (
+                        /* General Mobile Wallet Technology Fields */
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-right" dir="rtl">
                           <div className="space-y-1 text-right">
-                            <label className="text-[11px] font-bold text-foreground block text-right">شناسه پذیرنده:</label>
+                            <label className="text-[11px] font-bold text-foreground block text-right">
+                              شماره موبایل / حساب در {wallet.name}:
+                            </label>
                             <Input
-                              value={wallet.hesabPayConfig?.merchantId || ''}
-                              onChange={(e) =>
-                                updateWallet(wallet.id, {
-                                  hesabPayConfig: {
-                                    ...(wallet.hesabPayConfig || {
-                                      isSandbox: true,
-                                      apiKey: '',
-                                      endpointUrl: 'https://api.hesabpay.af',
-                                    }),
-                                    merchantId: e.target.value,
-                                  },
-                                })
-                              }
+                              value={wallet.accountNumber || ''}
+                              onChange={(e) => updateWallet(wallet.id, { accountNumber: e.target.value })}
                               className="h-9 rounded-xl font-mono text-xs text-start"
                               dir="ltr"
-                              placeholder="ARYALINK_MERCHANT_01"
+                              placeholder="0799001122"
                             />
                           </div>
 
-                          {/* API Key with Password Eye Toggle */}
-                          <PasswordInputField
-                            label="کلید عمومی API"
-                            value={wallet.hesabPayConfig?.apiKey || ''}
-                            onChange={(val) =>
-                              updateWallet(wallet.id, {
-                                hesabPayConfig: {
-                                  ...(wallet.hesabPayConfig || {
-                                    isSandbox: true,
-                                    merchantId: '',
-                                    endpointUrl: 'https://api.hesabpay.af',
-                                  }),
-                                  apiKey: val,
-                                },
-                              })
-                            }
-                            placeholder="hp_live_key_..."
-                          />
-
-                          {/* Secret Key with Password Eye Toggle */}
-                          <PasswordInputField
-                            label="کلید امنیتی محرمانه"
-                            value={wallet.hesabPayConfig?.apiSecret || ''}
-                            onChange={(val) =>
-                              updateWallet(wallet.id, {
-                                hesabPayConfig: {
-                                  ...(wallet.hesabPayConfig || {
-                                    isSandbox: true,
-                                    merchantId: '',
-                                    apiKey: '',
-                                    endpointUrl: 'https://api.hesabpay.af',
-                                  }),
-                                  apiSecret: val,
-                                },
-                              })
-                            }
-                            placeholder="hp_secret_key_..."
-                          />
-
                           <div className="space-y-1 text-right">
-                            <label className="text-[11px] font-bold text-foreground block text-right">آدرس سرور API:</label>
+                            <label className="text-[11px] font-bold text-foreground block text-right">نام صاحب حساب:</label>
                             <Input
-                              value={wallet.hesabPayConfig?.endpointUrl || 'https://api.hesabpay.af'}
-                              onChange={(e) =>
-                                updateWallet(wallet.id, {
-                                  hesabPayConfig: {
-                                    ...(wallet.hesabPayConfig || {
-                                      isSandbox: true,
-                                      merchantId: '',
-                                      apiKey: '',
-                                    }),
-                                    endpointUrl: e.target.value,
-                                  },
-                                })
-                              }
-                              className="h-9 rounded-xl font-mono text-xs text-start"
-                              dir="ltr"
+                              value={wallet.accountHolder || ''}
+                              onChange={(e) => updateWallet(wallet.id, { accountHolder: e.target.value })}
+                              className="h-9 rounded-xl text-xs text-right"
+                              placeholder="Aryalink LLC یا نام شخص"
                             />
                           </div>
                         </div>
-                      ) : null}
-
-                      {/* General Mobile Wallet Technology Fields */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-right" dir="rtl">
-                        <div className="space-y-1 text-right">
-                          <label className="text-[11px] font-bold text-foreground block text-right">
-                            شماره موبایل / حساب در {wallet.name}:
-                          </label>
-                          <Input
-                            value={wallet.accountNumber || ''}
-                            onChange={(e) => updateWallet(wallet.id, { accountNumber: e.target.value })}
-                            className="h-9 rounded-xl font-mono text-xs text-start"
-                            dir="ltr"
-                            placeholder="0799001122"
-                          />
-                        </div>
-
-                        <div className="space-y-1 text-right">
-                          <label className="text-[11px] font-bold text-foreground block text-right">نام صاحب حساب:</label>
-                          <Input
-                            value={wallet.accountHolder || ''}
-                            onChange={(e) => updateWallet(wallet.id, { accountHolder: e.target.value })}
-                            className="h-9 rounded-xl text-xs text-right"
-                            placeholder="Aryalink LLC یا نام شخص"
-                          />
-                        </div>
-                      </div>
+                      )}
 
                       {/* Wallet Name, English Name, and Company */}
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs text-right" dir="rtl">

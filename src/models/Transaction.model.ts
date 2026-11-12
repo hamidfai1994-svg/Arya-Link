@@ -2,11 +2,16 @@ import mongoose, { Schema, Document, Model } from 'mongoose';
 
 export interface ITransactionDocument extends Document {
   profileId?: mongoose.Types.ObjectId | string;
+  userId?: mongoose.Types.ObjectId | string;
   amount: number;
   type: string;
   status: 'pending' | 'successful' | 'failed';
   currency?: string;
   description?: string;
+  paymentGateway?: string;
+  paymentMode?: 'api' | 'manual' | string;
+  referenceNumber?: string;
+  receiptUrl?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -16,6 +21,11 @@ const TransactionSchema = new Schema<ITransactionDocument>(
     profileId: {
       type: Schema.Types.Mixed,
       ref: 'Profile',
+      index: true,
+    },
+    userId: {
+      type: Schema.Types.Mixed,
+      ref: 'User',
       index: true,
     },
     amount: {
@@ -43,6 +53,25 @@ const TransactionSchema = new Schema<ITransactionDocument>(
       type: String,
       default: '',
       trim: true,
+    },
+    paymentGateway: {
+      type: String,
+      default: 'hesabpay',
+      index: true,
+    },
+    paymentMode: {
+      type: String,
+      enum: ['api', 'manual'],
+      default: 'api',
+      index: true,
+    },
+    referenceNumber: {
+      type: String,
+      default: '',
+    },
+    receiptUrl: {
+      type: String,
+      default: '',
     },
   },
   {

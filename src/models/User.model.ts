@@ -42,6 +42,17 @@ export interface IUserDocument extends Document {
     expiryDate?: string;
     [key: string]: any;
   };
+  financialSettings?: {
+    hesabPay?: {
+      isActive?: boolean;
+      isApiEnabled?: boolean;
+      merchantId?: string;
+      apiKey?: string;
+      accountName?: string;
+      accountNumber?: string;
+    };
+    [key: string]: any;
+  };
   emailVerified?: Date;
   lastLoginAt?: Date;
   createdAt: Date;
@@ -153,6 +164,10 @@ const UserSchema = new Schema<IUserDocument>(
     kycData: {
       type: Schema.Types.Mixed,
       default: {},
+    },
+    financialSettings: {
+      type: Schema.Types.Mixed,
+      default: () => ({}),
     },
     emailVerified: {
       type: Date,

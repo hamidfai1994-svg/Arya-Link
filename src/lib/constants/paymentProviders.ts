@@ -98,6 +98,10 @@ export interface PaymentMethodItem {
   isDefault?: boolean;
   walletService?: WalletServiceType;
   walletAccount?: string;
+  walletAccountName?: string;
+  isApiEnabled?: boolean;
+  merchantId?: string;
+  apiKey?: string;
   bankName?: AfghanBankType;
   bankAccountHolder?: string;
   bankAccountNumber?: string;

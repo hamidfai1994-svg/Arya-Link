@@ -27,8 +27,10 @@ export async function GET() {
       name: w.name,
       nameFa: w.nameFa,
       providerCompany: w.providerCompany,
-      accountNumber: w.accountNumber,
+      accountNumber: w.accountNumber || (w.id === 'hesabpay' ? settings.hesabPay?.accountNumber || '0729736813' : ''),
       accountHolder: w.accountHolder,
+      accountName: w.accountName || (w.id === 'hesabpay' ? settings.hesabPay?.accountName || 'HAMID FASIHI' : w.accountHolder),
+      isApiEnabled: w.isApiEnabled !== undefined ? Boolean(w.isApiEnabled) : (w.id === 'hesabpay' ? (settings.hesabPay?.isApiEnabled ?? true) : false),
       instructions: w.instructions,
       qrCodeUrl: w.qrCodeUrl || '',
       logoUrl: w.logoUrl || '',
@@ -36,7 +38,7 @@ export async function GET() {
       hesabPayConfig: w.hesabPayConfig
         ? {
             isSandbox: w.hesabPayConfig.isSandbox ?? true,
-            merchantId: w.hesabPayConfig.merchantId || 'ARYALINK_MERCHANT_01',
+            merchantId: w.hesabPayConfig.merchantId || settings.hesabPay?.merchantId || 'ARYALINK_MERCHANT_01',
           }
         : undefined,
     }));
@@ -99,8 +101,11 @@ export async function GET() {
       },
       hesabPay: {
         isActive: isWalletGroupActive && (publicWallets.some((w: any) => w.id === 'hesabpay')),
+        isApiEnabled: settings.hesabPay?.isApiEnabled !== false,
         isSandbox: settings.hesabPay?.isSandbox ?? true,
         merchantId: settings.hesabPay?.merchantId || 'ARYALINK_MERCHANT_01',
+        accountName: settings.hesabPay?.accountName || 'HAMID FASIHI',
+        accountNumber: settings.hesabPay?.accountNumber || '0729736813',
       },
     };
 

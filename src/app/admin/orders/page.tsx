@@ -28,6 +28,9 @@ import {
   Trash2,
   Copy,
   Radio,
+  Smartphone,
+  Store,
+  Building,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -61,6 +64,8 @@ interface AdminOrder {
     | 'shipped'
     | 'pending';
   paymentMethod: string;
+  paymentGateway?: string;
+  paymentMode?: string;
   trackingNumber?: string;
   trackingShortCode?: string;
   provisionedBy?: string;
@@ -488,6 +493,7 @@ export default function AdminOrdersPage() {
                 <th className="p-4 font-semibold">مشتری</th>
                 <th className="p-4 font-semibold">مدل و متریال کارت</th>
                 <th className="p-4 font-semibold">مبلغ</th>
+                <th className="p-4 font-semibold">روش و درگاه پرداخت</th>
                 <th className="p-4 font-semibold">وضعیت کنونی</th>
                 <th className="p-4 font-semibold">کد رهگیری پست</th>
                 <th className="p-4 font-semibold">تاریخ</th>
@@ -497,7 +503,7 @@ export default function AdminOrdersPage() {
             <tbody className="divide-y divide-slate-800/60 text-slate-300">
               {orders.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="p-16 text-center">
+                  <td colSpan={9} className="p-16 text-center">
                     <div className="flex flex-col items-center justify-center space-y-3 text-slate-400">
                       <div className="w-14 h-14 rounded-2xl bg-slate-800/80 border border-slate-700/60 flex items-center justify-center text-slate-400">
                         <ShoppingBag className="w-7 h-7 opacity-70" />
@@ -513,7 +519,7 @@ export default function AdminOrdersPage() {
                 </tr>
               ) : filteredOrders.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="p-10 text-center text-slate-400 text-xs">
+                  <td colSpan={9} className="p-10 text-center text-slate-400 text-xs">
                     موردی مطابق با جستجوی شما یافت نشد.
                   </td>
                 </tr>
@@ -543,6 +549,44 @@ export default function AdminOrdersPage() {
 
                       <td className="p-4 font-bold text-white">
                         {order.totalPrice.toLocaleString('en-US')} AFN
+                      </td>
+
+                      <td className="p-4">
+                        {order.paymentGateway === 'hesabpay' || order.paymentMethod === 'wallet' ? (
+                          order.paymentMode === 'api' ? (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/25">
+                              <Smartphone className="w-3 h-3 text-emerald-400" />
+                              <span>حساب‌پی - مستقیم (API)</span>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-teal-500/10 text-teal-300 border border-teal-500/25">
+                              <Store className="w-3 h-3 text-teal-400" />
+                              <span>حساب‌پی - فیش صراف</span>
+                            </span>
+                          )
+                        ) : order.paymentMethod === 'bank' ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-500/10 text-blue-300 border border-blue-500/25">
+                            <Building className="w-3 h-3 text-blue-400" />
+                            <span>بانک - فیش واریزی</span>
+                          </span>
+                        ) : order.paymentMethod === 'hawala' ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-300 border border-amber-500/25">
+                            <Store className="w-3 h-3 text-amber-400" />
+                            <span>حواله صرافی</span>
+                          </span>
+                        ) : order.paymentMethod === 'crypto' ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-indigo-500/10 text-indigo-300 border border-indigo-500/25">
+                            <span>ارز دیجیتال (تتر)</span>
+                          </span>
+                        ) : order.paymentMethod === 'cod' ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-500/10 text-slate-300 border border-slate-500/25">
+                            <span>نقدی تحویل (COD)</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-500/10 text-slate-400 border border-slate-500/20 font-mono">
+                            {order.paymentMethod || 'آنلاین'}
+                          </span>
+                        )}
                       </td>
 
                       <td className="p-4">

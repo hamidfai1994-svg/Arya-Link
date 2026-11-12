@@ -2596,6 +2596,9 @@ export const LivePreview: React.FC = () => {
         link={previewPaymentModalLink}
         profileName={profile.displayName || 'صاحب پروفایل'}
         recipientPhone={profile.phone || ''}
+        profileId={(profile as any)._id || (profile as any).id}
+        profileAlias={profile.alias}
+        profileFinancialSettings={(profile as any).financialSettings}
       />
     </div>
   );
