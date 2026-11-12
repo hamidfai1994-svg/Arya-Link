@@ -81,54 +81,120 @@ interface UserOrder {
   totalPrice: number;
   currency: string;
   paymentStatus: 'paid' | 'pending' | 'failed' | 'refunded';
-  orderStatus: 'completed' | 'processing' | 'printing' | 'shipped' | 'pending' | 'cancelled';
+  orderStatus:
+    | 'pending_payment'
+    | 'processing'
+    | 'nfc_writing'
+    | 'shipping'
+    | 'delivered'
+    | 'cancelled'
+    | 'completed'
+    | 'printing'
+    | 'shipped'
+    | 'pending';
   paymentMethod: string;
   trackingNumber?: string;
+  trackingShortCode?: string;
+  provisionedBy?: string;
+  provisionedAt?: string;
+  physicalCard?: {
+    id: string;
+    shortCode: string;
+    scansCount: number;
+    status: string;
+    provisionedBy?: string;
+    provisionedAt?: string;
+  } | null;
   cardSpecs?: OrderCardSpecs;
   notes?: string;
   createdAt: string;
   updatedAt?: string;
 }
 
-function getTimelineMilestones(orderStatus: string, trackingNumber?: string) {
-  const isPending = orderStatus === 'pending' || orderStatus === 'processing';
-  const isPrinting = orderStatus === 'printing';
-  const isShipped = orderStatus === 'shipped';
-  const isCompleted = orderStatus === 'completed';
+function getTimelineMilestones(
+  orderStatus: string,
+  trackingNumber?: string,
+  trackingShortCode?: string
+) {
+  let activeStep = 0;
+  if (orderStatus === 'pending_payment' || orderStatus === 'pending') {
+    activeStep = 0;
+  } else if (orderStatus === 'processing' || orderStatus === 'printing') {
+    activeStep = 1;
+  } else if (orderStatus === 'nfc_writing') {
+    activeStep = 2;
+  } else if (orderStatus === 'shipping' || orderStatus === 'shipped') {
+    activeStep = 3;
+  } else if (orderStatus === 'delivered' || orderStatus === 'completed') {
+    activeStep = 4;
+  }
+
+  const isCancelled = orderStatus === 'cancelled';
 
   return [
     {
       step: 1,
-      title: 'ثبت و بررسی اولیه سفارش (Under Review)',
-      desc: 'بررسی مشخصات ظاهری کارت، آدرس ارسال و اعتبارسنجی پرداخت.',
-      status: isPending ? 'current' : 'completed',
-      dateText: 'تکمیل شده',
-      badge: 'در حال بررسی',
+      title: 'ثبت و بررسی اولیه پرداخت',
+      desc: 'بررسی مشخصات اولیه، تأیید فیش رسید و ثبت نهایی سفارش در سیستم.',
+      status: isCancelled ? 'upcoming' : activeStep > 0 ? 'completed' : 'current',
+      dateText: activeStep > 0 ? 'تکمیل شد' : 'در حال بررسی',
+      badge: 'ثبت سفارش',
     },
     {
       step: 2,
-      title: 'کدگذاری چیپست NFC و چاپ فیزیکی (Printing & NFC Encoding)',
-      desc: 'کدگذاری ماژول امن NTAG216، پوشش متالیک و چاپ صنعتی کارت.',
-      status: isPrinting ? 'current' : isShipped || isCompleted ? 'completed' : 'upcoming',
-      dateText: isPrinting ? 'در حال انجام' : isShipped || isCompleted ? 'تکمیل شده' : 'در انتظار',
-      badge: 'در حال چاپ',
+      title: 'آماده‌سازی و چاپ صنعتی کارت',
+      desc: 'برش متریال، پوشش محافظ و چاپ باکیفیت UV طرح اختصاصی شما.',
+      status:
+        isCancelled
+          ? 'upcoming'
+          : activeStep > 1
+          ? 'completed'
+          : activeStep === 1
+          ? 'current'
+          : 'upcoming',
+      dateText: activeStep > 1 ? 'تکمیل شد' : activeStep === 1 ? 'در حال چاپ' : 'در انتظار',
+      badge: 'چاپ فیزیکی',
     },
     {
       step: 3,
-      title: 'بسته‌بندی امن و تحویل به پست اکسپرس (Dispatched & Shipped)',
-      desc: trackingNumber
-        ? `بسته‌بندی در قاب لوکس و ارسال. کد رهگیری: ${trackingNumber}`
-        : 'بسته‌بندی اختصاصی پلمپ‌شده و صدور بارنامه پست اکسپرس افغانستان.',
-      status: isShipped ? 'current' : isCompleted ? 'completed' : 'upcoming',
-      dateText: isShipped ? 'در مسیر تحویل' : isCompleted ? 'تکمیل شده' : 'در انتظار',
-      badge: 'ارسال شده',
+      title: 'کدگذاری و رایت چیپست هوشمند NFC',
+      desc: trackingShortCode
+        ? `کدگذاری فرکانس بی‌سیم ماژول NTAG216 و فعال‌سازی لینک ردیاب نامرئی (${trackingShortCode}).`
+        : 'کدگذاری فرکانس بی‌سیم ماژول NTAG216 و فعال‌سازی لینک ردیاب نامرئی.',
+      status:
+        isCancelled
+          ? 'upcoming'
+          : activeStep > 2
+          ? 'completed'
+          : activeStep === 2
+          ? 'current'
+          : 'upcoming',
+      dateText: activeStep > 2 ? 'رایت شد' : activeStep === 2 ? 'در حال رایت' : 'در انتظار',
+      badge: 'چیپست هوشمند',
     },
     {
       step: 4,
-      title: 'تحویل نهایی به مشتری (Delivered)',
-      desc: 'تحویل بسته به شخص تحویل‌گیرنده در ولایت و آدرس مقصد.',
-      status: isCompleted ? 'completed' : 'upcoming',
-      dateText: isCompleted ? 'تحویل شد' : '2 الی 4 روز کاری',
+      title: 'بسته‌بندی امن و تحویل به پست اکسپرس',
+      desc: trackingNumber
+        ? `بسته‌بندی در قاب لوکس و صدور بارنامه پست اکسپرس افغانستان. کد رهگیری: ${trackingNumber}`
+        : 'بسته‌بندی در قاب لوکس و صدور بارنامه رسمی پست اکسپرس افغانستان.',
+      status:
+        isCancelled
+          ? 'upcoming'
+          : activeStep > 3
+          ? 'completed'
+          : activeStep === 3
+          ? 'current'
+          : 'upcoming',
+      dateText: activeStep > 3 ? 'ارسال شد' : activeStep === 3 ? 'در مسیر تحویل' : 'در انتظار',
+      badge: 'ارسال با پیک',
+    },
+    {
+      step: 5,
+      title: 'تحویل نهایی به مشتری',
+      desc: 'تحویل بسته پلمپ‌شده به تحویل‌گیرنده در محل و ولایت مقصد.',
+      status: isCancelled ? 'upcoming' : activeStep >= 4 ? 'completed' : 'upcoming',
+      dateText: activeStep >= 4 ? 'تحویل شد' : 'در انتظار تحویل',
       badge: 'تکمیل سفارش',
     },
   ];
@@ -341,7 +407,9 @@ function OrdersDashboardInner() {
   // Check if current order is still editable (before printing)
   const isOrderEditable =
     selectedOrder &&
-    (selectedOrder.orderStatus === 'pending' || selectedOrder.orderStatus === 'processing');
+    (selectedOrder.orderStatus === 'pending_payment' ||
+      selectedOrder.orderStatus === 'pending' ||
+      selectedOrder.orderStatus === 'processing');
 
   // Stats calculation
   const pendingCount = orders.filter((o) => o.orderStatus === 'pending' || o.orderStatus === 'processing').length;
@@ -349,44 +417,56 @@ function OrdersDashboardInner() {
   const shippedCount = orders.filter((o) => o.orderStatus === 'shipped' || o.orderStatus === 'completed').length;
 
   const renderStatusBadge = (orderStatus: string) => {
-    const isPending = orderStatus === 'pending' || orderStatus === 'processing';
-    const isPrinting = orderStatus === 'printing';
-    const isShipped = orderStatus === 'shipped';
-
-    if (isPending) {
+    if (orderStatus === 'pending_payment' || orderStatus === 'pending') {
       return (
         <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20 shrink-0">
           <Clock className="w-3 h-3 animate-spin" />
-          <span>در حال بررسی</span>
+          <span>در انتظار پرداخت</span>
         </span>
       );
     }
-    if (isPrinting) {
+    if (orderStatus === 'processing' || orderStatus === 'printing') {
       return (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-cyan-500/10 text-cyan-500 border border-cyan-500/20 animate-pulse shrink-0">
-          <Zap className="w-3 h-3" />
-          <span>در حال چاپ</span>
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-cyan-500/10 text-cyan-500 border border-cyan-500/20 shrink-0">
+          <Package className="w-3 h-3" />
+          <span>آماده‌سازی و چاپ</span>
         </span>
       );
     }
-    if (isShipped) {
+    if (orderStatus === 'nfc_writing') {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20 animate-pulse shrink-0">
+          <Zap className="w-3 h-3" />
+          <span>رایت کارت NFC</span>
+        </span>
+      );
+    }
+    if (orderStatus === 'shipping' || orderStatus === 'shipped') {
       return (
         <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-500/10 text-purple-500 border border-purple-500/20 shrink-0">
           <Truck className="w-3 h-3" />
-          <span>ارسال شده</span>
+          <span>ارسال با پست اکسپرس</span>
+        </span>
+      );
+    }
+    if (orderStatus === 'delivered' || orderStatus === 'completed') {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shrink-0">
+          <CheckCircle2 className="w-3 h-3" />
+          <span>تحویل شد</span>
         </span>
       );
     }
     return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shrink-0">
-        <CheckCircle2 className="w-3 h-3" />
-        <span>تکمیل شده</span>
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-500/10 text-rose-500 border border-rose-500/20 shrink-0">
+        <X className="w-3 h-3" />
+        <span>لغو شده</span>
       </span>
     );
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto" dir="rtl">
+    <div className="space-y-6 max-w-7xl mx-auto" dir="rtl">
       {/* ===================================================================
           MASTER VIEW: LIST OF USER ORDERS (When selectedOrder is null)
           =================================================================== */}
@@ -608,7 +688,7 @@ function OrdersDashboardInner() {
                       )}
                     >
                       <LayoutGrid className="w-4 h-4" />
-                      <span>شبکه‌ای (Grid View)</span>
+                      <span>شبکه‌ای</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => setViewMode('detailed')}
@@ -618,7 +698,7 @@ function OrdersDashboardInner() {
                       )}
                     >
                       <Layers className="w-4 h-4" />
-                      <span>لیست تفصیلی (Detailed List)</span>
+                      <span>لیست تفصیلی</span>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -646,156 +726,97 @@ function OrdersDashboardInner() {
               ) : (
                 <>
                   {/* 1. GRID / CARD VIEW */}
-              {viewMode === 'grid' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                  {paginatedOrders.map((order) => (
-                    <div
-                      key={order.id}
-                      onClick={() => handleSelectOrder(order.id)}
-                      className="p-5 rounded-3xl bg-card/60 backdrop-blur-md border border-border hover:border-cyan-500/40 hover:shadow-xl hover:shadow-cyan-500/10 transition-all duration-300 cursor-pointer flex flex-col justify-between group space-y-4"
-                    >
-                      {/* Top Row: Order Number & Status Badge */}
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-sans font-bold text-xs text-cyan-500 bg-cyan-500/10 px-2.5 py-1 rounded-xl border border-cyan-500/20 group-hover:bg-cyan-500 group-hover:text-black transition-colors">
-                          {order.orderNumber}
-                        </span>
-                        {renderStatusBadge(order.orderStatus)}
-                      </div>
-
-                      {/* Middle Content: Card Details & Holder */}
-                      <div className="space-y-2">
-                        <h3 className="text-sm font-bold text-foreground group-hover:text-cyan-500 transition-colors line-clamp-1">
-                          {order.cardSpecs?.templateName || order.productTitle}
-                        </h3>
-                        <div className="text-xs text-muted-foreground flex items-center gap-2">
-                          <CreditCard className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                          <span className="truncate">{order.cardSpecs?.material || 'کارت فیزیکی NFC'}</span>
-                        </div>
-                        <div className="text-xs text-muted-foreground flex items-center gap-2">
-                          <User className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                          <span className="truncate">
-                            نام روی کارت:{' '}
-                            {order.cardSpecs?.firstName
-                              ? `${order.cardSpecs.firstName} ${order.cardSpecs?.lastName || ''}`.trim()
-                              : order.customerName}
-                          </span>
-                        </div>
-                        <div className="text-[11px] text-muted-foreground font-sans flex items-center gap-2 pt-0.5">
-                          <Calendar className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                          <span>
-                            {new Date(order.createdAt).toLocaleDateString('en-US', {
-                              year: 'numeric',
-                              month: 'short',
-                              day: 'numeric',
-                            })}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Bottom Row: Price & Detail Action */}
-                      <div className="flex items-center justify-between border-t border-border/70 pt-3 text-xs">
-                        <div className="font-sans font-bold text-foreground text-sm">
-                          {order.totalPrice.toLocaleString('en-US')} AFN
-                        </div>
-                        <div className="flex items-center gap-1 text-cyan-500 font-bold text-xs group-hover:-translate-x-1 transition-transform">
-                          <span>مشاهده جزئیات</span>
-                          <ChevronLeft className="w-4 h-4" />
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* 2. COMPACT LIST VIEW */}
-              {viewMode === 'compact' && (
-                <div className="space-y-2">
-                  {paginatedOrders.map((order) => (
-                    <div
-                      key={order.id}
-                      onClick={() => handleSelectOrder(order.id)}
-                      className="p-3.5 sm:p-4 rounded-2xl bg-card/60 backdrop-blur-md border border-border hover:border-cyan-500/40 hover:bg-muted/40 transition-all duration-200 cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 group"
-                    >
-                      {/* Left: Order Number + Recipient + Template */}
-                      <div className="flex items-center gap-3 min-w-0">
-                        <span className="font-sans font-bold text-xs text-cyan-500 bg-cyan-500/10 px-2.5 py-1 rounded-xl border border-cyan-500/20 shrink-0">
-                          {order.orderNumber}
-                        </span>
-
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-foreground truncate group-hover:text-cyan-500 transition-colors">
-                              {order.cardSpecs?.firstName
-                                ? `${order.cardSpecs.firstName} ${order.cardSpecs?.lastName || ''}`.trim()
-                                : order.customerName}
-                            </span>
-                            <span className="text-[10px] text-muted-foreground truncate hidden md:inline">
-                              ({order.cardSpecs?.templateName || order.productTitle})
-                            </span>
-                          </div>
-                          <div className="text-[10px] text-muted-foreground font-sans flex items-center gap-2 mt-0.5">
-                            <span>{order.cardSpecs?.material || 'کارت فیزیکی NFC'}</span>
-                            <span>•</span>
-                            <span>
-                              {new Date(order.createdAt).toLocaleDateString('en-US', {
-                                year: 'numeric',
-                                month: 'short',
-                                day: 'numeric',
-                              })}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Right: Status Badge + Price + Action Button */}
-                      <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-border/50">
-                        {renderStatusBadge(order.orderStatus)}
-
-                        <span className="font-sans font-bold text-xs sm:text-sm text-foreground">
-                          {order.totalPrice.toLocaleString('en-US')} AFN
-                        </span>
-
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 px-2.5 rounded-lg text-xs text-cyan-500 hover:text-cyan-400 hover:bg-cyan-500/10 flex items-center gap-1"
+                  {viewMode === 'grid' && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                      {paginatedOrders.map((order) => (
+                        <div
+                          key={order.id}
+                          onClick={() => handleSelectOrder(order.id)}
+                          className="p-5 rounded-3xl bg-card/60 backdrop-blur-md border border-border hover:border-cyan-500/40 hover:shadow-xl hover:shadow-cyan-500/10 transition-all duration-300 cursor-pointer flex flex-col justify-between group space-y-4"
                         >
-                          <span>جزئیات</span>
-                          <ChevronLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+                          {/* Top Row: Order Number & Status Badge */}
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="font-sans font-bold text-xs text-cyan-500 bg-cyan-500/10 px-2.5 py-1 rounded-xl border border-cyan-500/20 group-hover:bg-cyan-500 group-hover:text-black transition-colors">
+                              {order.orderNumber}
+                            </span>
+                            {renderStatusBadge(order.orderStatus)}
+                          </div>
 
-              {/* 3. DETAILED LIST VIEW */}
-              {viewMode === 'detailed' && (
-                <div className="space-y-4">
-                  {paginatedOrders.map((order) => {
-                    const milestones = getTimelineMilestones(order.orderStatus, order.trackingNumber);
-                    const currentMilestoneIndex = milestones.findIndex((m) => m.status === 'current');
-                    const activeStep =
-                      currentMilestoneIndex >= 0 ? currentMilestoneIndex + 1 : order.orderStatus === 'completed' ? 4 : 1;
-
-                    return (
-                      <div
-                        key={order.id}
-                        onClick={() => handleSelectOrder(order.id)}
-                        className="p-5 sm:p-6 rounded-3xl bg-card/70 backdrop-blur-md border border-border hover:border-cyan-500/50 hover:shadow-2xl hover:shadow-cyan-500/10 transition-all duration-300 cursor-pointer space-y-5 group"
-                      >
-                        {/* Top Header */}
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/70 pb-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white shadow-md shadow-cyan-500/20 shrink-0">
-                              <CreditCard className="w-5 h-5" />
+                          {/* Middle Content: Card Details & Holder */}
+                          <div className="space-y-2">
+                            <h3 className="text-sm font-bold text-foreground group-hover:text-cyan-500 transition-colors line-clamp-1">
+                              {order.cardSpecs?.templateName || order.productTitle}
+                            </h3>
+                            <div className="text-xs text-muted-foreground flex items-center gap-2">
+                              <CreditCard className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                              <span className="truncate">{order.cardSpecs?.material || 'کارت فیزیکی NFC'}</span>
                             </div>
-                            <div>
+                            <div className="text-xs text-muted-foreground flex items-center gap-2">
+                              <User className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                              <span className="truncate">
+                                نام روی کارت:{' '}
+                                {order.cardSpecs?.firstName
+                                  ? `${order.cardSpecs.firstName} ${order.cardSpecs?.lastName || ''}`.trim()
+                                  : order.customerName}
+                              </span>
+                            </div>
+                            <div className="text-[11px] text-muted-foreground font-sans flex items-center gap-2 pt-0.5">
+                              <Calendar className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                              <span>
+                                {new Date(order.createdAt).toLocaleDateString('en-US', {
+                                  year: 'numeric',
+                                  month: 'short',
+                                  day: 'numeric',
+                                })}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Bottom Row: Price & Detail Action */}
+                          <div className="flex items-center justify-between border-t border-border/70 pt-3 text-xs">
+                            <div className="font-sans font-bold text-foreground text-sm">
+                              {order.totalPrice.toLocaleString('en-US')} AFN
+                            </div>
+                            <div className="flex items-center gap-1 text-cyan-500 font-bold text-xs group-hover:-translate-x-1 transition-transform">
+                              <span>مشاهده جزئیات</span>
+                              <ChevronLeft className="w-4 h-4" />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* 2. COMPACT LIST VIEW */}
+                  {viewMode === 'compact' && (
+                    <div className="space-y-2">
+                      {paginatedOrders.map((order) => (
+                        <div
+                          key={order.id}
+                          onClick={() => handleSelectOrder(order.id)}
+                          className="p-3.5 sm:p-4 rounded-2xl bg-card/60 backdrop-blur-md border border-border hover:border-cyan-500/40 hover:bg-muted/40 transition-all duration-200 cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 group"
+                        >
+                          {/* Left: Order Number + Recipient + Template */}
+                          <div className="flex items-center gap-3 min-w-0">
+                            <span className="font-sans font-bold text-xs text-cyan-500 bg-cyan-500/10 px-2.5 py-1 rounded-xl border border-cyan-500/20 shrink-0">
+                              {order.orderNumber}
+                            </span>
+
+                            <div className="min-w-0">
                               <div className="flex items-center gap-2">
-                                <span className="font-sans font-bold text-xs text-cyan-500 bg-cyan-500/10 px-2.5 py-1 rounded-xl border border-cyan-500/20">
-                                  {order.orderNumber}
+                                <span className="text-xs font-bold text-foreground truncate group-hover:text-cyan-500 transition-colors">
+                                  {order.cardSpecs?.firstName
+                                    ? `${order.cardSpecs.firstName} ${order.cardSpecs?.lastName || ''}`.trim()
+                                    : order.customerName}
                                 </span>
-                                <span className="text-xs text-muted-foreground font-sans">
+                                <span className="text-[10px] text-muted-foreground truncate hidden md:inline">
+                                  ({order.cardSpecs?.templateName || order.productTitle})
+                                </span>
+                              </div>
+                              <div className="text-[10px] text-muted-foreground font-sans flex items-center gap-2 mt-0.5">
+                                <span>{order.cardSpecs?.material || 'کارت فیزیکی NFC'}</span>
+                                <span>•</span>
+                                <span>
                                   {new Date(order.createdAt).toLocaleDateString('en-US', {
                                     year: 'numeric',
                                     month: 'short',
@@ -803,105 +824,164 @@ function OrdersDashboardInner() {
                                   })}
                                 </span>
                               </div>
-                              <h3 className="text-sm sm:text-base font-extrabold text-foreground group-hover:text-cyan-500 transition-colors mt-1">
-                                {order.cardSpecs?.templateName || order.productTitle}
-                              </h3>
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-3 self-end sm:self-auto">
+                          {/* Right: Status Badge + Price + Action Button */}
+                          <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-border/50">
                             {renderStatusBadge(order.orderStatus)}
-                            <span className="font-sans font-black text-base text-foreground">
+
+                            <span className="font-sans font-bold text-xs sm:text-sm text-foreground">
                               {order.totalPrice.toLocaleString('en-US')} AFN
                             </span>
+
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 px-2.5 rounded-lg text-xs text-cyan-500 hover:text-cyan-400 hover:bg-cyan-500/10 flex items-center gap-1"
+                            >
+                              <span>جزئیات</span>
+                              <ChevronLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
+                            </Button>
                           </div>
                         </div>
+                      ))}
+                    </div>
+                  )}
 
-                        {/* Specs Grid */}
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                          <div className="p-3 rounded-xl bg-muted/40 border border-border/60">
-                            <span className="text-[10px] text-muted-foreground block">نام روی کارت:</span>
-                            <span className="font-bold text-foreground block truncate mt-0.5">
-                              {order.cardSpecs?.firstName
-                                ? `${order.cardSpecs.firstName} ${order.cardSpecs?.lastName || ''}`.trim()
-                                : order.customerName}
-                            </span>
-                          </div>
-                          <div className="p-3 rounded-xl bg-muted/40 border border-border/60">
-                            <span className="text-[10px] text-muted-foreground block">متریال و مدل:</span>
-                            <span className="font-bold text-foreground block truncate mt-0.5">
-                              {order.cardSpecs?.material || 'کارت فیزیکی NFC'}
-                            </span>
-                          </div>
-                          <div className="p-3 rounded-xl bg-muted/40 border border-border/60">
-                            <span className="text-[10px] text-muted-foreground block">روش پرداخت:</span>
-                            <span className="font-bold text-foreground block truncate mt-0.5">
-                              {order.paymentMethod === 'cod' ? 'پرداخت در محل (COD)' : 'پرداخت آنلاین'}
-                            </span>
-                          </div>
-                          <div className="p-3 rounded-xl bg-muted/40 border border-border/60">
-                            <span className="text-[10px] text-muted-foreground block">کد رهگیری پستی:</span>
-                            <span className="font-sans font-bold text-foreground block truncate mt-0.5" dir="ltr">
-                              {order.trackingNumber || 'در انتظار صدور'}
-                            </span>
-                          </div>
-                        </div>
+                  {/* 3. DETAILED LIST VIEW */}
+                  {viewMode === 'detailed' && (
+                    <div className="space-y-4">
+                      {paginatedOrders.map((order) => {
+                        const milestones = getTimelineMilestones(order.orderStatus, order.trackingNumber);
+                        const currentMilestoneIndex = milestones.findIndex((m) => m.status === 'current');
+                        const activeStep =
+                          currentMilestoneIndex >= 0 ? currentMilestoneIndex + 1 : order.orderStatus === 'completed' ? 4 : 1;
 
-                        {/* Mini Timeline Progress Indicator */}
-                        <div className="pt-1">
-                          <div className="flex items-center justify-between text-[11px] font-semibold text-muted-foreground mb-2">
-                            <span>مرحله {activeStep} از 4 خط تولید:</span>
-                            <span className="text-cyan-500 font-bold">{milestones[activeStep - 1]?.title || 'در حال انجام'}</span>
-                          </div>
-                          <div className="grid grid-cols-4 gap-2">
-                            {milestones.map((ms, idx) => (
-                              <div key={idx} className="space-y-1">
-                                <div
-                                  className={cn(
-                                    'h-1.5 rounded-full transition-all',
-                                    ms.status === 'completed'
-                                      ? 'bg-emerald-500'
-                                      : ms.status === 'current'
-                                      ? 'bg-cyan-500 animate-pulse'
-                                      : 'bg-muted'
-                                  )}
-                                />
-                                <span className="text-[9px] text-muted-foreground hidden sm:block truncate">
-                                  {ms.badge}
+                        return (
+                          <div
+                            key={order.id}
+                            onClick={() => handleSelectOrder(order.id)}
+                            className="p-5 sm:p-6 rounded-3xl bg-card/70 backdrop-blur-md border border-border hover:border-cyan-500/50 hover:shadow-2xl hover:shadow-cyan-500/10 transition-all duration-300 cursor-pointer space-y-5 group"
+                          >
+                            {/* Top Header */}
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/70 pb-4">
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white shadow-md shadow-cyan-500/20 shrink-0">
+                                  <CreditCard className="w-5 h-5" />
+                                </div>
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-sans font-bold text-xs text-cyan-500 bg-cyan-500/10 px-2.5 py-1 rounded-xl border border-cyan-500/20">
+                                      {order.orderNumber}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground font-sans">
+                                      {new Date(order.createdAt).toLocaleDateString('en-US', {
+                                        year: 'numeric',
+                                        month: 'short',
+                                        day: 'numeric',
+                                      })}
+                                    </span>
+                                  </div>
+                                  <h3 className="text-sm sm:text-base font-extrabold text-foreground group-hover:text-cyan-500 transition-colors mt-1">
+                                    {order.cardSpecs?.templateName || order.productTitle}
+                                  </h3>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-3 self-end sm:self-auto">
+                                {renderStatusBadge(order.orderStatus)}
+                                <span className="font-sans font-black text-base text-foreground">
+                                  {order.totalPrice.toLocaleString('en-US')} AFN
                                 </span>
                               </div>
-                            ))}
+                            </div>
+
+                            {/* Specs Grid */}
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                              <div className="p-3 rounded-xl bg-muted/40 border border-border/60">
+                                <span className="text-[10px] text-muted-foreground block">نام روی کارت:</span>
+                                <span className="font-bold text-foreground block truncate mt-0.5">
+                                  {order.cardSpecs?.firstName
+                                    ? `${order.cardSpecs.firstName} ${order.cardSpecs?.lastName || ''}`.trim()
+                                    : order.customerName}
+                                </span>
+                              </div>
+                              <div className="p-3 rounded-xl bg-muted/40 border border-border/60">
+                                <span className="text-[10px] text-muted-foreground block">متریال و مدل:</span>
+                                <span className="font-bold text-foreground block truncate mt-0.5">
+                                  {order.cardSpecs?.material || 'کارت فیزیکی NFC'}
+                                </span>
+                              </div>
+                              <div className="p-3 rounded-xl bg-muted/40 border border-border/60">
+                                <span className="text-[10px] text-muted-foreground block">روش پرداخت:</span>
+                                <span className="font-bold text-foreground block truncate mt-0.5">
+                                  {order.paymentMethod === 'cod' ? 'پرداخت در محل (COD)' : 'پرداخت آنلاین'}
+                                </span>
+                              </div>
+                              <div className="p-3 rounded-xl bg-muted/40 border border-border/60">
+                                <span className="text-[10px] text-muted-foreground block">کد رهگیری پستی:</span>
+                                <span className="font-sans font-bold text-foreground block truncate mt-0.5" dir="ltr">
+                                  {order.trackingNumber || 'در انتظار صدور'}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Mini Timeline Progress Indicator */}
+                            <div className="pt-1">
+                              <div className="flex items-center justify-between text-[11px] font-semibold text-muted-foreground mb-2">
+                                <span>مرحله {activeStep} از 4 خط تولید:</span>
+                                <span className="text-cyan-500 font-bold">{milestones[activeStep - 1]?.title || 'در حال انجام'}</span>
+                              </div>
+                              <div className="grid grid-cols-4 gap-2">
+                                {milestones.map((ms, idx) => (
+                                  <div key={idx} className="space-y-1">
+                                    <div
+                                      className={cn(
+                                        'h-1.5 rounded-full transition-all',
+                                        ms.status === 'completed'
+                                          ? 'bg-emerald-500'
+                                          : ms.status === 'current'
+                                            ? 'bg-cyan-500 animate-pulse'
+                                            : 'bg-muted'
+                                      )}
+                                    />
+                                    <span className="text-[9px] text-muted-foreground hidden sm:block truncate">
+                                      {ms.badge}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Bottom Action Footer */}
+                            <div className="flex items-center justify-end gap-2 border-t border-border/70 pt-3">
+                              <span className="text-xs text-cyan-500 font-bold flex items-center gap-1 group-hover:-translate-x-1 transition-transform">
+                                <span>مشاهده کامل خط زمانی، آدرس تحویل و مشخصات کارت</span>
+                                <ChevronLeft className="w-4 h-4" />
+                              </span>
+                            </div>
                           </div>
-                        </div>
+                        );
+                      })}
+                    </div>
+                  )}
 
-                        {/* Bottom Action Footer */}
-                        <div className="flex items-center justify-end gap-2 border-t border-border/70 pt-3">
-                          <span className="text-xs text-cyan-500 font-bold flex items-center gap-1 group-hover:-translate-x-1 transition-transform">
-                            <span>مشاهده کامل خط زمانی، آدرس تحویل و مشخصات کارت</span>
-                            <ChevronLeft className="w-4 h-4" />
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* Pagination Bar */}
-              <div className="pt-2">
-                <PaginationBar
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  totalItems={filteredOrders.length}
-                  itemsPerPage={itemsPerPage}
-                  onPageChange={setCurrentPage}
-                  onItemsPerPageChange={(val) => {
-                    setItemsPerPage(val);
-                    setCurrentPage(1);
-                  }}
-                  itemLabel="سفارش"
-                />
-              </div>
+                  {/* Pagination Bar */}
+                  <div className="pt-2">
+                    <PaginationBar
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      totalItems={filteredOrders.length}
+                      itemsPerPage={itemsPerPage}
+                      onPageChange={setCurrentPage}
+                      onItemsPerPageChange={(val) => {
+                        setItemsPerPage(val);
+                        setCurrentPage(1);
+                      }}
+                      itemLabel="سفارش"
+                    />
+                  </div>
                 </>
               )}
             </>
@@ -945,25 +1025,35 @@ function OrdersDashboardInner() {
                 {selectedOrder.totalPrice.toLocaleString()} AFN
               </span>
 
-              {selectedOrder.orderStatus === 'pending' || selectedOrder.orderStatus === 'processing' ? (
+              {selectedOrder.orderStatus === 'pending_payment' || selectedOrder.orderStatus === 'pending' ? (
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20">
                   <Clock className="w-3.5 h-3.5 animate-spin" />
-                  <span>در حال بررسی (Under Review)</span>
+                  <span>در انتظار پرداخت</span>
                 </span>
-              ) : selectedOrder.orderStatus === 'printing' ? (
+              ) : selectedOrder.orderStatus === 'processing' || selectedOrder.orderStatus === 'printing' ? (
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-cyan-500/10 text-cyan-500 border border-cyan-500/20 animate-pulse">
-                  <Zap className="w-3.5 h-3.5" />
-                  <span>در حال چاپ و کدگذاری (Printing)</span>
+                  <Package className="w-3.5 h-3.5" />
+                  <span>آماده‌سازی و چاپ</span>
                 </span>
-              ) : selectedOrder.orderStatus === 'shipped' ? (
+              ) : selectedOrder.orderStatus === 'nfc_writing' ? (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20 animate-pulse">
+                  <Zap className="w-3.5 h-3.5" />
+                  <span>رایت چیپست NFC</span>
+                </span>
+              ) : selectedOrder.orderStatus === 'shipping' || selectedOrder.orderStatus === 'shipped' ? (
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-purple-500/10 text-purple-500 border border-purple-500/20">
                   <Truck className="w-3.5 h-3.5" />
-                  <span>ارسال شده با پست اکسپرس (Shipped)</span>
+                  <span>ارسال با پست اکسپرس</span>
                 </span>
-              ) : (
+              ) : selectedOrder.orderStatus === 'delivered' || selectedOrder.orderStatus === 'completed' ? (
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
                   <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>تکمیل و تحویل داده شده (Completed)</span>
+                  <span>تحویل شد</span>
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-500/10 text-rose-500 border border-rose-500/20">
+                  <X className="w-3.5 h-3.5" />
+                  <span>لغو شده</span>
                 </span>
               )}
             </div>
@@ -982,7 +1072,7 @@ function OrdersDashboardInner() {
               )}
             >
               <Truck className="w-4 h-4" />
-              <span>خط زمانی پیگیری (Timeline & Delivery)</span>
+              <span>خط زمانی پیگیری</span>
             </button>
 
             <button
@@ -996,7 +1086,7 @@ function OrdersDashboardInner() {
               )}
             >
               <CreditCard className="w-4 h-4" />
-              <span>مشخصات کارت (Card Specs)</span>
+              <span>مشخصات کارت</span>
               {isOrderEditable && (
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               )}
@@ -1022,56 +1112,97 @@ function OrdersDashboardInner() {
 
                 {/* Milestone Steps */}
                 <div className="space-y-6 relative">
-                  {getTimelineMilestones(selectedOrder.orderStatus, selectedOrder.trackingNumber).map((item, idx) => {
-                    const isDone = item.status === 'completed';
-                    const isCurrent = item.status === 'current';
+                  {(() => {
+                    const milestones = getTimelineMilestones(
+                      selectedOrder.orderStatus,
+                      selectedOrder.trackingNumber,
+                      selectedOrder.trackingShortCode
+                    );
+                    return milestones.map((item, idx) => {
+                      const isDone = item.status === 'completed';
+                      const isCurrent = item.status === 'current';
 
-                    return (
-                      <div key={item.step} className="flex items-start gap-4 relative">
-                        {idx < 3 && (
+                      return (
+                        <div key={item.step} className="flex items-start gap-4 relative">
+                          {idx < milestones.length - 1 && (
+                            <div
+                              className={cn(
+                                'absolute right-4 top-8 w-0.5 h-16 -translate-x-1/2 transition-colors duration-300',
+                                isDone ? 'bg-cyan-500' : 'bg-border'
+                              )}
+                            />
+                          )}
+
                           <div
                             className={cn(
-                              'absolute right-4 top-8 w-0.5 h-16 -translate-x-1/2',
-                              isDone ? 'bg-cyan-500' : 'bg-border'
+                              'w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 z-10 transition-all',
+                              isDone
+                                ? 'bg-cyan-500 text-white shadow-md shadow-cyan-500/30'
+                                : isCurrent
+                                  ? 'bg-amber-500 text-white shadow-md shadow-amber-500/30 ring-4 ring-amber-500/20 animate-pulse'
+                                  : 'bg-muted border border-border text-muted-foreground'
                             )}
-                          />
-                        )}
-
-                        <div
-                          className={cn(
-                            'w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 z-10 transition-all',
-                            isDone
-                              ? 'bg-cyan-500 text-white shadow-md shadow-cyan-500/30'
-                              : isCurrent
-                              ? 'bg-amber-500 text-white shadow-md shadow-amber-500/30 ring-4 ring-amber-500/20 animate-pulse'
-                              : 'bg-muted border border-border text-muted-foreground'
-                          )}
-                        >
-                          {isDone ? <CheckCircle2 className="w-4 h-4" /> : item.step}
-                        </div>
-
-                        <div className="flex-1 pb-4">
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                            <h3
-                              className={cn(
-                                'text-sm font-bold',
-                                isCurrent ? 'text-cyan-500 dark:text-cyan-400' : isDone ? 'text-foreground' : 'text-muted-foreground'
-                              )}
-                            >
-                              {item.title}
-                            </h3>
-                            <span className="text-[11px] font-sans text-muted-foreground">
-                              {item.dateText}
-                            </span>
+                          >
+                            {isDone ? <CheckCircle2 className="w-4 h-4" /> : item.step}
                           </div>
-                          <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                            {item.desc}
-                          </p>
+
+                          <div className="flex-1 pb-4">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                              <h3
+                                className={cn(
+                                  'text-sm font-bold',
+                                  isCurrent
+                                    ? 'text-cyan-500 dark:text-cyan-400'
+                                    : isDone
+                                      ? 'text-foreground'
+                                      : 'text-muted-foreground'
+                                )}
+                              >
+                                {item.title}
+                              </h3>
+                              <span className="text-[11px] font-sans text-muted-foreground">
+                                {item.dateText}
+                              </span>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                              {item.desc}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    });
+                  })()}
                 </div>
+
+                {/* Physical NFC Card Details & Scan Counter */}
+                {(selectedOrder.trackingShortCode || selectedOrder.physicalCard) && (
+                  <div className="p-4 rounded-2xl bg-cyan-500/10 border border-cyan-500/25 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0">
+                        <Zap className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <span className="font-bold text-foreground block">چیپست هوشمند NFC فعال است</span>
+                        <span className="text-muted-foreground text-[11px]">
+                          کارت شما مجهز به لینک ردیاب نامرئی اختصاصی جهت تفکیک اسکن‌های فیزیکی می‌باشد.
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-[11px] px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-400 font-bold border border-cyan-500/30">
+                        اسکن فیزیکی: {(selectedOrder.physicalCard?.scansCount ?? 0).toLocaleString('fa-IR')} بار
+                      </span>
+                      {selectedOrder.trackingShortCode && (
+                        <span
+                          className="font-mono font-bold text-cyan-300 bg-black/40 px-2.5 py-1 rounded-lg border border-cyan-500/30 text-xs"
+                          dir="ltr"
+                        >
+                          {selectedOrder.trackingShortCode}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {/* Tracking Number Banner */}
                 {selectedOrder.trackingNumber && (
@@ -1324,7 +1455,7 @@ function OrdersDashboardInner() {
                   <div className="p-3.5 rounded-2xl bg-muted/40 border border-border/60">
                     <span className="text-muted-foreground text-[11px] block">جهت چاپ:</span>
                     <span className="font-bold text-foreground mt-0.5 block">
-                      {selectedOrder.cardSpecs?.orientation === 'vertical' ? 'عمودی (Vertical)' : 'افقی (Horizontal)'}
+                      {selectedOrder.cardSpecs?.orientation === 'vertical' ? 'عمودی' : 'افقی'}
                     </span>
                   </div>
 
@@ -1334,10 +1465,10 @@ function OrdersDashboardInner() {
                       {selectedOrder.cardSpecs?.finishAccent === 'gold'
                         ? 'طلای متالیک'
                         : selectedOrder.cardSpecs?.finishAccent === 'silver'
-                        ? 'نقره‌ای صیقلی'
-                        : selectedOrder.cardSpecs?.finishAccent === 'cyan'
-                        ? 'سایان نئون'
-                        : 'سفید مینیمال'}
+                          ? 'نقره‌ای صیقلی'
+                          : selectedOrder.cardSpecs?.finishAccent === 'cyan'
+                            ? 'سایان نئون'
+                            : 'سفید مینیمال'}
                     </span>
                   </div>
 
@@ -1413,7 +1544,7 @@ function OrdersDashboardInner() {
           <form onSubmit={handleSaveCardSpecs} className="space-y-4 pt-2">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-muted-foreground">نام (First Name)</label>
+                <label className="text-xs font-semibold text-muted-foreground">نام</label>
                 <Input
                   type="text"
                   value={editFormData.firstName}
@@ -1424,7 +1555,7 @@ function OrdersDashboardInner() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-muted-foreground">تخلص (Last Name)</label>
+                <label className="text-xs font-semibold text-muted-foreground">تخلص</label>
                 <Input
                   type="text"
                   value={editFormData.lastName}

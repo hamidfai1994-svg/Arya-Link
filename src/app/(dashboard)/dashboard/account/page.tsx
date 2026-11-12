@@ -296,9 +296,6 @@ export default function AccountSettingsPage() {
               <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
                 تنظیمات حساب کاربری
               </h1>
-              <Badge variant="cyan" className="font-sans text-xs font-bold">
-                Account Settings
-              </Badge>
             </div>
             <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
               مدیریت اطلاعات هویتی شخصی، تغییر گذرواژه ورود و بررسی وضعیت اشتراک سراسری پلتفرم
@@ -594,7 +591,7 @@ export default function AccountSettingsPage() {
               <Crown className="w-6 h-6 text-cyan-500 shrink-0" />
               <div>
                 <span className="text-xs font-bold text-foreground block">
-                  پلن حرفه‌ای نامحدود (AryaLink PRO)
+                  پلن حرفه‌ای نامحدود
                 </span>
                 <span className="text-[11px] text-muted-foreground block">
                   دسترسی به تمامی ماژول‌ها، قالب‌های لوکس و وایت‌لیبل
@@ -615,16 +612,16 @@ export default function AccountSettingsPage() {
                 <span className="font-sans text-foreground font-semibold">
                   {accountData?.createdAt
                     ? new Date(accountData.createdAt).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                      })
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                    })
                     : '2026'}
                 </span>
               </div>
 
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">احراز هویت (KYC):</span>
+                <span className="text-muted-foreground">احراز هویت:</span>
                 {accountData?.isVerified ? (
                   <span className="text-emerald-500 font-bold flex items-center gap-1">
                     <CheckCircle2 className="w-3.5 h-3.5" />
@@ -678,7 +675,7 @@ export default function AccountSettingsPage() {
           <form onSubmit={handleVerifyOtp} className="space-y-4 pt-2">
             <div className="space-y-2">
               <label className="text-xs font-bold text-foreground block text-center">
-                کد تایید 6 رقمی (OTP)
+                کد تایید ۶ رقمی
               </label>
               <input
                 type="text"

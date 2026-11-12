@@ -84,6 +84,7 @@ export const authOptions: NextAuthOptions = {
           image: user.avatar || '',
           role: user.role,
           subscriptionPlan: user.subscriptionPlan,
+          accountType: user.accountType || 'personal',
         };
       },
     }),
@@ -171,6 +172,7 @@ export const authOptions: NextAuthOptions = {
           image: user.avatar || '',
           role: user.role,
           subscriptionPlan: user.subscriptionPlan,
+          accountType: user.accountType || 'personal',
         };
       },
     }),
@@ -288,6 +290,7 @@ export const authOptions: NextAuthOptions = {
           user.id = existingUser._id.toString();
           user.role = existingUser.role;
           user.subscriptionPlan = existingUser.subscriptionPlan;
+          user.accountType = existingUser.accountType || 'personal';
           return true;
         } catch (error) {
           console.error('Error in Google signIn callback:', error);
@@ -302,6 +305,7 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id;
         token.role = user.role || 'user';
         token.subscriptionPlan = user.subscriptionPlan || 'free';
+        token.accountType = user.accountType || 'personal';
       }
       return token;
     },
@@ -311,6 +315,7 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.id as string;
         session.user.role = token.role as string;
         session.user.subscriptionPlan = token.subscriptionPlan as string;
+        session.user.accountType = (token.accountType as any) || 'personal';
       }
       return session;
     },

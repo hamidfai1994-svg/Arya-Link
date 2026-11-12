@@ -3,7 +3,9 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { connectToDatabase } from '@/lib/db/mongodb';
 import { Profile } from '@/models/Profile.model';
+import { PhysicalCard } from '@/models/PhysicalCard.model';
 import { buildUserIsolationQuery, isValidUserSession } from '@/lib/db/data-isolation';
+import mongoose from 'mongoose';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,6 +55,37 @@ export async function GET(req: NextRequest) {
 
     const totalLeads = targetProfiles.reduce((sum, p) => sum + (p.leadsCount || 0), 0);
     const ctr = totalViews > 0 ? Number(((totalClicks / totalViews) * 100).toFixed(1)) : 0;
+
+    // Query physical NFC cards belonging to this user or their active profiles
+    const cardConditions: any[] = [];
+    if (session?.user?.id) {
+      const rawId = session.user.id.toString().trim();
+      cardConditions.push({ ownerId: rawId });
+      if (mongoose.isValidObjectId(rawId)) {
+        cardConditions.push({ ownerId: new mongoose.Types.ObjectId(rawId) });
+      }
+    }
+    const targetProfileIds = targetProfiles.map((p) => p._id);
+    if (targetProfileIds.length > 0) {
+      cardConditions.push({ profileId: { $in: targetProfileIds } });
+    }
+
+    const cardsQuery: any =
+      cardConditions.length > 0 ? { $or: cardConditions } : { ownerId: session!.user.id };
+    const userCards = await PhysicalCard.find(cardsQuery).lean();
+
+    // Calculate total scans across all cards for this user
+    let relevantCards = userCards;
+    if (profileId && profileId !== 'all' && selectedProfileSummary) {
+      const profileSpecific = userCards.filter(
+        (c) => c.profileId && c.profileId.toString() === selectedProfileSummary.id
+      );
+      if (profileSpecific.length > 0) {
+        relevantCards = profileSpecific;
+      }
+    }
+
+    const totalNfcScans = relevantCards.reduce((sum, c) => sum + (c.scansCount || 0), 0);
 
     // Generate recent 7 days timeline data
     const daysData = [];
@@ -107,10 +140,12 @@ export async function GET(req: NextRequest) {
         totalViews,
         totalClicks,
         totalLeads,
+        totalNfcScans,
+        nfcCardsCount: relevantCards.length,
         ctr,
       },
       chartData: daysData,
-      topLinks: allLinks.slice(0, 5),
+      topLinks: allLinks,
     });
   } catch (error: any) {
     console.error('Error fetching analytics:', error);

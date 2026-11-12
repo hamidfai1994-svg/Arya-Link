@@ -37,6 +37,8 @@ import { downloadVCard, convertToEnglishDigits } from '@/lib/generateVCard';
 import { ALL_COUNTRIES } from '@/constants/countries';
 import { LiveCountdown } from '@/components/ui/live-countdown';
 import { LiveBusinessHours } from '@/components/profile/LiveBusinessHours';
+import { PaymentCheckoutModal } from '@/components/payment/PaymentCheckoutModal';
+import { PAYMENT_PROVIDERS } from '@/lib/constants/paymentProviders';
 import { PRESET_PATTERNS } from '@/lib/backgrounds';
 import {
   Download,
@@ -353,6 +355,9 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [copiedShareLink, setCopiedShareLink] = useState(false);
 
+  // Payment Provider Modal State (Afghanistan Modular Payment)
+  const [paymentModalLink, setPaymentModalLink] = useState<ProfileLinkItem | null>(null);
+
   // Contact Exchange Lead Modal State (Frictionless vCard Lead Capture - Stage 72)
   const [isLeadModalOpen, setIsLeadModalOpen] = useState(false);
   const [leadName, setLeadName] = useState('');
@@ -469,8 +474,36 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
     Boolean(profile.whatsapp) ||
     Boolean(profile.phone);
 
+  // Real-time Module Click Tracker (Stage: Module Interactions)
+  const trackClick = (linkId?: string, linkType?: string) => {
+    try {
+      if (!profile?.id && !profile?.alias) return;
+      const payload = JSON.stringify({
+        profileId: profile.id,
+        alias: profile.alias,
+        linkId,
+        moduleType: linkType,
+      });
+
+      if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
+        const blob = new Blob([payload], { type: 'application/json' });
+        navigator.sendBeacon('/api/analytics/click', blob);
+      } else {
+        fetch('/api/analytics/click', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: payload,
+          keepalive: true,
+        }).catch(() => {});
+      }
+    } catch (e) {
+      // Non-blocking silently catch
+    }
+  };
+
   // 2. vCard Generator (.vcf) & Frictionless Lead Capture (Stage 72)
   const handleSaveContact = () => {
+    trackClick(undefined, 'phone_call');
     try {
       const filename = downloadVCard(profile as any);
       toast.success(
@@ -522,6 +555,11 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
       if (!response.ok) {
         throw new Error('Failed to send contact info');
       }
+
+      const leadLink = (profile.links || []).find(
+        (l) => l.moduleType === 'lead_capture_form' || l.moduleType === 'contact_form'
+      );
+      trackClick(leadLink?.id, 'lead_capture_form');
 
       toast.success(
         isLtr
@@ -640,6 +678,11 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
       setFormPhone('');
       setFormEmail('');
       setFormMessage('');
+      const leadLink = (profile.links || []).find(
+        (l) => l.moduleType === 'lead_capture_form' || l.moduleType === 'contact_form'
+      );
+      trackClick(leadLink?.id, 'lead_capture_form');
+
       toast.success(
         isLtr
           ? 'Your message has been sent successfully!'
@@ -753,6 +796,7 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
         rel="noreferrer"
         title={isExpired ? 'منقضی شده' : isMaxClicksReached ? 'تکمیل ظرفیت کلیک' : isProtected ? 'محافظت با رمز عبور' : link.title}
         onClick={(e) => {
+          trackClick(link.id, link.moduleType);
           if (isDisabled || isProtected) {
             handleProtectedLinkClick(e, link);
           }
@@ -1403,7 +1447,15 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
           : getSmartLink(link.moduleType, rawVal || link.url || '#', { preferDeepLink: true });
 
     let displaySubtitle = rawVal || link.url || '';
-    if (link.moduleType === 'email_direct') {
+    if (link.moduleType === 'payment') {
+      const pType = meta.paymentProviderType || 'wallet';
+      const pDef = PAYMENT_PROVIDERS[pType];
+      if (meta.paymentAmount) {
+        displaySubtitle = `${meta.paymentAmount.toLocaleString('fa-IR')} ${meta.paymentCurrency === 'USD' ? 'دالر' : 'افغانی'}${pDef ? ` (${pDef.title})` : ''}`;
+      } else if (pDef) {
+        displaySubtitle = pDef.title;
+      }
+    } else if (link.moduleType === 'email_direct') {
       const emailVal = (link.metadata?.emailAddress as string) || link.url || '';
       const displayEmail = emailVal.replace(/^mailto:/, '').split('?')[0];
       displaySubtitle = displayEmail;
@@ -1421,6 +1473,14 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
     );
     const isDisabled = isExpired || isMaxClicksReached;
 
+    const isPaymentModalTrigger =
+      link.moduleType === 'payment' ||
+      link.moduleType === 'donation_hesabpay' ||
+      link.url === '#payment-modal' ||
+      link.url?.includes('payment-modal') ||
+      link.url === '#payment' ||
+      link.url?.includes('#payment');
+
     return (
       <motion.a
         key={link.id}
@@ -1430,10 +1490,17 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
         exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.15 } }}
         whileHover={{ scale: isDisabled ? 1 : 1.02, x: isDisabled ? 0 : -2 }}
         whileTap={{ scale: isDisabled ? 1 : 0.98 }}
-        href={isDisabled || isProtected ? '#' : smartUrl}
-        target={isDisabled || isProtected ? '_self' : (adv.openInNewTab === false || smartUrl.startsWith('tel:') || smartUrl.startsWith('mailto:') || smartUrl.startsWith('#') ? '_self' : '_blank')}
+        href={isDisabled || isProtected || isPaymentModalTrigger ? '#' : smartUrl}
+        target={isDisabled || isProtected || isPaymentModalTrigger ? '_self' : (adv.openInNewTab === false || smartUrl.startsWith('tel:') || smartUrl.startsWith('mailto:') || smartUrl.startsWith('#') ? '_self' : '_blank')}
         rel="noopener noreferrer"
         onClick={(e) => {
+          trackClick(link.id, link.moduleType);
+          if (isPaymentModalTrigger) {
+            e.preventDefault();
+            e.stopPropagation();
+            setPaymentModalLink(link);
+            return;
+          }
           if (isDisabled || isProtected) {
             handleProtectedLinkClick(e, link);
           }
@@ -1453,6 +1520,7 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
             {link.moduleType === 'email_direct' && <Mail className="w-4 h-4 text-amber-500" />}
             {link.moduleType === 'pdf_catalog' && <FileText className="w-4 h-4 text-rose-500" />}
             {link.moduleType === 'music_player' && <Music className="w-4 h-4 text-emerald-500" />}
+            {link.moduleType === 'payment' && <CreditCard className="w-4 h-4 text-emerald-400" />}
             {link.moduleType === 'donation_hesabpay' && <HeartHandshake className="w-4 h-4 text-rose-500" />}
             {link.moduleType === 'whatsapp_direct' && <WhatsAppIcon className="w-4 h-4 fill-current text-emerald-400" />}
             {link.moduleType === 'telegram_channel' && <TelegramIcon className="w-4 h-4 fill-current text-sky-400" />}
@@ -2424,10 +2492,12 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
           }
         }}
       >
-        <DialogContent className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[92%] max-w-sm rounded-2xl h-auto z-50 bg-slate-900/95 border border-white/10 backdrop-blur-2xl p-5 text-center text-white shadow-2xl">
+        <DialogContent className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[92%] max-w-sm overflow-hidden rounded-2xl sm:rounded-2xl h-auto z-50 bg-slate-900/95 border border-white/10 backdrop-blur-2xl p-5 text-center text-white shadow-2xl isolate">
           {/* Ambient Lighting Accents */}
-          <div className="absolute -top-16 -right-16 w-36 h-36 bg-cyan-500/20 rounded-full blur-2xl pointer-events-none" />
-          <div className="absolute -bottom-16 -left-16 w-36 h-36 bg-emerald-500/20 rounded-full blur-2xl pointer-events-none" />
+          <div className="absolute inset-0 overflow-hidden pointer-events-none rounded-[inherit] z-0">
+            <div className="absolute -top-16 -right-16 w-36 h-36 bg-cyan-500/20 rounded-full blur-2xl pointer-events-none" />
+            <div className="absolute -bottom-16 -left-16 w-36 h-36 bg-emerald-500/20 rounded-full blur-2xl pointer-events-none" />
+          </div>
 
           <DialogHeader className="space-y-2 pb-3 border-b border-white/10 text-center relative z-10">
             <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 flex items-center justify-center mx-auto shadow-md">
@@ -2602,6 +2672,15 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Payment Provider Checkout Modal (Modular Afghanistan Payment System) */}
+      <PaymentCheckoutModal
+        isOpen={Boolean(paymentModalLink)}
+        onClose={() => setPaymentModalLink(null)}
+        link={paymentModalLink}
+        profileName={profile.displayName || 'صاحب پروفایل'}
+        recipientPhone={profile.phone || ''}
+      />
     </div>
   );
 };

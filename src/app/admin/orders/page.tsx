@@ -26,6 +26,8 @@ import {
   Calendar,
   Layers,
   Trash2,
+  Copy,
+  Radio,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -47,9 +49,30 @@ interface AdminOrder {
   totalPrice: number;
   currency: string;
   paymentStatus: 'paid' | 'pending' | 'failed' | 'refunded';
-  orderStatus: 'completed' | 'processing' | 'printing' | 'shipped' | 'pending' | 'cancelled';
+  orderStatus:
+    | 'pending_payment'
+    | 'processing'
+    | 'nfc_writing'
+    | 'shipping'
+    | 'delivered'
+    | 'cancelled'
+    | 'completed'
+    | 'printing'
+    | 'shipped'
+    | 'pending';
   paymentMethod: string;
   trackingNumber?: string;
+  trackingShortCode?: string;
+  provisionedBy?: string;
+  provisionedAt?: string;
+  physicalCard?: {
+    id: string;
+    shortCode: string;
+    scansCount: number;
+    status: string;
+    provisionedBy?: string;
+    provisionedAt?: string;
+  } | null;
   cardSpecs?: {
     material?: string;
     templateId?: string;
@@ -95,6 +118,7 @@ export default function AdminOrdersPage() {
   const [modalTrackingNumber, setModalTrackingNumber] = useState<string>('');
   const [modalAdminNotes, setModalAdminNotes] = useState<string>('');
   const [isUpdating, setIsUpdating] = useState<boolean>(false);
+  const [isProvisioning, setIsProvisioning] = useState<boolean>(false);
 
   // Soft Delete Modal State
   const [orderToDelete, setOrderToDelete] = useState<AdminOrder | null>(null);
@@ -245,11 +269,29 @@ export default function AdminOrdersPage() {
       o.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
       o.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       o.customerEmail.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (o.customerPhone && o.customerPhone.includes(searchQuery));
+      (o.customerPhone && o.customerPhone.includes(searchQuery)) ||
+      (o.trackingShortCode && o.trackingShortCode.toLowerCase().includes(searchQuery.toLowerCase()));
 
     if (!matchesSearch) return false;
     if (statusFilter === 'all') return true;
-    if (statusFilter === 'pending') return o.orderStatus === 'pending' || o.orderStatus === 'processing';
+    if (statusFilter === 'pending_payment') {
+      return o.orderStatus === 'pending_payment' || o.orderStatus === 'pending';
+    }
+    if (statusFilter === 'processing') {
+      return o.orderStatus === 'processing' || o.orderStatus === 'printing';
+    }
+    if (statusFilter === 'nfc_writing') {
+      return o.orderStatus === 'nfc_writing';
+    }
+    if (statusFilter === 'shipping') {
+      return o.orderStatus === 'shipping' || o.orderStatus === 'shipped';
+    }
+    if (statusFilter === 'delivered') {
+      return o.orderStatus === 'delivered' || o.orderStatus === 'completed';
+    }
+    if (statusFilter === 'cancelled') {
+      return o.orderStatus === 'cancelled';
+    }
     return o.orderStatus === statusFilter;
   });
 
@@ -259,15 +301,68 @@ export default function AdminOrdersPage() {
     return filteredOrders.slice(startIndex, startIndex + itemsPerPage);
   }, [filteredOrders, currentPage, itemsPerPage]);
 
+  // NFC Provisioning action
+  const handleConfirmProvision = async () => {
+    if (!selectedOrder) return;
+    setIsProvisioning(true);
+    try {
+      const res = await fetch('/api/orders', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId: selectedOrder.id,
+          action: 'confirm_provision',
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || 'خطا در تایید و فعال‌سازی رایت کارت.');
+      }
+
+      toast.success(data.message || 'رایت کارت NFC با موفقیت تایید شد و به وضعیت ارسال با پیک تغییر یافت.');
+      setModalOrderStatus('shipping');
+      setSelectedOrder((prev) =>
+        prev
+          ? {
+              ...prev,
+              orderStatus: 'shipping',
+              trackingShortCode: data.physicalCard?.shortCode || prev.trackingShortCode,
+              physicalCard: data.physicalCard || prev.physicalCard,
+            }
+          : null
+      );
+      await loadAdminOrders();
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || 'خطای سرور در تایید رایت کارت.');
+    } finally {
+      setIsProvisioning(false);
+    }
+  };
+
+  const currentShortCode =
+    selectedOrder?.trackingShortCode ||
+    selectedOrder?.physicalCard?.shortCode ||
+    (selectedOrder?.id ? selectedOrder.id.slice(-6).toUpperCase() : 'X9B2V1');
+
+  const trackerUrl =
+    typeof window !== 'undefined'
+      ? `${window.location.origin}/t/${currentShortCode}`
+      : `https://aryal.ink/t/${currentShortCode}`;
+
+  const handleCopyTrackerLink = () => {
+    navigator.clipboard.writeText(trackerUrl);
+    toast.success('لینک ردیاب نامرئی در حافظه کپی شد.', {
+      description: trackerUrl,
+    });
+  };
+
   return (
-    <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto" dir="rtl">
+    <div className="p-4 sm:p-6 lg:p-1 space-y-6 max-w-7xl mx-auto" dir="rtl">
       {/* Admin Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-600 pb-5">
         <div>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 text-xs font-semibold mb-2">
-            <ShieldAlert className="w-3.5 h-3.5" />
-            <span>مدیریت ارشد پلتفرم آریا لینک</span>
-          </div>
           <h1 className="text-xl sm:text-2xl font-black text-white">
             مدیریت کل سفارشات کارتهای هوشمند NFC
           </h1>
@@ -288,7 +383,7 @@ export default function AdminOrdersPage() {
       </div>
 
       {/* Metric Cards (Strictly English numbers based dynamically on real orders) */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
         <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800">
           <span className="text-[11px] font-semibold text-slate-400 block">کل سفارشات</span>
           <span className="text-xl font-black text-white font-sans mt-1 block">
@@ -297,28 +392,41 @@ export default function AdminOrdersPage() {
         </div>
 
         <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20">
-          <span className="text-[11px] font-semibold text-amber-400 block">در حال بررسی</span>
+          <span className="text-[11px] font-semibold text-amber-400 block">در انتظار پرداخت</span>
           <span className="text-xl font-black text-amber-400 font-sans mt-1 block">
-            {orders.filter((o) => o.orderStatus === 'pending' || o.orderStatus === 'processing').length.toLocaleString('en-US')}
+            {orders
+              .filter((o) => o.orderStatus === 'pending_payment' || o.orderStatus === 'pending')
+              .length.toLocaleString('en-US')}
           </span>
         </div>
 
         <div className="p-4 rounded-2xl bg-cyan-500/10 border border-cyan-500/20">
-          <span className="text-[11px] font-semibold text-cyan-400 block">در حال چاپ و تولید</span>
+          <span className="text-[11px] font-semibold text-cyan-400 block">آماده‌سازی و چاپ</span>
           <span className="text-xl font-black text-cyan-400 font-sans mt-1 block">
-            {orders.filter((o) => o.orderStatus === 'printing').length.toLocaleString('en-US')}
+            {orders
+              .filter((o) => o.orderStatus === 'processing' || o.orderStatus === 'printing')
+              .length.toLocaleString('en-US')}
+          </span>
+        </div>
+
+        <div className="p-4 rounded-2xl bg-blue-500/10 border border-blue-500/20">
+          <span className="text-[11px] font-semibold text-blue-400 block">رایت کارت NFC</span>
+          <span className="text-xl font-black text-blue-400 font-sans mt-1 block">
+            {orders.filter((o) => o.orderStatus === 'nfc_writing').length.toLocaleString('en-US')}
           </span>
         </div>
 
         <div className="p-4 rounded-2xl bg-purple-500/10 border border-purple-500/20">
-          <span className="text-[11px] font-semibold text-purple-400 block">ارسال شده به مقصد</span>
+          <span className="text-[11px] font-semibold text-purple-400 block">ارسال با پیک / پست</span>
           <span className="text-xl font-black text-purple-400 font-sans mt-1 block">
-            {orders.filter((o) => o.orderStatus === 'shipped' || o.orderStatus === 'completed').length.toLocaleString('en-US')}
+            {orders
+              .filter((o) => o.orderStatus === 'shipping' || o.orderStatus === 'shipped')
+              .length.toLocaleString('en-US')}
           </span>
         </div>
 
-        <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 col-span-2 lg:col-span-1">
-          <span className="text-[11px] font-semibold text-emerald-400 block">مجموع عواید سفارشات</span>
+        <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
+          <span className="text-[11px] font-semibold text-emerald-400 block">مجموع عواید فروش</span>
           <span className="text-xl font-black text-emerald-400 font-sans mt-1 block">
             {orders
               .filter((o) => o.paymentStatus === 'paid')
@@ -337,19 +445,21 @@ export default function AdminOrdersPage() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="جستجو با شماره سفارش، نام یا شماره..."
+            placeholder="جستجو با شماره سفارش، نام یا کد ردیاب..."
             className="pr-9 pl-3 h-10 bg-slate-950/60 border-slate-800 text-xs rounded-xl text-white"
           />
         </div>
 
         {/* Filter Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto">
+        <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
           {[
-            { id: 'all', label: 'همه' },
-            { id: 'pending', label: 'در حال بررسی' },
-            { id: 'printing', label: 'در حال چاپ' },
-            { id: 'shipped', label: 'ارسال شده' },
-            { id: 'completed', label: 'تکمیل شده' },
+            { id: 'all', label: 'همه سفارشات' },
+            { id: 'pending_payment', label: 'در انتظار پرداخت' },
+            { id: 'processing', label: 'آماده‌سازی و چاپ' },
+            { id: 'nfc_writing', label: 'رایت کارت NFC' },
+            { id: 'shipping', label: 'ارسال با پیک' },
+            { id: 'delivered', label: 'تحویل شد' },
+            { id: 'cancelled', label: 'لغو شده' },
           ].map((pill) => (
             <button
               key={pill.id}
@@ -436,31 +546,41 @@ export default function AdminOrdersPage() {
                       </td>
 
                       <td className="p-4">
-                        {order.orderStatus === 'pending' || order.orderStatus === 'processing' ? (
+                        {order.orderStatus === 'pending_payment' || order.orderStatus === 'pending' ? (
                           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
                             <Clock className="w-3 h-3" />
-                            <span>در حال بررسی</span>
+                            <span>در انتظار پرداخت</span>
                           </span>
-                        ) : order.orderStatus === 'printing' ? (
+                        ) : order.orderStatus === 'processing' || order.orderStatus === 'printing' ? (
                           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-                            <Zap className="w-3 h-3" />
-                            <span>در حال چاپ</span>
+                            <Package className="w-3 h-3" />
+                            <span>آماده‌سازی و چاپ</span>
                           </span>
-                        ) : order.orderStatus === 'shipped' ? (
+                        ) : order.orderStatus === 'nfc_writing' ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20 animate-pulse">
+                            <Zap className="w-3 h-3" />
+                            <span>رایت کارت NFC</span>
+                          </span>
+                        ) : order.orderStatus === 'shipping' || order.orderStatus === 'shipped' ? (
                           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-purple-500/10 text-purple-400 border border-purple-500/20">
                             <Truck className="w-3 h-3" />
-                            <span>ارسال شده</span>
+                            <span>ارسال با پیک</span>
                           </span>
-                        ) : (
+                        ) : order.orderStatus === 'delivered' || order.orderStatus === 'completed' ? (
                           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                             <CheckCircle2 className="w-3 h-3" />
-                            <span>تکمیل شده</span>
+                            <span>تحویل شد</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                            <X className="w-3 h-3" />
+                            <span>لغو شده</span>
                           </span>
                         )}
                       </td>
 
                       <td className="p-4 text-slate-400" dir="ltr">
-                        {order.trackingNumber || '-'}
+                        {order.trackingNumber || order.trackingShortCode || '-'}
                       </td>
 
                       <td className="p-4 text-[11px] text-slate-400 font-sans">
@@ -472,7 +592,7 @@ export default function AdminOrdersPage() {
                       </td>
 
                       <td className="p-4">
-                        <div className="flex items-center justify-center gap-1.5">
+                        <div className="flex items-center justify-center gap-1.5 flex-wrap">
                           <Button
                             size="sm"
                             variant="ghost"
@@ -484,25 +604,47 @@ export default function AdminOrdersPage() {
                           </Button>
 
                           {/* Quick Transitions */}
-                          {(order.orderStatus === 'pending' || order.orderStatus === 'processing') && (
+                          {(order.orderStatus === 'pending_payment' || order.orderStatus === 'pending') && (
                             <button
                               type="button"
-                              onClick={() => handleQuickStatusChange(order.id, 'printing')}
-                              title="انتقال فوری به چاپ"
-                              className="px-2 py-1 rounded-md bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 text-[10px] font-bold border border-cyan-500/30"
+                              onClick={() => handleQuickStatusChange(order.id, 'processing')}
+                              title="تایید پرداخت و ارسال به خط چاپ"
+                              className="px-2 py-1 rounded-md bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 text-[10px] font-bold border border-cyan-500/30 whitespace-nowrap"
                             >
                               ارسال به چاپ
                             </button>
                           )}
 
-                          {order.orderStatus === 'printing' && (
+                          {(order.orderStatus === 'processing' || order.orderStatus === 'printing') && (
                             <button
                               type="button"
-                              onClick={() => handleQuickStatusChange(order.id, 'shipped')}
-                              title="انتقال فوری به ارسال شده"
-                              className="px-2 py-1 rounded-md bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 text-[10px] font-bold border border-purple-500/30"
+                              onClick={() => handleQuickStatusChange(order.id, 'nfc_writing')}
+                              title="چاپ تکمیل شد، انتقال به رایت NFC"
+                              className="px-2 py-1 rounded-md bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 text-[10px] font-bold border border-blue-500/30 whitespace-nowrap"
                             >
-                              ارسال پستی
+                              رایت NFC
+                            </button>
+                          )}
+
+                          {order.orderStatus === 'nfc_writing' && (
+                            <button
+                              type="button"
+                              onClick={() => handleOpenModal(order)}
+                              title="باز کردن مدیریت رایت چیپست"
+                              className="px-2 py-1 rounded-md bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 text-[10px] font-bold border border-emerald-500/30 whitespace-nowrap animate-pulse"
+                            >
+                              مدیریت رایت
+                            </button>
+                          )}
+
+                          {(order.orderStatus === 'shipping' || order.orderStatus === 'shipped') && (
+                            <button
+                              type="button"
+                              onClick={() => handleQuickStatusChange(order.id, 'delivered')}
+                              title="تایید نهایی تحویل به مشتری"
+                              className="px-2 py-1 rounded-md bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-[10px] font-bold border border-emerald-500/30 whitespace-nowrap"
+                            >
+                              تحویل شد
                             </button>
                           )}
 
@@ -617,19 +759,21 @@ export default function AdminOrdersPage() {
                 <label className="text-xs font-semibold text-slate-300 block">
                   تغییر وضعیت سفارش (فوراً در تایم‌لاین کاربر منعکس می‌شود):
                 </label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {[
-                    { id: 'pending', label: 'در حال بررسی', color: 'border-amber-500 text-amber-400' },
-                    { id: 'printing', label: 'در حال چاپ و تولید', color: 'border-cyan-500 text-cyan-400' },
-                    { id: 'shipped', label: 'ارسال با پست اکسپرس', color: 'border-purple-500 text-purple-400' },
-                    { id: 'completed', label: 'تکمیل و تحویل شده', color: 'border-emerald-500 text-emerald-400' },
+                    { id: 'pending_payment', label: 'در انتظار پرداخت', color: 'border-amber-500 text-amber-400' },
+                    { id: 'processing', label: 'آماده‌سازی و چاپ', color: 'border-cyan-500 text-cyan-400' },
+                    { id: 'nfc_writing', label: 'رایت کارت NFC', color: 'border-blue-500 text-blue-400' },
+                    { id: 'shipping', label: 'ارسال با پیک', color: 'border-purple-500 text-purple-400' },
+                    { id: 'delivered', label: 'تحویل شد', color: 'border-emerald-500 text-emerald-400' },
+                    { id: 'cancelled', label: 'لغو شده', color: 'border-rose-500 text-rose-400' },
                   ].map((s) => (
                     <button
                       key={s.id}
                       type="button"
                       onClick={() => setModalOrderStatus(s.id)}
                       className={cn(
-                        'py-2.5 px-2 rounded-xl text-xs font-bold border transition-all',
+                        'py-2.5 px-2 rounded-xl text-xs font-bold border transition-all text-center',
                         modalOrderStatus === s.id
                           ? `bg-slate-800 ${s.color} shadow-sm ring-1 ring-cyan-500/50`
                           : 'bg-black/30 border-slate-800 text-slate-400 hover:text-white'
@@ -641,10 +785,80 @@ export default function AdminOrdersPage() {
                 </div>
               </div>
 
+              {/* NFC Writing & Provisioning Box (When in nfc_writing or order is in nfc_writing) */}
+              {(modalOrderStatus === 'nfc_writing' || selectedOrder.orderStatus === 'nfc_writing') && (
+                <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-cyan-950/40 via-slate-900/90 to-blue-950/40 border border-cyan-500/40 shadow-xl shadow-cyan-500/10 space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-cyan-500/20 pb-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-9 h-9 rounded-xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 flex items-center justify-center shrink-0">
+                        <Zap className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                          <span>مدیریت رایت چیپست هوشمند NFC</span>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-sans">
+                            {currentShortCode}
+                          </span>
+                        </h4>
+                        <p className="text-[11px] text-cyan-300/80 mt-0.5">
+                          لینک ردیاب نامرئی اختصاصی جهت رایت روی چیپست سخت‌افزاری کارت
+                        </p>
+                      </div>
+                    </div>
+
+                    {selectedOrder.physicalCard?.scansCount !== undefined && (
+                      <span className="text-[11px] px-3 py-1 rounded-full bg-cyan-500/15 text-cyan-300 font-bold border border-cyan-500/30 self-start sm:self-auto">
+                        اسکن فیزیکی: {selectedOrder.physicalCard.scansCount} بار
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Big Tracking URL */}
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-semibold text-slate-300 block">
+                      آدرس ردیاب نامرئی (Unique Tracking Link):
+                    </label>
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                      <div
+                        className="flex-1 bg-black/70 border border-cyan-500/40 rounded-xl px-4 py-3 text-center font-mono font-black text-cyan-400 text-base sm:text-lg tracking-wider select-all break-all"
+                        dir="ltr"
+                      >
+                        {trackerUrl}
+                      </div>
+                      <Button
+                        type="button"
+                        onClick={handleCopyTrackerLink}
+                        className="h-11 sm:h-12 px-4 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 font-bold text-xs flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+                      >
+                        <Copy className="w-4 h-4" />
+                        <span>کپی لینک برای رایت</span>
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Green Confirm Provisioning Button */}
+                  <div className="pt-1">
+                    <Button
+                      type="button"
+                      disabled={isProvisioning}
+                      onClick={handleConfirmProvision}
+                      className="w-full h-12 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-white font-black text-xs sm:text-sm shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2 transition-all active:scale-[0.99] cursor-pointer"
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>
+                        {isProvisioning
+                          ? 'در حال ثبت و فعال‌سازی...'
+                          : 'تأیید رایت و فعال‌سازی (انتقال به ارسال با پیک)'}
+                      </span>
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               {/* Tracking Number Input */}
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-slate-300 block">
-                  کد رهگیری پست اکسپرس (Tracking Number):
+                  کد رهگیری پست اکسپرس:
                 </label>
                 <Input
                   type="text"

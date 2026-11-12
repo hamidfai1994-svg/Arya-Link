@@ -1,5 +1,24 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
 
+export const ORDER_STATUS_ENUM = [
+  'pending_payment',
+  'processing',
+  'nfc_writing',
+  'shipping',
+  'delivered',
+  'cancelled',
+  // Backwards compatibility with legacy records in database
+  'completed',
+  'printing',
+  'shipped',
+  'pending',
+] as const;
+
+export type OrderStatus = (typeof ORDER_STATUS_ENUM)[number];
+
+export const PAYMENT_STATUS_ENUM = ['paid', 'pending', 'failed', 'refunded'] as const;
+export type PaymentStatus = (typeof PAYMENT_STATUS_ENUM)[number];
+
 export interface IOrderCardSpecs {
   material?: string;
   templateId?: string;
@@ -18,7 +37,7 @@ export interface IOrderCardSpecs {
 
 export interface IOrderDocument extends Document {
   userId?: mongoose.Types.ObjectId | string;
-  sellerUserId: mongoose.Types.ObjectId | string;
+  sellerUserId?: mongoose.Types.ObjectId | string;
   profileId?: mongoose.Types.ObjectId | string;
   orderNumber: string;
   customerName: string;
@@ -29,16 +48,20 @@ export interface IOrderDocument extends Document {
   unitPrice: number;
   totalPrice: number;
   currency: 'AFN' | 'USD';
-  paymentStatus: 'paid' | 'pending' | 'failed' | 'refunded';
-  orderStatus: 'completed' | 'processing' | 'printing' | 'shipped' | 'pending' | 'cancelled';
+  paymentStatus: PaymentStatus;
+  orderStatus: OrderStatus;
   orderType?: string;
-  status?: 'pending' | 'processing' | 'shipped' | 'completed' | 'cancelled';
+  status?: OrderStatus | string;
   price?: number;
   paymentMethod: 'online' | 'cod' | 'bank' | 'wallet' | 'hawala' | 'crypto' | 'installment' | string;
   deliveryFee?: number;
   deliveryCompany?: string;
   isDeliverySettled?: boolean;
   trackingNumber?: string;
+  physicalCardId?: mongoose.Types.ObjectId | string;
+  trackingShortCode?: string;
+  provisionedBy?: mongoose.Types.ObjectId | string;
+  provisionedAt?: Date;
   paymentProviderDetails?: {
     providerType?: 'bank' | 'wallet' | 'hawala' | 'crypto' | 'cod' | 'installment' | string;
     walletService?: string;
@@ -72,9 +95,9 @@ export interface IOrderDocument extends Document {
 
 const OrderSchema = new Schema<IOrderDocument>(
   {
-    userId: { type: Schema.Types.Mixed, index: true },
-    sellerUserId: { type: Schema.Types.Mixed, required: true, index: true },
-    profileId: { type: Schema.Types.Mixed, index: true },
+    userId: { type: Schema.Types.Mixed, required: false, index: true },
+    sellerUserId: { type: Schema.Types.Mixed, required: false, index: true },
+    profileId: { type: Schema.Types.Mixed, required: false, index: true },
     orderNumber: { type: String, required: true, unique: true, index: true },
     customerName: { type: String, required: true, trim: true },
     customerEmail: { type: String, required: true, trim: true },
@@ -86,14 +109,20 @@ const OrderSchema = new Schema<IOrderDocument>(
     currency: { type: String, enum: ['AFN', 'USD'], default: 'AFN' },
     paymentStatus: {
       type: String,
-      enum: ['paid', 'pending', 'failed', 'refunded'],
-      default: 'paid',
+      enum: {
+        values: [...PAYMENT_STATUS_ENUM],
+        message: 'مقدار {VALUE} برای وضعیت پرداخت نامعتبر است.',
+      },
+      default: 'pending',
       index: true,
     },
     orderStatus: {
       type: String,
-      enum: ['completed', 'processing', 'printing', 'shipped', 'pending', 'cancelled'],
-      default: 'pending',
+      enum: {
+        values: [...ORDER_STATUS_ENUM],
+        message: 'مقدار {VALUE} برای وضعیت سفارش نامعتبر است.',
+      },
+      default: 'pending_payment',
       index: true,
     },
     orderType: {
@@ -103,8 +132,11 @@ const OrderSchema = new Schema<IOrderDocument>(
     },
     status: {
       type: String,
-      enum: ['pending', 'processing', 'shipped', 'completed', 'cancelled'],
-      default: 'pending',
+      enum: {
+        values: [...ORDER_STATUS_ENUM],
+        message: 'مقدار {VALUE} برای وضعیت نامعتبر است.',
+      },
+      default: 'pending_payment',
       index: true,
     },
     price: {
@@ -130,6 +162,10 @@ const OrderSchema = new Schema<IOrderDocument>(
       index: true,
     },
     trackingNumber: { type: String, default: '' },
+    physicalCardId: { type: Schema.Types.Mixed, ref: 'PhysicalCard', required: false, index: true },
+    trackingShortCode: { type: String, required: false, trim: true, uppercase: true, index: true },
+    provisionedBy: { type: Schema.Types.Mixed, ref: 'User', required: false },
+    provisionedAt: { type: Date, required: false },
     paymentProviderDetails: {
       providerType: { type: String, default: '' },
       walletService: { type: String, default: '' },
@@ -174,6 +210,14 @@ const OrderSchema = new Schema<IOrderDocument>(
   },
   { timestamps: true }
 );
+
+// Force-clear cached Mongoose model to guarantee reload of new enum schema in Next.js hot-reloads
+if (mongoose.models && mongoose.models.Order) {
+  delete (mongoose.models as any).Order;
+}
+if ((mongoose as any).modelSchemas && (mongoose as any).modelSchemas.Order) {
+  delete (mongoose as any).modelSchemas.Order;
+}
 
 export const Order: Model<IOrderDocument> =
   mongoose.models.Order || mongoose.model<IOrderDocument>('Order', OrderSchema);

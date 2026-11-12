@@ -73,7 +73,7 @@ export default function AdminReportsPage() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-              گزارشات رشد و آنالیتیکس پلتفرم (Platform Analytics)
+              گزارشات رشد و آنالیتیکس پلتفرم
             </h1>
             <Badge variant="cyan" className="font-sans text-xs">
               Live BI
@@ -204,7 +204,7 @@ export default function AdminReportsPage() {
               <div className="flex items-center justify-between pb-3 border-b border-border">
                 <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
                   <Smartphone className="w-4 h-4 text-cyan-500" />
-                  <span>تفکیک بر اساس دستگاه ورودی (Device Breakdown)</span>
+                  <span>تفکیک بر اساس دستگاه ورودی</span>
                 </h2>
                 <Badge variant="outline" className="text-[10px]">
                   Hardware

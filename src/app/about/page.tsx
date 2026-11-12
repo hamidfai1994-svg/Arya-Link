@@ -97,7 +97,7 @@ export default function AboutPage() {
             <div>
               <h3 className="text-base font-bold text-foreground flex items-center gap-2 mb-2">
                 <Sparkles className="w-5 h-5 text-cyan-500" />
-                <span>ماموریت ما (Mission)</span>
+                <span>ماموریت ما</span>
               </h3>
               <p className="text-xs text-muted-foreground leading-relaxed">
                 {getLocalizedText(company?.mission, language)}
@@ -107,7 +107,7 @@ export default function AboutPage() {
             <div className="pt-4 border-t border-border/60">
               <h3 className="text-base font-bold text-foreground flex items-center gap-2 mb-2">
                 <Globe className="w-5 h-5 text-blue-500" />
-                <span>چشم‌انداز (Vision)</span>
+                <span>چشم‌انداز</span>
               </h3>
               <p className="text-xs text-muted-foreground leading-relaxed">
                 {getLocalizedText(company?.vision, language)}

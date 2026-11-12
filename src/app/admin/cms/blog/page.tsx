@@ -254,7 +254,7 @@ export default function AdminBlogCmsPage() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-              مدیریت سه‌زبانه بلاگ و مقالات (Multilingual Blog CMS)
+              مدیریت سه‌زبانه بلاگ و مقالات
             </h1>
             <Badge variant="cyan" className="font-sans text-xs">
               CMS 3-LANG
@@ -508,7 +508,7 @@ export default function AdminBlogCmsPage() {
             {/* Slug & Cover */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-foreground">آی دی آدرس (Slug) *</label>
+                <label className="text-xs font-bold text-foreground">شناسه پیوند (Slug) *</label>
                 <Input
                   value={slug}
                   onChange={(e) => setSlug(e.target.value)}

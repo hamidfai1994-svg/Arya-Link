@@ -168,14 +168,14 @@ export function CardSettingsPanel({ cardId }: { cardId?: string }) {
             <div className="flex items-center gap-2 border-b border-slate-100 dark:border-white/10 pb-3">
               <Search className="w-4 h-4 text-cyan-500" />
               <h2 className="text-sm font-extrabold text-slate-900 dark:text-white">
-                سئو و بهینه‌سازی موتورهای جستجو (SEO & Meta Tags)
+                سئو و بهینه‌سازی موتورهای جستجو
               </h2>
             </div>
 
             <div className="space-y-4">
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                  عنوان صفحه در گوگل (SEO Title)
+                  عنوان صفحه در گوگل
                 </label>
                 <Input
                   type="text"
@@ -193,7 +193,7 @@ export function CardSettingsPanel({ cardId }: { cardId?: string }) {
 
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                  توضیحات متا در گوگل و شبکه‌های اجتماعی (Meta Description)
+                  توضیحات متا در گوگل و شبکه‌های اجتماعی
                 </label>
                 <textarea
                   rows={3}
@@ -217,7 +217,7 @@ export function CardSettingsPanel({ cardId }: { cardId?: string }) {
               <div className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-cyan-500" />
                 <h2 className="text-sm font-extrabold text-slate-900 dark:text-white">
-                  وایت‌لیبل و حذف برندینگ (White-label)
+                  وایت‌لیبل و حذف برندینگ
                 </h2>
               </div>
               <Badge variant="cyan" className="text-[10px] font-sans uppercase">
@@ -248,14 +248,14 @@ export function CardSettingsPanel({ cardId }: { cardId?: string }) {
             <div className="flex items-center gap-2 border-b border-slate-100 dark:border-white/10 pb-3">
               <Globe className="w-4 h-4 text-cyan-500" />
               <h2 className="text-sm font-extrabold text-slate-900 dark:text-white">
-                آی دی آدرس و دامنه اختصاصی (Custom Domain & Alias)
+                شناسه آدرس و دامنه اختصاصی
               </h2>
             </div>
 
             <div className="space-y-4">
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                  آی دی عمومی کارت شما (Alias)
+                  شناسه عمومی کارت شما
                 </label>
                 <div className="flex items-center rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-white/10 overflow-hidden" dir="ltr">
                   <span className="px-3.5 text-xs text-slate-400 font-sans border-r border-slate-200 dark:border-white/10 select-none">
@@ -272,7 +272,7 @@ export function CardSettingsPanel({ cardId }: { cardId?: string }) {
 
               <div className="space-y-1.5 pt-2">
                 <label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center justify-between">
-                  <span>اتصال دامنه اختصاصی (Custom Domain)</span>
+                  <span>اتصال دامنه اختصاصی</span>
                   <Badge variant="outline" className="text-[10px] font-sans">
                     سازمانی
                   </Badge>
@@ -298,7 +298,7 @@ export function CardSettingsPanel({ cardId }: { cardId?: string }) {
               <div className="flex items-center gap-2">
                 <Zap className="w-4 h-4 text-cyan-500" />
                 <h2 className="text-sm font-extrabold text-slate-900 dark:text-white">
-                  حالت هدایت مستقیم (Direct Redirect Mode)
+                  حالت هدایت مستقیم
                 </h2>
               </div>
               <Switch
@@ -314,7 +314,7 @@ export function CardSettingsPanel({ cardId }: { cardId?: string }) {
             {directMode && (
               <div className="space-y-1.5 pt-2">
                 <label className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                  آدرس اینترنتی مقصد مستقیم (Destination URL)
+                  آدرس اینترنتی مقصد مستقیم
                 </label>
                 <Input
                   type="url"
@@ -334,7 +334,7 @@ export function CardSettingsPanel({ cardId }: { cardId?: string }) {
           <div className="p-6 rounded-3xl bg-white/80 dark:bg-slate-900/75 border border-slate-200/80 dark:border-white/10 shadow-sm backdrop-blur-xl space-y-4">
             <h3 className="text-xs font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
               <Eye className="w-4 h-4 text-cyan-500" />
-              <span>پیش‌نمایش در نتایج جستجوی گوگل (Google SERP)</span>
+              <span>پیش‌نمایش در نتایج جستجوی گوگل</span>
             </h3>
 
             {/* Google Result Card Mockup */}

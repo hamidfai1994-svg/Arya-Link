@@ -130,14 +130,14 @@ export default function AdminDashboardPage() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-              نمای کلی پلتفرم (Platform Overview)
+              نمای کلی پلتفرم
             </h1>
             <Badge variant="cyan" className="text-xs">
               آمار زنده
             </Badge>
           </div>
           <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-            شاخص‌های کلیدی عملکرد (KPIs)، وضعیت سلامت سرور و نمودار فعالیت هفتگی سیستم
+            شاخص‌های کلیدی عملکرد، وضعیت سلامت سرور و نمودار فعالیت هفتگی سیستم
           </p>
         </div>
 
@@ -284,7 +284,7 @@ export default function AdminDashboardPage() {
           <div className="space-y-4">
             <div className="flex items-center gap-2 pb-3 border-b border-border">
               <Server className="w-4 h-4 text-emerald-500" />
-              <h2 className="text-sm font-bold text-foreground">وضعیت سلامت سیستم (Health)</h2>
+              <h2 className="text-sm font-bold text-foreground">وضعیت سلامت سیستم</h2>
             </div>
 
             <div className="space-y-3">
@@ -295,14 +295,14 @@ export default function AdminDashboardPage() {
                 </div>
                 <span className="text-emerald-500 font-bold flex items-center gap-1">
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span>متصل (Online)</span>
+                  <span>متصل</span>
                 </span>
               </div>
 
               <div className="p-3 rounded-2xl bg-muted/20 border border-border/60 flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2 text-foreground font-semibold">
                   <Activity className="w-4 h-4 text-cyan-500" />
-                  <span>زمان پاسخ‌دهی سرور (Latency)</span>
+                  <span>زمان پاسخ‌دهی سرور</span>
                 </div>
                 <span className="text-cyan-500 font-bold" dir="ltr">28 ms</span>
               </div>
@@ -310,7 +310,7 @@ export default function AdminDashboardPage() {
               <div className="p-3 rounded-2xl bg-muted/20 border border-border/60 flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2 text-foreground font-semibold">
                   <Clock className="w-4 h-4 text-purple-400" />
-                  <span>پایداری سرویس (Uptime)</span>
+                  <span>پایداری سرویس</span>
                 </div>
                 <span className="text-foreground font-bold" dir="ltr">99.98%</span>
               </div>

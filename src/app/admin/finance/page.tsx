@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import {
   Wallet,
   CreditCard,
@@ -206,27 +207,37 @@ export default function AdminFinancePage() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-              مدیریت مالی و حسابداری (Enterprise Finance)
+              مدیریت مالی و حسابداری
             </h1>
-            <Badge variant="emerald" className="font-sans text-xs">
-              AFN Cashflow
-            </Badge>
           </div>
           <p className="text-xs sm:text-sm text-muted-foreground mt-1">
             مشاهده درآمدهای فروش کارت‌های هوشمند NFC، اشتراک‌های PRO، فروش خدمات و مدیریت صف تسویه‌حساب‌ها
           </p>
         </div>
 
-        <Button
-          onClick={fetchFinanceData}
-          variant="outline"
-          size="sm"
-          disabled={isLoading}
-          className="h-10 px-4 rounded-xl border-border bg-card self-start sm:self-auto flex items-center gap-2"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
-          <span className="text-xs">بروزرسانی داده‌ها</span>
-        </Button>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <Link href="/admin/finance/payment-methods">
+            <Button
+              variant="default"
+              size="sm"
+              className="h-10 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white flex items-center gap-2 text-xs font-bold"
+            >
+              <CreditCard className="w-3.5 h-3.5" />
+              <span>تنظیمات درگاه‌ها و روش‌های پرداخت</span>
+            </Button>
+          </Link>
+
+          <Button
+            onClick={fetchFinanceData}
+            variant="outline"
+            size="sm"
+            disabled={isLoading}
+            className="h-10 px-4 rounded-xl border-border bg-card flex items-center gap-2 text-xs"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+            <span>بروزرسانی داده‌ها</span>
+          </Button>
+        </div>
       </div>
 
       {/* KPI Cards */}
@@ -575,11 +586,10 @@ export default function AdminFinancePage() {
                   type="button"
                   disabled={isProcessing}
                   onClick={handleExecutePayout}
-                  className={`h-10 rounded-xl text-white font-bold text-xs flex items-center gap-1.5 ${
-                    payoutAction === 'pay'
-                      ? 'bg-emerald-500 hover:bg-emerald-600'
-                      : 'bg-rose-500 hover:bg-rose-600'
-                  }`}
+                  className={`h-10 rounded-xl text-white font-bold text-xs flex items-center gap-1.5 ${payoutAction === 'pay'
+                    ? 'bg-emerald-500 hover:bg-emerald-600'
+                    : 'bg-rose-500 hover:bg-rose-600'
+                    }`}
                 >
                   {isProcessing && <Loader2 className="w-4 h-4 animate-spin" />}
                   <span>{payoutAction === 'pay' ? 'ثبت و تایید نهایی واریز' : 'رد درخواست'}</span>

@@ -57,6 +57,8 @@ import { getSmartLink, formatDisplayValue } from '@/lib/smart-link';
 import { downloadVCard, convertToEnglishDigits } from '@/lib/generateVCard';
 import { LiveCountdown } from '@/components/ui/live-countdown';
 import { LiveBusinessHours } from '@/components/profile/LiveBusinessHours';
+import { PaymentCheckoutModal } from '@/components/payment/PaymentCheckoutModal';
+import { PAYMENT_PROVIDERS } from '@/lib/constants/paymentProviders';
 import {
   MessageSquare,
   Instagram,
@@ -156,6 +158,7 @@ export const LivePreview: React.FC = () => {
     title?: string;
   } | null>(null);
   const [copiedLocationLink, setCopiedLocationLink] = useState(false);
+  const [previewPaymentModalLink, setPreviewPaymentModalLink] = useState<ProfileLinkItem | null>(null);
 
   // Dynamic background style based directly on themeConfig.backgroundType (Stage 6)
   const getThemeBackgroundStyle = (): React.CSSProperties => {
@@ -1454,7 +1457,7 @@ export const LivePreview: React.FC = () => {
               className={`py-1.5 px-2 ${cardRadius} bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/30 text-cyan-600 dark:text-cyan-400 text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-95 ${getButtonAnimationClass(adv.buttonAnimation)}`}
             >
               <Navigation className="w-3.5 h-3.5" />
-              ویز (Waze)
+              ویز
             </a>
           </div>
         </div>
@@ -1544,7 +1547,15 @@ export const LivePreview: React.FC = () => {
       '';
 
     let displaySubtitle = rawVal || link.url || '';
-    if (link.moduleType === 'email_direct') {
+    if (link.moduleType === 'payment') {
+      const pType = meta.paymentProviderType || 'wallet';
+      const pDef = PAYMENT_PROVIDERS[pType];
+      if (meta.paymentAmount) {
+        displaySubtitle = `${meta.paymentAmount.toLocaleString('fa-IR')} ${meta.paymentCurrency === 'USD' ? 'دالر' : 'افغانی'}${pDef ? ` (${pDef.title})` : ''}`;
+      } else if (pDef) {
+        displaySubtitle = pDef.title;
+      }
+    } else if (link.moduleType === 'email_direct') {
       const emailVal = (link.metadata?.emailAddress as string) || link.url || '';
       const displayEmail = emailVal.replace(/^mailto:/, '').split('?')[0];
       displaySubtitle = displayEmail;
@@ -1562,6 +1573,17 @@ export const LivePreview: React.FC = () => {
         href={link.url}
         onClick={(e) => {
           e.preventDefault();
+          e.stopPropagation();
+          if (
+            link.moduleType === 'payment' ||
+            link.moduleType === 'donation_hesabpay' ||
+            link.url === '#payment-modal' ||
+            link.url?.includes('payment-modal') ||
+            link.url === '#payment' ||
+            link.url?.includes('#payment')
+          ) {
+            setPreviewPaymentModalLink(link);
+          }
         }}
         target={adv.openInNewTab === false || link.url.startsWith('tel:') || link.url.startsWith('mailto:') || link.url.startsWith('#') ? '_self' : '_blank'}
         rel="noopener noreferrer"
@@ -1578,6 +1600,7 @@ export const LivePreview: React.FC = () => {
             {link.moduleType === 'email_direct' && <Mail className="w-4 h-4 text-amber-500" />}
             {link.moduleType === 'pdf_catalog' && <FileText className="w-4 h-4 text-rose-500" />}
             {link.moduleType === 'music_player' && <Music className="w-4 h-4 text-emerald-500" />}
+            {link.moduleType === 'payment' && <CreditCard className="w-4 h-4 text-emerald-400" />}
             {link.moduleType === 'donation_hesabpay' && <HeartHandshake className="w-4 h-4 text-rose-500" />}
             {link.moduleType === 'whatsapp_direct' && <WhatsAppIcon className="w-4 h-4 fill-current text-emerald-400" />}
             {link.moduleType === 'telegram_channel' && <TelegramIcon className="w-4 h-4 fill-current text-sky-400" />}
@@ -2389,7 +2412,7 @@ export const LivePreview: React.FC = () => {
             {/* Direct Link with 1-Click Copy */}
             <div className="w-full space-y-1.5">
               <span className="text-[11px] font-bold text-muted-foreground block">
-                لینک موقعیت مکانی (Google Maps):
+                لینک موقعیت مکانی (نقشه گوگل):
               </span>
               <div className="flex items-center gap-2 p-1.5 rounded-xl border border-border bg-muted/30">
                 <input
@@ -2476,10 +2499,12 @@ export const LivePreview: React.FC = () => {
           }
         }}
       >
-        <DialogContent className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[92%] max-w-sm rounded-2xl h-auto z-50 bg-slate-900/95 border border-white/10 backdrop-blur-2xl p-5 text-center text-white shadow-2xl">
+        <DialogContent className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[92%] max-w-sm overflow-hidden rounded-2xl sm:rounded-2xl h-auto z-50 bg-slate-900/95 border border-white/10 backdrop-blur-2xl p-5 text-center text-white shadow-2xl isolate">
           {/* Ambient Lighting Accents */}
-          <div className="absolute -top-16 -right-16 w-36 h-36 bg-cyan-500/20 rounded-full blur-2xl pointer-events-none" />
-          <div className="absolute -bottom-16 -left-16 w-36 h-36 bg-emerald-500/20 rounded-full blur-2xl pointer-events-none" />
+          <div className="absolute inset-0 overflow-hidden pointer-events-none rounded-[inherit] z-0">
+            <div className="absolute -top-16 -right-16 w-36 h-36 bg-cyan-500/20 rounded-full blur-2xl pointer-events-none" />
+            <div className="absolute -bottom-16 -left-16 w-36 h-36 bg-emerald-500/20 rounded-full blur-2xl pointer-events-none" />
+          </div>
 
           <DialogHeader className="space-y-2 pb-3 border-b border-white/10 text-center relative z-10">
             <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 flex items-center justify-center mx-auto shadow-md">
@@ -2563,6 +2588,15 @@ export const LivePreview: React.FC = () => {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Payment Provider Checkout Modal (Live Editor Preview) */}
+      <PaymentCheckoutModal
+        isOpen={Boolean(previewPaymentModalLink)}
+        onClose={() => setPreviewPaymentModalLink(null)}
+        link={previewPaymentModalLink}
+        profileName={profile.displayName || 'صاحب پروفایل'}
+        recipientPhone={profile.phone || ''}
+      />
     </div>
   );
 };

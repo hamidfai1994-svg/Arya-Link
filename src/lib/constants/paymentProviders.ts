@@ -6,14 +6,26 @@
 
 export type PaymentProviderType = 'bank' | 'wallet' | 'hawala' | 'crypto' | 'cod' | 'installment';
 
-export type WalletServiceType = 'M-Paisa' | 'HesabPay' | 'ATOMA Pay' | 'My-Money';
+export type WalletServiceType =
+  | 'M-Paisa'
+  | 'HesabPay'
+  | 'ATOMA Pay'
+  | 'My-Money'
+  | 'Aurum AFG'
+  | 'StarPay';
 
-export type AfghanBankType = 
-  | 'AIB' 
-  | 'Azizi Bank' 
-  | 'New Kabul Bank' 
-  | 'Pashtany Bank' 
-  | 'Bank-e-Millie Afghan';
+export type AfghanBankType =
+  | 'DAB'
+  | 'AIB'
+  | 'Azizi Bank'
+  | 'New Kabul Bank'
+  | 'Pashtany Bank'
+  | 'Bank-e-Millie Afghan'
+  | 'Ghazanfar Bank'
+  | 'Maiwand Bank'
+  | 'Islamic Bank of Afghanistan'
+  | 'Afghan United Bank'
+  | 'First MicroFinance Bank';
 
 export type CryptoNetworkType = 'TRC20' | 'ERC20';
 
@@ -32,36 +44,72 @@ export const AFGHAN_WALLETS: WalletOption[] = [
   {
     id: 'HesabPay',
     name: 'HesabPay',
-    nameFa: 'حساب‌پی (HesabPay)',
-    providerCompany: 'سیستم ملی پرداخت الکترونیک',
+    nameFa: 'حساب‌پی',
+    providerCompany: 'سیستم ملی پرداخت الکترونیک افغانستان',
     color: 'from-emerald-500 to-teal-600',
     logoHint: '📱',
   },
   {
     id: 'M-Paisa',
     name: 'M-Paisa',
-    nameFa: 'ام‌پیسه (M-Paisa روشن)',
-    providerCompany: 'شبکه مخابراتی روشن (Roshan)',
+    nameFa: 'ام‌پیسه روشن',
+    providerCompany: 'شبکه مخابراتی روشن',
     color: 'from-red-500 to-rose-600',
     logoHint: '🔴',
   },
   {
+    id: 'ATOMA Pay',
+    name: 'ATOMA Pay',
+    nameFa: 'اتوما پی',
+    providerCompany: 'سیستم خدمات مالی دیجیتال اتوما',
+    color: 'from-purple-500 to-violet-600',
+    logoHint: '🟣',
+  },
+  {
     id: 'My-Money',
     name: 'My-Money',
-    nameFa: 'مای‌مانی (My-Money افغان بیسیم)',
-    providerCompany: 'شبکه افغان بیسیم (AWCC)',
+    nameFa: 'مای‌مانی افغان بیسیم',
+    providerCompany: 'شبکه مخابراتی افغان بیسیم',
     color: 'from-blue-500 to-indigo-600',
     logoHint: '🔵',
   },
   {
-    id: 'ATOMA Pay',
-    name: 'ATOMA Pay',
-    nameFa: 'اتوما پی (ATOMA Pay)',
-    providerCompany: 'سامانه پرداخت دیجیتال اتوما',
-    color: 'from-purple-500 to-violet-600',
-    logoHint: '🟣',
+    id: 'Aurum AFG',
+    name: 'Aurum AFG',
+    nameFa: 'اوروم افغان',
+    providerCompany: 'سیستم تصفیه و پرداخت دیجیتال اوروم',
+    color: 'from-amber-500 to-yellow-600',
+    logoHint: '🟡',
+  },
+  {
+    id: 'StarPay',
+    name: 'StarPay',
+    nameFa: 'استار پی',
+    providerCompany: 'شبکه پرداخت هوشمند استار پی افغانستان',
+    color: 'from-cyan-500 to-blue-600',
+    logoHint: '⭐',
   },
 ];
+
+export interface PaymentMethodItem {
+  id: string;
+  providerType: PaymentProviderType;
+  title?: string;
+  isDefault?: boolean;
+  walletService?: WalletServiceType;
+  walletAccount?: string;
+  bankName?: AfghanBankType;
+  bankAccountHolder?: string;
+  bankAccountNumber?: string;
+  bankIban?: string;
+  hawalaExchangeName?: string;
+  hawalaReceiverName?: string;
+  hawalaReceiverPhone?: string;
+  hawalaCityBranch?: string;
+  cryptoNetwork?: CryptoNetworkType;
+  cryptoWalletAddress?: string;
+  instructions?: string;
+}
 
 export interface BankOption {
   id: AfghanBankType;
@@ -73,39 +121,115 @@ export interface BankOption {
 
 export const AFGHAN_BANKS: BankOption[] = [
   {
+    id: 'DAB',
+    name: 'Da Afghanistan Bank (DAB)',
+    nameFa: 'د افغانستان بانک',
+    swiftCode: 'DABKAFKA',
+    color: 'from-amber-600 to-yellow-700',
+  },
+  {
     id: 'AIB',
     name: 'Afghanistan International Bank (AIB)',
-    nameFa: 'د افغانستان نړيوال بانک (AIB)',
+    nameFa: 'د افغانستان نړيوال بانک',
     swiftCode: 'AFINAFKA',
     color: 'from-blue-600 to-cyan-700',
   },
   {
     id: 'Azizi Bank',
     name: 'Azizi Bank',
-    nameFa: 'عزیزی بانک (Azizi Bank)',
+    nameFa: 'عزیزی بانک',
     swiftCode: 'AZBAAFKA',
     color: 'from-amber-600 to-yellow-600',
   },
   {
-    id: 'New Kabul Bank',
-    name: 'New Kabul Bank',
-    nameFa: 'نوی کابل بانک (New Kabul Bank)',
-    swiftCode: 'KABUAFKB',
-    color: 'from-emerald-600 to-green-700',
-  },
-  {
     id: 'Pashtany Bank',
     name: 'Pashtany Bank',
-    nameFa: 'پشتنی بانک (Pashtany Bank)',
+    nameFa: 'پشتنی بانک',
     swiftCode: 'PABAAFKA',
     color: 'from-red-600 to-rose-700',
   },
   {
+    id: 'New Kabul Bank',
+    name: 'New Kabul Bank',
+    nameFa: 'نوی کابل بانک',
+    swiftCode: 'KABUAFKB',
+    color: 'from-emerald-600 to-green-700',
+  },
+  {
     id: 'Bank-e-Millie Afghan',
     name: 'Bank-e-Millie Afghan',
-    nameFa: 'بانک ملی افغان (Bank-e-Millie)',
+    nameFa: 'بانک ملی افغان',
     swiftCode: 'BMAFAFKA',
     color: 'from-teal-600 to-emerald-700',
+  },
+  {
+    id: 'Ghazanfar Bank',
+    name: 'Ghazanfar Bank',
+    nameFa: 'غضنفر بانک',
+    swiftCode: 'GHAZAFKA',
+    color: 'from-purple-600 to-indigo-700',
+  },
+  {
+    id: 'Maiwand Bank',
+    name: 'Maiwand Bank',
+    nameFa: 'میوند بانک',
+    swiftCode: 'MAIWAFKA',
+    color: 'from-rose-600 to-red-700',
+  },
+  {
+    id: 'Islamic Bank of Afghanistan',
+    name: 'Islamic Bank of Afghanistan',
+    nameFa: 'د افغانستان اسلامی بانک',
+    swiftCode: 'IBAFAFKA',
+    color: 'from-emerald-700 to-teal-800',
+  },
+  {
+    id: 'Afghan United Bank',
+    name: 'Afghan United Bank (AUB)',
+    nameFa: 'افغان یونایتد بانک',
+    swiftCode: 'AFUNAFKA',
+    color: 'from-sky-600 to-blue-700',
+  },
+  {
+    id: 'First MicroFinance Bank',
+    name: 'First MicroFinance Bank (FMFB)',
+    nameFa: 'لومړنی کوچنی مالیاتی بانک',
+    swiftCode: 'FMFBAFKA',
+    color: 'from-green-600 to-emerald-700',
+  },
+];
+
+export interface ProfilePaymentCategory {
+  id: 'wallet' | 'bank' | 'hawala' | 'crypto';
+  title: string;
+  subtitle: string;
+  badge: string;
+}
+
+export const USER_PROFILE_PAYMENT_CATEGORIES: ProfilePaymentCategory[] = [
+  {
+    id: 'wallet',
+    title: 'پلتفرم‌های آنلاین',
+    subtitle: 'حساب‌پی، ام‌پیسه، اتوما پی، مای‌مانی، اوروم و استار پی',
+    badge: 'کیف پول دیجیتال',
+  },
+  {
+    id: 'bank',
+    title: 'واریز بانکی',
+    subtitle: 'واریز مستقیم به حساب‌های بانکی افغانستان',
+    badge: 'بین‌بانکی',
+  },
+  {
+    id: 'hawala',
+    title: 'حواله',
+    subtitle: 'حواله نقدی از طریق صرافی‌های کابل و ولایات',
+    badge: 'صرافی و نقد',
+  },
+  {
+    id: 'crypto',
+    title: 'ارز دیجیتال',
+    subtitle: 'تتر USDT بر بستر شبکه‌های TRC20 و ERC20',
+    badge: 'بین‌المللی',
   },
 ];
 
@@ -144,7 +268,7 @@ export interface ProviderDefinition {
 export const PAYMENT_PROVIDERS: Record<PaymentProviderType, ProviderDefinition> = {
   wallet: {
     id: 'wallet',
-    title: 'کیف پول الکترونیکی (Mobile Money)',
+    title: 'کیف پول الکترونیکی',
     titleEn: 'Mobile Wallet',
     description: 'واریز فوری از طریق حساب‌پی، ام‌پیسه روشن، مای‌مانی و اتوما پی',
     iconName: 'Smartphone',
@@ -153,7 +277,7 @@ export const PAYMENT_PROVIDERS: Record<PaymentProviderType, ProviderDefinition> 
   },
   bank: {
     id: 'bank',
-    title: 'واریز به حساب بانکی (Bank Transfer)',
+    title: 'واریز به حساب بانکی',
     titleEn: 'Bank Transfer',
     description: 'انتقال مستقیم به بانک‌های معتبر افغانستان (AIB، عزیزی بانک، کابل بانک و...) همراه با QR کد',
     iconName: 'Building2',
@@ -223,12 +347,12 @@ export function calculateInstallmentSchedule(
   const schedule: InstallmentScheduleItem[] = [];
   for (let i = 1; i <= safeCount; i++) {
     const isMonthly = interval === 'monthly';
-    const dueDateLabel = isMonthly 
-      ? `قسط ${i}: ${i} ماه پس از عقد قرارداد` 
+    const dueDateLabel = isMonthly
+      ? `قسط ${i}: ${i} ماه پس از عقد قرارداد`
       : `قسط ${i}: هفته ${i} پس از تحویل`;
-    
+
     // Adjust last installment for rounding differences
-    const amount = i === safeCount 
+    const amount = i === safeCount
       ? remaining - rawPerInstallment * (safeCount - 1)
       : rawPerInstallment;
 
@@ -250,7 +374,7 @@ export const PLATFORM_CENTRAL_PAYMENT_DEFAULTS = {
   wallet: {
     service: 'HesabPay' as WalletServiceType,
     account: '+93799123456',
-    name: 'حساب رسمی آریا لینک (HesabPay)',
+    name: 'حساب رسمی آریا لینک',
   },
   bank: {
     bank: 'AIB' as AfghanBankType,
@@ -274,3 +398,4 @@ export const PLATFORM_CENTRAL_PAYMENT_DEFAULTS = {
     terms: 'مبلغ قابل پرداخت پس از دریافت فیزیکی کارت هوشمند NFC و تأیید سلامت بسته به مأمور پیک پرداخت خواهد شد.',
   },
 };
+

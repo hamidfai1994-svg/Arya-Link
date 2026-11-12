@@ -151,6 +151,26 @@ export interface ModuleAdvancedSettings {
   hasPassword?: boolean;
 }
 
+export interface PaymentMethodItem {
+  id: string;
+  providerType: 'bank' | 'wallet' | 'hawala' | 'crypto' | 'cod' | 'installment';
+  title?: string;
+  isDefault?: boolean;
+  walletService?: string;
+  walletAccount?: string;
+  bankName?: string;
+  bankAccountHolder?: string;
+  bankAccountNumber?: string;
+  bankIban?: string;
+  hawalaExchangeName?: string;
+  hawalaReceiverName?: string;
+  hawalaReceiverPhone?: string;
+  hawalaCityBranch?: string;
+  cryptoNetwork?: string;
+  cryptoWalletAddress?: string;
+  instructions?: string;
+}
+
 export interface ModuleMetadata {
   // Social, Messengers & Handles
   phoneNumber?: string;
@@ -225,6 +245,7 @@ export interface ModuleMetadata {
   paymentAmount?: string | number;
   paymentCurrency?: string;
   paymentInstructions?: string;
+  supportedMethods?: PaymentMethodItem[];
   // wallet
   walletService?: string;
   walletAccount?: string;

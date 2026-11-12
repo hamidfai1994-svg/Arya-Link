@@ -129,7 +129,7 @@ const SECTION_3_MODULES: ModuleOption[] = [
   },
   {
     type: 'tiktok',
-    title: 'تیک‌تاک (TikTok)',
+    title: 'تیک‌تاک',
     category: 'social',
     description: 'اتصال سریع به حساب تیک‌تاک با دیپ‌لینک مستقیم',
     icon: <TikTokIcon className="w-5 h-5 text-black dark:text-white fill-current" />,
@@ -145,7 +145,7 @@ const SECTION_3_MODULES: ModuleOption[] = [
   },
   {
     type: 'pinterest',
-    title: 'پینترست (Pinterest)',
+    title: 'پینترست',
     category: 'social',
     description: 'مشاهده بوردها و ایده‌ها در اپلیکیشن پینترست',
     icon: <PinterestIcon className="w-5 h-5 text-red-600 fill-current" />,
@@ -153,7 +153,7 @@ const SECTION_3_MODULES: ModuleOption[] = [
   },
   {
     type: 'github',
-    title: 'گیت‌هاب (GitHub)',
+    title: 'گیت‌هاب',
     category: 'social',
     description: 'نمایش پروژه‌ها و مخازن کدنویسی توسعه‌دهنده',
     icon: <GitHubIcon className="w-5 h-5 text-slate-900 dark:text-slate-100 fill-current" />,
@@ -161,7 +161,7 @@ const SECTION_3_MODULES: ModuleOption[] = [
   },
   {
     type: 'dribbble',
-    title: 'دریبل (Dribbble)',
+    title: 'دریبل',
     category: 'social',
     description: 'پورتفولیو و شات‌های دیزاین UI/UX طراحان',
     icon: <DribbbleIcon className="w-5 h-5 text-pink-500 fill-current" />,
@@ -169,7 +169,7 @@ const SECTION_3_MODULES: ModuleOption[] = [
   },
   {
     type: 'behance',
-    title: 'بیهنس (Behance)',
+    title: 'بیهنس',
     category: 'social',
     description: 'پروژه‌های کامل گرافیک، برندینگ و موشن‌گرافیک',
     icon: <BehanceIcon className="w-5 h-5 text-blue-500 fill-current" />,
@@ -177,7 +177,7 @@ const SECTION_3_MODULES: ModuleOption[] = [
   },
   {
     type: 'twitch',
-    title: 'توییچ (Twitch)',
+    title: 'توییچ',
     category: 'social',
     description: 'استریم زنده بازی و برنامه‌های آنلاین گیمینگ',
     icon: <TwitchIcon className="w-5 h-5 text-purple-600 fill-current" />,
@@ -185,7 +185,7 @@ const SECTION_3_MODULES: ModuleOption[] = [
   },
   {
     type: 'clubhouse',
-    title: 'کلاب‌هاوس (Clubhouse)',
+    title: 'کلاب‌هاوس',
     category: 'social',
     description: 'پروفایل کلاب‌هاوس جهت شرکت در اتاق‌های گفتگو صوتی',
     icon: <ClubhouseIcon className="w-5 h-5 text-amber-500 fill-current" />,
@@ -193,7 +193,7 @@ const SECTION_3_MODULES: ModuleOption[] = [
   },
   {
     type: 'patreon',
-    title: 'پاترئون (Patreon)',
+    title: 'پاترئون',
     category: 'social',
     description: 'صفحه عضویت ویژه و حمایت ماهانه از تولیدکنندگان محتوا',
     icon: <PatreonIcon className="w-5 h-5 text-orange-500 fill-current" />,
@@ -203,7 +203,7 @@ const SECTION_3_MODULES: ModuleOption[] = [
   // 2. پیام‌رسان‌های مستقیم (Messengers)
   {
     type: 'whatsapp_direct',
-    title: 'واتساپ (WhatsApp)',
+    title: 'واتساپ',
     category: 'messengers',
     description: 'چت آنی در واتساپ با پیام پیش‌فرض بدون ذخیره شماره',
     icon: <WhatsAppIcon className="w-5 h-5 text-emerald-500 fill-current" />,
@@ -212,7 +212,7 @@ const SECTION_3_MODULES: ModuleOption[] = [
   },
   {
     type: 'telegram_channel',
-    title: 'تلگرام (Telegram)',
+    title: 'تلگرام',
     category: 'messengers',
     description: 'هدایت مستقیم به چت خصوصی، کانال یا گروه تلگرام',
     icon: <TelegramIcon className="w-5 h-5 text-sky-500 fill-current" />,
@@ -221,7 +221,7 @@ const SECTION_3_MODULES: ModuleOption[] = [
   },
   {
     type: 'messenger',
-    title: 'مسنجر (Messenger)',
+    title: 'مسنجر',
     category: 'messengers',
     description: 'گفتگوی فوری در فیس‌بوک مسنجر با دیپ‌لینک مستقیم',
     icon: <MessengerIcon className="w-5 h-5 text-blue-500 fill-current" />,
@@ -229,7 +229,7 @@ const SECTION_3_MODULES: ModuleOption[] = [
   },
   {
     type: 'signal',
-    title: 'سیگنال (Signal)',
+    title: 'سیگنال',
     category: 'messengers',
     description: 'چت امن و رمزگذاری‌شده در پیام‌رسان سیگنال',
     icon: <SignalIcon className="w-5 h-5 text-blue-600 fill-current" />,
@@ -237,7 +237,7 @@ const SECTION_3_MODULES: ModuleOption[] = [
   },
   {
     type: 'skype',
-    title: 'اسکایپ (Skype)',
+    title: 'اسکایپ',
     category: 'messengers',
     description: 'برقراری تماس کاری و چت از طریق دیپ‌لینک اسکایپ',
     icon: <SkypeIcon className="w-5 h-5 text-sky-500 fill-current" />,
@@ -245,7 +245,7 @@ const SECTION_3_MODULES: ModuleOption[] = [
   },
   {
     type: 'wechat',
-    title: 'وی‌چت (WeChat)',
+    title: 'وی‌چت',
     category: 'messengers',
     description: 'اتصال به وی‌چت برای مراودات تجاری بین‌المللی',
     icon: <WeChatIcon className="w-5 h-5 text-green-500 fill-current" />,
@@ -255,7 +255,7 @@ const SECTION_3_MODULES: ModuleOption[] = [
   // 3. پلتفرم‌های صوتی و پادکست (Audio)
   {
     type: 'spotify',
-    title: 'اسپاتیفای (Spotify)',
+    title: 'اسپاتیفای',
     category: 'audio',
     description: 'پروفایل هنرمند، آلبوم یا پلی‌لیست اختصاصی اسپاتیفای',
     icon: <SpotifyIcon className="w-5 h-5 text-emerald-500 fill-current" />,
@@ -264,7 +264,7 @@ const SECTION_3_MODULES: ModuleOption[] = [
   },
   {
     type: 'apple_music',
-    title: 'اپل موزیک (Apple Music)',
+    title: 'اپل موزیک',
     category: 'audio',
     description: 'آهنگ‌ها و آلبوم‌های منتشر شده در اکوسیستم اپل',
     icon: <AppleMusicIcon className="w-5 h-5 text-rose-500 fill-current" />,
@@ -272,7 +272,7 @@ const SECTION_3_MODULES: ModuleOption[] = [
   },
   {
     type: 'youtube_music',
-    title: 'یوتیوب موزیک (YouTube Music)',
+    title: 'یوتیوب موزیک',
     category: 'audio',
     description: 'پلی‌لیست و ترک‌های موسیقی در YouTube Music',
     icon: <YouTubeMusicIcon className="w-5 h-5 text-red-500 fill-current" />,
@@ -280,7 +280,7 @@ const SECTION_3_MODULES: ModuleOption[] = [
   },
   {
     type: 'soundcloud',
-    title: 'ساوندکلاود (SoundCloud)',
+    title: 'ساوندکلاود',
     category: 'audio',
     description: 'پخش آنلاین موزیک و پادکست در ساوندکلاود',
     icon: <SoundCloudIcon className="w-5 h-5 text-amber-500 fill-current" />,
@@ -288,7 +288,7 @@ const SECTION_3_MODULES: ModuleOption[] = [
   },
   {
     type: 'castbox',
-    title: 'کست‌باکس (Castbox)',
+    title: 'کست‌باکس',
     category: 'audio',
     description: 'کانال پادکست و اپیزودها در محبوب‌ترین اپ پادکست',
     icon: <CastboxIcon className="w-5 h-5 text-orange-500 fill-current" />,
@@ -296,7 +296,7 @@ const SECTION_3_MODULES: ModuleOption[] = [
   },
   {
     type: 'radio_javan',
-    title: 'رادیو جوان (Radio Javan)',
+    title: 'رادیو جوان',
     category: 'audio',
     description: 'پادکست‌ها، میکس‌ها و موزیک‌های رادیو جوان',
     icon: <RadioJavanIcon className="w-5 h-5 text-amber-400 fill-current" />,
@@ -304,7 +304,7 @@ const SECTION_3_MODULES: ModuleOption[] = [
   },
   {
     type: 'spotify_podcaster',
-    title: 'اسپاتیفای پادکستر (Anchor)',
+    title: 'اسپاتیفای پادکستر',
     category: 'audio',
     description: 'صفحه رسمی پادکست در پلتفرم پادکستر اسپاتیفای',
     icon: <SpotifyIcon className="w-5 h-5 text-purple-500 fill-current" />,
@@ -341,7 +341,7 @@ const SECTION_3_MODULES: ModuleOption[] = [
     type: 'video_meeting',
     title: 'تماس تصویری و جلسه آنلاین',
     category: 'communication',
-    description: 'لینک ورود مستقیم به جلسه گوگل میت (Google Meet) یا Zoom',
+    description: 'لینک ورود مستقیم به جلسه آنلاین گوگل میت یا Zoom',
     icon: <Video className="w-5 h-5 text-teal-500" />,
     colorClass: 'hover:border-teal-500/50',
   },
@@ -496,7 +496,7 @@ const SECTION_3_MODULES: ModuleOption[] = [
   // 8. متنی و چیدمان (Text)
   {
     type: 'container_group',
-    title: 'افزودن گروه / کانتینر (Container)',
+    title: 'افزودن گروه / دسته‌بندی',
     category: 'text',
     description: 'ساخت کانتینر سفارشی برای گروه‌بندی ماژول‌ها به صورت افقی (فشرده) یا لیست عمودی',
     icon: <FolderPlus className="w-5 h-5 text-cyan-400" />,

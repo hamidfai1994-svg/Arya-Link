@@ -29,6 +29,7 @@ import {
   Link as LinkIcon,
   Clipboard,
   ChevronDown,
+  Nfc,
 } from 'lucide-react';
 import { CardOcrScannerModal, ScannedContactData } from '@/components/common/CardOcrScannerModal';
 import { Button } from '@/components/ui/button';
@@ -76,6 +77,7 @@ export default function UserDashboardPage() {
   const { switchProfile } = useEditorStore();
 
   const [profiles, setProfiles] = useState<ProfileItem[]>([]);
+  const [totalNfcScans, setTotalNfcScans] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -175,6 +177,9 @@ export default function UserDashboardPage() {
       const data = await res.json();
       if (data.success && Array.isArray(data.data)) {
         setProfiles(data.data);
+        if (data.totalNfcScans !== undefined) {
+          setTotalNfcScans(Number(data.totalNfcScans) || 0);
+        }
       }
     } catch (err) {
       console.error('Error loading profiles:', err);
@@ -330,14 +335,9 @@ export default function UserDashboardPage() {
       {/* Top Banner & Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-border">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-              داشبورد و لینک‌های من
-            </h1>
-            <Badge variant="cyan" className="text-xs font-bold font-sans">
-              {profiles.length} Active Cards
-            </Badge>
-          </div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
+            داشبورد و لینک‌های من
+          </h1>
           <p className="text-xs sm:text-sm text-muted-foreground mt-1">
             فهرست کارت‌های هوشمند NFC، صفحات اختصاصی بیو و آمار کلی عملکرد حساب کاربری شما
           </p>
@@ -520,26 +520,28 @@ export default function UserDashboardPage() {
           </div>
         </div>
 
-        {/* Metric 4: My Physical Cards Shortcut */}
+        {/* Metric 4: NFC Physical Card Scans */}
         <Link
           href="/dashboard/orders"
-          className="p-4 sm:p-5 rounded-3xl bg-amber-500/5 hover:bg-amber-500/10 border border-amber-500/25 shadow-xs hover:border-amber-500/40 transition-all flex flex-col justify-between space-y-2 group cursor-pointer"
+          className="p-4 sm:p-5 rounded-3xl bg-cyan-500/5 hover:bg-cyan-500/10 border border-cyan-500/25 shadow-xs hover:border-cyan-500/40 transition-all flex flex-col justify-between space-y-2 group cursor-pointer"
         >
           <div className="flex items-center justify-between">
-            <span className="text-[11px] sm:text-xs font-bold text-amber-600 dark:text-amber-400">
-              سفارشات کارت NFC
+            <span className="text-[11px] sm:text-xs font-bold text-cyan-600 dark:text-cyan-400">
+              اسکن‌های کارت فیزیکی (NFC)
             </span>
-            <div className="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-500 flex items-center justify-center border border-amber-500/30 group-hover:scale-110 transition-transform">
-              <CreditCard className="w-4 h-4" />
+            <div className="w-8 h-8 rounded-xl bg-cyan-500/15 text-cyan-500 flex items-center justify-center border border-cyan-500/30 group-hover:scale-110 transition-transform">
+              <Nfc className="w-4 h-4 animate-pulse" />
             </div>
           </div>
           <div>
-            <span className="text-sm font-bold text-foreground group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors flex items-center gap-1.5">
-              <span>پیگیری سفارشات من</span>
-              <ExternalLink className="w-3.5 h-3.5" />
+            <span className="text-2xl sm:text-3xl font-black text-foreground font-sans tracking-tight block">
+              {totalNfcScans.toLocaleString('en-US')}
             </span>
-            <span className="text-[10px] text-muted-foreground mt-0.5 block">
-              مشاهده وضعیت چاپ، بسته‌بندی و ارسال
+            <span className="text-[10px] text-muted-foreground mt-0.5 block flex items-center justify-between">
+              <span>اسکن سخت‌افزاری چیپست‌ها</span>
+              <span className="text-cyan-500 font-semibold group-hover:underline flex items-center gap-0.5">
+                سفارشات <ExternalLink className="w-3 h-3" />
+              </span>
             </span>
           </div>
         </Link>
@@ -689,20 +691,20 @@ export default function UserDashboardPage() {
                     <span>ویرایش</span>
                   </Button>
 
-                  {/* دکمه کپی (Duplicate) */}
+                  {/* دکمه کپی */}
                   <Button
                     onClick={() => handleDuplicateProfile(profile)}
                     disabled={duplicatingId === profile.id}
                     variant="outline"
                     className="h-9 px-3.5 rounded-xl border-border bg-background hover:bg-blue-500/10 text-foreground hover:text-blue-600 dark:hover:text-blue-400 font-bold text-xs flex items-center gap-1.5 shadow-xs active:scale-95 transition-all"
-                    title="ساخت نسخه کپی (Duplicate) از این کارت"
+                    title="ساخت نسخه کپی از این کارت"
                   >
                     {duplicatingId === profile.id ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-500" />
                     ) : (
                       <Copy className="w-3.5 h-3.5 text-blue-500" />
                     )}
-                    <span>کپی (Duplicate)</span>
+                    <span>کپی</span>
                   </Button>
 
                   {/* دکمه مشاهده خروجی زنده */}

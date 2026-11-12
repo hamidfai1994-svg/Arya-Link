@@ -1474,14 +1474,6 @@ export const ProfileEditor: React.FC = () => {
             {/* Modules List & Add Button */}
             <section className="bg-muted/30 border border-border rounded-2xl p-4 shadow-sm space-y-4">
               <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-cyan-500"></span>
-                    ماژول‌ها و دکمه‌های کارت ({profile.links.length})
-                  </h2>
-
-                </div>
-
                 <div className="flex items-center gap-2">
                   {/* Scan Business Card Button & Dropdown */}
                   <div className="relative" ref={ocrDropdownRef}>
@@ -1647,7 +1639,7 @@ export const ProfileEditor: React.FC = () => {
                       <LayoutTemplate className="w-4 h-4" />
                     </div>
                     <div className="text-right">
-                      <span className="text-xs font-bold text-foreground block">قالب‌های از پیش آماده (Templates)</span>
+                      <span className="text-xs font-bold text-foreground block">قالب‌های از پیش آماده</span>
                       <span className="text-[10px] text-muted-foreground block">انتخاب طرح‌های رنگی آماده و مدرن</span>
                     </div>
                   </div>
@@ -1698,7 +1690,7 @@ export const ProfileEditor: React.FC = () => {
                       <Layers className="w-4 h-4" />
                     </div>
                     <div className="text-right">
-                      <span className="text-xs font-bold text-foreground block">پس‌زمینه کارت (Background)</span>
+                      <span className="text-xs font-bold text-foreground block">پس‌زمینه کارت</span>
                       <span className="text-[10px] text-muted-foreground block">نوع پس‌زمینه (تک‌رنگ، گرادیانت، پترن، تصویر)</span>
                     </div>
                   </div>
@@ -1710,10 +1702,10 @@ export const ProfileEditor: React.FC = () => {
                     </label>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       {[
-                        { id: 'solid', label: 'تک‌رنگ (Solid)' },
-                        { id: 'gradient', label: 'گرادیانت (Gradient)' },
-                        { id: 'pattern', label: 'پترن (Pattern)' },
-                        { id: 'image', label: 'تصویر (Image)' },
+                        { id: 'solid', label: 'تک‌رنگ' },
+                        { id: 'gradient', label: 'گرادیانت' },
+                        { id: 'pattern', label: 'پترن' },
+                        { id: 'image', label: 'تصویر' },
                       ].map((bg) => (
                         <button
                           key={bg.id}
@@ -1777,7 +1769,7 @@ export const ProfileEditor: React.FC = () => {
                         >
                           <Sparkles className="w-3.5 h-3.5 text-cyan-500" />
                           <span>
-                            {(profile.themeConfig.bgGradientType || 'linear') === 'radial' ? 'شعاعی (Radial)' : 'خطی (Linear)'}
+                            {(profile.themeConfig.bgGradientType || 'linear') === 'radial' ? 'شعاعی' : 'خطی'}
                           </span>
                         </button>
                       </div>
@@ -1864,7 +1856,7 @@ export const ProfileEditor: React.FC = () => {
                       {/* Gradient Stop / Dominance Slider */}
                       <div className="space-y-1.5 pt-1 border-t border-border">
                         <div className="flex items-center justify-between text-xs">
-                          <span className="font-bold text-foreground">میزان رنگ غالب (Gradient Stop):</span>
+                          <span className="font-bold text-foreground">میزان رنگ غالب:</span>
                           <span className="font-sans font-bold text-cyan-500">
                             {profile.themeConfig.bgGradientPosition ?? 50}%
                           </span>
@@ -1920,7 +1912,7 @@ export const ProfileEditor: React.FC = () => {
                       {/* Pattern Opacity Slider */}
                       <div className="space-y-1.5 pt-1">
                         <div className="flex items-center justify-between text-xs">
-                          <span className="font-bold text-foreground">شفافیت پترن (Opacity):</span>
+                          <span className="font-bold text-foreground">شفافیت پترن:</span>
                           <span className="font-sans font-bold text-cyan-500">
                             {Math.round((profile.themeConfig.bgPatternOpacity ?? 0.15) * 100)}%
                           </span>
@@ -1939,7 +1931,7 @@ export const ProfileEditor: React.FC = () => {
                       {/* Pattern Size Slider */}
                       <div className="space-y-1.5 pt-1">
                         <div className="flex items-center justify-between text-xs">
-                          <span className="font-bold text-foreground">اندازه پترن (Pattern Size):</span>
+                          <span className="font-bold text-foreground">اندازه پترن:</span>
                           <span className="font-sans font-bold text-cyan-500">
                             {profile.themeConfig.bgPatternSize ?? 24}px
                           </span>
@@ -2018,7 +2010,7 @@ export const ProfileEditor: React.FC = () => {
                       {/* Image Opacity Slider */}
                       <div className="space-y-1.5 pt-1">
                         <div className="flex items-center justify-between text-xs">
-                          <span className="font-bold text-foreground">شفافیت تصویر پس‌زمینه (Opacity):</span>
+                          <span className="font-bold text-foreground">شفافیت تصویر پس‌زمینه:</span>
                           <span className="font-sans font-bold text-cyan-500">
                             {Math.round((profile.themeConfig.bgImageOpacity ?? 0.25) * 100)}%
                           </span>
@@ -2054,7 +2046,7 @@ export const ProfileEditor: React.FC = () => {
                       <Sliders className="w-4 h-4" />
                     </div>
                     <div className="text-right">
-                      <span className="text-xs font-bold text-foreground block">دکمه‌ها و عناصر تعاملی (Buttons)</span>
+                      <span className="text-xs font-bold text-foreground block">دکمه‌ها و عناصر تعاملی</span>
                       <span className="text-[10px] text-muted-foreground block">تنظیم شکل حاشیه، اندازه، رنگ‌ها و ضخامت دکمه‌ها</span>
                     </div>
                   </div>
@@ -2207,10 +2199,10 @@ export const ProfileEditor: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* 7. نوع سایه دکمه‌ها (Button Shadow) */}
+                  {/* 7. نوع سایه دکمه‌ها */}
                   <div>
                     <label className="block text-xs font-medium text-foreground mb-1.5">
-                      نوع سایه دکمه‌ها (Button Shadow)
+                      نوع سایه دکمه‌ها
                     </label>
                     <div className="grid grid-cols-4 gap-2">
                       {[
@@ -2244,7 +2236,7 @@ export const ProfileEditor: React.FC = () => {
                       <Palette className="w-4 h-4" />
                     </div>
                     <div className="text-right">
-                      <span className="text-xs font-bold text-foreground block">رنگ‌ها و گرادیانت (Color Pickers)</span>
+                      <span className="text-xs font-bold text-foreground block">رنگ‌ها و گرادیانت</span>
                       <span className="text-[10px] text-muted-foreground block">انتخاب پالت رنگی اصلی و متون</span>
                     </div>
                   </div>
@@ -2350,7 +2342,7 @@ export const ProfileEditor: React.FC = () => {
               <div>
                 <h3 className="text-xs font-bold text-foreground flex items-center gap-2 mb-1">
                   <span className="w-2 h-2 rounded-full bg-cyan-500"></span>
-                  انتخاب قلم و خانواده فونت (Font Families)
+                  انتخاب قلم و خانواده فونت
                 </h3>
                 <p className="text-xs text-muted-foreground">
                   فونت متون کارت خود را از میان فونت‌های استاندارد وب انتخاب نمایید.
@@ -2369,11 +2361,11 @@ export const ProfileEditor: React.FC = () => {
                       onChange={(e) => handleUpdateTypography({ fontFa: e.target.value as any })}
                       className="w-full bg-background border border-border rounded-xl px-3.5 py-2.5 text-xs text-foreground focus:outline-none focus:border-cyan-500 appearance-none font-sans font-medium cursor-pointer shadow-xs transition-colors"
                     >
-                      <option value="vazirmatn">وزیرمتن (Vazirmatn) — استاندارد و پیش‌فرض</option>
-                      <option value="yekan_bakh">یکان‌بخ (Yekan Bakh) — مدرن و هندسی</option>
-                      <option value="shabnam">شبنم (Shabnam) — رسمی و دلنشین</option>
-                      <option value="sahel">ساحل (Sahel) — کلاسیک و آرام</option>
-                      <option value="dana">دانا (Dana) — معاصر و پویا</option>
+                      <option value="vazirmatn">وزیرمتن — استاندارد و پیش‌فرض</option>
+                      <option value="yekan_bakh">یکان‌بخ — مدرن و هندسی</option>
+                      <option value="shabnam">شبنم — رسمی و دلنشین</option>
+                      <option value="sahel">ساحل — کلاسیک و آرام</option>
+                      <option value="dana">دانا — معاصر و پویا</option>
                     </select>
                     <ChevronDown className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                   </div>
@@ -2385,7 +2377,7 @@ export const ProfileEditor: React.FC = () => {
                 {/* English Dropdown */}
                 <div className="p-4 rounded-2xl border border-border bg-card space-y-2.5">
                   <label className="block text-xs font-bold text-foreground">
-                    فونت زبان انگلیسی (English Typography)
+                    فونت زبان انگلیسی
                   </label>
                   <div className="relative">
                     <select
@@ -2465,7 +2457,7 @@ export const ProfileEditor: React.FC = () => {
                 {/* Slider for Dari */}
                 <div className="space-y-1.5 pt-1">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-foreground">اندازه قلم متن دری (Font Size)</span>
+                    <span className="font-semibold text-foreground">اندازه قلم متن دری</span>
                     <span className="font-sans font-bold text-cyan-500 bg-cyan-500/10 px-2 py-0.5 rounded-md border border-cyan-500/20">
                       {localTypography.fontSizeDari}px
                     </span>
@@ -2531,7 +2523,7 @@ export const ProfileEditor: React.FC = () => {
                 {/* Slider for Pashto */}
                 <div className="space-y-1.5 pt-1">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-foreground">اندازه قلم متن پښتو (Font Size)</span>
+                    <span className="font-semibold text-foreground">اندازه قلم متن پښتو</span>
                     <span className="font-sans font-bold text-cyan-500 bg-cyan-500/10 px-2 py-0.5 rounded-md border border-cyan-500/20">
                       {localTypography.fontSizePashto}px
                     </span>
@@ -2598,7 +2590,7 @@ export const ProfileEditor: React.FC = () => {
                 {/* Slider for English */}
                 <div className="space-y-1.5 pt-1">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-foreground">اندازه قلم انگلیسی (English Size)</span>
+                    <span className="font-semibold text-foreground">اندازه قلم انگلیسی</span>
                     <span className="font-sans font-bold text-cyan-500 bg-cyan-500/10 px-2 py-0.5 rounded-md border border-cyan-500/20">
                       {localTypography.fontSizeEn}px
                     </span>

@@ -357,14 +357,14 @@ export default function AdminKycPage() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-              تایید احراز هویت مدارک (KYC Verification)
+              تایید احراز هویت مدارک
             </h1>
             <Badge variant="cyan" className="font-sans text-xs">
               تیک آبی
             </Badge>
           </div>
           <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-            بررسی تصاویر سلفی و تذکره/پاسپورت کاربران جهت فعال‌سازی نشان اعتماد (Verified Badge) و تسویه‌حساب
+            بررسی تصاویر سلفی و تذکره/پاسپورت کاربران جهت فعال‌سازی نشان اعتماد و تسویه‌حساب
           </p>
         </div>
 
@@ -744,7 +744,7 @@ export default function AdminKycPage() {
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs">
                   {/* First Name */}
                   <div className="space-y-1">
-                    <label className="text-[10px] text-muted-foreground block">نام کوچک (First Name):</label>
+                    <label className="text-[10px] text-muted-foreground block">نام کوچک:</label>
                     <Input
                       value={extractedKycForm.firstName}
                       onChange={(e) =>
@@ -770,7 +770,7 @@ export default function AdminKycPage() {
 
                   {/* Father Name */}
                   <div className="space-y-1">
-                    <label className="text-[10px] text-muted-foreground block">نام پدر (Father Name):</label>
+                    <label className="text-[10px] text-muted-foreground block">نام پدر:</label>
                     <Input
                       value={extractedKycForm.fatherName}
                       onChange={(e) =>
@@ -797,7 +797,7 @@ export default function AdminKycPage() {
 
                   {/* Birth Date */}
                   <div className="space-y-1">
-                    <label className="text-[10px] text-muted-foreground block">تاریخ تولد (Birth Date):</label>
+                    <label className="text-[10px] text-muted-foreground block">تاریخ تولد:</label>
                     <Input
                       dir="ltr"
                       value={extractedKycForm.birthDate}
@@ -811,7 +811,7 @@ export default function AdminKycPage() {
 
                   {/* Expiry Date */}
                   <div className="space-y-1">
-                    <label className="text-[10px] text-muted-foreground block">تاریخ انقضا (Expiry Date):</label>
+                    <label className="text-[10px] text-muted-foreground block">تاریخ انقضا:</label>
                     <Input
                       dir="ltr"
                       value={extractedKycForm.expiryDate}

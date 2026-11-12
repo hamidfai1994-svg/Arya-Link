@@ -158,25 +158,25 @@ export default function AdminUsersPage() {
       case 'superadmin':
         return (
           <Badge className="bg-rose-500/15 text-rose-400 border border-rose-500/30 text-[10px]">
-            مدیر ارشد (Super Admin)
+            مدیر ارشد
           </Badge>
         );
       case 'financial_admin':
         return (
           <Badge className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10px]">
-            مدیر مالی (Finance)
+            مدیر مالی
           </Badge>
         );
       case 'content_editor':
         return (
           <Badge className="bg-amber-500/15 text-amber-400 border border-amber-500/30 text-[10px]">
-            مدیر محتوا (Editor)
+            مدیر محتوا
           </Badge>
         );
       case 'admin':
         return (
           <Badge className="bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 text-[10px]">
-            مدیر سیستم (Admin)
+            مدیر سیستم
           </Badge>
         );
       default:
@@ -213,14 +213,14 @@ export default function AdminUsersPage() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-              مدیریت کاربران و دسترسی‌ها (RBAC Users)
+              مدیریت کاربران و دسترسی‌ها
             </h1>
             <Badge variant="cyan" className="font-sans text-xs">
               {users.length} کاربر
             </Badge>
           </div>
           <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-            مشاهده اطلاعات کاربران، انتساب نقش‌های سازمانی (Super Admin, Financial, Content Editor)، ارتقای پلن و مسدودسازی
+            مشاهده اطلاعات کاربران، انتساب نقش‌های سازمانی، ارتقای پلن و مسدودسازی
           </p>
         </div>
 
@@ -257,10 +257,10 @@ export default function AdminUsersPage() {
             className="h-10 px-3 rounded-xl bg-card border border-border text-xs text-foreground font-semibold focus:outline-none"
           >
             <option value="all">همه نقش‌ها</option>
-            <option value="superadmin">مدیر ارشد (Super Admin)</option>
-            <option value="admin">مدیر سیستم (Admin)</option>
-            <option value="financial_admin">مدیر مالی (Financial Admin)</option>
-            <option value="content_editor">مدیر محتوا (Content Editor)</option>
+            <option value="superadmin">مدیر ارشد</option>
+            <option value="admin">مدیر سیستم</option>
+            <option value="financial_admin">مدیر مالی</option>
+            <option value="content_editor">مدیر محتوا</option>
             <option value="user">کاربر عادی</option>
           </select>
 
@@ -270,9 +270,9 @@ export default function AdminUsersPage() {
             className="h-10 px-3 rounded-xl bg-card border border-border text-xs text-foreground font-semibold focus:outline-none"
           >
             <option value="all">همه پلن‌ها</option>
-            <option value="free">رایگان (Free)</option>
-            <option value="pro">حرفه‌ای (PRO)</option>
-            <option value="enterprise">سازمانی (Enterprise)</option>
+            <option value="free">رایگان</option>
+            <option value="pro">حرفه‌ای</option>
+            <option value="enterprise">سازمانی</option>
           </select>
         </div>
       </div>
@@ -295,7 +295,7 @@ export default function AdminUsersPage() {
               <TableHeader>
                 <TableRow className="border-border hover:bg-transparent">
                   <TableHead className="text-right font-bold text-xs">نام و اطلاعات تماس</TableHead>
-                  <TableHead className="text-right font-bold text-xs">نقش سازمانی (Role)</TableHead>
+                  <TableHead className="text-right font-bold text-xs">نقش سازمانی</TableHead>
                   <TableHead className="text-right font-bold text-xs">پلن اشتراک</TableHead>
                   <TableHead className="text-right font-bold text-xs">احراز هویت</TableHead>
                   <TableHead className="text-right font-bold text-xs">تعداد کارت‌ها</TableHead>
@@ -398,11 +398,10 @@ export default function AdminUsersPage() {
                           size="sm"
                           variant="ghost"
                           onClick={() => handleToggleActive(user)}
-                          className={`h-8 px-2 text-[11px] rounded-xl ${
-                            user.isActive
+                          className={`h-8 px-2 text-[11px] rounded-xl ${user.isActive
                               ? 'text-rose-500 hover:text-rose-600 hover:bg-rose-500/10'
                               : 'text-emerald-500 hover:text-emerald-600 hover:bg-emerald-500/10'
-                          }`}
+                            }`}
                         >
                           {user.isActive ? 'مسدودسازی' : 'فعال‌سازی'}
                         </Button>
@@ -440,24 +439,24 @@ export default function AdminUsersPage() {
               <span>تنظیم نقش و دسترسی «{selectedUser?.name}»</span>
             </DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground">
-              سطح دسترسی سازمانی (RBAC) و پلن اشتراک این کاربر را تعیین فرمایید.
+              سطح دسترسی سازمانی و پلن اشتراک این کاربر را تعیین فرمایید.
             </DialogDescription>
           </DialogHeader>
 
           {selectedUser && (
             <div className="space-y-4 py-2">
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-foreground">نقش سازمانی (Enterprise Role)</label>
+                <label className="text-xs font-bold text-foreground">نقش سازمانی</label>
                 <select
                   value={editRole}
                   onChange={(e) => setEditRole(e.target.value)}
                   className="w-full h-11 px-3.5 rounded-xl bg-card border border-border text-xs text-foreground font-semibold focus:outline-none"
                 >
-                  <option value="user">کاربر عادی (User) - فقط دسترسی به داشبورد و ساخت کارت‌ها</option>
-                  <option value="content_editor">مدیر محتوا (Content Editor) - ویرایش بلاگ، خدمات و شرکت</option>
-                  <option value="financial_admin">مدیر مالی (Financial Admin) - بررسی فروش و تسویه‌حساب‌ها</option>
-                  <option value="admin">مدیر سیستم (Admin) - دسترسی کامل مدیریتی</option>
-                  <option value="superadmin">مدیر ارشد کل (Super Admin) - کنترل تام سیستم</option>
+                  <option value="user">کاربر عادی - فقط دسترسی به داشبورد و ساخت کارت‌ها</option>
+                  <option value="content_editor">مدیر محتوا - ویرایش بلاگ، خدمات و شرکت</option>
+                  <option value="financial_admin">مدیر مالی - بررسی فروش و تسویه‌حساب‌ها</option>
+                  <option value="admin">مدیر سیستم - دسترسی کامل مدیریتی</option>
+                  <option value="superadmin">مدیر ارشد کل - کنترل تام سیستم</option>
                 </select>
               </div>
 
@@ -468,9 +467,9 @@ export default function AdminUsersPage() {
                   onChange={(e) => setEditPlan(e.target.value)}
                   className="w-full h-11 px-3.5 rounded-xl bg-card border border-border text-xs text-foreground font-semibold focus:outline-none"
                 >
-                  <option value="free">رایگان (Free Plan)</option>
-                  <option value="pro">حرفه‌ای (PRO Plan) - کارت‌های نامحدود و قابلیت‌های فروشگاه</option>
-                  <option value="enterprise">سازمانی (Enterprise) - ماژول‌های VIP و برند اختصاصی</option>
+                  <option value="free">رایگان</option>
+                  <option value="pro">حرفه‌ای - کارت‌های نامحدود و قابلیت‌های فروشگاه</option>
+                  <option value="enterprise">سازمانی - ماژول‌های VIP و برند اختصاصی</option>
                 </select>
               </div>
 

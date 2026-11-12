@@ -51,7 +51,7 @@ const userNavItems: UserNavItem[] = [
   },
   {
     title: 'تنظیمات حساب کاربری',
-    subtitle: 'اطلاعات هویتی، امنیت و اشتراک PRO',
+    subtitle: 'اطلاعات هویتی، امنیت و اشتراک',
     href: '/dashboard/account',
     icon: UserCog,
   },
@@ -67,22 +67,20 @@ export function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: () => void
   return (
     <aside className="w-72 h-full flex flex-col bg-card/80 dark:bg-slate-950/90 backdrop-blur-xl border-l border-border select-none">
       {/* Brand Header */}
-      <div className="p-5 border-b border-border/80 flex items-center justify-between">
+      <div className="h-16 px-6 border-b border-border flex items-center justify-between shrink-0">
         <Link
           href="/dashboard"
-          className="flex items-center gap-3 group"
+          className="flex items-center gap-3 group w-full"
           onClick={onCloseMobile}
         >
           <SiteLogo
-            width={40}
-            height={40}
+            width={38}
+            height={38}
             showText={true}
-            showBadge={true}
-            badgeText="PRO"
+            showBadge={false}
             subtitle="داشبورد کاربری"
           />
         </Link>
-        <ThemeToggle />
       </div>
 
       {/* Main User Navigation List (Strictly 4 Items) */}
@@ -144,35 +142,31 @@ export function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: () => void
         })}
       </nav>
 
-      {/* Super Admin Switcher (Isolated from User Tabs) */}
-      {isSuperAdmin && (
-        <div className="px-3 py-2 border-t border-border/60">
+      {/* Footer Actions: Admin Switcher & Sign Out in One Row */}
+      <div className="p-3 border-t border-border flex items-center gap-2">
+        {isSuperAdmin && (
           <Link
             href="/admin/dashboard"
             onClick={onCloseMobile}
-            className="flex items-center justify-between p-3 rounded-2xl bg-amber-500/10 hover:bg-amber-500/15 border border-amber-500/25 text-amber-600 dark:text-amber-400 transition-all group"
+            className="flex-1 flex items-center justify-center gap-1.5 h-9 px-2.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/25 text-amber-600 dark:text-amber-400 text-xs font-bold transition-all truncate"
+            title="ورود به پنل مدیریت کل"
           >
-            <div className="flex items-center gap-2.5 min-w-0">
-              <ShieldAlert className="w-4 h-4 shrink-0 text-amber-500 animate-pulse" />
-              <div className="text-right">
-                <span className="text-xs font-bold block">پنل مدیریت کل (Admin)</span>
-                <span className="text-[10px] opacity-80 block">نظارت بر سرور و کاربران</span>
-              </div>
-            </div>
-            <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+            <ShieldAlert className="w-3.5 h-3.5 shrink-0 text-amber-500" />
+            <span className="truncate">پنل مدیریت</span>
           </Link>
-        </div>
-      )}
+        )}
 
-      {/* Sign Out Footer */}
-      <div className="p-4 border-t border-border">
         <button
           type="button"
           onClick={() => signOut({ callbackUrl: '/login' })}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 transition-colors"
+          className={cn(
+            'flex items-center justify-center gap-1.5 h-9 px-2.5 rounded-xl text-xs font-bold text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 transition-colors truncate',
+            isSuperAdmin ? 'flex-1 border border-border/60' : 'w-full'
+          )}
+          title="خروج از حساب کاربری"
         >
-          <LogOut className="w-4 h-4" />
-          <span>خروج از حساب کاربری</span>
+          <LogOut className="w-3.5 h-3.5 shrink-0" />
+          <span className="truncate">خروج</span>
         </button>
       </div>
     </aside>

@@ -178,7 +178,7 @@ export function getDefaultModuleConfig(moduleType: LinkModuleType): { title: str
     // Social & Platforms
     case 'whatsapp_direct':
       return {
-        title: 'واتساپ (WhatsApp)',
+        title: 'واتساپ',
         url: 'https://wa.me/93',
         metadata: {
           phoneNumber: '+93',
@@ -187,7 +187,7 @@ export function getDefaultModuleConfig(moduleType: LinkModuleType): { title: str
       };
     case 'instagram_profile':
       return {
-        title: 'اینستاگرام (Instagram)',
+        title: 'اینستاگرام',
         url: 'https://instagram.com/',
         metadata: {
           username: '',
@@ -195,7 +195,7 @@ export function getDefaultModuleConfig(moduleType: LinkModuleType): { title: str
       };
     case 'linkedin_profile':
       return {
-        title: 'لینکدین (LinkedIn)',
+        title: 'لینکدین',
         url: 'https://linkedin.com/in/',
         metadata: {
           username: '',
@@ -203,7 +203,7 @@ export function getDefaultModuleConfig(moduleType: LinkModuleType): { title: str
       };
     case 'telegram_channel':
       return {
-        title: 'تلگرام (Telegram)',
+        title: 'تلگرام',
         url: 'https://t.me/',
         metadata: {
           username: '',
@@ -219,7 +219,7 @@ export function getDefaultModuleConfig(moduleType: LinkModuleType): { title: str
       };
     case 'pinterest':
       return {
-        title: 'پینترست (Pinterest)',
+        title: 'پینترست',
         url: 'https://pinterest.com/',
         metadata: {
           username: '',
@@ -227,7 +227,7 @@ export function getDefaultModuleConfig(moduleType: LinkModuleType): { title: str
       };
     case 'facebook':
       return {
-        title: 'فیسبوک (Facebook)',
+        title: 'فیسبوک',
         url: 'https://facebook.com/',
         metadata: {
           username: '',
@@ -236,7 +236,7 @@ export function getDefaultModuleConfig(moduleType: LinkModuleType): { title: str
       };
     case 'dribbble':
       return {
-        title: 'دریبل (Dribbble)',
+        title: 'دریبل',
         url: 'https://dribbble.com/',
         metadata: {
           username: '',
@@ -244,7 +244,7 @@ export function getDefaultModuleConfig(moduleType: LinkModuleType): { title: str
       };
     case 'behance':
       return {
-        title: 'بیهنس (Behance)',
+        title: 'بیهنس',
         url: 'https://behance.net/',
         metadata: {
           username: '',
@@ -252,7 +252,7 @@ export function getDefaultModuleConfig(moduleType: LinkModuleType): { title: str
       };
     case 'youtube_channel':
       return {
-        title: 'کانال یوتیوب (YouTube)',
+        title: 'کانال یوتیوب',
         url: 'https://youtube.com/@',
         metadata: {
           username: '',
@@ -260,7 +260,7 @@ export function getDefaultModuleConfig(moduleType: LinkModuleType): { title: str
       };
     case 'clubhouse':
       return {
-        title: 'کلاب‌هاوس (Clubhouse)',
+        title: 'کلاب‌هاوس',
         url: 'https://clubhouse.com/@',
         metadata: {
           username: '',
@@ -268,7 +268,7 @@ export function getDefaultModuleConfig(moduleType: LinkModuleType): { title: str
       };
     case 'patreon':
       return {
-        title: 'پاترئون (Patreon)',
+        title: 'پاترئون',
         url: 'https://patreon.com/',
         metadata: {
           username: '',
@@ -276,7 +276,7 @@ export function getDefaultModuleConfig(moduleType: LinkModuleType): { title: str
       };
     case 'twitch':
       return {
-        title: 'توییچ (Twitch)',
+        title: 'توییچ',
         url: 'https://twitch.tv/',
         metadata: {
           username: '',
@@ -284,7 +284,7 @@ export function getDefaultModuleConfig(moduleType: LinkModuleType): { title: str
       };
     case 'github':
       return {
-        title: 'گیت‌هاب (GitHub)',
+        title: 'گیت‌هاب',
         url: 'https://github.com/',
         metadata: {
           username: '',
@@ -292,7 +292,7 @@ export function getDefaultModuleConfig(moduleType: LinkModuleType): { title: str
       };
     case 'aparat_channel':
       return {
-        title: 'کانال آپارات (Aparat)',
+        title: 'کانال آپارات',
         url: 'https://aparat.com/',
         metadata: {
           username: '',
@@ -300,7 +300,7 @@ export function getDefaultModuleConfig(moduleType: LinkModuleType): { title: str
       };
     case 'tiktok':
       return {
-        title: 'تیک‌تاک (TikTok)',
+        title: 'تیک‌تاک',
         url: 'https://tiktok.com/@',
         metadata: {
           username: '',
@@ -310,7 +310,7 @@ export function getDefaultModuleConfig(moduleType: LinkModuleType): { title: str
     // Audio & Podcasts
     case 'apple_music':
       return {
-        title: 'اپل موزیک (Apple Music)',
+        title: 'اپل موزیک',
         url: 'https://music.apple.com',
         metadata: {
           targetId: '',
@@ -318,7 +318,7 @@ export function getDefaultModuleConfig(moduleType: LinkModuleType): { title: str
       };
     case 'youtube_music':
       return {
-        title: 'یوتیوب موزیک (YouTube Music)',
+        title: 'یوتیوب موزیک',
         url: 'https://music.youtube.com',
         metadata: {
           targetId: '',
@@ -326,7 +326,7 @@ export function getDefaultModuleConfig(moduleType: LinkModuleType): { title: str
       };
     case 'castbox':
       return {
-        title: 'کست‌باکس (Castbox)',
+        title: 'کست‌باکس',
         url: 'https://castbox.fm/ch/',
         metadata: {
           targetId: '',
@@ -334,7 +334,7 @@ export function getDefaultModuleConfig(moduleType: LinkModuleType): { title: str
       };
     case 'radio_javan':
       return {
-        title: 'رادیو جوان (Radio Javan)',
+        title: 'رادیو جوان',
         url: 'https://play.radiojavan.com/podcast/',
         metadata: {
           targetId: '',
@@ -342,7 +342,7 @@ export function getDefaultModuleConfig(moduleType: LinkModuleType): { title: str
       };
     case 'spotify_podcaster':
       return {
-        title: 'اسپاتیفای پادکستر (Anchor)',
+        title: 'اسپاتیفای پادکستر',
         url: 'https://podcasters.spotify.com/',
         metadata: {
           username: '',
@@ -350,7 +350,7 @@ export function getDefaultModuleConfig(moduleType: LinkModuleType): { title: str
       };
     case 'spotify':
       return {
-        title: 'اسپاتیفای (Spotify)',
+        title: 'اسپاتیفای',
         url: 'https://open.spotify.com/',
         metadata: {
           targetId: '',
@@ -358,7 +358,7 @@ export function getDefaultModuleConfig(moduleType: LinkModuleType): { title: str
       };
     case 'soundcloud':
       return {
-        title: 'ساوندکلاود (SoundCloud)',
+        title: 'ساوندکلاود',
         url: 'https://soundcloud.com/',
         metadata: {
           username: '',
@@ -369,7 +369,7 @@ export function getDefaultModuleConfig(moduleType: LinkModuleType): { title: str
     // Direct Messengers
     case 'skype':
       return {
-        title: 'اسکایپ (Skype)',
+        title: 'اسکایپ',
         url: 'skype:',
         metadata: {
           username: '',
@@ -377,7 +377,7 @@ export function getDefaultModuleConfig(moduleType: LinkModuleType): { title: str
       };
     case 'wechat':
       return {
-        title: 'ویچت (WeChat)',
+        title: 'ویچت',
         url: 'weixin://dl/chat?',
         metadata: {
           targetId: '',
@@ -385,7 +385,7 @@ export function getDefaultModuleConfig(moduleType: LinkModuleType): { title: str
       };
     case 'messenger':
       return {
-        title: 'فیسبوک مسنجر (Messenger)',
+        title: 'فیسبوک مسنجر',
         url: 'https://m.me/',
         metadata: {
           targetId: '',
@@ -393,7 +393,7 @@ export function getDefaultModuleConfig(moduleType: LinkModuleType): { title: str
       };
     case 'signal':
       return {
-        title: 'سیگنال (Signal)',
+        title: 'سیگنال',
         url: 'https://signal.me/#p/+93',
         metadata: {
           phoneNumber: '+93',
@@ -471,7 +471,7 @@ export function getDefaultModuleConfig(moduleType: LinkModuleType): { title: str
       };
     case 'music_player':
       return {
-        title: 'موسیقی و پادکست (Spotify / SoundCloud)',
+        title: 'موسیقی و پادکست',
         url: 'https://open.spotify.com',
         metadata: {
           musicUrl: '',
@@ -512,7 +512,7 @@ export function getDefaultModuleConfig(moduleType: LinkModuleType): { title: str
       };
     case 'map_navigation':
       return {
-        title: 'مسیریابی با نقشه (Waze / Google Maps)',
+        title: 'مسیریابی با نقشه',
         url: 'https://maps.google.com',
         metadata: {
           googleMapsLink: 'https://maps.google.com',
@@ -579,7 +579,7 @@ export function getDefaultModuleConfig(moduleType: LinkModuleType): { title: str
       };
     case 'donation_hesabpay':
       return {
-        title: 'حمایت مالی / انعام (HesabPay)',
+        title: 'حمایت مالی / انعام',
         url: 'https://hesabpay.af',
         metadata: {
           paymentAccount: '',
@@ -599,7 +599,7 @@ export function getDefaultModuleConfig(moduleType: LinkModuleType): { title: str
 
     case 'video_meeting':
       return {
-        title: 'تماس تصویری و جلسه آنلاین (Google Meet / Zoom)',
+        title: 'تماس تصویری و جلسه آنلاین',
         url: 'https://meet.google.com',
         metadata: {
           meetingPlatform: 'google_meet',
@@ -621,7 +621,7 @@ export function getDefaultModuleConfig(moduleType: LinkModuleType): { title: str
 
     case 'aparat_embed':
       return {
-        title: 'ویدیو در آپارات (Aparat)',
+        title: 'ویدیو در آپارات',
         url: 'https://www.aparat.com',
         metadata: {
           aparatUrl: '',

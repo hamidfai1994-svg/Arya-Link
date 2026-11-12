@@ -129,8 +129,7 @@ export function PublicNavbar() {
           width={44}
           height={44}
           showText={true}
-          showBadge={true}
-          badgeText="PRO"
+          showBadge={false}
           subtitle={
             language === 'en'
               ? 'Smart NFC & Bio Link Platform'

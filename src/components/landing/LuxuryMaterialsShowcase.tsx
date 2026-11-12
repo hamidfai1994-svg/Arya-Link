@@ -44,16 +44,16 @@ export const CARD_MATERIALS_DATA: CardMaterialItem[] = [
   {
     id: 'mat-pvc',
     name: 'پی‌وی‌سی مات مخملی',
-    subtitle: 'Matte Obsidian PVC',
+    subtitle: '',
     materialType: 'pvc',
-    badge: 'پرفروش‌ترین (Most Popular)',
+    badge: 'پرفروش‌ترین',
     price: '1,500 AFN',
     thickness: '0.84 mm',
     weight: '5g (فوق‌العاده سبک)',
     chipset: 'NTAG216 (High-Speed)',
     description: 'ساخته شده از پی‌وی‌سی فشرده با روکش مخملی مات ضد اثر انگشت. گزینه‌ای مینیمال، مدرن و با دوام برای تبادل روزمره اطلاعات.',
     features: [
-      'روکش مخملی مات (Soft-touch velvet finish)',
+      'روکش مخملی مات',
       'مقاومت 100% در برابر آب، رطوبت و خمیدگی',
       'تراشه NTAG216 سازگار با آیفون و اندروید',
       'چاپ باکیفیت UV صنعتی با وضوح بالا',
@@ -62,9 +62,9 @@ export const CARD_MATERIALS_DATA: CardMaterialItem[] = [
   {
     id: 'mat-black-metal',
     name: 'فلز مشکی تیتانیوم',
-    subtitle: 'Black Titanium Metal',
+    subtitle: '',
     materialType: 'black_metal',
-    badge: 'ویژه مدیران (Executive)',
+    badge: 'ویژه مدیران',
     price: '3,500 AFN',
     thickness: '0.80 mm',
     weight: '24g (وزن سنگین لوکس)',
@@ -80,9 +80,9 @@ export const CARD_MATERIALS_DATA: CardMaterialItem[] = [
   {
     id: 'mat-gold-steel',
     name: 'استیل طلایی آینه‌ای',
-    subtitle: '24K Gold Mirror Steel',
+    subtitle: '',
     materialType: 'gold_steel',
-    badge: 'فوق لوکس (Ultra Luxury)',
+    badge: 'فوق لوکس',
     price: '3,900 AFN',
     thickness: '0.80 mm',
     weight: '24g (وزن سنگین لوکس)',
@@ -98,9 +98,9 @@ export const CARD_MATERIALS_DATA: CardMaterialItem[] = [
   {
     id: 'mat-wood',
     name: 'چوب طبیعی گردو',
-    subtitle: 'Eco Walnut Wood',
+    subtitle: '',
     materialType: 'wood',
-    badge: 'طبیعی و ارگانیک (Eco-Friendly)',
+    badge: 'طبیعی و ارگانیک',
     price: '2,400 AFN',
     thickness: '1.20 mm',
     weight: '7g (سبک و طبیعی)',
@@ -274,9 +274,11 @@ function InteractiveMaterialCard({ material }: { material: CardMaterialItem }) {
               >
                 {material.name}
               </h4>
-              <p className="text-[10px] text-white/70 tracking-wide truncate">
-                {material.subtitle}
-              </p>
+              {material.subtitle ? (
+                <p className="text-[10px] text-white/70 tracking-wide truncate">
+                  {material.subtitle}
+                </p>
+              ) : null}
             </div>
 
             <span className="text-[9px] uppercase text-white/60 tracking-wider">

@@ -74,7 +74,7 @@ export const REFERENCE_TEMPLATES: Record<ReferenceTemplateId, JobTemplate> = {
       },
       {
         moduleType: 'video_meeting',
-        title: 'رزرو وقت مشاوره آنلاین تصویری (Google Meet / Zoom)',
+        title: 'رزرو وقت مشاوره آنلاین تصویری',
         url: 'https://meet.google.com',
         metadata: { meetingPlatform: 'google_meet', meetingUrl: '' },
       },
@@ -128,7 +128,7 @@ export const REFERENCE_TEMPLATES: Record<ReferenceTemplateId, JobTemplate> = {
     defaultModules: [
       {
         moduleType: 'image_gallery',
-        title: 'نمونه‌کارها و پورتفولیو (Portfolio Gallery)',
+        title: 'نمونه‌کارها و پورتفولیو',
         url: '#gallery',
         metadata: {
           imageUrls: [
@@ -139,19 +139,19 @@ export const REFERENCE_TEMPLATES: Record<ReferenceTemplateId, JobTemplate> = {
       },
       {
         moduleType: 'github',
-        title: 'گیت‌هاب و کدهای منبع (GitHub)',
+        title: 'گیت‌هاب و کدهای منبع',
         url: 'https://github.com/',
         metadata: { username: '' },
       },
       {
         moduleType: 'dribbble',
-        title: 'پورتفولیو طرح‌ها در دریبل (Dribbble)',
+        title: 'پورتفولیو طرح‌ها در دریبل',
         url: 'https://dribbble.com/',
         metadata: { username: '' },
       },
       {
         moduleType: 'linkedin_profile',
-        title: 'سوابق و خلص سوانح کاری در لینکدین (LinkedIn)',
+        title: 'سوابق و خلص سوانح کاری در لینکدین',
         url: 'https://linkedin.com/in/',
         metadata: { username: '' },
       },
@@ -279,7 +279,7 @@ export const REFERENCE_TEMPLATES: Record<ReferenceTemplateId, JobTemplate> = {
       },
       {
         moduleType: 'twitter_x',
-        title: 'نظرات و دیدگاه‌ها در شبکه ایکس (Twitter)',
+        title: 'نظرات و دیدگاه‌ها در شبکه ایکس',
         url: 'https://x.com/',
         metadata: { username: '' },
       },
@@ -303,7 +303,7 @@ export const REFERENCE_TEMPLATES: Record<ReferenceTemplateId, JobTemplate> = {
       },
       {
         moduleType: 'whatsapp_direct',
-        title: 'ارسال پیام در واتساپ (WhatsApp)',
+        title: 'ارسال پیام در واتساپ',
         url: 'https://wa.me/93',
         metadata: {
           phoneNumber: '+93',
@@ -312,7 +312,7 @@ export const REFERENCE_TEMPLATES: Record<ReferenceTemplateId, JobTemplate> = {
       },
       {
         moduleType: 'instagram_profile',
-        title: 'صفحه اینستاگرام (Instagram)',
+        title: 'صفحه اینستاگرام',
         url: 'https://instagram.com/',
         metadata: { username: '' },
       },

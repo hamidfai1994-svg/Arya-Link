@@ -11,6 +11,8 @@ export interface IAuthProvider {
 export interface IUserDocument extends Document {
   name: string;
   email: string;
+  username?: string;
+  profileUrl?: string;
   password?: string;
   avatar?: string;
   phone?: string;
@@ -18,6 +20,7 @@ export interface IUserDocument extends Document {
   jobCategory?: string;
   role: UserRole;
   subscriptionPlan: SubscriptionPlan;
+  accountType?: 'personal' | 'business' | 'corporate';
   providers: IAuthProvider[];
   isActive: boolean;
   isVerified?: boolean;
@@ -81,6 +84,15 @@ const UserSchema = new Schema<IUserDocument>(
       type: String,
       select: false,
     },
+    username: {
+      type: String,
+      trim: true,
+      lowercase: true,
+    },
+    profileUrl: {
+      type: String,
+      trim: true,
+    },
     avatar: {
       type: String,
       default: '',
@@ -110,6 +122,12 @@ const UserSchema = new Schema<IUserDocument>(
       type: String,
       enum: ['free', 'pro', 'enterprise'],
       default: 'free',
+      index: true,
+    },
+    accountType: {
+      type: String,
+      enum: ['personal', 'business', 'corporate'],
+      default: 'personal',
       index: true,
     },
     providers: {

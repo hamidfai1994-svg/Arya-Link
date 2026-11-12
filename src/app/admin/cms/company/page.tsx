@@ -195,7 +195,7 @@ export default function AdminCompanyPage() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-              درباره شرکت و نمایندگی‌های سه‌زبانه (Multilingual Company CMS)
+              درباره شرکت و نمایندگی‌های سه‌زبانه
             </h1>
             <Badge variant="cyan" className="font-sans text-xs">
               CMS 3-LANG
@@ -269,7 +269,7 @@ export default function AdminCompanyPage() {
             />
 
             <MultilingualInput
-              label="شعار برند (Slogan)"
+              label="شعار برند"
               value={slogan}
               onChange={setSlogan}
               placeholder={{
@@ -301,7 +301,7 @@ export default function AdminCompanyPage() {
             </div>
 
             <MultilingualTextarea
-              label="داستان برند و درباره ما (About Story)"
+              label="داستان برند و درباره ما"
               value={aboutStory}
               onChange={setAboutStory}
               placeholder={{
@@ -314,14 +314,14 @@ export default function AdminCompanyPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <MultilingualTextarea
-                label="ماموریت شرکت (Mission)"
+                label="ماموریت شرکت"
                 value={mission}
                 onChange={setMission}
                 rows={3}
               />
 
               <MultilingualTextarea
-                label="چشم‌انداز آینده (Vision)"
+                label="چشم‌انداز آینده"
                 value={vision}
                 onChange={setVision}
                 rows={3}

@@ -126,7 +126,7 @@ export default function UserKYCPage() {
       <div className="pb-6 border-b border-border">
         <div className="flex items-center gap-2">
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-            احراز هویت کاربران (KYC)
+            احراز هویت کاربران
           </h1>
           {isVerified ? (
             <Badge variant="success" className="text-xs flex items-center gap-1">

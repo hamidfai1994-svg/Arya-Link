@@ -65,7 +65,10 @@ export default async function RootLayout({
       <head>
         <link rel="icon" href={brandSettings?.favicon || '/favicon.ico'} />
       </head>
-      <body className={`${vazirmatn.variable} ${outfit.variable} font-sans antialiased min-h-screen bg-background text-foreground selection:bg-cyan-500 selection:text-white`}>
+      <body
+        className={`${vazirmatn.variable} ${outfit.variable} font-sans antialiased min-h-screen bg-background text-foreground selection:bg-cyan-500 selection:text-white`}
+        suppressHydrationWarning
+      >
         <AuthProvider>
           <LanguageProvider initialLanguage={initialLanguage}>
             <BrandingProvider initialSettings={brandSettings}>

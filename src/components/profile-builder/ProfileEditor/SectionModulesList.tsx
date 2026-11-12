@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useEditorStore, getDefaultModuleConfig } from '@/store/editor-store';
 import { ProfileLinkItem, LinkModuleType, FAQItem, BusinessHourDay } from '@/types/profile.types';
 import { FileUploader } from '@/components/ui/file-uploader';
@@ -43,8 +43,13 @@ import {
   calculateInstallmentSchedule,
   PaymentProviderType,
   AfghanBankType,
+  WalletServiceType,
+  CryptoNetworkType,
   InstallmentInterval,
 } from '@/lib/constants/paymentProviders';
+import { PaymentCustomSelect, PaymentSelectOption } from '@/components/payment/PaymentCustomSelect';
+import { PaymentLogoBadge } from '@/components/payment/PaymentLogos';
+import { PaymentMethodItem } from '@/types/profile.types';
 import { toast } from 'sonner';
 import {
   MessageSquare,
@@ -147,7 +152,23 @@ export const SectionModulesList: React.FC = () => {
 
   const [activeSettingsTab, setActiveSettingsTab] = useState<Record<string, 'content' | 'advanced'>>({});
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
+  const [storePaymentSettings, setStorePaymentSettings] = useState<any>(null);
   const snapshotsRef = React.useRef<Record<string, ProfileLinkItem>>({});
+
+  useEffect(() => {
+    async function fetchStoreSettings() {
+      try {
+        const res = await fetch('/api/store/payment-settings');
+        const data = await res.json();
+        if (data.success && data.settings) {
+          setStorePaymentSettings(data.settings);
+        }
+      } catch (err) {
+        console.warn('Failed to load store payment settings in profile editor:', err);
+      }
+    }
+    fetchStoreSettings();
+  }, []);
 
   const dragSaveTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
   const debouncedDragSave = () => {
@@ -493,7 +514,7 @@ export const SectionModulesList: React.FC = () => {
           <div className="flex items-center justify-between">
             <label className="text-[11px] font-bold text-foreground flex items-center gap-1.5">
               <Type className="w-3.5 h-3.5 text-cyan-500" />
-              <span>عنوان نمایشی (Display Title)</span>
+              <span>عنوان نمایشی</span>
             </label>
 
           </div>
@@ -555,7 +576,7 @@ export const SectionModulesList: React.FC = () => {
       <div className="space-y-4 pt-1">
         <div>
           <label className="block text-[11px] font-bold text-foreground mb-2">
-            انتخاب تصویری نوع خط (Line Style)
+            انتخاب نوع خط
           </label>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
             {lineStyles.map((item) => {
@@ -582,7 +603,7 @@ export const SectionModulesList: React.FC = () => {
         </div>
 
         <div>
-          <label className="block text-[11px] font-bold text-foreground mb-1.5">فاصله عمودی خط (Padding)</label>
+          <label className="block text-[11px] font-bold text-foreground mb-1.5">فاصله عمودی خط</label>
           <div className="grid grid-cols-3 gap-2">
             {[
               { id: 'sm', label: 'کم (8px)' },
@@ -628,7 +649,7 @@ export const SectionModulesList: React.FC = () => {
 
         {/* Visual Text Alignment */}
         <div>
-          <label className="block text-[11px] font-bold text-foreground mb-1.5">چینش متن (Text Alignment)</label>
+          <label className="block text-[11px] font-bold text-foreground mb-1.5">چینش متن</label>
           <div className="grid grid-cols-3 gap-2">
             {[
               { id: 'right', label: 'راست‌چین', icon: AlignRight },
@@ -792,6 +813,483 @@ export const SectionModulesList: React.FC = () => {
     );
   };
 
+  // PAYMENT MODULE INPUTS (سیستم پرداخت ماژولار افغانستان با پشتیبانی از چند روش همزمان)
+  const renderPaymentInputs = (link: ProfileLinkItem) => {
+    const meta = link.metadata || {};
+
+    // Multi-method list: if empty, initialize from legacy metadata
+    const rawMethods: PaymentMethodItem[] = Array.isArray(meta.supportedMethods) && meta.supportedMethods.length > 0
+      ? meta.supportedMethods
+      : [
+        {
+          id: 'pm_primary',
+          providerType: (meta.paymentProviderType as any) || 'wallet',
+          walletService: (meta.paymentWalletService || meta.walletService || 'HesabPay') as any,
+          walletAccount: meta.paymentWalletAccount || meta.walletAccount || '',
+          bankName: (meta.paymentBankName || meta.bankName || 'AIB') as any,
+          bankAccountHolder: meta.paymentAccountHolder || meta.bankAccountHolder || '',
+          bankAccountNumber: meta.paymentAccountNumber || meta.bankAccountNumber || '',
+          hawalaExchangeName: meta.paymentHawalaSarafiName || meta.hawalaExchangeName || '',
+          hawalaReceiverName: meta.paymentHawalaReceiverName || meta.hawalaReceiverName || '',
+          hawalaReceiverPhone: meta.paymentHawalaReceiverPhone || meta.hawalaReceiverPhone || '',
+          hawalaCityBranch: meta.paymentHawalaBranchCity || meta.hawalaCityBranch || '',
+          cryptoNetwork: (meta.paymentCryptoNetwork || meta.cryptoNetwork || 'TRC20') as any,
+          cryptoWalletAddress: meta.paymentCryptoAddress || meta.cryptoWalletAddress || '',
+        },
+      ];
+
+    const updateMethods = (newMethods: PaymentMethodItem[]) => {
+      const primary: Partial<PaymentMethodItem> = newMethods[0] || {};
+      updateLinkMetadata(link.id, {
+        supportedMethods: newMethods,
+        // Sync top-level for legacy fallbacks
+        paymentProviderType: primary.providerType || 'wallet',
+        paymentWalletService: primary.walletService,
+        walletService: primary.walletService,
+        paymentWalletAccount: primary.walletAccount,
+        walletAccount: primary.walletAccount,
+        paymentBankName: primary.bankName,
+        bankName: primary.bankName,
+        paymentAccountHolder: primary.bankAccountHolder,
+        bankAccountHolder: primary.bankAccountHolder,
+        paymentAccountNumber: primary.bankAccountNumber,
+        bankAccountNumber: primary.bankAccountNumber,
+        paymentHawalaSarafiName: primary.hawalaExchangeName,
+        hawalaExchangeName: primary.hawalaExchangeName,
+        paymentHawalaReceiverName: primary.hawalaReceiverName,
+        hawalaReceiverName: primary.hawalaReceiverName,
+        paymentHawalaReceiverPhone: primary.hawalaReceiverPhone,
+        hawalaReceiverPhone: primary.hawalaReceiverPhone,
+        paymentHawalaBranchCity: primary.hawalaCityBranch,
+        hawalaCityBranch: primary.hawalaCityBranch,
+        paymentCryptoNetwork: primary.cryptoNetwork,
+        cryptoNetwork: primary.cryptoNetwork,
+        paymentCryptoAddress: primary.cryptoWalletAddress,
+        cryptoWalletAddress: primary.cryptoWalletAddress,
+      });
+    };
+
+    const handleAddMethod = () => {
+      const newMethod: PaymentMethodItem = {
+        id: `pm_${Date.now()}`,
+        providerType: 'bank',
+        bankName: 'AIB',
+        bankAccountHolder: '',
+        bankAccountNumber: '',
+        walletService: 'HesabPay',
+        walletAccount: '',
+        cryptoNetwork: 'TRC20',
+      };
+      updateMethods([...rawMethods, newMethod]);
+      toast.success('روش پرداخت جدید اضافه گردید.');
+    };
+
+    const handleRemoveMethod = (index: number) => {
+      if (rawMethods.length <= 1) {
+        toast.error('حداقل یک روش پرداخت باید در ماژول فعال باشد.');
+        return;
+      }
+      const updated = rawMethods.filter((_, i) => i !== index);
+      updateMethods(updated);
+      toast.info('روش پرداخت حذف گردید.');
+    };
+
+    const handleMethodChange = (index: number, patch: Partial<PaymentMethodItem>) => {
+      const updated = rawMethods.map((m, i) => (i === index ? { ...m, ...patch } : m));
+      updateMethods(updated);
+    };
+
+    // Category options for dropdown (filtered by super admin active settings)
+    const allCategoryOptions: PaymentSelectOption[] = [
+      {
+        id: 'wallet',
+        title: 'پلتفرم‌های آنلاین (کیف پول دیجیتال)',
+        subtitle: 'حساب‌پی، ام‌پیسه، اتوما پی، مای‌مانی، اوروم و استار پی',
+        badge: 'فوری و بومی',
+        type: 'wallet',
+        logoId: 'hesabpay',
+      },
+      {
+        id: 'bank',
+        title: 'واریز به حساب بانکی',
+        subtitle: 'انتقال مستقیم به بانک‌های معتبر افغانستان',
+        badge: 'رسمی و شرکتی',
+        type: 'bank',
+        logoId: 'aib',
+      },
+      {
+        id: 'hawala',
+        title: 'حواله صرافی و نقدی',
+        subtitle: 'حواله از طریق صرافی‌های کابل (سرای شهزاده) و ولایات',
+        badge: 'صرافی و نقد',
+        type: 'hawala',
+        logoId: 'hawala',
+      },
+      {
+        id: 'crypto',
+        title: 'ارز دیجیتال (تتر USDT)',
+        subtitle: 'دریافت تتر با کیف پول TRC20 و ERC20',
+        badge: 'بین‌المللی',
+        type: 'crypto',
+        logoId: 'usdt',
+      },
+    ];
+
+    const categoryOptions = allCategoryOptions.filter((cat) => {
+      if (!storePaymentSettings) return true;
+      if (storePaymentSettings.activeProfileCategories && storePaymentSettings.activeProfileCategories[cat.id] === false) {
+        return false;
+      }
+      if (cat.id === 'wallet') {
+        if (storePaymentSettings.wallets && storePaymentSettings.wallets.length > 0) {
+          return storePaymentSettings.wallets.some((w: any) => w.isActive);
+        }
+      }
+      if (cat.id === 'bank') {
+        if (storePaymentSettings.banks && storePaymentSettings.banks.length > 0) {
+          return storePaymentSettings.banks.some((b: any) => b.isActive);
+        }
+      }
+      if (cat.id === 'hawala') {
+        if (storePaymentSettings.hawalas && storePaymentSettings.hawalas.length > 0) {
+          return storePaymentSettings.hawalas.some((h: any) => h.isActive);
+        }
+      }
+      if (cat.id === 'crypto') {
+        if (storePaymentSettings.cryptos && storePaymentSettings.cryptos.length > 0) {
+          return storePaymentSettings.cryptos.some((c: any) => c.isActive);
+        }
+      }
+      return true;
+    });
+
+    // Wallet options for dropdown (100% dynamic from storePaymentSettings when available, respecting admin ordering and custom items)
+    const activeWalletsList = (storePaymentSettings?.wallets && storePaymentSettings.wallets.length > 0)
+      ? storePaymentSettings.wallets.filter((w: any) => w.isActive)
+      : AFGHAN_WALLETS;
+
+    const walletSelectOptions: PaymentSelectOption[] = activeWalletsList.map((w: any) => ({
+      id: w.id,
+      title: w.nameFa || w.name || w.id,
+      subtitle: w.providerCompany || '',
+      type: 'wallet',
+      logoId: (w.id || '').toLowerCase().replace(/[^a-z0-9]/g, ''),
+      customLogoUrl: w.logoUrl || undefined,
+    }));
+
+    // Bank options for dropdown (100% dynamic from storePaymentSettings when available, respecting admin ordering and custom items)
+    const activeBanksList = (storePaymentSettings?.banks && storePaymentSettings.banks.length > 0)
+      ? storePaymentSettings.banks.filter((b: any) => b.isActive)
+      : AFGHAN_BANKS;
+
+    const bankSelectOptions: PaymentSelectOption[] = activeBanksList.map((b: any) => ({
+      id: b.id,
+      title: b.bankNameFa || b.nameFa || b.bankName || b.name || b.id,
+      subtitle: b.swiftCode ? `${b.bankName || b.name || ''} - سویفت: ${b.swiftCode}` : (b.bankName || b.name || ''),
+      type: 'bank',
+      logoId: (b.id || '').toLowerCase().replace(/[^a-z0-9]/g, ''),
+      customLogoUrl: b.logoUrl || undefined,
+    }));
+
+    // Crypto options for dropdown (100% dynamic from storePaymentSettings when available)
+    const activeCryptosList = (storePaymentSettings?.cryptos && storePaymentSettings.cryptos.length > 0)
+      ? storePaymentSettings.cryptos.filter((c: any) => c.isActive)
+      : CRYPTO_NETWORKS;
+
+    const cryptoSelectOptions: PaymentSelectOption[] = activeCryptosList.map((net: any) => ({
+      id: net.id,
+      title: net.name ? `تتر USDT - شبکه ${net.name}` : (net.network ? `تتر USDT - شبکه ${net.network}` : net.id),
+      subtitle: net.blockchain ? `بلاکچین ${net.blockchain}${net.feeEstimated ? ` - کارمزد: ${net.feeEstimated}` : ''}` : (net.currency ? `واحد: ${net.currency}` : ''),
+      type: 'crypto',
+      logoId: 'usdt',
+      customLogoUrl: net.logoUrl || undefined,
+    }));
+
+    return (
+      <div className="space-y-4 pt-1" dir="rtl">
+        {/* روش‌های پرداخت فعال در این ماژول */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
+              <CreditCard className="w-4 h-4 text-emerald-500" />
+              <span>روش‌های پرداخت فعال ({rawMethods.length} روش):</span>
+            </label>
+            <span className="text-[10px] text-emerald-500 font-medium">پشتیبانی چنددرگاهی همزمان</span>
+          </div>
+
+          {/* لیست کارت‌های روش‌های پرداخت */}
+          <div className="space-y-3">
+            {rawMethods.map((method, index) => {
+              const currentProvider = method.providerType || 'wallet';
+
+              return (
+                <div
+                  key={method.id || index}
+                  className="p-3.5 rounded-2xl bg-muted/40 border border-border/80 space-y-3 relative group"
+                >
+                  {/* هدر کارت روش پرداخت */}
+                  <div className="flex items-center justify-between pb-2 border-b border-border/60">
+                    <div className="flex items-center gap-2">
+                      <span className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-500 text-[11px] font-bold flex items-center justify-center">
+                        {index + 1}
+                      </span>
+                      <span className="text-xs font-bold text-foreground">
+                        روش {index + 1}: {categoryOptions.find((c) => c.id === currentProvider)?.title.split('(')[0] || 'روش پرداخت'}
+                      </span>
+                    </div>
+
+                    {rawMethods.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveMethod(index)}
+                        className="p-1 rounded-lg hover:bg-rose-500/10 text-muted-foreground hover:text-rose-500 transition-colors"
+                        title="حذف این روش پرداخت"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* انتخاب دسته‌بندی با لوگوهای رسمی */}
+                  <div>
+                    <label className="block text-[11px] font-semibold text-foreground mb-1">
+                      نوع روش پرداخت:
+                    </label>
+                    <PaymentCustomSelect
+                      value={currentProvider}
+                      onChange={(val) => handleMethodChange(index, { providerType: val as any })}
+                      options={categoryOptions}
+                    />
+                  </div>
+
+                  {/* فیلدهای اختصاصی هر روش */}
+                  {/* ۱. کیف پول دیجیتال */}
+                  {currentProvider === 'wallet' && (
+                    <div className="space-y-2.5 pt-1">
+                      <div>
+                        <label className="block text-[11px] font-semibold text-foreground mb-1">
+                          سرویس کیف پول (با لوگوی رسمی):
+                        </label>
+                        <PaymentCustomSelect
+                          value={method.walletService || walletSelectOptions[0]?.id || 'hesabpay'}
+                          onChange={(val) => handleMethodChange(index, { walletService: val as any })}
+                          options={walletSelectOptions}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-semibold text-foreground mb-1">
+                          شماره حساب یا مبایل کیف پول:
+                        </label>
+                        <input
+                          type="text"
+                          value={method.walletAccount || ''}
+                          onChange={(e) => handleMethodChange(index, { walletAccount: e.target.value })}
+                          placeholder="مثال: 0799123456 یا 0700112233"
+                          className="w-full bg-background border border-border rounded-xl px-3 py-2 text-xs text-foreground placeholder-muted-foreground focus:outline-none focus:border-emerald-500 font-mono text-left"
+                          dir="ltr"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ۲. حساب بانکی */}
+                  {currentProvider === 'bank' && (
+                    <div className="space-y-2.5 pt-1">
+                      <div>
+                        <label className="block text-[11px] font-semibold text-foreground mb-1">
+                          بانک مقصد در افغانستان:
+                        </label>
+                        <PaymentCustomSelect
+                          value={method.bankName || bankSelectOptions[0]?.id || 'aib'}
+                          onChange={(val) => handleMethodChange(index, { bankName: val as any })}
+                          options={bankSelectOptions}
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        <div>
+                          <label className="block text-[11px] font-semibold text-foreground mb-1">
+                            نام صاحب حساب:
+                          </label>
+                          <input
+                            type="text"
+                            value={method.bankAccountHolder || ''}
+                            onChange={(e) => handleMethodChange(index, { bankAccountHolder: e.target.value })}
+                            placeholder="مثال: احمد ولی رسولی"
+                            className="w-full bg-background border border-border rounded-xl px-3 py-2 text-xs text-foreground placeholder-muted-foreground focus:outline-none focus:border-emerald-500"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-semibold text-foreground mb-1">
+                            شماره حساب یا IBAN:
+                          </label>
+                          <input
+                            type="text"
+                            value={method.bankAccountNumber || ''}
+                            onChange={(e) => handleMethodChange(index, { bankAccountNumber: e.target.value })}
+                            placeholder="0101-2345678-001"
+                            className="w-full bg-background border border-border rounded-xl px-3 py-2 text-xs text-foreground placeholder-muted-foreground focus:outline-none focus:border-emerald-500 font-mono text-left"
+                            dir="ltr"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ۳. حواله صرافی */}
+                  {currentProvider === 'hawala' && (
+                    <div className="space-y-2.5 pt-1">
+                      <div>
+                        <label className="block text-[11px] font-semibold text-foreground mb-1">
+                          نام صرافی یا شرکت خدمات پولی:
+                        </label>
+                        <input
+                          type="text"
+                          value={method.hawalaExchangeName || ''}
+                          onChange={(e) => handleMethodChange(index, { hawalaExchangeName: e.target.value })}
+                          placeholder="مثال: صرافی برادران رحیمی / سرای شهزاده کابل"
+                          className="w-full bg-background border border-border rounded-xl px-3 py-2 text-xs text-foreground placeholder-muted-foreground focus:outline-none focus:border-emerald-500"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        <div>
+                          <label className="block text-[11px] font-semibold text-foreground mb-1">
+                            نام و ولد گیرنده حواله:
+                          </label>
+                          <input
+                            type="text"
+                            value={method.hawalaReceiverName || ''}
+                            onChange={(e) => handleMethodChange(index, { hawalaReceiverName: e.target.value })}
+                            placeholder="احمد ولد محمد سرور"
+                            className="w-full bg-background border border-border rounded-xl px-3 py-2 text-xs text-foreground placeholder-muted-foreground focus:outline-none focus:border-emerald-500"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-semibold text-foreground mb-1">
+                            شماره تماس گیرنده:
+                          </label>
+                          <input
+                            type="tel"
+                            value={method.hawalaReceiverPhone || ''}
+                            onChange={(e) => handleMethodChange(index, { hawalaReceiverPhone: e.target.value })}
+                            placeholder="0799000000"
+                            className="w-full bg-background border border-border rounded-xl px-3 py-2 text-xs text-foreground placeholder-muted-foreground focus:outline-none focus:border-emerald-500 font-mono text-left"
+                            dir="ltr"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-semibold text-foreground mb-1">
+                          شهر و موقعیت شعبه (آدرس دقیق):
+                        </label>
+                        <input
+                          type="text"
+                          value={method.hawalaCityBranch || ''}
+                          onChange={(e) => handleMethodChange(index, { hawalaCityBranch: e.target.value })}
+                          placeholder="کابل، سرای شهزاده، منزل اول"
+                          className="w-full bg-background border border-border rounded-xl px-3 py-2 text-xs text-foreground placeholder-muted-foreground focus:outline-none focus:border-emerald-500"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ۴. ارز دیجیتال */}
+                  {currentProvider === 'crypto' && (
+                    <div className="space-y-2.5 pt-1">
+                      <div>
+                        <label className="block text-[11px] font-semibold text-foreground mb-1">
+                          شبکه انتقال تتر USDT:
+                        </label>
+                        <PaymentCustomSelect
+                          value={method.cryptoNetwork || 'TRC20'}
+                          onChange={(val) => handleMethodChange(index, { cryptoNetwork: val as any })}
+                          options={cryptoSelectOptions}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-semibold text-foreground mb-1">
+                          آدرس کیف پول تتر شما:
+                        </label>
+                        <input
+                          type="text"
+                          value={method.cryptoWalletAddress || ''}
+                          onChange={(e) => handleMethodChange(index, { cryptoWalletAddress: e.target.value })}
+                          placeholder="T..."
+                          className="w-full bg-background border border-border rounded-xl px-3 py-2 text-xs text-foreground placeholder-muted-foreground focus:outline-none focus:border-emerald-500 font-mono text-left"
+                          dir="ltr"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* دکمه افزودن روش پرداخت جدید */}
+          <button
+            type="button"
+            onClick={handleAddMethod}
+            className="w-full py-2.5 px-4 rounded-xl border border-dashed border-emerald-500/40 hover:border-emerald-500 bg-emerald-500/5 hover:bg-emerald-500/10 text-emerald-500 text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>افزودن یک روش پرداخت دیگر به این ماژول</span>
+          </button>
+        </div>
+
+        {/* فیلد مبلغ مشخص اختیاری */}
+        <div className="grid grid-cols-2 gap-3 pt-2 border-t border-border/50">
+          <div>
+            <label className="block text-[11px] font-medium text-foreground mb-1">
+              مبلغ ثابت / حق‌الزحمه (اختیاری)
+            </label>
+            <input
+              type="number"
+              value={meta.paymentAmount || ''}
+              onChange={(e) => updateLinkMetadata(link.id, { paymentAmount: e.target.value ? Number(e.target.value) : undefined })}
+              placeholder="مثلاً: 500"
+              className="w-full bg-background border border-border rounded-xl px-3 py-2 text-xs text-foreground placeholder-muted-foreground focus:outline-none focus:border-emerald-500 font-mono text-left"
+              dir="ltr"
+            />
+          </div>
+          <div>
+            <label className="block text-[11px] font-medium text-foreground mb-1">
+              واحد پول
+            </label>
+            <select
+              value={meta.paymentCurrency || 'AFN'}
+              onChange={(e) => updateLinkMetadata(link.id, { paymentCurrency: e.target.value })}
+              className="w-full bg-background border border-border rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:border-emerald-500 font-sans"
+            >
+              <option value="AFN">AFN (افغانی)</option>
+              <option value="USD">USD (دالر آمریکا)</option>
+            </select>
+          </div>
+        </div>
+
+        {/* توضیحات تکمیلی یا پیام پس از پرداخت */}
+        <div>
+          <label className="block text-[11px] font-medium text-foreground mb-1">
+            پیام یا راهنمای واریزکننده (اختیاری)
+          </label>
+          <textarea
+            rows={2}
+            value={meta.paymentDescription || ''}
+            onChange={(e) => updateLinkMetadata(link.id, { paymentDescription: e.target.value })}
+            placeholder="مثال: لطفاً پس از واریز وجه، عکس رسید را از طریق واتساپ ارسال فرمایید."
+            className="w-full bg-background border border-border rounded-xl p-2.5 text-xs text-foreground placeholder-muted-foreground focus:outline-none focus:border-emerald-500 font-sans resize-none"
+          />
+        </div>
+      </div>
+    );
+  };
+
   // 4. MODULE-SPECIFIC CONTENT INPUTS
   const renderModuleSpecificInputs = (link: ProfileLinkItem) => {
     const meta = link.metadata || {};
@@ -850,7 +1348,7 @@ export const SectionModulesList: React.FC = () => {
       case 'spacer_divider':
         return (
           <div className="space-y-3 pt-1">
-            <label className="block text-[11px] font-bold text-foreground mb-1.5">ارتفاع فاصله خالی (Vertical Space)</label>
+            <label className="block text-[11px] font-bold text-foreground mb-1.5">ارتفاع فاصله خالی</label>
             <div className="grid grid-cols-4 gap-2">
               {[
                 { label: 'کوچک (16px)', val: 16 },
@@ -887,7 +1385,7 @@ export const SectionModulesList: React.FC = () => {
         return (
           <div className="space-y-3 pt-1">
             <div>
-              <label className="block text-[11px] font-medium text-foreground mb-1">متن راهنما درون کادر جستجو (Placeholder)</label>
+              <label className="block text-[11px] font-medium text-foreground mb-1">متن راهنما درون کادر جستجو</label>
               <input
                 type="text"
                 value={meta.searchPlaceholder || ''}
@@ -996,7 +1494,7 @@ export const SectionModulesList: React.FC = () => {
           <div className="space-y-3 pt-1">
             <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-2">
               <WhatsAppIcon className="w-5 h-5 text-emerald-500 fill-current shrink-0" />
-              <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">چت مستقیم واتساپ (WhatsApp)</span>
+              <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">چت مستقیم واتساپ</span>
             </div>
             <div>
               <label className="block text-[11px] font-medium text-foreground mb-1">شماره تماس واتساپ</label>
@@ -1042,7 +1540,7 @@ export const SectionModulesList: React.FC = () => {
           <div className="space-y-3 pt-1">
             <div className="p-2.5 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center gap-2">
               <TelegramIcon className="w-5 h-5 text-sky-500 shrink-0" />
-              <span className="text-xs font-bold text-sky-600 dark:text-sky-400">تلگرام (Telegram)</span>
+              <span className="text-xs font-bold text-sky-600 dark:text-sky-400">تلگرام</span>
             </div>
             <div>
               <label className="block text-[11px] font-medium text-foreground mb-1">آی دی یا کانال تلگرام</label>
@@ -1064,7 +1562,7 @@ export const SectionModulesList: React.FC = () => {
           <div className="space-y-3 pt-1">
             <div className="p-2.5 rounded-xl bg-pink-500/10 border border-pink-500/20 flex items-center gap-2">
               <InstagramIcon className="w-5 h-5 text-pink-500 shrink-0" />
-              <span className="text-xs font-bold text-pink-600 dark:text-pink-400">صفحه اینستاگرام (Instagram)</span>
+              <span className="text-xs font-bold text-pink-600 dark:text-pink-400">صفحه اینستاگرام</span>
             </div>
             <div>
               <label className="block text-[11px] font-medium text-foreground mb-1">نام کاربری اینستاگرام (آیدی)</label>
@@ -1086,7 +1584,7 @@ export const SectionModulesList: React.FC = () => {
           <div className="space-y-3 pt-1">
             <div className="p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center gap-2">
               <LinkedInIcon className="w-5 h-5 text-blue-500 shrink-0" />
-              <span className="text-xs font-bold text-blue-600 dark:text-blue-400">پروفایل لینکدین (LinkedIn)</span>
+              <span className="text-xs font-bold text-blue-600 dark:text-blue-400">پروفایل لینکدین</span>
             </div>
             <div>
               <label className="block text-[11px] font-medium text-foreground mb-1">آی دی یا آدرس پروفایل لینکدین</label>
@@ -1108,10 +1606,10 @@ export const SectionModulesList: React.FC = () => {
           <div className="space-y-3 pt-1">
             <div className="p-2.5 rounded-xl bg-slate-900/10 dark:bg-white/10 border border-border flex items-center gap-2">
               <XTwitterIcon className="w-5 h-5 text-foreground shrink-0" />
-              <span className="text-xs font-bold text-foreground">ایکس / توییتر (X)</span>
+              <span className="text-xs font-bold text-foreground">ایکس (توییتر)</span>
             </div>
             <div>
-              <label className="block text-[11px] font-medium text-foreground mb-1">نام کاربری ایکس (Twitter Username)</label>
+              <label className="block text-[11px] font-medium text-foreground mb-1">نام کاربری ایکس</label>
               {renderFixedPrefixInput(
                 'x.com/',
                 meta.username || link.url || '',
@@ -1130,7 +1628,7 @@ export const SectionModulesList: React.FC = () => {
           <div className="space-y-3 pt-1">
             <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center gap-2">
               <PinterestIcon className="w-5 h-5 text-rose-500 shrink-0" />
-              <span className="text-xs font-bold text-rose-600 dark:text-rose-400">پینترست (Pinterest)</span>
+              <span className="text-xs font-bold text-rose-600 dark:text-rose-400">پینترست</span>
             </div>
             <div>
               <label className="block text-[11px] font-medium text-foreground mb-1">نام کاربری پینترست</label>
@@ -1152,7 +1650,7 @@ export const SectionModulesList: React.FC = () => {
           <div className="space-y-3 pt-1">
             <div className="p-2.5 rounded-xl bg-blue-600/10 border border-blue-600/20 flex items-center gap-2">
               <FacebookIcon className="w-5 h-5 text-blue-600 shrink-0" />
-              <span className="text-xs font-bold text-blue-600 dark:text-blue-400">فیسبوک (Facebook)</span>
+              <span className="text-xs font-bold text-blue-600 dark:text-blue-400">فیسبوک</span>
             </div>
             <div>
               <label className="block text-[11px] font-medium text-foreground mb-1">آی دی یا نام کاربری فیسبوک</label>
@@ -1174,7 +1672,7 @@ export const SectionModulesList: React.FC = () => {
           <div className="space-y-3 pt-1">
             <div className="p-2.5 rounded-xl bg-pink-500/10 border border-pink-500/20 flex items-center gap-2">
               <DribbbleIcon className="w-5 h-5 text-pink-500 shrink-0" />
-              <span className="text-xs font-bold text-pink-600 dark:text-pink-400">دریبل (Dribbble)</span>
+              <span className="text-xs font-bold text-pink-600 dark:text-pink-400">دریبل</span>
             </div>
             <div>
               <label className="block text-[11px] font-medium text-foreground mb-1">نام کاربری دریبل</label>
@@ -1196,7 +1694,7 @@ export const SectionModulesList: React.FC = () => {
           <div className="space-y-3 pt-1">
             <div className="p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center gap-2">
               <BehanceIcon className="w-5 h-5 text-blue-500 shrink-0" />
-              <span className="text-xs font-bold text-blue-600 dark:text-blue-400">بیهنس (Behance)</span>
+              <span className="text-xs font-bold text-blue-600 dark:text-blue-400">بیهنس</span>
             </div>
             <div>
               <label className="block text-[11px] font-medium text-foreground mb-1">نام کاربری بیهنس</label>
@@ -1218,7 +1716,7 @@ export const SectionModulesList: React.FC = () => {
           <div className="space-y-3 pt-1">
             <div className="p-2.5 rounded-xl bg-red-600/10 border border-red-600/20 flex items-center gap-2">
               <YouTubeIcon className="w-5 h-5 text-red-600 shrink-0" />
-              <span className="text-xs font-bold text-red-600 dark:text-red-400">کانال یوتیوب (YouTube Channel)</span>
+              <span className="text-xs font-bold text-red-600 dark:text-red-400">کانال یوتیوب</span>
             </div>
             <div>
               <label className="block text-[11px] font-medium text-foreground mb-1">هندل یا نام کانال یوتیوب</label>
@@ -1240,7 +1738,7 @@ export const SectionModulesList: React.FC = () => {
           <div className="space-y-3 pt-1">
             <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center gap-2">
               <ClubhouseIcon className="w-5 h-5 text-amber-500 shrink-0" />
-              <span className="text-xs font-bold text-amber-600 dark:text-amber-400">کلاب‌هاوس (Clubhouse)</span>
+              <span className="text-xs font-bold text-amber-600 dark:text-amber-400">کلاب‌هاوس</span>
             </div>
             <div>
               <label className="block text-[11px] font-medium text-foreground mb-1">نام کاربری کلاب‌هاوس</label>
@@ -1262,7 +1760,7 @@ export const SectionModulesList: React.FC = () => {
           <div className="space-y-3 pt-1">
             <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center gap-2">
               <PatreonIcon className="w-5 h-5 text-rose-500 shrink-0" />
-              <span className="text-xs font-bold text-rose-600 dark:text-rose-400">پاترئون (Patreon)</span>
+              <span className="text-xs font-bold text-rose-600 dark:text-rose-400">پاترئون</span>
             </div>
             <div>
               <label className="block text-[11px] font-medium text-foreground mb-1">آی دی یا نام کاربری پاترئون</label>
@@ -1284,7 +1782,7 @@ export const SectionModulesList: React.FC = () => {
           <div className="space-y-3 pt-1">
             <div className="p-2.5 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center gap-2">
               <TwitchIcon className="w-5 h-5 text-purple-500 shrink-0" />
-              <span className="text-xs font-bold text-purple-600 dark:text-purple-400">توییچ استریم (Twitch)</span>
+              <span className="text-xs font-bold text-purple-600 dark:text-purple-400">توییچ استریم</span>
             </div>
             <div>
               <label className="block text-[11px] font-medium text-foreground mb-1">نام کانال توییچ</label>
@@ -1306,7 +1804,7 @@ export const SectionModulesList: React.FC = () => {
           <div className="space-y-3 pt-1">
             <div className="p-2.5 rounded-xl bg-slate-900/10 dark:bg-white/10 border border-border flex items-center gap-2">
               <GitHubIcon className="w-5 h-5 text-foreground shrink-0" />
-              <span className="text-xs font-bold text-foreground">گیت‌هاب (GitHub)</span>
+              <span className="text-xs font-bold text-foreground">گیت‌هاب</span>
             </div>
             <div>
               <label className="block text-[11px] font-medium text-foreground mb-1">نام کاربری یا سازمان گیت‌هاب</label>
@@ -1328,7 +1826,7 @@ export const SectionModulesList: React.FC = () => {
           <div className="space-y-3 pt-1">
             <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center gap-2">
               <AparatIcon className="w-5 h-5 text-rose-500 shrink-0" />
-              <span className="text-xs font-bold text-rose-600 dark:text-rose-400">کانال آپارات (Aparat)</span>
+              <span className="text-xs font-bold text-rose-600 dark:text-rose-400">کانال آپارات</span>
             </div>
             <div>
               <label className="block text-[11px] font-medium text-foreground mb-1">نام کاربری کانال آپارات</label>
@@ -1350,7 +1848,7 @@ export const SectionModulesList: React.FC = () => {
           <div className="space-y-3 pt-1">
             <div className="p-2.5 rounded-xl bg-slate-900/10 dark:bg-white/10 border border-border flex items-center gap-2">
               <TikTokIcon className="w-5 h-5 text-foreground shrink-0" />
-              <span className="text-xs font-bold text-foreground">تیک‌تاک (TikTok)</span>
+              <span className="text-xs font-bold text-foreground">تیک‌تاک</span>
             </div>
             <div>
               <label className="block text-[11px] font-medium text-foreground mb-1">نام کاربری تیک‌تاک</label>
@@ -1373,7 +1871,7 @@ export const SectionModulesList: React.FC = () => {
           <div className="space-y-3 pt-1">
             <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center gap-2">
               <AppleMusicIcon className="w-5 h-5 text-rose-500 shrink-0" />
-              <span className="text-xs font-bold text-rose-600 dark:text-rose-400">آیتونز / اپل موزیک (Apple Music)</span>
+              <span className="text-xs font-bold text-rose-600 dark:text-rose-400">اپل موزیک</span>
             </div>
             <div>
               <label className="block text-[11px] font-medium text-foreground mb-1">لینک هنرمند یا آلبوم در Apple Music</label>
@@ -1394,7 +1892,7 @@ export const SectionModulesList: React.FC = () => {
           <div className="space-y-3 pt-1">
             <div className="p-2.5 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center gap-2">
               <YouTubeMusicIcon className="w-5 h-5 text-red-500 shrink-0" />
-              <span className="text-xs font-bold text-red-600 dark:text-red-400">یوتیوب موزیک (YouTube Music)</span>
+              <span className="text-xs font-bold text-red-600 dark:text-red-400">یوتیوب موزیک</span>
             </div>
             <div>
               <label className="block text-[11px] font-medium text-foreground mb-1">لینک یا آی دی در YouTube Music</label>
@@ -1415,7 +1913,7 @@ export const SectionModulesList: React.FC = () => {
           <div className="space-y-3 pt-1">
             <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center gap-2">
               <CastboxIcon className="w-5 h-5 text-amber-500 shrink-0" />
-              <span className="text-xs font-bold text-amber-600 dark:text-amber-400">کست‌باکس (Castbox)</span>
+              <span className="text-xs font-bold text-amber-600 dark:text-amber-400">کست‌باکس</span>
             </div>
             <div>
               <label className="block text-[11px] font-medium text-foreground mb-1">آی دی یا لینک کانال پادکست کست‌باکس</label>
@@ -1443,7 +1941,7 @@ export const SectionModulesList: React.FC = () => {
           <div className="space-y-3 pt-1">
             <div className="p-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center gap-2">
               <RadioJavanIcon className="w-5 h-5 text-indigo-500 shrink-0" />
-              <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">رادیو جوان (Radio Javan)</span>
+              <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">رادیو جوان</span>
             </div>
             <div>
               <label className="block text-[11px] font-medium text-foreground mb-1">آی دی یا آیدی پادکست رادیو جوان</label>
@@ -1469,7 +1967,7 @@ export const SectionModulesList: React.FC = () => {
           <div className="space-y-3 pt-1">
             <div className="p-2.5 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center gap-2">
               <SpotifyIcon className="w-5 h-5 text-purple-500 shrink-0" />
-              <span className="text-xs font-bold text-purple-600 dark:text-purple-400">اسپاتیفای پادکستر (Anchor)</span>
+              <span className="text-xs font-bold text-purple-600 dark:text-purple-400">اسپاتیفای پادکستر</span>
             </div>
             <div>
               <label className="block text-[11px] font-medium text-foreground mb-1">لینک پادکست در Spotify for Podcasters</label>
@@ -1490,7 +1988,7 @@ export const SectionModulesList: React.FC = () => {
           <div className="space-y-3 pt-1">
             <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-2">
               <SpotifyIcon className="w-5 h-5 text-emerald-500 shrink-0" />
-              <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">اسپاتیفای (Spotify)</span>
+              <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">اسپاتیفای</span>
             </div>
             <div>
               <label className="block text-[11px] font-medium text-foreground mb-1">آی دی یا لینک هنرمند / کاربر در Spotify</label>
@@ -1512,7 +2010,7 @@ export const SectionModulesList: React.FC = () => {
           <div className="space-y-3 pt-1">
             <div className="p-2.5 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center gap-2">
               <SoundCloudIcon className="w-5 h-5 text-orange-500 shrink-0" />
-              <span className="text-xs font-bold text-orange-600 dark:text-orange-400">ساوندکلاود (SoundCloud)</span>
+              <span className="text-xs font-bold text-orange-600 dark:text-orange-400">ساوندکلاود</span>
             </div>
             <div>
               <label className="block text-[11px] font-medium text-foreground mb-1">آی دی یا نام کاربری ساوندکلاود</label>
@@ -1539,10 +2037,10 @@ export const SectionModulesList: React.FC = () => {
           <div className="space-y-3 pt-1">
             <div className="p-2.5 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center gap-2">
               <SkypeIcon className="w-5 h-5 text-sky-500 shrink-0" />
-              <span className="text-xs font-bold text-sky-600 dark:text-sky-400">اسکایپ (Skype)</span>
+              <span className="text-xs font-bold text-sky-600 dark:text-sky-400">اسکایپ</span>
             </div>
             <div>
-              <label className="block text-[11px] font-medium text-foreground mb-1">نام کاربری یا آی دی اسکایپ (Skype Handle)</label>
+              <label className="block text-[11px] font-medium text-foreground mb-1">نام کاربری یا آی دی اسکایپ</label>
               <input
                 type="text"
                 value={meta.username || ''}
@@ -1565,10 +2063,10 @@ export const SectionModulesList: React.FC = () => {
           <div className="space-y-3 pt-1">
             <div className="p-2.5 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center gap-2">
               <WeChatIcon className="w-5 h-5 text-green-500 shrink-0" />
-              <span className="text-xs font-bold text-green-600 dark:text-green-400">ویچت (WeChat)</span>
+              <span className="text-xs font-bold text-green-600 dark:text-green-400">ویچت</span>
             </div>
             <div>
-              <label className="block text-[11px] font-medium text-foreground mb-1">آی دی کاربری ویچت (WeChat ID)</label>
+              <label className="block text-[11px] font-medium text-foreground mb-1">آی دی کاربری ویچت</label>
               <input
                 type="text"
                 value={meta.targetId || ''}
@@ -1591,7 +2089,7 @@ export const SectionModulesList: React.FC = () => {
           <div className="space-y-3 pt-1">
             <div className="p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center gap-2">
               <MessengerIcon className="w-5 h-5 text-blue-500 shrink-0" />
-              <span className="text-xs font-bold text-blue-600 dark:text-blue-400">مسنجر فیسبوک (Messenger)</span>
+              <span className="text-xs font-bold text-blue-600 dark:text-blue-400">مسنجر فیسبوک</span>
             </div>
             <div>
               <label className="block text-[11px] font-medium text-foreground mb-1">آی دی یا نام کاربری مسنجر</label>
@@ -1613,7 +2111,7 @@ export const SectionModulesList: React.FC = () => {
           <div className="space-y-3 pt-1">
             <div className="p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center gap-2">
               <SignalIcon className="w-5 h-5 text-blue-500 shrink-0" />
-              <span className="text-xs font-bold text-blue-600 dark:text-blue-400">سیگنال (Signal)</span>
+              <span className="text-xs font-bold text-blue-600 dark:text-blue-400">سیگنال</span>
             </div>
             <div>
               <label className="block text-[11px] font-medium text-foreground mb-1">شماره تماس در سیگنال</label>
@@ -1755,6 +2253,10 @@ export const SectionModulesList: React.FC = () => {
           </div>
         );
 
+      // PAYMENT PROVIDER (AFGHANISTAN)
+      case 'payment':
+        return renderPaymentInputs(link);
+
       // VIDEO MEETING
       case 'video_meeting':
         return (
@@ -1803,7 +2305,7 @@ export const SectionModulesList: React.FC = () => {
         return (
           <div className="space-y-3 pt-1">
             <div>
-              <label className="block text-[11px] font-medium text-foreground mb-1">لینک نقشه گوگل (Google Maps)</label>
+              <label className="block text-[11px] font-medium text-foreground mb-1">لینک نقشه گوگل</label>
               <input
                 type="url"
                 value={meta.googleMapsLink || link.url || ''}
@@ -1926,8 +2428,8 @@ export const SectionModulesList: React.FC = () => {
                 <div
                   key={day.dayIndex}
                   className={`p-3 rounded-xl border transition-all ${day.isOpen
-                      ? 'bg-card/90 border-border shadow-xs'
-                      : 'bg-muted/30 border-border/60 opacity-80'
+                    ? 'bg-card/90 border-border shadow-xs'
+                    : 'bg-muted/30 border-border/60 opacity-80'
                     }`}
                 >
                   <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -1937,8 +2439,8 @@ export const SectionModulesList: React.FC = () => {
                       </span>
                       <span
                         className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${day.isOpen
-                            ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
-                            : 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30'
+                          ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
+                          : 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30'
                           }`}
                       >
                         {day.isOpen ? 'روز کاری' : 'روز تعطیل'}
@@ -2428,7 +2930,7 @@ export const SectionModulesList: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <KeyRound className="w-3.5 h-3.5 text-purple-400" />
                   <div>
-                    <span className="text-xs font-semibold text-foreground block">۴. قفل با گذرواژه (Password)</span>
+                    <span className="text-xs font-semibold text-foreground block">۴. قفل با گذرواژه</span>
                     <span className="text-[10px] text-muted-foreground block">دسترسی و باز شدن لینک منوط به وارد کردن رمز اختصاصی</span>
                   </div>
                 </div>
@@ -2598,7 +3100,7 @@ export const SectionModulesList: React.FC = () => {
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5 text-cyan-500" />
-                  <span>انیمیشن دکمه (Button Animation)</span>
+                  <span>انیمیشن دکمه</span>
                 </label>
                 <span className="text-[10px] text-muted-foreground font-sans">
                   Duration: {adv.animationSpeed || 1.6}s
@@ -2615,7 +3117,7 @@ export const SectionModulesList: React.FC = () => {
                     : 'text-muted-foreground hover:text-foreground'
                     }`}
                 >
-                  انیمیشن همیشگی (Infinite Loop)
+                  انیمیشن همیشگی
                 </button>
                 <button
                   type="button"
@@ -2625,7 +3127,7 @@ export const SectionModulesList: React.FC = () => {
                     : 'text-muted-foreground hover:text-foreground'
                     }`}
                 >
-                  انیمیشن با عبور موس (Hover-Only)
+                  انیمیشن با عبور ماوس
                 </button>
               </div>
 
@@ -2744,7 +3246,7 @@ export const SectionModulesList: React.FC = () => {
             <div className="p-3 rounded-lg border border-border/80 bg-background/60 space-y-2.5">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold text-foreground block">
-                  شکل و فرم هندسی دکمه (Button Shape)
+                  شکل و فرم هندسی دکمه
                 </label>
                 <span className="text-[10px] text-muted-foreground font-sans bg-muted/60 px-2 py-0.5 rounded-md">
                   تم عمومی: {(() => {
@@ -2856,8 +3358,8 @@ export const SectionModulesList: React.FC = () => {
                         })
                       }
                       className={`p-2 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all text-center ${isSelected
-                          ? 'bg-cyan-500/15 border-cyan-500 text-cyan-400 ring-2 ring-cyan-500/30 font-bold shadow-sm'
-                          : 'bg-card/80 border-border text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                        ? 'bg-cyan-500/15 border-cyan-500 text-cyan-400 ring-2 ring-cyan-500/30 font-bold shadow-sm'
+                        : 'bg-card/80 border-border text-muted-foreground hover:text-foreground hover:bg-muted/50'
                         }`}
                     >
                       <div className="h-6 flex items-center justify-center">{r.renderWireframe()}</div>
@@ -2874,10 +3376,10 @@ export const SectionModulesList: React.FC = () => {
               </p>
             </div>
 
-            {/* 4. باز شدن در پنجره جدید (Open in new tab) */}
+            {/* 4. باز شدن در پنجره جدید */}
             <div className="p-3 rounded-lg border border-border/80 bg-background/60 flex items-center justify-between">
               <div>
-                <span className="text-xs font-bold text-foreground block">باز شدن در پنجره جدید (Open in new tab)</span>
+                <span className="text-xs font-bold text-foreground block">باز شدن در پنجره جدید</span>
                 <span className="text-[10px] text-muted-foreground block">هنگام کلیک، این لینک در یک صفحه مجزا باز شود</span>
               </div>
               <Switch

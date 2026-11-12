@@ -12,3 +12,5 @@ export { default as Transaction, type ITransactionDocument } from './Transaction
 export { default as Otp, type IOtpDocument } from './Otp.model';
 export { default as ToolHistory, type IToolHistoryDocument } from './ToolHistory.model';
 export { default as Job, type IJobDocument } from './Job.model';
+export { default as PhysicalCard, type IPhysicalCardDocument, generatePhysicalCardCode } from './PhysicalCard.model';
+export { default as StorePaymentSettings, type IStorePaymentSettingsDocument, type IStoreBankAccount, type IStoreCryptoAddress, type IStoreHawalaInfo, type IHesabPayGatewayConfig } from './StorePaymentSettings.model';

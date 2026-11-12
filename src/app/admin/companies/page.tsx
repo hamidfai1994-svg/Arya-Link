@@ -114,7 +114,7 @@ export default function AdminCompaniesPage() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-              مدیریت حساب‌های شرکتی (Corporate Accounts)
+              مدیریت حساب‌های شرکتی
             </h1>
             <Badge variant="purple" className="font-sans text-xs">
               Enterprise Teams
@@ -162,7 +162,7 @@ export default function AdminCompaniesPage() {
                 <TableHead className="text-right font-bold text-xs">نام سازمان / شرکت</TableHead>
                 <TableHead className="text-right font-bold text-xs">دامنه شرکتی</TableHead>
                 <TableHead className="text-right font-bold text-xs">مدیر حساب</TableHead>
-                <TableHead className="text-right font-bold text-xs">تعداد کارمندان (Seats)</TableHead>
+                <TableHead className="text-right font-bold text-xs">تعداد کارمندان</TableHead>
                 <TableHead className="text-right font-bold text-xs">کارت‌های NFC صادرشده</TableHead>
                 <TableHead className="text-right font-bold text-xs">وضعیت</TableHead>
               </TableRow>

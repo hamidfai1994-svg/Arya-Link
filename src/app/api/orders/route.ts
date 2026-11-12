@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { connectToDatabase } from '@/lib/db/mongodb';
 import { Order } from '@/models/Order.model';
 import { AuditLog } from '@/models/AuditLog.model';
+import { PhysicalCard, generatePhysicalCardCode } from '@/models/PhysicalCard.model';
 import { buildOrderIsolationQuery } from '@/lib/db/data-isolation';
 import { SystemSettings } from '@/models/systemSettings.model';
 import { sendInsightsMessage } from '@/lib/telegram';
@@ -51,43 +52,84 @@ export async function GET(req: NextRequest) {
       .sort({ createdAt: -1 })
       .lean();
 
+    // Query physical cards corresponding to these orders
+    const orderIds = orders.map((o) => o._id);
+    const physicalCards = await PhysicalCard.find({ orderId: { $in: orderIds } }).lean();
+    const cardMap = new Map<string, any>(
+      physicalCards.map((c) => [c.orderId?.toString(), c])
+    );
+
     const totalRevenue = orders
       .filter((o) => o.paymentStatus === 'paid')
       .reduce((sum, o) => sum + (o.totalPrice || 0), 0);
 
-    const pendingCount = orders.filter((o) => o.orderStatus === 'pending' || o.orderStatus === 'processing').length;
-    const printingCount = orders.filter((o) => o.orderStatus === 'printing').length;
-    const shippedCount = orders.filter((o) => o.orderStatus === 'shipped' || o.orderStatus === 'completed').length;
+    const pendingPaymentCount = orders.filter(
+      (o) => o.orderStatus === 'pending_payment' || o.orderStatus === 'pending'
+    ).length;
+    const processingCount = orders.filter(
+      (o) => o.orderStatus === 'processing' || o.orderStatus === 'printing'
+    ).length;
+    const nfcWritingCount = orders.filter((o) => o.orderStatus === 'nfc_writing').length;
+    const shippingCount = orders.filter(
+      (o) => o.orderStatus === 'shipping' || o.orderStatus === 'shipped'
+    ).length;
+    const deliveredCount = orders.filter(
+      (o) => o.orderStatus === 'delivered' || o.orderStatus === 'completed'
+    ).length;
+    const cancelledCount = orders.filter((o) => o.orderStatus === 'cancelled').length;
 
     return NextResponse.json({
       success: true,
-      orders: orders.map((o: any) => ({
-        id: o._id.toString(),
-        orderNumber: o.orderNumber,
-        customerName: o.customerName,
-        customerEmail: o.customerEmail,
-        customerPhone: o.customerPhone,
-        productTitle: o.productTitle,
-        quantity: o.quantity,
-        unitPrice: o.unitPrice,
-        totalPrice: o.totalPrice,
-        currency: o.currency || 'AFN',
-        paymentStatus: o.paymentStatus,
-        orderStatus: o.orderStatus,
-        paymentMethod: o.paymentMethod,
-        paymentProviderDetails: o.paymentProviderDetails || null,
-        trackingNumber: o.trackingNumber || '',
-        cardSpecs: o.cardSpecs || null,
-        notes: o.notes,
-        createdAt: o.createdAt,
-        updatedAt: o.updatedAt,
-      })),
+      orders: orders.map((o: any) => {
+        const c = cardMap.get(o._id.toString());
+        return {
+          id: o._id.toString(),
+          orderNumber: o.orderNumber,
+          customerName: o.customerName,
+          customerEmail: o.customerEmail,
+          customerPhone: o.customerPhone,
+          productTitle: o.productTitle,
+          quantity: o.quantity,
+          unitPrice: o.unitPrice,
+          totalPrice: o.totalPrice,
+          currency: o.currency || 'AFN',
+          paymentStatus: o.paymentStatus,
+          orderStatus: o.orderStatus,
+          paymentMethod: o.paymentMethod,
+          paymentProviderDetails: o.paymentProviderDetails || null,
+          trackingNumber: o.trackingNumber || '',
+          cardSpecs: o.cardSpecs || null,
+          trackingShortCode: o.trackingShortCode || c?.shortCode || '',
+          provisionedBy: o.provisionedBy?.toString() || c?.provisionedBy?.toString() || '',
+          provisionedAt: o.provisionedAt || c?.provisionedAt || null,
+          physicalCard: c
+            ? {
+                id: c._id.toString(),
+                shortCode: c.shortCode,
+                scansCount: c.scansCount || 0,
+                status: c.status,
+                provisionedBy: c.provisionedBy?.toString(),
+                provisionedAt: c.provisionedAt,
+              }
+            : null,
+          notes: o.notes,
+          createdAt: o.createdAt,
+          updatedAt: o.updatedAt,
+        };
+      }),
       stats: {
         totalOrders: orders.length,
         totalRevenue,
-        pendingCount,
-        printingCount,
-        shippedCount,
+        pendingPaymentCount,
+        processingCount,
+        nfcWritingCount,
+        shippingCount,
+        deliveredCount,
+        cancelledCount,
+        // Legacy fallback fields for backwards compatibility
+        pendingCount: pendingPaymentCount + processingCount,
+        printingCount: processingCount + nfcWritingCount,
+        shippedCount: shippingCount + deliveredCount,
       },
     });
   } catch (error: any) {
@@ -101,46 +143,128 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, message: 'لطفاً ابتدا وارد شوید.' },
-        { status: 401 }
-      );
-    }
+    const session = await getServerSession(authOptions).catch((err) => {
+      console.warn('Session retrieval non-fatal warning in POST /api/orders:', err);
+      return null;
+    });
 
     await connectToDatabase();
     const body = await req.json();
 
-    const orderNumber = `ORD-${Math.floor(10000 + Math.random() * 90000)}`;
+    // 1. Resolve user ID and identity (Authenticated user vs Guest customer)
+    const userId = session?.user?.id || body.userId || null;
+    const sellerUserId = userId || 'platform';
+    const customerEmail =
+      body.customerEmail?.trim() ||
+      session?.user?.email?.trim() ||
+      'customer@example.com';
+    const customerName =
+      body.customerName?.trim() ||
+      session?.user?.name?.trim() ||
+      'مشتری جدید';
+
+    // 2. Generate unique orderNumber
+    let orderNumber = body.orderNumber || `ORD-${Math.floor(10000 + Math.random() * 90000)}`;
+    let orderExists = await Order.exists({ orderNumber });
+    let orderAttempts = 0;
+    while (orderExists && orderAttempts < 5) {
+      orderNumber = `ORD-${Math.floor(10000 + Math.random() * 90000)}`;
+      orderExists = await Order.exists({ orderNumber });
+      orderAttempts++;
+    }
+
+    // 3. Determine paymentStatus and orderStatus based on payment method
+    const paymentMethod = (body.paymentMethod || 'online').toLowerCase();
+    let paymentStatus = body.paymentStatus;
+    if (!paymentStatus) {
+      paymentStatus = paymentMethod === 'wallet' ? 'pending' : 'pending';
+    }
+
+    let orderStatus = body.orderStatus;
+    if (!orderStatus) {
+      if (paymentMethod === 'wallet' || paymentMethod === 'online') {
+        orderStatus = paymentStatus === 'paid' ? 'processing' : 'pending_payment';
+      } else {
+        // Cash on delivery (COD), bank receipt, hawala, crypto, installments
+        orderStatus = 'processing';
+      }
+    }
+
+    // 4. Safely generate a unique 6-character shortCode for NFC tracking
+    let trackingShortCode = (body.trackingShortCode || '').trim().toUpperCase();
+    if (!trackingShortCode) {
+      try {
+        let code = generatePhysicalCardCode();
+        let codeAttempts = 0;
+        while (codeAttempts < 5 && (await PhysicalCard.exists({ shortCode: code }))) {
+          code = generatePhysicalCardCode();
+          codeAttempts++;
+        }
+        trackingShortCode = code;
+      } catch (codeErr) {
+        console.error('Non-critical: Error checking PhysicalCard shortCode collision:', codeErr);
+        trackingShortCode = generatePhysicalCardCode();
+      }
+    }
+
+    const unitPrice = Number(body.unitPrice) || 0;
+    const quantity = Number(body.quantity) || 1;
+    const totalPrice = Number(body.totalPrice) || unitPrice * quantity;
+
+    // 5. Create Order record
     const newOrder = await Order.create({
-      userId: session.user.id,
-      sellerUserId: session.user.id,
+      userId,
+      sellerUserId,
+      profileId: body.profileId || null,
       orderNumber,
-      customerName: body.customerName || 'مشتری جدید',
-      customerEmail: body.customerEmail || session.user.email || 'customer@example.com',
+      customerName,
+      customerEmail,
       customerPhone: body.customerPhone || '',
       productTitle: body.productTitle || 'سفارش کارت هوشمند NFC',
-      quantity: Number(body.quantity) || 1,
-      unitPrice: Number(body.unitPrice) || 1500,
-      totalPrice: Number(body.totalPrice) || 1650,
-      currency: body.currency || 'AFN',
-      paymentStatus: body.paymentStatus || 'pending',
-      orderStatus: body.orderStatus || 'pending',
+      quantity,
+      unitPrice,
+      totalPrice,
+      currency: body.currency === 'USD' ? 'USD' : 'AFN',
+      paymentStatus,
+      orderStatus,
       orderType: body.orderType || 'nfc_card',
-      status: body.orderStatus || body.status || 'pending',
-      price: Number(body.totalPrice) || Number(body.unitPrice) || 0,
-      paymentMethod: body.paymentMethod || 'online',
+      status: orderStatus,
+      price: totalPrice,
+      paymentMethod,
       paymentProviderDetails: body.paymentProviderDetails || {},
       deliveryFee: Number(body.deliveryFee) || 0,
       deliveryCompany: body.deliveryCompany || '',
       isDeliverySettled: body.isDeliverySettled === true,
-      trackingNumber: '',
+      trackingNumber: body.trackingNumber || '',
+      trackingShortCode,
       cardSpecs: body.cardSpecs || {},
       notes: body.notes || '',
     });
 
-    // Non-blocking notification to Insights Bot
+    // 6. Safely create or link PhysicalCard (NON-BLOCKING: will not fail order creation if it errors)
+    let physicalCard = null;
+    try {
+      if (trackingShortCode) {
+        physicalCard = await PhysicalCard.create({
+          shortCode: trackingShortCode,
+          ownerId: userId || undefined,
+          orderId: newOrder._id,
+          profileId: body.profileId || undefined,
+          scansCount: 0,
+          status: 'pending_write',
+        });
+
+        if (physicalCard?._id) {
+          newOrder.physicalCardId = physicalCard._id as any;
+          await newOrder.save();
+        }
+      }
+    } catch (cardError: any) {
+      console.error('Non-critical: Failed to create PhysicalCard for order:', cardError);
+      // Non-fatal error; order is safely saved, admin can provision/re-link card anytime in admin dashboard
+    }
+
+    // 7. Non-blocking notification to Insights Telegram Bot
     (async () => {
       try {
         const settings = await SystemSettings.findOne();
@@ -150,7 +274,7 @@ export async function POST(req: NextRequest) {
           settings.telegramInsightsChatId &&
           settings.notifyOrders
         ) {
-          const msg = `🛍️ <b>سفارش جدید در سیستم ثبت شد</b>\n\n📦 <b>شماره سفارش:</b> ${newOrder.orderNumber}\n👤 <b>مشتری:</b> ${newOrder.customerName}\n📞 <b>تماس:</b> ${newOrder.customerPhone || 'ندارد'}\n🏷️ <b>محصول:</b> ${newOrder.productTitle}\n💰 <b>مبلغ کل:</b> ${Number(newOrder.totalPrice).toLocaleString('en-US')} ${newOrder.currency}\n💳 <b>وضعیت پرداخت:</b> ${newOrder.paymentStatus}`;
+          const msg = `🛍️ <b>سفارش جدید در سیستم ثبت شد</b>\n\n📦 <b>شماره سفارش:</b> ${newOrder.orderNumber}\n👤 <b>مشتری:</b> ${newOrder.customerName}\n📞 <b>تماس:</b> ${newOrder.customerPhone || 'ندارد'}\n🏷️ <b>محصول:</b> ${newOrder.productTitle}\n💰 <b>مبلغ کل:</b> ${Number(newOrder.totalPrice).toLocaleString('en-US')} ${newOrder.currency}\n💳 <b>وضعیت پرداخت:</b> ${newOrder.paymentStatus}\n🏷️ <b>وضعیت سفارش:</b> ${newOrder.orderStatus}\n🔗 <b>کد رهگیری NFC:</b> <code>${trackingShortCode}</code>`;
           await sendInsightsMessage(settings.telegramInsightsChatId, msg);
         }
       } catch (e) {
@@ -161,12 +285,33 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       message: 'سفارش با موفقیت ثبت شد.',
-      order: newOrder,
+      order: {
+        ...newOrder.toObject(),
+        physicalCardId: physicalCard?._id || newOrder.physicalCardId,
+        trackingShortCode,
+      },
     });
   } catch (error: any) {
-    console.error('Error creating order:', error);
+    console.error('Critical Error in POST /api/orders:', error);
+
+    let clientMessage = 'خطای سرور در ثبت سفارش.';
+    if (error?.name === 'ValidationError') {
+      const fieldErrors = Object.values(error.errors || {})
+        .map((e: any) => e.message || e.path)
+        .join(' | ');
+      clientMessage = `خطا در ولیدیشن دیتابیس: ${fieldErrors || error.message}`;
+    } else if (error?.code === 11000) {
+      clientMessage = 'خطا در ثبت سفارش: شماره سفارش یا کد کارت تکراری است.';
+    } else if (error?.message) {
+      clientMessage = `خطا در ایجاد سفارش: ${error.message}`;
+    }
+
     return NextResponse.json(
-      { success: false, message: 'خطا در ایجاد سفارش.' },
+      {
+        success: false,
+        message: clientMessage,
+        details: process.env.NODE_ENV !== 'production' ? error?.message : undefined,
+      },
       { status: 500 }
     );
   }
@@ -184,7 +329,16 @@ export async function PATCH(req: NextRequest) {
 
     await connectToDatabase();
     const body = await req.json();
-    const { orderId, orderNumber, orderStatus, paymentStatus, trackingNumber, cardSpecs, notes } = body;
+    const {
+      orderId,
+      orderNumber,
+      orderStatus,
+      paymentStatus,
+      trackingNumber,
+      cardSpecs,
+      notes,
+      action,
+    } = body;
 
     const query: any = {};
     if (orderId) query._id = orderId;
@@ -210,9 +364,101 @@ export async function PATCH(req: NextRequest) {
       order.sellerUserId.toString() === session.user.id.toString() ||
       (session.user.email && order.customerEmail?.toLowerCase() === session.user.email.toLowerCase());
 
-    // 1. ADMIN ACTIONS: Can update orderStatus, paymentStatus, trackingNumber, notes
+    // 1. ADMIN ACTIONS
     if (isSuperAdmin) {
-      if (orderStatus) order.orderStatus = orderStatus;
+      // Direct action: Confirm NFC Writing & activate (transitions to shipping)
+      if (action === 'confirm_provision') {
+        let card = await PhysicalCard.findOne({ orderId: order._id });
+        if (!card) {
+          let uniqueCode = generatePhysicalCardCode();
+          while (await PhysicalCard.exists({ shortCode: uniqueCode })) {
+            uniqueCode = generatePhysicalCardCode();
+          }
+          card = await PhysicalCard.create({
+            shortCode: uniqueCode,
+            ownerId: order.sellerUserId || order.userId,
+            orderId: order._id,
+            profileId: order.profileId,
+            scansCount: 0,
+            status: 'active',
+            provisionedBy: session.user.id,
+            provisionedAt: new Date(),
+          });
+        } else {
+          card.status = 'active';
+          card.provisionedBy = session.user.id as any;
+          card.provisionedAt = new Date();
+          await card.save();
+        }
+
+        order.orderStatus = 'shipping';
+        order.status = 'shipping';
+        order.physicalCardId = card._id as any;
+        order.trackingShortCode = card.shortCode;
+        order.provisionedBy = session.user.id as any;
+        order.provisionedAt = new Date();
+        await order.save();
+
+        return NextResponse.json({
+          success: true,
+          message: 'کارت هوشمند NFC با موفقیت رایت و فعال گردید و سفارش به مرحله ارسال با پیک منتقل شد.',
+          order,
+          physicalCard: {
+            id: card._id.toString(),
+            shortCode: card.shortCode,
+            scansCount: card.scansCount,
+            status: card.status,
+            provisionedBy: card.provisionedBy?.toString(),
+            provisionedAt: card.provisionedAt,
+          },
+        });
+      }
+
+      // Normal admin status updates
+      if (orderStatus) {
+        order.orderStatus = orderStatus;
+        order.status = orderStatus;
+
+        // Auto-ensure PhysicalCard exists if advancing to processing or nfc_writing
+        if (
+          (orderStatus === 'nfc_writing' || orderStatus === 'processing') &&
+          !order.trackingShortCode
+        ) {
+          let card = await PhysicalCard.findOne({ orderId: order._id });
+          if (!card) {
+            let uniqueCode = generatePhysicalCardCode();
+            while (await PhysicalCard.exists({ shortCode: uniqueCode })) {
+              uniqueCode = generatePhysicalCardCode();
+            }
+            card = await PhysicalCard.create({
+              shortCode: uniqueCode,
+              ownerId: order.sellerUserId || order.userId,
+              orderId: order._id,
+              profileId: order.profileId,
+              scansCount: 0,
+              status: 'pending_write',
+            });
+          }
+          order.physicalCardId = card._id as any;
+          order.trackingShortCode = card.shortCode;
+        }
+
+        if (orderStatus === 'shipping') {
+          order.provisionedBy = session.user.id as any;
+          order.provisionedAt = new Date();
+          await PhysicalCard.updateOne(
+            { orderId: order._id },
+            {
+              $set: {
+                status: 'active',
+                provisionedBy: session.user.id,
+                provisionedAt: new Date(),
+              },
+            }
+          );
+        }
+      }
+
       if (paymentStatus) order.paymentStatus = paymentStatus;
       if (trackingNumber !== undefined) order.trackingNumber = trackingNumber;
       if (notes !== undefined) order.notes = notes;
@@ -221,14 +467,26 @@ export async function PATCH(req: NextRequest) {
       }
       await order.save();
 
+      const linkedCard = await PhysicalCard.findOne({ orderId: order._id }).lean();
+
       return NextResponse.json({
         success: true,
         message: 'وضعیت سفارش با موفقیت توسط مدیر به‌روزرسانی شد.',
         order,
+        physicalCard: linkedCard
+          ? {
+              id: (linkedCard as any)._id.toString(),
+              shortCode: (linkedCard as any).shortCode,
+              scansCount: (linkedCard as any).scansCount,
+              status: (linkedCard as any).status,
+              provisionedBy: (linkedCard as any).provisionedBy?.toString(),
+              provisionedAt: (linkedCard as any).provisionedAt,
+            }
+          : null,
       });
     }
 
-    // 2. USER ACTIONS: Only allowed if owner and order is still in "pending" status (before printing!)
+    // 2. USER ACTIONS: Only allowed if owner and order is still in "pending_payment" or "pending" status
     if (!isOwner) {
       return NextResponse.json(
         { success: false, message: 'شما دسترسی ویرایش این سفارش را ندارید.' },
@@ -236,12 +494,20 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
-    // Check if order has progressed to printing or shipped
-    if (order.orderStatus === 'printing' || order.orderStatus === 'shipped' || order.orderStatus === 'completed') {
+    // Check if order has progressed
+    if (
+      order.orderStatus === 'processing' ||
+      order.orderStatus === 'nfc_writing' ||
+      order.orderStatus === 'shipping' ||
+      order.orderStatus === 'delivered' ||
+      order.orderStatus === 'printing' ||
+      order.orderStatus === 'shipped' ||
+      order.orderStatus === 'completed'
+    ) {
       return NextResponse.json(
         {
           success: false,
-          message: 'امکان ویرایش مشخصات وجود ندارد؛ کارت شما وارد مرحله چاپ یا ارسال شده است.',
+          message: 'امکان ویرایش مشخصات وجود ندارد؛ کارت شما وارد مرحله چاپ، رایت یا ارسال شده است.',
         },
         { status: 400 }
       );

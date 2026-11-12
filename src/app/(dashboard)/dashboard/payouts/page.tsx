@@ -75,7 +75,7 @@ export default function PayoutsPage() {
   // Request Payout Modal State
   const [isRequestOpen, setIsRequestOpen] = useState(false);
   const [amount, setAmount] = useState('');
-  const [bankOrProvider, setBankOrProvider] = useState('حساب‌پی (HesabPay)');
+  const [bankOrProvider, setBankOrProvider] = useState('حساب‌پی');
   const [accountTitle, setAccountTitle] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -218,7 +218,7 @@ export default function PayoutsPage() {
                   className="h-12 px-8 rounded-2xl bg-gradient-to-r from-amber-500 to-rose-600 hover:from-amber-400 hover:to-rose-500 text-white font-bold text-xs sm:text-sm shadow-xl shadow-amber-500/25 active:scale-95 transition-all gap-2"
                 >
                   <ShieldCheck className="w-4 h-4" />
-                  <span>شروع فرایند تایید هویت (KYC)</span>
+                  <span>شروع فرایند تایید هویت</span>
                 </Button>
               </Link>
             </div>
@@ -447,10 +447,10 @@ export default function PayoutsPage() {
                 onChange={(e) => setBankOrProvider(e.target.value)}
                 className="w-full h-11 rounded-xl bg-background border border-border px-3 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500"
               >
-                <option value="حساب‌پی (HesabPay)">حساب‌پی (HesabPay - واریز آنی)</option>
-                <option value="عزیزی بانک (Azizi Bank)">عزیزی بانک (Azizi Bank)</option>
-                <option value="کابل بانک نو (New Kabul Bank)">کابل بانک نو (New Kabul Bank)</option>
-                <option value="افغان یونایتد بانک (AUB)">افغان یونایتد بانک (AUB)</option>
+                <option value="حساب‌پی">حساب‌پی (واریز آنی)</option>
+                <option value="عزیزی بانک">عزیزی بانک</option>
+                <option value="کابل بانک نو">کابل بانک نو</option>
+                <option value="افغان یونایتد بانک">افغان یونایتد بانک</option>
                 <option value="حواله صرافی سرای شهزاده">حواله صرافی سرای شهزاده کابل</option>
               </select>
             </div>

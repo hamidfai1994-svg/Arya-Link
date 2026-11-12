@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { connectToDatabase } from '@/lib/db/mongodb';
 import { Profile } from '@/models/Profile.model';
+import { PhysicalCard } from '@/models/PhysicalCard.model';
 import { buildUserIsolationQuery, isValidUserSession } from '@/lib/db/data-isolation';
 import { getJobTemplate, generateDefaultModulesForJob } from '@/lib/constants/jobTemplates';
 import mongoose from 'mongoose';
@@ -102,9 +103,36 @@ export async function GET() {
       updatedAt: p.updatedAt,
     }));
 
+    // Query user's physical NFC cards to calculate total NFC taps/scans
+    let totalNfcScans = 0;
+    let nfcCardsCount = 0;
+    try {
+      const cardConditions: any[] = [];
+      if (session?.user?.id) {
+        const rawId = session.user.id.toString().trim();
+        cardConditions.push({ ownerId: rawId });
+        if (mongoose.isValidObjectId(rawId)) {
+          cardConditions.push({ ownerId: new mongoose.Types.ObjectId(rawId) });
+        }
+      }
+      const pIds = profiles.map((p: any) => p._id);
+      if (pIds.length > 0) {
+        cardConditions.push({ profileId: { $in: pIds } });
+      }
+      const userCards = await PhysicalCard.find(
+        cardConditions.length > 0 ? { $or: cardConditions } : { ownerId: session!.user.id }
+      ).lean();
+      nfcCardsCount = userCards.length;
+      totalNfcScans = userCards.reduce((sum, c) => sum + (c.scansCount || 0), 0);
+    } catch (e) {
+      console.error('Non-critical: Error fetching PhysicalCards in profile list:', e);
+    }
+
     return NextResponse.json({
       success: true,
       data: formattedList,
+      totalNfcScans,
+      nfcCardsCount,
     });
   } catch (error: any) {
     console.error('Error fetching profiles list:', error);

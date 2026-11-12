@@ -135,7 +135,7 @@ export function SuperAdminApiSettings() {
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-base font-bold text-foreground">
-                  مدیریت API و اعلان‌های کلان سیستم (Super Admin)
+                  مدیریت API و اعلان‌های کلان سیستم
                 </h2>
                 <Badge variant="cyan" className="text-[10px] font-bold">
                   سیستمی و امنیتی
@@ -179,7 +179,7 @@ export function SuperAdminApiSettings() {
             </div>
             <div>
               <span className="text-sm font-bold text-foreground block">
-                اتصال و وضعیت ربات‌های تلگرام (Telegram Bots Hub)
+                اتصال و وضعیت ربات‌های تلگرام
               </span>
               <span className="text-xs text-muted-foreground">
                 فعال‌سازی سراسری ارسال رخدادها به تلگرام مدیران
@@ -205,7 +205,7 @@ export function SuperAdminApiSettings() {
             <div className="flex items-center gap-2">
               <MessageSquare className="w-4 h-4 text-emerald-500" />
               <label className="text-xs font-bold text-foreground block">
-                آی دی ربات پشتیبانی و تیکت‌ها (Support Bot Chat ID)
+                آی دی ربات پشتیبانی و تیکت‌ها
               </label>
             </div>
             <p className="text-[11px] text-muted-foreground leading-normal">
@@ -248,7 +248,7 @@ export function SuperAdminApiSettings() {
       <Card className="p-5 sm:p-6 border-border bg-card/80 rounded-3xl space-y-4">
         <div className="border-b border-border/70 pb-3">
           <span className="text-sm font-bold text-foreground block">
-            رویدادهای خودکار اعلان (System Events Dispatcher)
+            رویدادهای خودکار اعلان
           </span>
           <span className="text-xs text-muted-foreground">
             مشخص کنید کدام رخدادهای حیاتی پلتفرم بلافاصله اعلان فوری ایجاد کنند
@@ -263,7 +263,7 @@ export function SuperAdminApiSettings() {
             </div>
             <div>
               <span className="text-xs font-bold text-foreground block">
-                اعلان ثبت‌نام کاربر جدید (notifyNewUsers)
+                اعلان ثبت‌نام کاربر جدید
               </span>
               <span className="text-[11px] text-muted-foreground block mt-0.5">
                 ارسال پیام خوش‌آمد و مشخصات ثبت‌نام هنگام ایجاد حساب جدید در سیستم
@@ -286,7 +286,7 @@ export function SuperAdminApiSettings() {
             </div>
             <div>
               <span className="text-xs font-bold text-foreground block">
-                اعلان ثبت سفارشات خرید و کارت NFC (notifyOrders)
+                اعلان ثبت سفارشات خرید و کارت NFC
               </span>
               <span className="text-[11px] text-muted-foreground block mt-0.5">
                 هشدار فوری هنگام ثبت سفارش کارت فیزیکی یا خرید اشتراک همراه با فاکتور
@@ -309,7 +309,7 @@ export function SuperAdminApiSettings() {
             </div>
             <div>
               <span className="text-xs font-bold text-foreground block">
-                اعلان تیکت‌ها و پیام‌های پشتیبانی (notifySupportTickets)
+                اعلان تیکت‌ها و پیام‌های پشتیبانی
               </span>
               <span className="text-[11px] text-muted-foreground block mt-0.5">
                 ارسال فوری درخواست‌های پشتیبانی کاربران به ربات پشتیبانی تلگرام
@@ -332,7 +332,7 @@ export function SuperAdminApiSettings() {
             </div>
             <div>
               <span className="text-xs font-bold text-foreground block">
-                هشدارهای امنیتی و سیستمی پلتفرم (notifySystemAlerts)
+                هشدارهای امنیتی و سیستمی پلتفرم
               </span>
               <span className="text-[11px] text-muted-foreground block mt-0.5">
                 اطلاع‌رسانی خطاهای سیستمی، حملات احتمالی و هشدارهای سرور
@@ -356,7 +356,7 @@ export function SuperAdminApiSettings() {
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-foreground">
-                  پوش‌نوتیفیکیشن اپلیکیشن موبایل (appPushEnabled)
+                  پوش‌نوتیفیکیشن اپلیکیشن موبایل
                 </span>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25">
                   اپلیکیشن (به زودی)

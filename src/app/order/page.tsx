@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 import {
   CreditCard,
   Sparkles,
@@ -40,12 +41,30 @@ import {
   Palette,
   Layers,
   Zap,
+  Wallet,
+  Building2,
+  Coins,
+  CalendarClock,
+  Copy,
+  MessageSquare,
+  Lock,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import {
+  PAYMENT_PROVIDERS,
+  AFGHAN_WALLETS,
+  AFGHAN_BANKS,
+  CRYPTO_NETWORKS,
+  PLATFORM_CENTRAL_PAYMENT_DEFAULTS,
+  calculateInstallmentSchedule,
+  PaymentProviderType,
+} from '@/lib/constants/paymentProviders';
+import { PaymentCustomSelect, PaymentSelectOption } from '@/components/payment/PaymentCustomSelect';
+import { PaymentLogoBadge } from '@/components/payment/PaymentLogos';
 import { CARD_MATERIALS_DATA, CardMaterialItem } from '@/components/landing/LuxuryMaterialsShowcase';
 
 // =========================================================================
@@ -376,8 +395,74 @@ function OrderWizardInner() {
     notes: '',
   });
 
-  // Payment Method
-  const [paymentMethod, setPaymentMethod] = useState<'online' | 'cod'>('online');
+  // Payment Method (Afghan Modular Payment Providers)
+  const [paymentMethod, setPaymentMethod] = useState<PaymentProviderType>('wallet');
+  const [copiedCentralKey, setCopiedCentralKey] = useState<string | null>(null);
+
+  // Store Central Payment Settings & Receipt Upload States
+  const [storeSettings, setStoreSettings] = useState<any>(null);
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
+  const [receiptUrl, setReceiptUrl] = useState<string | null>(null);
+  const [isUploadingReceipt, setIsUploadingReceipt] = useState<boolean>(false);
+  const [transactionRef, setTransactionRef] = useState<string>('');
+
+  // Check if current user is Corporate / B2B organization
+  const isCorporateUser = Boolean(
+    (session?.user as any)?.accountType === 'corporate' ||
+    session?.user?.subscriptionPlan === 'enterprise' ||
+    session?.user?.role === 'admin' ||
+    session?.user?.role === 'superadmin'
+  );
+
+  const copyCentralText = (txt: string, key: string, label: string) => {
+    if (!txt) return;
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(txt);
+      setCopiedCentralKey(key);
+      toast.success(`${label} کاپی شد`);
+      setTimeout(() => setCopiedCentralKey(null), 2000);
+    }
+  };
+
+  const handleReceiptFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('لطفاً یک فایل تصویری (عکس یا اسکرین‌شات رسید) انتخاب فرمایید.');
+      return;
+    }
+    if (file.size > 3.5 * 1024 * 1024) {
+      toast.error('حجم عکس رسید نباید بیشتر از 3.5 مگابایت باشد.');
+      return;
+    }
+
+    setReceiptFile(file);
+    const objectUrl = URL.createObjectURL(file);
+    setReceiptPreview(objectUrl);
+
+    setIsUploadingReceipt(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch('/api/receipt/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (res.ok && data.success && data.url) {
+        setReceiptUrl(data.url);
+        toast.success('تصویر رسید با موفقیت آپلود گردید.');
+      } else {
+        throw new Error(data.message || 'خطا در آپلود رسید.');
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'آپلود رسید با خطا مواجه شد.');
+    } finally {
+      setIsUploadingReceipt(false);
+    }
+  };
 
   // Quantity
   const [quantity, setQuantity] = useState<number>(1);
@@ -456,7 +541,59 @@ function OrderWizardInner() {
       // Returned from login: if shipping is already filled, keep them at step 4
       setCurrentStep(4);
     }
+
+    const paymentSuccess = searchParams.get('paymentSuccess');
+    const orderNumberParam = searchParams.get('orderNumber');
+    if (paymentSuccess === 'true' && orderNumberParam) {
+      setOrderSuccessData({
+        orderNumber: orderNumberParam,
+        totalPrice: totalPrice || 0,
+        customerName: session?.user?.name || shipping.fullName || 'مشتری گرامی آریا لینک',
+        province: shipping.province || 'کابل',
+      });
+      toast.success(`پرداخت سفارش ${orderNumberParam} از طریق حساب‌پی با موفقیت انجام شد.`);
+    }
+
+    const paymentFailed = searchParams.get('paymentFailed');
+    if (paymentFailed === 'true') {
+      toast.error('پرداخت آنلاین ناموفق بود یا توسط کاربر لغو گردید.');
+    }
   }, [searchParams]);
+
+  // Load central store payment settings
+  useEffect(() => {
+    async function fetchSettings() {
+      try {
+        const res = await fetch('/api/store/payment-settings');
+        const data = await res.json();
+        if (data.success && data.settings) {
+          const s = data.settings;
+          setStoreSettings(s);
+
+          // If current payment method is deactivated in store settings, switch to first active method
+          const isCurrentActive =
+            (paymentMethod === 'wallet' && s.activeMethods?.hesabpay !== false && s.hesabPay?.isActive !== false) ||
+            (paymentMethod === 'bank' && s.activeMethods?.bank !== false && (!s.bankAccounts || s.bankAccounts.length > 0)) ||
+            (paymentMethod === 'hawala' && s.activeMethods?.hawala !== false && s.hawalaInfo?.isActive !== false) ||
+            (paymentMethod === 'crypto' && s.activeMethods?.crypto !== false && (!s.cryptoAddresses || s.cryptoAddresses.length > 0)) ||
+            (paymentMethod === 'cod' && s.activeMethods?.cod !== false && s.codSettings?.isActive !== false) ||
+            (paymentMethod === 'installment' && s.activeMethods?.installment !== false && s.installmentSettings?.isActive !== false);
+
+          if (!isCurrentActive) {
+            if (s.activeMethods?.hesabpay !== false && s.hesabPay?.isActive !== false) setPaymentMethod('wallet');
+            else if (s.activeMethods?.bank !== false && (!s.bankAccounts || s.bankAccounts.length > 0)) setPaymentMethod('bank');
+            else if (s.activeMethods?.hawala !== false && s.hawalaInfo?.isActive !== false) setPaymentMethod('hawala');
+            else if (s.activeMethods?.crypto !== false && (!s.cryptoAddresses || s.cryptoAddresses.length > 0)) setPaymentMethod('crypto');
+            else if (s.activeMethods?.cod !== false && s.codSettings?.isActive !== false) setPaymentMethod('cod');
+            else if (s.activeMethods?.installment !== false && s.installmentSettings?.isActive !== false) setPaymentMethod('installment');
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to fetch store payment settings:', err);
+      }
+    }
+    fetchSettings();
+  }, []);
 
   // Persist current state whenever inputs change
   useEffect(() => {
@@ -675,20 +812,56 @@ function OrderWizardInner() {
 
     setIsSubmitting(true);
     try {
+      const activeBank = storeSettings?.bankAccounts?.[0];
+      const activeCrypto = storeSettings?.cryptoAddresses?.[0];
+      const hawalaData = storeSettings?.hawalaInfo;
+      const installmentData = storeSettings?.installmentSettings;
+
+      const initialOrderStatus =
+        paymentMethod === 'wallet'
+          ? 'pending_payment'
+          : 'processing';
+
       const orderPayload = {
+        userId: session?.user?.id || undefined,
         customerName: shipping.fullName,
-        customerEmail: shipping.email || session.user.email || 'customer@example.com',
+        customerEmail: shipping.email || session?.user?.email || 'customer@example.com',
         customerPhone: shipping.phone,
         productTitle: `کارت فیزیکی هوشمند NFC - مدل ${activeTemplate.name} (${activeTemplate.materialName})`,
         quantity: quantity,
         unitPrice: baseCardPrice,
         totalPrice: totalPrice,
         currency: 'AFN',
-        paymentStatus: paymentMethod === 'online' ? 'paid' : 'pending',
-        orderStatus: 'pending',
+        paymentStatus:
+          paymentMethod === 'wallet'
+            ? 'pending'
+            : paymentMethod === 'cod' ||
+              paymentMethod === 'installment' ||
+              paymentMethod === 'bank' ||
+              paymentMethod === 'hawala' ||
+              paymentMethod === 'crypto'
+            ? 'pending'
+            : 'paid',
+        orderStatus: initialOrderStatus,
         paymentMethod: paymentMethod,
+        paymentProviderDetails: {
+          providerType: paymentMethod,
+          walletService: paymentMethod === 'wallet' ? 'حساب‌پی (HesabPay)' : undefined,
+          walletAccount: paymentMethod === 'wallet' ? (storeSettings?.walletAccount || PLATFORM_CENTRAL_PAYMENT_DEFAULTS.wallet.account) : undefined,
+          bankName: paymentMethod === 'bank' ? (activeBank?.bankNameFa || PLATFORM_CENTRAL_PAYMENT_DEFAULTS.bank.bank) : undefined,
+          accountNumber: paymentMethod === 'bank' ? (activeBank?.accountNumber || PLATFORM_CENTRAL_PAYMENT_DEFAULTS.bank.accountNumber) : undefined,
+          accountHolder: paymentMethod === 'bank' ? (activeBank?.accountHolder || PLATFORM_CENTRAL_PAYMENT_DEFAULTS.bank.accountHolder) : undefined,
+          hawalaSarafiName: paymentMethod === 'hawala' ? (hawalaData?.exchangeName || PLATFORM_CENTRAL_PAYMENT_DEFAULTS.hawala.exchangeName) : undefined,
+          cryptoNetwork: paymentMethod === 'crypto' ? (activeCrypto?.network || PLATFORM_CENTRAL_PAYMENT_DEFAULTS.crypto.network) : undefined,
+          cryptoAddress: paymentMethod === 'crypto' ? (activeCrypto?.walletAddress || PLATFORM_CENTRAL_PAYMENT_DEFAULTS.crypto.walletAddress) : undefined,
+          installmentTotalAmount: paymentMethod === 'installment' ? totalPrice : undefined,
+          installmentDownPayment: paymentMethod === 'installment' ? Math.round(totalPrice * ((installmentData?.downPaymentPercent || 30) / 100)) : undefined,
+          installmentCount: paymentMethod === 'installment' ? (installmentData?.installmentCount || 3) : undefined,
+          receiptUrl: receiptUrl || undefined,
+          transactionRef: transactionRef.trim() || undefined,
+        },
         deliveryFee: shippingFee,
-        deliveryCompany: 'پست اکسپرس افغانستان',
+        deliveryCompany: storeSettings?.codSettings?.deliveryCompany || 'پست اکسپرس افغانستان',
         isDeliverySettled: false,
         cardSpecs: {
           material: activeTemplate.materialName,
@@ -714,9 +887,29 @@ function OrderWizardInner() {
         body: JSON.stringify(orderPayload),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.success) {
-        throw new Error(data.message || 'خطا در ثبت سفارش.');
+        throw new Error(data.message || `خطا در ثبت سفارش (کد وضعیت سرور: ${res.status}).`);
+      }
+
+      // If online wallet gateway (HesabPay), initiate checkout redirect
+      if (paymentMethod === 'wallet' && data.order?._id) {
+        toast.info('در حال اتصال به درگاه پرداخت هوشمند حساب‌پی...');
+        try {
+          const hpRes = await fetch('/api/checkout/hesabpay', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderId: data.order._id }),
+          });
+          const hpData = await hpRes.json();
+          if (hpRes.ok && hpData.success && hpData.checkoutUrl) {
+            localStorage.removeItem(WIZARD_STORAGE_KEY);
+            window.location.href = hpData.checkoutUrl;
+            return;
+          }
+        } catch (hpErr) {
+          console.warn('HesabPay direct redirect error, falling back:', hpErr);
+        }
       }
 
       // Success! Clear draft and show confirmation
@@ -763,7 +956,7 @@ function OrderWizardInner() {
               <span>مرحله 42: سفارش رسمی کارت فیزیکی هوشمند NFC</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-              درخواست و شخصیسازی کارت فیزیکی
+              درخواست و شخصی‌سازی کارت فیزیکی
             </h1>
             <p className="text-xs sm:text-sm text-slate-400 mt-1">
               مراحل 4گانه زیر را تکمیل کنید تا کارت اختصاصی شما با تکنولوژی NFC آماده و ارسال گردد.
@@ -842,6 +1035,28 @@ function OrderWizardInner() {
               </div>
             </div>
 
+            {/* Payment receipt confirmation notice */}
+            <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-right space-y-2 text-xs">
+              <div className="flex items-center gap-2 text-emerald-400 font-bold">
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+                <span>دستورالعمل نهایی تسویه حساب:</span>
+              </div>
+              <p className="text-slate-200 leading-relaxed text-[11px]">
+                پس از واریز وجه، رسید خود را از طریق راه‌های ارتباطی برای صاحب پروفایل ارسال نمایید.
+              </p>
+              <a
+                href={`https://wa.me/93799123456?text=${encodeURIComponent(
+                  `سلام، سفارش جدید با شماره پیگیری ${orderSuccessData.orderNumber} به نام ${orderSuccessData.customerName} به مبلغ ${orderSuccessData.totalPrice.toLocaleString()} AFN ثبت شد. رسید واریزی پیوست گردید.`
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 py-2 px-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs transition-all active:scale-95 shadow-md mt-1"
+              >
+                <MessageSquare className="w-3.5 h-3.5" />
+                <span>ارسال فیش واریزی به واتساپ پشتیبانی آریا لینک</span>
+              </a>
+            </div>
+
             <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
               <Link href="/dashboard/orders">
                 <Button className="w-full sm:w-auto h-11 px-6 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs shadow-lg shadow-cyan-500/25">
@@ -868,7 +1083,7 @@ function OrderWizardInner() {
                 {[
                   { step: 1, title: 'انتخاب یا ساخت لینک', desc: 'اتصال به پروفایل هوشمند' },
                   { step: 2, title: 'انتخاب طرح کارت', desc: 'بیش از 10 ماکاپ پرمیوم' },
-                  { step: 3, title: 'شخصیسازی زنده', desc: 'نام، تخصص، لوگو و QR' },
+                  { step: 3, title: 'شخصی‌سازی زنده', desc: 'نام، تخصص، لوگو و QR' },
                   { step: 4, title: 'اطلاعات ارسال و پرداخت', desc: 'آدرس و صدور فاکتور' },
                 ].map((item) => {
                   const isCurrent = currentStep === item.step;
@@ -1052,7 +1267,7 @@ function OrderWizardInner() {
                         ساخت یک پروفایل دیجیتال هوشمند در سازنده لینک
                       </h3>
                       <p className="text-xs text-slate-300 max-w-lg">
-                        میتوانید ابتدا در ویرایشگر حرفهای لینک خود را بسازید؛ استیت سفارش ذخیره شده و پس از ذخیره، مستقیماً به مرحله انتخاب کارت بازمیگردید.
+                        میتوانید ابتدا در ویرایشگر حرفه‌ای لینک خود را بسازید؛ استیت سفارش ذخیره شده و پس از ذخیره، مستقیماً به مرحله انتخاب کارت بازمیگردید.
                       </p>
                     </div>
 
@@ -1656,7 +1871,7 @@ function OrderWizardInner() {
                         onClick={handleNextStep}
                         className="h-12 px-8 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs shadow-xl shadow-cyan-500/25 flex items-center gap-2"
                       >
-                        <span>تأیید شخصیسازی و ثبت آدرس ارسال</span>
+                        <span>تأیید شخصی‌سازی و ثبت آدرس ارسال</span>
                         <ArrowLeft className="w-4 h-4" />
                       </Button>
                     </div>
@@ -1839,41 +2054,478 @@ function OrderWizardInner() {
                         </div>
                       </div>
 
-                      {/* Payment Method Selection */}
-                      <div className="space-y-2">
-                        <label className="text-xs font-semibold text-slate-300 block">شیوه پرداخت:</label>
-                        <div className="grid grid-cols-2 gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setPaymentMethod('online')}
-                            className={cn(
-                              'p-3 rounded-xl border text-right transition-all flex flex-col gap-1 cursor-pointer',
-                              paymentMethod === 'online'
-                                ? 'bg-cyan-500/15 border-cyan-500/50 text-cyan-300'
-                                : 'bg-black/30 border-white/10 text-slate-400 hover:border-white/20'
-                            )}
-                          >
-                            <span className="text-xs font-bold flex items-center gap-1.5">
-                              💳 پرداخت آنلاین
-                            </span>
-                            <span className="text-[10px] opacity-80">حساب‌پی / کارت بانکی</span>
-                          </button>
+                      {/* Payment Method Selection (Afghan Modular System) */}
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <label className="text-xs font-semibold text-slate-200 block">شیوه پرداخت و تسویه وجه:</label>
+                          <span className="text-[10px] text-emerald-400 font-medium">سراسری افغانستان</span>
+                        </div>
 
-                          <button
-                            type="button"
-                            onClick={() => setPaymentMethod('cod')}
-                            className={cn(
-                              'p-3 rounded-xl border text-right transition-all flex flex-col gap-1 cursor-pointer',
-                              paymentMethod === 'cod'
-                                ? 'bg-cyan-500/15 border-cyan-500/50 text-cyan-300'
-                                : 'bg-black/30 border-white/10 text-slate-400 hover:border-white/20'
-                            )}
-                          >
-                            <span className="text-xs font-bold flex items-center gap-1.5">
-                              🚚 پرداخت در محل
-                            </span>
-                            <span className="text-[10px] opacity-80">تحویل و تسویه با پیک</span>
-                          </button>
+                        {/* Dropdown Selection with Official Logos */}
+                        {(() => {
+                          const activeHesabPay = storeSettings?.wallets?.find((w: any) => w.id === 'hesabpay');
+                          const activeFirstBank = storeSettings?.banks?.find((b: any) => b.isActive) || storeSettings?.bankAccounts?.[0];
+                          const activeFirstHawala = storeSettings?.hawalas?.find((h: any) => h.isActive) || storeSettings?.hawalaInfo;
+                          const activeFirstCrypto = storeSettings?.cryptos?.find((c: any) => c.isActive) || storeSettings?.cryptoAddresses?.[0];
+
+                          const allOptions: PaymentSelectOption[] = [
+                            {
+                              id: 'wallet',
+                              title: 'حساب‌پی (HesabPay - درگاه پرداخت آنلاین)',
+                              subtitle: 'پرداخت آنی الکترونیک دارای مجوز د افغانستان بانک',
+                              badge: 'فوری و آنلاین',
+                              badgeColor: 'bg-emerald-500/20 text-emerald-300',
+                              type: 'wallet',
+                              logoId: 'hesabpay',
+                              customLogoUrl: activeHesabPay?.logoUrl || undefined,
+                            },
+                            {
+                              id: 'bank',
+                              title: 'واریز به حساب بانکی (Bank Transfer)',
+                              subtitle: activeFirstBank
+                                ? `${activeFirstBank.bankNameFa || activeFirstBank.bankName}`
+                                : 'د افغانستان نړيوال بانک (AIB) و عزیزی بانک',
+                              badge: 'رسمی و شرکتی',
+                              badgeColor: 'bg-blue-500/20 text-blue-300',
+                              type: 'bank',
+                              logoId: activeFirstBank?.id || 'aib',
+                              customLogoUrl: activeFirstBank?.logoUrl || undefined,
+                            },
+                            {
+                              id: 'hawala',
+                              title: 'حواله صرافی و نقدی (Hawala)',
+                              subtitle: activeFirstHawala?.exchangeName || 'صرافی برادران عزیزی و کابل اکسچنج (سرای شهزاده)',
+                              badge: 'صرافی و نقد',
+                              badgeColor: 'bg-amber-500/20 text-amber-300',
+                              type: 'hawala',
+                              logoId: 'hawala',
+                              customLogoUrl: activeFirstHawala?.logoUrl || undefined,
+                            },
+                            {
+                              id: 'crypto',
+                              title: 'ارز دیجیتال تتر (USDT - شبکه TRC20 و ERC20)',
+                              subtitle: 'انتقال سریع و بین‌المللی با حداقل کارمزد بلاکچین',
+                              badge: 'بین‌المللی',
+                              badgeColor: 'bg-cyan-500/20 text-cyan-300',
+                              type: 'crypto',
+                              logoId: 'usdt',
+                              customLogoUrl: activeFirstCrypto?.logoUrl || undefined,
+                            },
+                            {
+                              id: 'cod',
+                              title: 'پرداخت در محل (Cash on Delivery)',
+                              subtitle: 'تسویه نقدی با مأمور پیک همزمان با تحویل فیزیکی کارت',
+                              badge: 'تحویل و تسویه',
+                              badgeColor: 'bg-purple-500/20 text-purple-300',
+                              type: 'cod',
+                              logoId: 'cod',
+                              customLogoUrl: storeSettings?.codSettings?.logoUrl || undefined,
+                            },
+                            {
+                              id: 'installment',
+                              title: 'خرید اقساطی / قراردادی (۳ قسط ماهانه)',
+                              subtitle: 'عقد قرارداد رسمی سازمانی ویژه شرکت‌ها و سازمان‌ها',
+                              badge: isCorporateUser ? 'سازمانی فعال' : 'ویژه سازمانی (B2B)',
+                              badgeColor: isCorporateUser ? 'bg-rose-500/20 text-rose-300' : 'bg-amber-500/20 text-amber-300',
+                              type: 'installment',
+                              logoId: 'installment',
+                              customLogoUrl: storeSettings?.installmentSettings?.logoUrl || undefined,
+                              locked: !isCorporateUser,
+                            },
+                          ];
+
+                          // Filter by active store settings
+                          const checkoutPaymentOptions = allOptions.filter((opt) => {
+                            if (!storeSettings) return true;
+                            if (opt.id === 'wallet') {
+                              const hpActive = activeHesabPay ? activeHesabPay.isActive : (storeSettings.hesabPay?.isActive !== false);
+                              return storeSettings.activeMethods?.hesabpay !== false && hpActive;
+                            }
+                            if (opt.id === 'bank') {
+                              const hasActiveBank = storeSettings.banks
+                                ? storeSettings.banks.some((b: any) => b.isActive)
+                                : (storeSettings.bankAccounts?.some((b: any) => b.isActive) ?? true);
+                              return storeSettings.activeMethods?.bank !== false && hasActiveBank;
+                            }
+                            if (opt.id === 'hawala') {
+                              const hasActiveHawala = storeSettings.hawalas
+                                ? storeSettings.hawalas.some((h: any) => h.isActive)
+                                : (storeSettings.hawalaInfo?.isActive !== false);
+                              return storeSettings.activeMethods?.hawala !== false && hasActiveHawala;
+                            }
+                            if (opt.id === 'crypto') {
+                              const hasActiveCrypto = storeSettings.cryptos
+                                ? storeSettings.cryptos.some((c: any) => c.isActive)
+                                : (storeSettings.cryptoAddresses?.some((c: any) => c.isActive) ?? true);
+                              return storeSettings.activeMethods?.crypto !== false && hasActiveCrypto;
+                            }
+                            if (opt.id === 'cod') {
+                              return storeSettings.activeMethods?.cod !== false && storeSettings.codSettings?.isActive !== false;
+                            }
+                            if (opt.id === 'installment') {
+                              return storeSettings.activeMethods?.installment !== false && storeSettings.installmentSettings?.isActive !== false;
+                            }
+                            return true;
+                          });
+
+                          return (
+                            <PaymentCustomSelect
+                              value={paymentMethod}
+                              onChange={(val) => setPaymentMethod(val as PaymentProviderType)}
+                              options={checkoutPaymentOptions.length > 0 ? checkoutPaymentOptions : allOptions}
+                              onLockedClick={() => {
+                                toast.error('خرید اقساطی منحصراً ویژه شرکت‌ها، نهادها و مشتریان با حساب سازمانی (Corporate/Enterprise) است.');
+                              }}
+                            />
+                          );
+                        })()}
+
+                        {/* Interactive Provider Details Panel */}
+                        <div className="p-3.5 rounded-2xl bg-black/40 border border-white/10 space-y-3.5 text-xs">
+                          {paymentMethod === 'wallet' && (
+                            <div className="space-y-3">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <span className="text-[10px] text-emerald-400 font-medium block">درگاه پرداخت هوشمند آنلاین:</span>
+                                  <span className="text-xs font-bold text-white">حساب‌پی (HesabPay Gateway)</span>
+                                </div>
+                                <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-mono">آنلاین</span>
+                              </div>
+                              <p className="text-[11px] text-slate-300 leading-relaxed">
+                                پس از کلیک بر روی دکمه ثبت سفارش، مستقیماً به درگاه پرداخت امن حساب‌پی هدایت می‌شوید تا با اپلیکیشن یا شماره حساب پرداخت را تکمیل فرمایید.
+                              </p>
+                              <div className="p-2.5 rounded-xl bg-slate-950/80 border border-white/10 flex items-center justify-between">
+                                <span className="text-[10px] text-slate-400">شناسه پذیرنده آریا لینک:</span>
+                                <span className="font-mono text-emerald-400 font-bold" dir="ltr">
+                                  {storeSettings?.hesabPay?.merchantId || 'ARYALINK_MERCHANT_01'}
+                                </span>
+                              </div>
+                            </div>
+                          )}
+
+                          {paymentMethod === 'bank' && (() => {
+                            const rawBanks = storeSettings?.banks?.filter((b: any) => b.isActive) || [];
+                            const banksToRender = rawBanks.length > 0 ? rawBanks : (storeSettings?.bankAccounts?.filter((b: any) => b.isActive) || []);
+                            const fallbackBank = [PLATFORM_CENTRAL_PAYMENT_DEFAULTS.bank];
+
+                            const list = banksToRender.length > 0 ? banksToRender : fallbackBank;
+
+                            return (
+                              <div className="space-y-3">
+                                <div>
+                                  <span className="text-[10px] text-slate-400 block">حساب‌های بانکی رسمی شرکت:</span>
+                                  <span className="text-xs font-bold text-white">انتقال مستقیم به بانک‌های معتبر افغانستان ({list.length} حساب فعال)</span>
+                                </div>
+
+                                <div className="space-y-2.5 max-h-56 overflow-y-auto pr-1">
+                                  {list.map((bank: any, bIdx: number) => {
+                                    const bTitle = bank.bankNameFa || bank.bankName || 'بانک بین‌المللی افغانستان';
+                                    const bHolder = bank.accountHolder || 'Aryalink LLC';
+                                    const bAcc = bank.accountNumber || '0101-2345678-001';
+                                    const bIban = bank.iban || '';
+                                    const bSwift = bank.swiftCode || '';
+
+                                    return (
+                                      <div key={bIdx} className="p-2.5 rounded-xl bg-slate-950/80 border border-white/10 space-y-2">
+                                        <div className="flex items-center justify-between pb-1.5 border-b border-white/5">
+                                          <div className="flex items-center gap-2">
+                                            <PaymentLogoBadge
+                                              id={bank.id || bank.bankName}
+                                              type="bank"
+                                              customLogoUrl={bank.logoUrl}
+                                              size={20}
+                                            />
+                                            <span className="text-xs font-bold text-white">{bTitle}</span>
+                                          </div>
+                                          <span className="text-[10px] text-slate-400 truncate max-w-[140px]">{bHolder}</span>
+                                        </div>
+
+                                        <div className="flex items-center justify-between">
+                                          <div>
+                                            <span className="text-[9px] text-slate-400 block">شماره حساب:</span>
+                                            <span className="font-mono text-emerald-400 font-bold text-xs" dir="ltr">
+                                              {bAcc}
+                                            </span>
+                                          </div>
+                                          <button
+                                            type="button"
+                                            onClick={() => copyCentralText(bAcc, `order_bank_acc_${bIdx}`, 'شماره حساب')}
+                                            className="py-1 px-2.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-[10px] flex items-center gap-1"
+                                          >
+                                            {copiedCentralKey === `order_bank_acc_${bIdx}` ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                                            <span>کاپی</span>
+                                          </button>
+                                        </div>
+
+                                        {bIban && (
+                                          <div className="flex items-center justify-between pt-1 border-t border-white/5">
+                                            <div>
+                                              <span className="text-[9px] text-slate-400 block">IBAN:</span>
+                                              <span className="font-mono text-emerald-400 text-[10px]" dir="ltr">
+                                                {bIban}
+                                              </span>
+                                            </div>
+                                            <button
+                                              type="button"
+                                              onClick={() => copyCentralText(bIban, `order_bank_iban_${bIdx}`, 'IBAN')}
+                                              className="py-0.5 px-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-[9px] flex items-center gap-1"
+                                            >
+                                              {copiedCentralKey === `order_bank_iban_${bIdx}` ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                                              <span>کاپی</span>
+                                            </button>
+                                          </div>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            );
+                          })()}
+
+                          {paymentMethod === 'hawala' && (() => {
+                            const rawHawalas = storeSettings?.hawalas?.filter((h: any) => h.isActive) || [];
+                            const hawalasToRender = rawHawalas.length > 0 ? rawHawalas : (storeSettings?.hawalaInfo ? [storeSettings.hawalaInfo] : [PLATFORM_CENTRAL_PAYMENT_DEFAULTS.hawala]);
+
+                            return (
+                              <div className="space-y-3">
+                                <div>
+                                  <span className="text-[10px] text-slate-400 block">صرافی‌های معتمد جهت صدور حواله:</span>
+                                  <span className="text-xs font-bold text-white">حواله از طریق صرافی‌های کابل و ولایات ({hawalasToRender.length} صرافی فعال)</span>
+                                </div>
+
+                                <div className="space-y-2.5 max-h-56 overflow-y-auto pr-1">
+                                  {hawalasToRender.map((h: any, hIdx: number) => (
+                                    <div key={hIdx} className="p-2.5 rounded-xl bg-slate-950/80 border border-white/10 space-y-1.5">
+                                      <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                          <PaymentLogoBadge
+                                            id="hawala"
+                                            type="hawala"
+                                            customLogoUrl={h.logoUrl}
+                                            size={20}
+                                          />
+                                          <span className="text-xs font-bold text-white">{h.exchangeName}</span>
+                                        </div>
+                                      </div>
+                                      <span className="text-[10px] text-slate-400 block">{h.cityBranch}</span>
+
+                                      <div className="flex items-center justify-between pt-1 border-t border-white/5">
+                                        <div>
+                                          <span className="text-[9px] text-slate-400 block">تحویل‌گیرنده:</span>
+                                          <span className="font-bold text-white text-xs">{h.receiverName}</span>
+                                        </div>
+                                        <div className="flex items-center gap-1.5">
+                                          <span className="font-mono text-emerald-400 text-xs" dir="ltr">{h.receiverPhone}</span>
+                                          <button
+                                            type="button"
+                                            onClick={() => copyCentralText(h.receiverPhone, `order_hawala_phone_${hIdx}`, 'شماره تماس')}
+                                            className="py-1 px-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-[10px] flex items-center gap-1"
+                                          >
+                                            {copiedCentralKey === `order_hawala_phone_${hIdx}` ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                                            <span>کاپی</span>
+                                          </button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })()}
+
+                          {paymentMethod === 'crypto' && (() => {
+                            const rawCryptos = storeSettings?.cryptos?.filter((c: any) => c.isActive) || [];
+                            const cryptosToRender = rawCryptos.length > 0 ? rawCryptos : (storeSettings?.cryptoAddresses?.filter((c: any) => c.isActive) || [PLATFORM_CENTRAL_PAYMENT_DEFAULTS.crypto]);
+
+                            return (
+                              <div className="space-y-3">
+                                <div>
+                                  <span className="text-[10px] text-slate-400 block">ارز دیجیتال تتر (USDT):</span>
+                                  <span className="text-xs font-bold text-white">انتقال در شبکه‌های فعال بلاکچین ({cryptosToRender.length} شبکه)</span>
+                                </div>
+
+                                <div className="space-y-3">
+                                  {cryptosToRender.map((c: any, cIdx: number) => {
+                                    const net = c.network || 'TRC20';
+                                    const addr = c.walletAddress || PLATFORM_CENTRAL_PAYMENT_DEFAULTS.crypto.walletAddress;
+
+                                    return (
+                                      <div key={cIdx} className="p-2.5 rounded-xl bg-slate-950/80 border border-white/10 space-y-2">
+                                        <div className="flex items-center justify-between">
+                                          <div className="flex items-center gap-2">
+                                            <PaymentLogoBadge
+                                              id="usdt"
+                                              type="crypto"
+                                              customLogoUrl={c.logoUrl}
+                                              size={20}
+                                            />
+                                            <span className="text-xs font-bold text-white">USDT Tether</span>
+                                          </div>
+                                          <span className="text-xs font-mono px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-bold">
+                                            شبکه {net}
+                                          </span>
+                                        </div>
+
+                                        <div className="p-2 rounded-lg bg-black/60 border border-white/5 flex items-center justify-between gap-2">
+                                          <span className="font-mono text-[10px] text-emerald-400 break-all" dir="ltr">
+                                            {addr}
+                                          </span>
+                                          <button
+                                            type="button"
+                                            onClick={() => copyCentralText(addr, `order_crypto_${cIdx}`, 'آدرس کیف پول')}
+                                            className="py-1 px-2.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 text-[10px] font-bold flex items-center gap-1 shrink-0"
+                                          >
+                                            {copiedCentralKey === `order_crypto_${cIdx}` ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                                            <span>کاپی</span>
+                                          </button>
+                                        </div>
+
+                                        <div className="flex items-center gap-3 pt-1">
+                                          <div className="p-1 bg-white rounded-lg shrink-0">
+                                            <QRCodeSVG value={addr} size={54} level="M" />
+                                          </div>
+                                          <p className="text-[10px] text-slate-300 leading-relaxed">
+                                            {c.instructions || `واریز منحصراً در شبکه ${net} با کارمزد پایین و تایید سریع.`}
+                                          </p>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            );
+                          })()}
+
+                          {paymentMethod === 'cod' && (
+                            <div className="space-y-1.5">
+                              <span className="text-xs font-bold text-white block">🚚 پرداخت نقدی به مأمور تحویل</span>
+                              <p className="text-[11px] text-slate-300 leading-relaxed">
+                                {storeSettings?.codSettings?.terms || PLATFORM_CENTRAL_PAYMENT_DEFAULTS.cod.terms}
+                              </p>
+                              <span className="text-[10px] text-emerald-400 block font-medium">
+                                تسویه هم‌زمان با تحویل فیزیکی کارت هوشمند در کابل و مراکز ولایات افغانستان.
+                              </span>
+                            </div>
+                          )}
+
+                          {paymentMethod === 'installment' && (() => {
+                            const instConfig = storeSettings?.installmentSettings;
+                            const downPct = instConfig?.downPaymentPercent || 30;
+                            const count = instConfig?.installmentCount || 3;
+                            const down = Math.round(totalPrice * (downPct / 100));
+                            const sched = calculateInstallmentSchedule(totalPrice, down, count, 'monthly');
+
+                            return (
+                              <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs font-bold text-rose-300 block">
+                                    خرید اقساطی و قرارداد سازمانی ({count} قسط ماهانه):
+                                  </span>
+                                  <span className="text-[10px] px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 font-semibold">
+                                    حساب‌های B2B
+                                  </span>
+                                </div>
+                                <div className="flex justify-between items-center text-[11px] text-slate-300">
+                                  <span>پیش‌پرداخت اولیه ({downPct}٪):</span>
+                                  <span className="font-bold text-emerald-400">{down.toLocaleString()} AFN</span>
+                                </div>
+                                <div className="space-y-1 pt-1 border-t border-white/10">
+                                  {sched.map((s) => (
+                                    <div key={s.installmentNumber} className="flex justify-between items-center text-[10px] text-slate-400">
+                                      <span>{s.dueDateLabel}</span>
+                                      <span className="font-semibold text-white">{s.amount.toLocaleString()} AFN</span>
+                                    </div>
+                                  ))}
+                                </div>
+                                <p className="text-[9px] text-slate-400 mt-1">
+                                  {instConfig?.terms || 'جهت عقد قرارداد رسمی سازمانی، پس از ثبت سفارش، همکاران بخش فروش با شما تماس خواهند گرفت.'}
+                                </p>
+                              </div>
+                            );
+                          })()}
+
+                          {/* Manual Receipt & Reference Upload for Bank, Hawala, Crypto */}
+                          {(paymentMethod === 'bank' || paymentMethod === 'hawala' || paymentMethod === 'crypto') && (
+                            <div className="pt-3 border-t border-white/10 space-y-3">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-bold text-slate-200">ثبت مدرک و مشخصات واریز:</span>
+                                <span className="text-[10px] text-cyan-400">تسریع در چاپ و ارسال</span>
+                              </div>
+
+                              {/* Tracking ID / Reference Number */}
+                              <div className="space-y-1">
+                                <label className="text-[10px] text-slate-400 block">
+                                  کد پیگیری، رفرنس تراکنش، یا شماره حواله صرافی:
+                                </label>
+                                <input
+                                  type="text"
+                                  value={transactionRef}
+                                  onChange={(e) => setTransactionRef(e.target.value)}
+                                  placeholder="مثال: 9812450 یا هش تراکنش"
+                                  className="w-full h-9 px-3 rounded-xl bg-slate-950/80 border border-white/10 text-white text-xs font-mono"
+                                  dir="ltr"
+                                />
+                              </div>
+
+                              {/* Receipt File Upload */}
+                              <div className="space-y-1.5">
+                                <label className="text-[10px] text-slate-400 block">
+                                  آپلود عکس یا اسکرین‌شات رسید پرداخت (حداکثر 3.5 مگابایت):
+                                </label>
+                                {receiptPreview ? (
+                                  <div className="p-2.5 rounded-xl bg-slate-950/80 border border-emerald-500/40 flex items-center justify-between gap-2">
+                                    <div className="flex items-center gap-2 overflow-hidden">
+                                      <img
+                                        src={receiptPreview}
+                                        alt="رسید واریز"
+                                        className="w-10 h-10 rounded-lg object-cover border border-white/10 shrink-0"
+                                      />
+                                      <div className="overflow-hidden">
+                                        <span className="text-xs text-emerald-400 font-bold block truncate">
+                                          {receiptFile?.name || 'رسید واریز بارگذاری شد'}
+                                        </span>
+                                        <span className="text-[9px] text-slate-400">
+                                          {isUploadingReceipt ? 'در حال آپلود...' : 'با موفقیت ذخیره شد'}
+                                        </span>
+                                      </div>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setReceiptFile(null);
+                                        setReceiptPreview(null);
+                                        setReceiptUrl(null);
+                                      }}
+                                      className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 transition-all text-[11px]"
+                                    >
+                                      <X className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <label className="p-3 rounded-xl border border-dashed border-white/20 hover:border-cyan-400/50 bg-slate-950/40 flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-all group">
+                                    <Upload className="w-4 h-4 text-slate-400 group-hover:text-cyan-400 transition-colors" />
+                                    <span className="text-[11px] text-slate-300 font-medium group-hover:text-white">
+                                      {isUploadingReceipt ? 'در حال آپلود رسید...' : 'انتخاب یا رها کردن عکس رسید'}
+                                    </span>
+                                    <span className="text-[9px] text-slate-500">JPG, PNG (حداکثر 3.5 مگابایت)</span>
+                                    <input
+                                      type="file"
+                                      accept="image/*"
+                                      disabled={isUploadingReceipt}
+                                      onChange={handleReceiptFileChange}
+                                      className="hidden"
+                                    />
+                                  </label>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Mandatory Afghan Notice */}
+                          <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-[11px] leading-relaxed">
+                            💡 <strong>راهنما:</strong> پس از ثبت سفارش، همکاران بخش پشتیبانی فنی و مالی آریا لینک وضعیت پرداخت و چاپ کارت را پیگیری خواهند کرد.
+                          </div>
                         </div>
                       </div>
 

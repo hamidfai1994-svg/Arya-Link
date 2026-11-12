@@ -203,7 +203,7 @@ export default function AdminBrandingSettingsPage() {
           <div className="text-[11px] font-semibold text-slate-400 mb-2 flex items-center justify-between">
             <span className="flex items-center gap-1.5">
               <Globe className="w-3.5 h-3.5 text-cyan-400" />
-              <span>پیش‌نمایش تب مرورگر (Browser Tab):</span>
+              <span>پیش‌نمایش تب مرورگر:</span>
             </span>
             <span className="text-[10px] text-slate-400 font-sans">Chrome / Edge / Firefox</span>
           </div>
@@ -230,15 +230,14 @@ export default function AdminBrandingSettingsPage() {
         {previewTab === 'desktop' && (
           <div className="rounded-2xl border border-border bg-card/90 p-4 shadow-sm">
             <span className="text-[11px] text-muted-foreground font-semibold block mb-3">
-              شبیه‌ساز هدر ناوبار (Public Header):
+              شبیه‌ساز هدر ناوبار:
             </span>
             <div className="h-16 px-4 rounded-xl border border-border/80 bg-background/90 flex items-center justify-between">
               <SiteLogo
                 overrideLogo={companyLogo}
                 siteName={siteName}
                 showText={true}
-                showBadge={true}
-                badgeText="PRO"
+                showBadge={false}
                 subtitle="کارت ویزیت هوشمند و لینک‌بایو"
                 width={40}
                 height={40}
@@ -265,8 +264,7 @@ export default function AdminBrandingSettingsPage() {
                 overrideLogo={companyLogo}
                 siteName={siteName}
                 showText={true}
-                showBadge={true}
-                badgeText="PRO"
+                showBadge={false}
                 subtitle="پنل مدیریت یکپارچه"
                 width={38}
                 height={38}
@@ -317,7 +315,7 @@ export default function AdminBrandingSettingsPage() {
               </div>
               <div>
                 <h3 className="text-sm font-bold text-foreground">
-                  لوگوی اصلی شرکت (Company Logo)
+                  لوگوی اصلی شرکت
                 </h3>
                 <p className="text-[11px] text-muted-foreground">
                   نمایش در هدر اصلی، فوتر، صفحات ورود و سایدبار
@@ -395,7 +393,7 @@ export default function AdminBrandingSettingsPage() {
               </div>
               <div>
                 <h3 className="text-sm font-bold text-foreground">
-                  فاوآیکون تب مرورگر (Browser Favicon)
+                  فاوآیکون تب مرورگر
                 </h3>
                 <p className="text-[11px] text-muted-foreground">
                   نمایش در نوار تب مرورگر، بوک‌مارک‌ها و میانبرهای موبایل
@@ -499,7 +497,7 @@ export default function AdminBrandingSettingsPage() {
           </div>
           <div>
             <h3 className="text-sm font-bold text-foreground">
-              هویت متنی و متای عنوان سایت (Brand Metadata)
+              هویت متنی و متای عنوان سایت
             </h3>
             <p className="text-[11px] text-muted-foreground">
               نام سایت در کنار لوگو، عنوان تب مرورگر و توضیحات سئو
@@ -510,7 +508,7 @@ export default function AdminBrandingSettingsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div className="space-y-2">
             <label className="text-xs font-semibold text-foreground">
-              نام تجاری سیستم (Site Name)
+              نام تجاری سیستم
             </label>
             <Input
               type="text"
@@ -526,7 +524,7 @@ export default function AdminBrandingSettingsPage() {
 
           <div className="space-y-2">
             <label className="text-xs font-semibold text-foreground">
-              توضیحات و متای سئو (Meta Description)
+              توضیحات و متای سئو
             </label>
             <Input
               type="text"

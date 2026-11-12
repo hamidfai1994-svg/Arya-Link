@@ -146,11 +146,8 @@ export default function SystemTrashPage() {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
-                  زباله‌دان سیستم و لاگ حسابرسی (Audit Log)
+                  زباله‌دان سیستم و لاگ حسابرسی
                 </h1>
-                <Badge variant="destructive" className="text-xs">
-                  سطح امنیتی ارشد
-                </Badge>
               </div>
               <p className="text-xs sm:text-sm text-slate-400 mt-0.5">
                 فهرست رکوردهای حذف‌شده (سفارشات و تراکنش‌ها)، نام ادمین اقدام‌کننده، زمان حذف و دلیل اجباری ثبت‌شده
@@ -229,11 +226,10 @@ export default function SystemTrashPage() {
           <button
             type="button"
             onClick={() => setTypeFilter('all')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors whitespace-nowrap ${
-              typeFilter === 'all'
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors whitespace-nowrap ${typeFilter === 'all'
                 ? 'bg-rose-500 text-white'
                 : 'text-slate-400 hover:text-white bg-slate-950 border border-slate-800'
-            }`}
+              }`}
           >
             همه موارد ({logs.length.toLocaleString('en-US')})
           </button>
@@ -241,11 +237,10 @@ export default function SystemTrashPage() {
           <button
             type="button"
             onClick={() => setTypeFilter('order')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors whitespace-nowrap ${
-              typeFilter === 'order'
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors whitespace-nowrap ${typeFilter === 'order'
                 ? 'bg-cyan-500 text-white'
                 : 'text-slate-400 hover:text-white bg-slate-950 border border-slate-800'
-            }`}
+              }`}
           >
             سفارشات ({ordersCount.toLocaleString('en-US')})
           </button>
@@ -253,11 +248,10 @@ export default function SystemTrashPage() {
           <button
             type="button"
             onClick={() => setTypeFilter('payout')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors whitespace-nowrap ${
-              typeFilter === 'payout'
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors whitespace-nowrap ${typeFilter === 'payout'
                 ? 'bg-amber-500 text-white'
                 : 'text-slate-400 hover:text-white bg-slate-950 border border-slate-800'
-            }`}
+              }`}
           >
             تسویه‌حساب‌ها ({logs.filter((l) => l.recordType === 'payout').length.toLocaleString('en-US')})
           </button>

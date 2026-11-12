@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Menu, X, ShieldAlert, Bell, Search, User } from 'lucide-react';
 import { AdminSidebar } from './AdminSidebar';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -9,7 +9,18 @@ import { useSession } from 'next-auth/react';
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [currentTime, setCurrentTime] = useState('');
   const { data: session } = useSession();
+
+  useEffect(() => {
+    setMounted(true);
+    setCurrentTime(new Date().toLocaleTimeString('en-US'));
+    const timer = setInterval(() => {
+      setCurrentTime(new Date().toLocaleTimeString('en-US'));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const role = (session?.user?.role || 'admin').toLowerCase();
 
@@ -39,17 +50,47 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               <span className="font-extrabold text-foreground text-sm tracking-tight hidden sm:inline">
                 سیستم جامع مدیریت سازمانی آریا لینک
               </span>
-              <Badge className="bg-rose-500/15 text-rose-500 border border-rose-500/30 text-[10px] font-sans">
-                {role.toUpperCase()}
-              </Badge>
+
             </div>
           </div>
 
-          {/* Right utility items */}
+          {/* Left utility items: Server Time, Admin Profile, and ThemeToggle */}
           <div className="flex items-center gap-3">
-            <span className="text-xs text-muted-foreground hidden md:inline font-sans" dir="ltr">
-              Server Time: {new Date().toLocaleTimeString('en-US')}
-            </span>
+            {mounted ? (
+              <span className="text-xs text-muted-foreground hidden lg:inline font-sans" dir="ltr">
+                Server Time: {currentTime}
+              </span>
+            ) : (
+              <span className="text-xs text-muted-foreground hidden lg:inline font-sans" dir="ltr">
+                Server Time: --:--:--
+              </span>
+            )}
+
+            <div className="h-5 w-[1px] bg-border hidden sm:block" />
+
+            {/* Admin User Profile in Header */}
+            <div className="flex items-center gap-2 px-2.5 py-1 rounded-2xl bg-muted/40 border border-border/80">
+              <div className="w-7 h-7 rounded-full bg-rose-500/20 border border-rose-500/30 text-rose-500 font-bold flex items-center justify-center text-xs overflow-hidden shrink-0">
+                {session?.user?.image ? (
+                  <img
+                    src={session.user.image}
+                    alt="Admin"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span>{session?.user?.name?.charAt(0) || 'A'}</span>
+                )}
+              </div>
+              <div className="hidden sm:block text-right">
+                <span className="text-xs font-bold text-foreground block leading-tight">
+                  {session?.user?.name || 'مدیر سیستم'}
+                </span>
+                <span className="text-[10px] text-amber-500 dark:text-amber-400 font-medium block">
+                  {role === 'superadmin' ? 'مدیر ارشد پلتفرم' : 'مدیر سیستم'}
+                </span>
+              </div>
+            </div>
+
             <ThemeToggle />
           </div>
         </header>

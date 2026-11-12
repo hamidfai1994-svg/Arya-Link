@@ -137,7 +137,7 @@ export default function AdminSettingsPage() {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-                  تنظیمات کلان پلتفرم و مدیریت محتوا (CMS)
+                  تنظیمات کلان پلتفرم و مدیریت محتوا
                 </h1>
                 <Badge variant="cyan" className="text-xs">
                   داینامیک زنده
@@ -187,66 +187,61 @@ export default function AdminSettingsPage() {
         <button
           type="button"
           onClick={() => setActiveTab('general')}
-          className={`flex items-center gap-2 px-5 py-3 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
-            activeTab === 'general'
-              ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20 font-black'
-              : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
-          }`}
+          className={`flex items-center gap-2 px-5 py-3 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${activeTab === 'general'
+            ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20 font-black'
+            : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
+            }`}
         >
           <Globe className="w-4 h-4" />
-          <span>1. تنظیمات عمومی (General)</span>
+          <span>1. تنظیمات عمومی</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('landing')}
-          className={`flex items-center gap-2 px-5 py-3 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
-            activeTab === 'landing'
-              ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20 font-black'
-              : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
-          }`}
+          className={`flex items-center gap-2 px-5 py-3 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${activeTab === 'landing'
+            ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20 font-black'
+            : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
+            }`}
         >
           <Layout className="w-4 h-4" />
-          <span>2. محتوای صفحه اصلی (Landing Page)</span>
+          <span>2. محتوای صفحه اصلی</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('plans')}
-          className={`flex items-center gap-2 px-5 py-3 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
-            activeTab === 'plans'
-              ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20 font-black'
-              : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
-          }`}
+          className={`flex items-center gap-2 px-5 py-3 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${activeTab === 'plans'
+            ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20 font-black'
+            : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
+            }`}
         >
           <DollarSign className="w-4 h-4" />
-          <span>3. تعرفه‌ها و اشتراک‌ها (Plans)</span>
+          <span>3. تعرفه‌ها و اشتراک‌ها</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('products')}
-          className={`flex items-center gap-2 px-5 py-3 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
-            activeTab === 'products'
-              ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20 font-black'
-              : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
-          }`}
+          className={`flex items-center gap-2 px-5 py-3 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${activeTab === 'products'
+            ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20 font-black'
+            : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
+            }`}
         >
           <Package className="w-4 h-4" />
-          <span>4. محصولات فیزیکی (Products)</span>
+          <span>4. محصولات فیزیکی</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('api_notifications')}
-          className={`flex items-center gap-2 px-5 py-3 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
-            activeTab === 'api_notifications'
-              ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20 font-black'
-              : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
-          }`}
+          className={`flex items-center gap-2 px-5 py-3 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${activeTab === 'api_notifications'
+            ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20 font-black'
+            : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
+            }`}
         >
           <BellRing className="w-4 h-4" />
-          <span>5. مدیریت API و اعلان‌ها (API & Bots)</span>
+          <span>5. مدیریت API و اعلان‌ها</span>
         </button>
       </div>
 
@@ -322,7 +317,7 @@ export default function AdminSettingsPage() {
 
                 <div className="space-y-3.5">
                   <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-muted-foreground">لینک اینستاگرام (Instagram):</label>
+                    <label className="text-[11px] font-bold text-muted-foreground">لینک اینستاگرام:</label>
                     <Input
                       value={general.socialLinks.instagram}
                       onChange={(e) =>
@@ -337,7 +332,7 @@ export default function AdminSettingsPage() {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-muted-foreground">کانال تلگرام (Telegram):</label>
+                    <label className="text-[11px] font-bold text-muted-foreground">کانال تلگرام:</label>
                     <Input
                       value={general.socialLinks.telegram}
                       onChange={(e) =>
@@ -352,7 +347,7 @@ export default function AdminSettingsPage() {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-muted-foreground">شماره یا لینک واتساپ (WhatsApp):</label>
+                    <label className="text-[11px] font-bold text-muted-foreground">شماره یا لینک واتساپ:</label>
                     <Input
                       value={general.socialLinks.whatsapp}
                       onChange={(e) =>
@@ -367,7 +362,7 @@ export default function AdminSettingsPage() {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-muted-foreground">صفحه لینکدین (LinkedIn):</label>
+                    <label className="text-[11px] font-bold text-muted-foreground">صفحه لینکدین:</label>
                     <Input
                       value={general.socialLinks.linkedin}
                       onChange={(e) =>
@@ -388,7 +383,7 @@ export default function AdminSettingsPage() {
             <Card className="rounded-3xl border-border bg-card/90 p-6 space-y-3">
               <div className="flex items-center gap-2 pb-3 border-b border-border">
                 <FileText className="w-4 h-4 text-cyan-500" />
-                <h2 className="text-sm font-bold text-foreground">قوانین و شرایط استفاده پلتفرم (Legal Terms)</h2>
+                <h2 className="text-sm font-bold text-foreground">قوانین و شرایط استفاده پلتفرم</h2>
               </div>
               <textarea
                 value={general.rulesTerms}
@@ -416,7 +411,7 @@ export default function AdminSettingsPage() {
             <Card className="rounded-3xl border-border bg-card/90 p-6 space-y-4">
               <div className="flex items-center gap-2 pb-3 border-b border-border">
                 <Layout className="w-4 h-4 text-cyan-500" />
-                <h2 className="text-sm font-bold text-foreground">بخش هیرو (Hero Section Texts)</h2>
+                <h2 className="text-sm font-bold text-foreground">بخش هیرو</h2>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -457,7 +452,7 @@ export default function AdminSettingsPage() {
                 </div>
 
                 <div className="space-y-1.5 md:col-span-2">
-                  <label className="text-xs font-bold text-foreground">توضیح تفصیلی هیرو (Subtitle):</label>
+                  <label className="text-xs font-bold text-foreground">توضیح تفصیلی هیرو:</label>
                   <textarea
                     value={hero.subtitle}
                     onChange={(e) => setHero({ ...hero, subtitle: e.target.value })}
@@ -467,7 +462,7 @@ export default function AdminSettingsPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-foreground">متن دکمه اصلی (Primary CTA):</label>
+                  <label className="text-xs font-bold text-foreground">متن دکمه اصلی:</label>
                   <Input
                     value={hero.primaryCta}
                     onChange={(e) => setHero({ ...hero, primaryCta: e.target.value })}
@@ -476,7 +471,7 @@ export default function AdminSettingsPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-foreground">متن دکمه فرعی (Secondary CTA):</label>
+                  <label className="text-xs font-bold text-foreground">متن دکمه فرعی:</label>
                   <Input
                     value={hero.secondaryCta}
                     onChange={(e) => setHero({ ...hero, secondaryCta: e.target.value })}
@@ -491,7 +486,7 @@ export default function AdminSettingsPage() {
               <div className="flex items-center justify-between pb-3 border-b border-border">
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-amber-500" />
-                  <h2 className="text-sm font-bold text-foreground">نظرات مشتریان و شخصیت‌های برجسته (Testimonials)</h2>
+                  <h2 className="text-sm font-bold text-foreground">نظرات مشتریان و شخصیت‌های برجسته</h2>
                 </div>
                 <span className="text-xs text-muted-foreground">{testimonials.length.toLocaleString('en-US')} نظر ثبت‌شده</span>
               </div>
@@ -563,11 +558,10 @@ export default function AdminSettingsPage() {
               {plans.map((plan) => (
                 <Card
                   key={plan.planId}
-                  className={`rounded-3xl border p-6 space-y-5 flex flex-col justify-between ${
-                    plan.isPopular
-                      ? 'border-cyan-500/50 bg-cyan-500/[0.03] shadow-lg shadow-cyan-500/10'
-                      : 'border-border bg-card/90'
-                  }`}
+                  className={`rounded-3xl border p-6 space-y-5 flex flex-col justify-between ${plan.isPopular
+                    ? 'border-cyan-500/50 bg-cyan-500/[0.03] shadow-lg shadow-cyan-500/10'
+                    : 'border-border bg-card/90'
+                    }`}
                 >
                   <div className="space-y-4">
                     <div className="flex items-center justify-between pb-3 border-b border-border">
@@ -586,7 +580,7 @@ export default function AdminSettingsPage() {
                     {/* Pricing Inputs */}
                     <div className="space-y-3">
                       <div className="space-y-1">
-                        <label className="text-[11px] font-bold text-muted-foreground">قیمت ماهانه (AFN):</label>
+                        <label className="text-[11px] font-bold text-muted-foreground">قیمت ماهانه:</label>
                         <div className="flex items-center gap-2">
                           <Input
                             type="number"
@@ -599,7 +593,7 @@ export default function AdminSettingsPage() {
                       </div>
 
                       <div className="space-y-1">
-                        <label className="text-[11px] font-bold text-muted-foreground">قیمت ماهانه در پرداخت سالانه (AFN):</label>
+                        <label className="text-[11px] font-bold text-muted-foreground">قیمت ماهانه در پرداخت سالانه:</label>
                         <div className="flex items-center gap-2">
                           <Input
                             type="number"
@@ -673,7 +667,9 @@ export default function AdminSettingsPage() {
                   <div className="flex items-center justify-between pb-3 border-b border-border">
                     <div>
                       <h3 className="text-base font-bold text-foreground">{mat.name}</h3>
-                      <span className="text-[11px] text-muted-foreground font-sans">{mat.subtitle}</span>
+                      {mat.subtitle ? (
+                        <span className="text-[11px] text-muted-foreground font-sans">{mat.subtitle}</span>
+                      ) : null}
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -689,7 +685,7 @@ export default function AdminSettingsPage() {
 
                   <div className="grid grid-cols-2 gap-3.5">
                     <div className="space-y-1">
-                      <label className="text-[11px] font-bold text-muted-foreground">قیمت نهایی فروش (AFN):</label>
+                      <label className="text-[11px] font-bold text-muted-foreground">قیمت نهایی فروش (افغانی):</label>
                       <Input
                         type="number"
                         value={mat.price}
