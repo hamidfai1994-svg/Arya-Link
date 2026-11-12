@@ -18,6 +18,11 @@ import {
   Send,
   Phone,
   Mail,
+  CreditCard,
+  UserCheck,
+  MapPin,
+  FileText,
+  Music,
   Link as LinkIcon,
   ChevronDown,
   Layers,
@@ -66,12 +71,12 @@ const getModuleIconAndStyle = (type: string, url: string = '') => {
   const t = (type || '').toLowerCase();
   const u = (url || '').toLowerCase();
 
-  if (t === 'whatsapp' || u.includes('wa.me') || u.includes('whatsapp')) {
+  if (t === 'whatsapp' || t === 'whatsapp_direct' || u.includes('wa.me') || u.includes('whatsapp')) {
     return {
       icon: MessageCircle,
       bg: 'bg-emerald-500/10 text-emerald-500 dark:bg-emerald-500/20',
       barColor: 'from-emerald-500 to-teal-400',
-      label: 'واتساپ (WhatsApp)',
+      label: 'واتساپ',
     };
   }
   if (t === 'instagram' || u.includes('instagram.com')) {
@@ -79,18 +84,26 @@ const getModuleIconAndStyle = (type: string, url: string = '') => {
       icon: Instagram,
       bg: 'bg-pink-500/10 text-pink-500 dark:bg-pink-500/20',
       barColor: 'from-pink-500 via-rose-500 to-amber-400',
-      label: 'اینستاگرام (Instagram)',
+      label: 'اینستاگرام',
     };
   }
-  if (t === 'telegram' || u.includes('t.me') || u.includes('telegram')) {
+  if (t === 'telegram' || t === 'telegram_channel' || u.includes('t.me') || u.includes('telegram')) {
     return {
       icon: Send,
       bg: 'bg-sky-500/10 text-sky-500 dark:bg-sky-500/20',
       barColor: 'from-sky-500 to-blue-500',
-      label: 'تلگرام (Telegram)',
+      label: 'تلگرام',
     };
   }
-  if (t === 'phone' || u.startsWith('tel:')) {
+  if (t === 'payment' || t === 'donation_hesabpay' || u.includes('payment') || u.includes('hesabpay')) {
+    return {
+      icon: CreditCard,
+      bg: 'bg-emerald-500/10 text-emerald-500 dark:bg-emerald-500/20',
+      barColor: 'from-emerald-500 to-teal-500',
+      label: 'پرداخت و حمایت مالی',
+    };
+  }
+  if (t === 'phone' || t === 'phone_call' || u.startsWith('tel:')) {
     return {
       icon: Phone,
       bg: 'bg-cyan-500/10 text-cyan-500 dark:bg-cyan-500/20',
@@ -98,12 +111,44 @@ const getModuleIconAndStyle = (type: string, url: string = '') => {
       label: 'شماره تماس مستقیم',
     };
   }
-  if (t === 'email' || u.startsWith('mailto:')) {
+  if (t === 'email' || t === 'email_direct' || u.startsWith('mailto:')) {
     return {
       icon: Mail,
       bg: 'bg-amber-500/10 text-amber-500 dark:bg-amber-500/20',
       barColor: 'from-amber-500 to-orange-400',
-      label: 'آدرس ایمیل',
+      label: 'ارسال ایمیل',
+    };
+  }
+  if (t === 'lead_capture_form' || t === 'contact_form') {
+    return {
+      icon: UserCheck,
+      bg: 'bg-violet-500/10 text-violet-500 dark:bg-violet-500/20',
+      barColor: 'from-violet-500 to-purple-500',
+      label: 'فرم تماس و تبادل مخاطب',
+    };
+  }
+  if (t === 'map_location' || u.includes('google.com/maps') || u.includes('geo:')) {
+    return {
+      icon: MapPin,
+      bg: 'bg-rose-500/10 text-rose-500 dark:bg-rose-500/20',
+      barColor: 'from-rose-500 to-red-500',
+      label: 'موقعیت مکانی',
+    };
+  }
+  if (t === 'pdf_catalog') {
+    return {
+      icon: FileText,
+      bg: 'bg-rose-500/10 text-rose-500 dark:bg-rose-500/20',
+      barColor: 'from-rose-500 to-pink-500',
+      label: 'کاتالوگ PDF',
+    };
+  }
+  if (t === 'music_player') {
+    return {
+      icon: Music,
+      bg: 'bg-emerald-500/10 text-emerald-500 dark:bg-emerald-500/20',
+      barColor: 'from-emerald-500 to-teal-500',
+      label: 'پخش‌کننده صوتی',
     };
   }
   if (t === 'website' || u.startsWith('http')) {
@@ -120,6 +165,85 @@ const getModuleIconAndStyle = (type: string, url: string = '') => {
     barColor: 'from-cyan-500 to-blue-600',
     label: 'پیوند اختصاصی',
   };
+};
+
+// Clean human-friendly title generator (prevents mailto, %20, and raw URL clutter)
+const getCleanModuleTitle = (
+  link: { title?: string; moduleType?: string; url?: string },
+  fallbackLabel: string
+): string => {
+  let title = (link.title || '').trim();
+
+  // If title is missing
+  if (!title) {
+    return fallbackLabel;
+  }
+
+  // If title is raw mailto, tel, url, anchor, or contains encoded query parts
+  if (
+    title.startsWith('mailto:') ||
+    title.startsWith('tel:') ||
+    title.startsWith('#') ||
+    title.startsWith('http://') ||
+    title.startsWith('https://') ||
+    title.includes('%20')
+  ) {
+    if (
+      title.startsWith('mailto:') ||
+      link.url?.startsWith('mailto:') ||
+      link.moduleType === 'email' ||
+      link.moduleType === 'email_direct'
+    ) {
+      const match = (title || link.url || '').match(/mailto:([^?&]+)/i);
+      if (match && match[1] && !match[1].includes('%')) {
+        return `ارسال ایمیل (${match[1]})`;
+      }
+      return 'ارسال ایمیل';
+    }
+
+    if (
+      title.startsWith('tel:') ||
+      link.url?.startsWith('tel:') ||
+      link.moduleType === 'phone' ||
+      link.moduleType === 'phone_call'
+    ) {
+      const phoneMatch = (title || link.url || '').replace(/^tel:/i, '').split('?')[0];
+      if (phoneMatch && phoneMatch.length >= 7) {
+        return `تماس با ${phoneMatch}`;
+      }
+      return 'شماره تماس مستقیم';
+    }
+
+    if (
+      title.startsWith('#payment') ||
+      link.moduleType === 'payment' ||
+      link.moduleType === 'donation_hesabpay' ||
+      link.url?.includes('payment')
+    ) {
+      return 'پرداخت و حمایت مالی';
+    }
+
+    // Attempt clean decode if human title got encoded
+    if (!title.startsWith('http') && !title.startsWith('#')) {
+      try {
+        const decoded = decodeURIComponent(title);
+        if (!decoded.includes('mailto:') && !decoded.includes('tel:')) {
+          return decoded.replace(/%20/g, ' ');
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    return fallbackLabel;
+  }
+
+  // Sanitize any stray %20 in regular titles
+  if (title.includes('%20')) {
+    title = title.replace(/%20/g, ' ');
+  }
+
+  return title;
 };
 
 export function CardAnalyticsPanel({ cardId }: { cardId?: string }) {
@@ -864,8 +988,8 @@ export function CardAnalyticsPanel({ cardId }: { cardId?: string }) {
                   const y = barSvgHeight - barPaddingY - barHeight;
                   const isHovered = hoveredBarIndex === idx;
                   const meta = getModuleIconAndStyle(link.moduleType, link.url);
-                  const title = link.title || meta.label;
-                  const displayLabel = title.length > 12 ? title.slice(0, 11) + '…' : title;
+                  const cleanTitle = getCleanModuleTitle(link, meta.label);
+                  const displayLabel = cleanTitle.length > 12 ? cleanTitle.slice(0, 11) + '…' : cleanTitle;
 
                   return (
                     <g key={link.id || idx}>
@@ -933,11 +1057,13 @@ export function CardAnalyticsPanel({ cardId }: { cardId?: string }) {
                 >
                   <div className="text-right">
                     <span className="text-xs font-bold text-foreground block">
-                      {linksList[hoveredBarIndex].title ||
+                      {getCleanModuleTitle(
+                        linksList[hoveredBarIndex],
                         getModuleIconAndStyle(
                           linksList[hoveredBarIndex].moduleType,
                           linksList[hoveredBarIndex].url
-                        ).label}
+                        ).label
+                      )}
                     </span>
                     <div className="flex items-center gap-3 mt-1 text-xs font-sans">
                       <span className="text-cyan-500 font-bold flex items-center gap-1">
@@ -991,6 +1117,7 @@ export function CardAnalyticsPanel({ cardId }: { cardId?: string }) {
           <div className="space-y-4">
             {linksList.map((link, i) => {
               const meta = getModuleIconAndStyle(link.moduleType, link.url);
+              const cleanTitle = getCleanModuleTitle(link, meta.label);
               const IconComponent = meta.icon;
               const percentage = Math.round(((link.clickCount || 0) / totalModuleClicks) * 100);
 
@@ -1001,17 +1128,12 @@ export function CardAnalyticsPanel({ cardId }: { cardId?: string }) {
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${meta.bg}`}>
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${meta.bg}`}>
                         <IconComponent className="w-4 h-4" />
                       </div>
-                      <div className="min-w-0">
-                        <span className="text-xs font-bold text-foreground block truncate">
-                          {link.title || meta.label}
-                        </span>
-                        <span className="text-[11px] text-muted-foreground font-sans truncate block" dir="ltr">
-                          {link.url || '#'}
-                        </span>
-                      </div>
+                      <span className="text-xs sm:text-sm font-bold text-foreground truncate">
+                        {cleanTitle}
+                      </span>
                     </div>
 
                     <div className="flex items-center gap-3 shrink-0">
@@ -1024,15 +1146,17 @@ export function CardAnalyticsPanel({ cardId }: { cardId?: string }) {
                         </span>
                       </div>
 
-                      <a
-                        href={link.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
-                        title="مشاهده لینک"
-                      >
-                        <ArrowUpRight className="w-4 h-4" />
-                      </a>
+                      {link.url && !link.url.startsWith('#') && !link.url.startsWith('mailto:') && !link.url.startsWith('tel:') && (
+                        <a
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+                          title="مشاهده لینک"
+                        >
+                          <ArrowUpRight className="w-4 h-4" />
+                        </a>
+                      )}
                     </div>
                   </div>
 
