@@ -46,6 +46,8 @@ export interface IProfileDocument extends Document {
       apiKey?: string;
       accountName?: string;
       accountNumber?: string;
+      qrCodeImage?: string;
+      instructions?: string;
     };
     [key: string]: any;
   };

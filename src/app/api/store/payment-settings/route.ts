@@ -32,7 +32,8 @@ export async function GET() {
       accountName: w.accountName || (w.id === 'hesabpay' ? settings.hesabPay?.accountName || 'HAMID FASIHI' : w.accountHolder),
       isApiEnabled: w.isApiEnabled !== undefined ? Boolean(w.isApiEnabled) : (w.id === 'hesabpay' ? (settings.hesabPay?.isApiEnabled ?? true) : false),
       instructions: w.instructions,
-      qrCodeUrl: w.qrCodeUrl || '',
+      qrCodeImage: w.qrCodeImage || w.qrCodeUrl || (w.id === 'hesabpay' ? settings.hesabPay?.qrCodeImage || settings.hesabPay?.qrCodeUrl || '' : ''),
+      qrCodeUrl: w.qrCodeUrl || w.qrCodeImage || (w.id === 'hesabpay' ? settings.hesabPay?.qrCodeImage || settings.hesabPay?.qrCodeUrl || '' : ''),
       logoUrl: w.logoUrl || '',
       isActive: w.isActive ?? true,
       hesabPayConfig: w.hesabPayConfig
@@ -106,6 +107,7 @@ export async function GET() {
         merchantId: settings.hesabPay?.merchantId || 'ARYALINK_MERCHANT_01',
         accountName: settings.hesabPay?.accountName || 'HAMID FASIHI',
         accountNumber: settings.hesabPay?.accountNumber || '0729736813',
+        qrCodeImage: settings.hesabPay?.qrCodeImage || settings.hesabPay?.qrCodeUrl || '',
       },
     };
 

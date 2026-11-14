@@ -46,6 +46,8 @@ interface StoreHesabPaySettings {
   merchantId: string;
   accountName: string;
   accountNumber: string;
+  qrCodeImage?: string;
+  instructions?: string;
 }
 
 const FREE_PLAN_FEATURES = [
@@ -90,8 +92,11 @@ function UpgradePageContent() {
     merchantId: 'ARYALINK_MERCHANT_01',
     accountName: 'HAMID FASIHI',
     accountNumber: '0729736813',
+    qrCodeImage: '',
+    instructions: '',
   });
   const [customerPhone, setCustomerPhone] = useState<string>('');
+  const [payerName, setPayerName] = useState<string>('');
   const [isCheckoutOpen, setIsCheckoutOpen] = useState<boolean>(false);
   const [hesabPayMode, setHesabPayMode] = useState<'direct' | 'agent'>('direct');
 
@@ -127,16 +132,21 @@ function UpgradePageContent() {
       .then((res) => (res.ok ? res.json() : null))
       .then((resData) => {
         const hp = resData?.settings?.hesabPay;
-        if (hp) {
+        const hpWallet = Array.isArray(resData?.settings?.wallets)
+          ? resData.settings.wallets.find((w: any) => w.id === 'hesabpay')
+          : null;
+        if (hp || hpWallet) {
           setStoreHesabPay({
-            isActive: hp.isActive !== false,
-            isApiEnabled: hp.isApiEnabled !== false,
-            isSandbox: hp.isSandbox ?? true,
-            merchantId: hp.merchantId || 'ARYALINK_MERCHANT_01',
-            accountName: hp.accountName || 'HAMID FASIHI',
-            accountNumber: hp.accountNumber || '0729736813',
+            isActive: hp?.isActive !== false,
+            isApiEnabled: hp?.isApiEnabled !== false,
+            isSandbox: hp?.isSandbox ?? true,
+            merchantId: hp?.merchantId || hpWallet?.hesabPayConfig?.merchantId || 'ARYALINK_MERCHANT_01',
+            accountName: hp?.accountName || hpWallet?.accountName || 'HAMID FASIHI',
+            accountNumber: hp?.accountNumber || hpWallet?.accountNumber || '0729736813',
+            qrCodeImage: hp?.qrCodeImage || hpWallet?.qrCodeImage || hpWallet?.qrCodeUrl || '',
+            instructions: hpWallet?.instructions || '',
           });
-          if (hp.isApiEnabled === false) {
+          if (hp?.isApiEnabled === false) {
             setHesabPayMode('agent');
           }
         }
@@ -175,6 +185,7 @@ function UpgradePageContent() {
     setSubmittedOrderNumber(null);
     setTrackingNumber('');
     setReceiptImageUrl('');
+    setPayerName(session?.user?.name || '');
     setHesabPayMode(storeHesabPay.isApiEnabled ? 'direct' : 'agent');
     setIsCheckoutOpen(true);
   };
@@ -270,16 +281,17 @@ function UpgradePageContent() {
     }
   };
 
-  // Flow B: Manual HesabPay QR + Receipt Upload (Sarraf / Shopkeeper)
+  // Flow B: Manual HesabPay QR + Receipt Upload (Sarraf / Shopkeeper - stays pending until Super Admin verifies)
   const handleManualReceiptSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!receiptImageUrl && !trackingNumber.trim()) {
-      toast.error('لطفاً تصویر فیش واریزی را آپلود کنید یا شماره پیگیری تراکنش را وارد نمایید.');
+    if (!receiptImageUrl) {
+      toast.error('لطفاً تصویر فیش واریزی را آپلود نمایید.');
       return;
     }
 
     setIsSubmittingManual(true);
     try {
+      const effectiveCustomerName = (payerName || session?.user?.name || 'کاربر آریا لینک').trim();
       const orderRes = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -290,7 +302,7 @@ function UpgradePageContent() {
           unitPrice: annualPriceAfn,
           totalPrice: annualPriceAfn,
           currency: 'AFN',
-          customerName: session?.user?.name || 'کاربر آریا لینک',
+          customerName: effectiveCustomerName,
           customerEmail: session?.user?.email || '',
           customerPhone: customerPhone.trim(),
           paymentMethod: 'wallet',
@@ -306,7 +318,7 @@ function UpgradePageContent() {
             receiptUrl: receiptImageUrl,
             transactionRef: trackingNumber.trim(),
           },
-          notes: `پرداخت اشتراک سالانه Pro از طریق صراف/دکاندار (فیش واریزی حساب‌پی)${
+          notes: `پرداخت اشتراک سالانه Pro با فیش واریزی (${effectiveCustomerName})${
             trackingNumber.trim() ? ` - کد پیگیری: ${trackingNumber.trim()}` : ''
           }`,
         }),
@@ -723,7 +735,15 @@ function UpgradePageContent() {
                 <form onSubmit={handleManualReceiptSubmit} className="space-y-4">
                   <div className="p-4 rounded-2xl bg-white/5 border border-white/10 flex flex-col items-center text-center space-y-2.5">
                     <div className="p-3 bg-white rounded-2xl shadow-lg">
-                      <QRCodeSVG value={hesabPayQrPayload} size={156} level="M" />
+                      {storeHesabPay.qrCodeImage ? (
+                        <img
+                          src={storeHesabPay.qrCodeImage}
+                          alt="QR Code حساب‌پی آریا لینک"
+                          className="w-[156px] h-[156px] object-contain rounded-lg"
+                        />
+                      ) : (
+                        <QRCodeSVG value={hesabPayQrPayload} size={156} level="M" />
+                      )}
                     </div>
                     <span className="text-xs font-bold text-emerald-400">
                       این کیوآر کد را به صراف یا دکاندار نشان دهید تا مبلغ {annualPriceAfn.toLocaleString('en-US')} افغانی را واریز نماید
@@ -731,6 +751,11 @@ function UpgradePageContent() {
                     <span className="text-[10px] text-slate-400">
                       نام صاحب حساب پلتفرم: <strong className="text-white">{storeHesabPay.accountName}</strong>
                     </span>
+                    {storeHesabPay.instructions && (
+                      <p className="text-[11px] text-slate-300 bg-slate-900/70 border border-white/10 rounded-xl p-2.5 w-full text-right leading-relaxed">
+                        {storeHesabPay.instructions}
+                      </p>
+                    )}
                   </div>
 
                   {/* Platform Account Number Copy Box */}
@@ -766,7 +791,20 @@ function UpgradePageContent() {
                   <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-white/10 space-y-3">
                     <div className="space-y-1.5">
                       <label className="text-[11px] font-bold text-slate-300 block">
-                        شماره پیگیری / کد تراکنش فیش:
+                        نام پرداخت‌کننده:
+                      </label>
+                      <input
+                        type="text"
+                        value={payerName}
+                        onChange={(e) => setPayerName(e.target.value)}
+                        placeholder="نام و تخلص واریزکننده"
+                        className="w-full h-10 px-3 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold text-slate-300 block">
+                        شماره پیگیری / کد تراکنش فیش (اختیاری):
                       </label>
                       <input
                         type="text"

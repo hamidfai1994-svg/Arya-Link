@@ -26,12 +26,12 @@ import {
   EyeOff,
   X,
   Wallet,
-  Smartphone,
   Store,
   QrCode,
   AlertCircle,
   Copy,
   Check,
+  Upload,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -96,15 +96,14 @@ export default function AccountSettingsPage() {
     searchParams?.get('tab') === 'finance' ? 'finance' : 'profile'
   );
 
-  // HesabPay Financial Settings states
+  // HesabPay Financial Settings states (Strictly Offline for Mini-site users)
   const [hesabPayConfig, setHesabPayConfig] = useState({
-    isApiEnabled: false,
-    merchantId: '',
-    apiKey: '',
     accountNumber: '',
     accountName: '',
+    qrCodeImage: '',
+    instructions: '',
   });
-  const [showApiKey, setShowApiKey] = useState(false);
+  const [isUploadingQr, setIsUploadingQr] = useState(false);
   const [isSavingFinancial, setIsSavingFinancial] = useState(false);
   const [isLoadingFinancial, setIsLoadingFinancial] = useState(false);
   const [copiedPayload, setCopiedPayload] = useState(false);
@@ -115,7 +114,13 @@ export default function AccountSettingsPage() {
       const res = await fetch('/api/user/financial-settings');
       const data = await res.json();
       if (data.success && data.settings?.hesabPay) {
-        setHesabPayConfig(data.settings.hesabPay);
+        const hp = data.settings.hesabPay;
+        setHesabPayConfig({
+          accountNumber: hp.accountNumber || '',
+          accountName: hp.accountName || '',
+          qrCodeImage: hp.qrCodeImage || '',
+          instructions: hp.instructions || '',
+        });
       }
     } catch (err) {
       console.error('Error loading financial settings:', err);
@@ -127,6 +132,43 @@ export default function AccountSettingsPage() {
   useEffect(() => {
     fetchFinancialSettings();
   }, []);
+
+  const handleQrImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('لطفاً صرفاً فایل تصویری (JPG یا PNG) انتخاب فرمایید.');
+      return;
+    }
+    setIsUploadingQr(true);
+    const convertToBase64 = () => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (typeof reader.result === 'string') {
+          setHesabPayConfig((prev) => ({ ...prev, qrCodeImage: reader.result as string }));
+          toast.success('تصویر بارکد QR ذخیره شد. دکمه ذخیره را بزنید.');
+        }
+      };
+      reader.readAsDataURL(file);
+    };
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch('/api/receipt/upload', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (res.ok && data.success && data.url) {
+        setHesabPayConfig((prev) => ({ ...prev, qrCodeImage: data.url }));
+        toast.success('تصویر QR Code با موفقیت آپلود شد.');
+      } else {
+        convertToBase64();
+      }
+    } catch {
+      convertToBase64();
+    } finally {
+      setIsUploadingQr(false);
+      e.target.value = '';
+    }
+  };
 
   const handleSaveFinancial = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -425,104 +467,27 @@ export default function AccountSettingsPage() {
                   <div>
                     <h2 className="text-sm font-bold text-foreground">درگاه و کیف پول اختصاصی حساب‌پی (HesabPay)</h2>
                     <p className="text-[11px] text-muted-foreground mt-0.5">
-                      اطلاعات اختصاصی خود را وارد نمایید تا کلیه واریزی‌های مینی‌سایت شما مستقیماً به حساب شخصی‌تان هدایت گردد.
+                      مشخصات حساب، بارکد QR اختصاصی و راهنمای واریز خود را درج نمایید تا مشتریان مینی‌سایت پس از واریز، رسید را برای شما ثبت کنند.
                     </p>
                   </div>
                 </div>
-                <Badge variant={hesabPayConfig.isApiEnabled ? 'default' : 'secondary'} className="text-[10px]">
-                  {hesabPayConfig.isApiEnabled ? 'پرداخت دوگانه فعال (مستقیم + صراف)' : 'صرفاً دستی (صراف/دکاندار)'}
+                <Badge variant="secondary" className="text-[10px]">
+                  واریز آفلاین + آپلود رسید
                 </Badge>
               </div>
 
               <form onSubmit={handleSaveFinancial} className="space-y-5">
-                {/* Switch for Online Direct API */}
-                <div className="p-4 rounded-2xl bg-muted/40 border border-border flex items-center justify-between gap-4">
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-foreground block">
-                      اتصال مستقیم آنلاین حساب‌پی (Direct API Checkout):
-                    </label>
-                    <p className="text-[11px] text-muted-foreground leading-relaxed">
-                      با فعال‌سازی این گزینه، کاربرانی که اپلیکیشن حساب‌پی دارند می‌توانند مستقیماً و بدون نیاز به آپلود فیش، وجه را آنی پرداخت کنند.
-                    </p>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer shrink-0">
-                    <input
-                      type="checkbox"
-                      checked={hesabPayConfig.isApiEnabled}
-                      onChange={(e) =>
-                        setHesabPayConfig((prev) => ({ ...prev, isApiEnabled: e.target.checked }))
-                      }
-                      className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
-                  </label>
-                </div>
-
-                {/* API Credentials */}
-                {hesabPayConfig.isApiEnabled && (
-                  <div className="p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 space-y-4">
-                    <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold">
-                      <Smartphone className="w-4 h-4" />
-                      <span>مشخصات وب‌سرویس و درگاه اختصاصی تجاری</span>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-bold text-foreground block">
-                          شناسه پذیرنده (Merchant ID):
-                        </label>
-                        <Input
-                          type="text"
-                          value={hesabPayConfig.merchantId}
-                          onChange={(e) =>
-                            setHesabPayConfig((prev) => ({ ...prev, merchantId: e.target.value }))
-                          }
-                          placeholder="مثلاً: ARYA_HAMID_901"
-                          className="h-10 rounded-xl text-xs font-mono text-left"
-                          dir="ltr"
-                          required={hesabPayConfig.isApiEnabled}
-                        />
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-bold text-foreground block">
-                          کلید اختصاصی API (API Key):
-                        </label>
-                        <div className="relative">
-                          <Input
-                            type={showApiKey ? 'text' : 'password'}
-                            value={hesabPayConfig.apiKey}
-                            onChange={(e) =>
-                              setHesabPayConfig((prev) => ({ ...prev, apiKey: e.target.value }))
-                            }
-                            placeholder="hp_live_..."
-                            className="h-10 rounded-xl text-xs font-mono text-left pr-10"
-                            dir="ltr"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowApiKey((prev) => !prev)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                          >
-                            {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Offline Account Info for Sarraf / Dukkandar */}
+                {/* Strictly Offline Account Info */}
                 <div className="p-4 rounded-2xl bg-muted/40 border border-border space-y-4">
                   <div className="flex items-center gap-2 text-foreground text-xs font-bold">
                     <Store className="w-4 h-4 text-cyan-500" />
-                    <span>مشخصات حساب جهت واریز توسط صراف یا دکاندار (آفلاین)</span>
+                    <span>مشخصات حساب دریافت وجه در مینی‌سایت</span>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                       <label className="text-xs font-bold text-foreground block">
-                        شماره حساب یا مبایل حساب‌پی:
+                        شماره حساب یا شماره مبایل متصل به حساب‌پی:
                       </label>
                       <Input
                         type="text"
@@ -536,29 +501,100 @@ export default function AccountSettingsPage() {
                         required
                       />
                       <p className="text-[10px] text-muted-foreground">
-                        شماره ثبت شده در اپلیکیشن حساب‌پی شما جهت دریافت پول
+                        شماره ثبت‌شده در اپلیکیشن حساب‌پی شما جهت دریافت وجه
                       </p>
                     </div>
 
                     <div className="space-y-1.5">
                       <label className="text-xs font-bold text-foreground block">
-                        نام دارنده حساب (حروف بزرگ انگلیسی جهت بارکد QR):
+                        نام صاحب حساب:
                       </label>
                       <Input
                         type="text"
                         value={hesabPayConfig.accountName}
                         onChange={(e) =>
-                          setHesabPayConfig((prev) => ({ ...prev, accountName: e.target.value.toUpperCase() }))
+                          setHesabPayConfig((prev) => ({ ...prev, accountName: e.target.value }))
                         }
-                        placeholder="مثلاً: HAMID FASIHI"
-                        className="h-10 rounded-xl text-xs font-mono text-left uppercase"
-                        dir="ltr"
+                        placeholder="مثلاً: احمد ولی رسولی یا HAMID FASIHI"
+                        className="h-10 rounded-xl text-xs"
                         required
                       />
                       <p className="text-[10px] text-muted-foreground">
-                        جهت ساخت دقیق کد QR برای اسکن با اپلیکیشن صراف
+                        برای نمایش به پرداخت‌کننده در پاپ‌آپ پرداخت مینی‌سایت
                       </p>
                     </div>
+                  </div>
+
+                  {/* Custom QR Code Upload */}
+                  <div className="p-3.5 rounded-2xl bg-background/60 border border-border space-y-2.5">
+                    <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                      <QrCode className="w-4 h-4 text-emerald-500" />
+                      <span>آپلود تصویر QR Code اختصاصی حساب شما:</span>
+                    </label>
+                    {hesabPayConfig.qrCodeImage ? (
+                      <div className="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-emerald-500/5 border border-emerald-500/30">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <img
+                            src={hesabPayConfig.qrCodeImage}
+                            alt="QR Code اختصاصی"
+                            className="w-14 h-14 rounded-xl object-contain bg-white p-1 border border-border shrink-0"
+                          />
+                          <div className="min-w-0">
+                            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 block truncate">
+                              تصویر QR Code بارگذاری شد
+                            </span>
+                            <span className="text-[10px] text-muted-foreground block">
+                              هنگام پرداخت در مینی‌سایت نمایش داده می‌شود
+                            </span>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setHesabPayConfig((prev) => ({ ...prev, qrCodeImage: '' }))}
+                          className="p-2 rounded-lg bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 transition-colors shrink-0"
+                          title="حذف تصویر"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <label className="w-full py-3 px-4 rounded-xl border border-dashed border-emerald-500/40 hover:border-emerald-500 bg-emerald-500/5 hover:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          disabled={isUploadingQr}
+                          onChange={handleQrImageUpload}
+                        />
+                        {isUploadingQr ? (
+                          <>
+                            <RefreshCw className="w-4 h-4 animate-spin" />
+                            <span>در حال آپلود تصویر QR Code...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="w-4 h-4" />
+                            <span>انتخاب و آپلود تصویر QR Code اختصاصی (JPG / PNG)</span>
+                          </>
+                        )}
+                      </label>
+                    )}
+                  </div>
+
+                  {/* Deposit Instructions */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-foreground block">
+                      متن راهنمای واریز (دلخواه):
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={hesabPayConfig.instructions}
+                      onChange={(e) =>
+                        setHesabPayConfig((prev) => ({ ...prev, instructions: e.target.value }))
+                      }
+                      placeholder="مثال: لطفاً مبلغ را به حساب یا QR بالا واریز نموده و عکس فیش رسید را در فرم زیر آپلود کنید."
+                      className="w-full bg-background border border-border rounded-xl p-3 text-xs text-foreground placeholder-muted-foreground focus:outline-none focus:border-emerald-500 resize-none"
+                    />
                   </div>
                 </div>
 
@@ -573,7 +609,7 @@ export default function AccountSettingsPage() {
                     ) : (
                       <Save className="w-4 h-4" />
                     )}
-                    <span>ذخیره تنظیمات درگاه مالی</span>
+                    <span>ذخیره تنظیمات حساب‌پی</span>
                   </Button>
                 </div>
               </form>
@@ -584,35 +620,45 @@ export default function AccountSettingsPage() {
           <div className="lg:col-span-4 space-y-6">
             <Card className="p-5 rounded-3xl bg-gradient-to-b from-card to-muted/40 border border-border shadow-sm space-y-4 text-center">
               <span className="text-xs font-bold text-foreground block">
-                پیش‌نمایش زنده بارکد اسکن صراف
+                پیش‌نمایش بارکد واریز مینی‌سایت
               </span>
 
-              {hesabPayConfig.accountNumber ? (
+              {hesabPayConfig.qrCodeImage || hesabPayConfig.accountNumber ? (
                 <div className="space-y-3">
                   <div className="p-3 bg-white rounded-2xl shadow-md border border-white/20 inline-block mx-auto">
-                    {(() => {
-                      const fPhone = (hesabPayConfig.accountNumber || '').trim().replace(/^0+/, '');
-                      const fName = (hesabPayConfig.accountName || '').trim().toUpperCase() || 'ARYALINK';
-                      const payload = `1:01*2:p*3:93.${fPhone}*4:general*5:${fName}*6:971*7:1307100`;
-                      return <QRCodeSVG value={payload} size={130} level="M" />;
-                    })()}
+                    {hesabPayConfig.qrCodeImage ? (
+                      <img
+                        src={hesabPayConfig.qrCodeImage}
+                        alt="QR Code"
+                        className="w-32 h-32 object-contain rounded-lg"
+                      />
+                    ) : (
+                      (() => {
+                        const fPhone = (hesabPayConfig.accountNumber || '').trim().replace(/^0+/, '');
+                        const fName = (hesabPayConfig.accountName || '').trim().toUpperCase() || 'ARYALINK';
+                        const payload = `1:01*2:p*3:93.${fPhone}*4:general*5:${fName}*6:971*7:1307100`;
+                        return <QRCodeSVG value={payload} size={130} level="M" />;
+                      })()
+                    )}
                   </div>
 
                   <p className="text-[11px] text-muted-foreground px-2 leading-relaxed">
-                    این بارکد را به صراف یا دکاندار نشان دهید تا با اپلیکیشن حساب‌پی خود اسکن کند.
+                    مشتریان مینی‌سایت با اسکن این بارکد مبلغ را واریز کرده و فیش رسید را برای شما ثبت می‌کنند.
                   </p>
 
                   <div className="p-2.5 rounded-xl bg-muted/60 border border-border text-[11px] space-y-1 text-right">
-                    <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground">شماره حساب:</span>
-                      <span className="font-mono font-bold text-foreground" dir="ltr">
-                        {hesabPayConfig.accountNumber}
-                      </span>
-                    </div>
+                    {hesabPayConfig.accountNumber && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground">شماره حساب:</span>
+                        <span className="font-mono font-bold text-foreground" dir="ltr">
+                          {hesabPayConfig.accountNumber}
+                        </span>
+                      </div>
+                    )}
                     {hesabPayConfig.accountName && (
                       <div className="flex justify-between items-center">
                         <span className="text-muted-foreground">نام حساب:</span>
-                        <span className="font-mono text-foreground" dir="ltr">
+                        <span className="text-foreground font-semibold">
                           {hesabPayConfig.accountName}
                         </span>
                       </div>
@@ -622,7 +668,7 @@ export default function AccountSettingsPage() {
               ) : (
                 <div className="py-8 text-center text-muted-foreground space-y-2">
                   <QrCode className="w-10 h-10 mx-auto opacity-30" />
-                  <p className="text-xs">پس از درج شماره حساب، بارکد اسکن اختصاصی در اینجا ظاهر می‌شود.</p>
+                  <p className="text-xs">پس از درج شماره حساب یا آپلود تصویر QR، پیش‌نمایش در اینجا ظاهر می‌شود.</p>
                 </div>
               )}
             </Card>

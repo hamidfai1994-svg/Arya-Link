@@ -159,6 +159,7 @@ export interface PaymentMethodItem {
   walletService?: string;
   walletAccount?: string;
   walletAccountName?: string;
+  qrCodeImage?: string;
   isApiEnabled?: boolean;
   merchantId?: string;
   apiKey?: string;
@@ -254,10 +255,12 @@ export interface ModuleMetadata {
   walletService?: string;
   walletAccount?: string;
   walletAccountName?: string;
+  qrCodeImage?: string;
   isApiEnabled?: boolean;
   merchantId?: string;
   apiKey?: string;
   paymentWalletAccountName?: string;
+  paymentQrCodeImage?: string;
   paymentIsApiEnabled?: boolean;
   paymentMerchantId?: string;
   paymentApiKey?: string;
@@ -416,6 +419,8 @@ export interface ProfileData {
       apiKey?: string;
       accountName?: string;
       accountNumber?: string;
+      qrCodeImage?: string;
+      instructions?: string;
     };
     [key: string]: any;
   };

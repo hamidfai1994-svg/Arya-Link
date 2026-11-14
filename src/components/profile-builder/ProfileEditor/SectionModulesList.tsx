@@ -110,6 +110,10 @@ import {
   Truck,
   CalendarClock,
   Calculator,
+  Upload,
+  QrCode,
+  X,
+  RefreshCw,
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import {
@@ -154,7 +158,7 @@ export const SectionModulesList: React.FC = () => {
   const [activeSettingsTab, setActiveSettingsTab] = useState<Record<string, 'content' | 'advanced'>>({});
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [storePaymentSettings, setStorePaymentSettings] = useState<any>(null);
-  const [showApiKeys, setShowApiKeys] = useState<Record<string, boolean>>({});
+  const [uploadingQrMap, setUploadingQrMap] = useState<Record<string, boolean>>({});
   const snapshotsRef = React.useRef<Record<string, ProfileLinkItem>>({});
 
   useEffect(() => {
@@ -271,11 +275,13 @@ export const SectionModulesList: React.FC = () => {
       );
       if (hp) {
         const hpPayload = {
-          isApiEnabled: Boolean(hp.isApiEnabled),
-          merchantId: (hp.merchantId || '').trim(),
-          apiKey: (hp.apiKey || '').trim(),
+          isApiEnabled: false,
+          merchantId: '',
+          apiKey: '',
           accountNumber: (hp.walletAccount || '').trim(),
           accountName: (hp.walletAccountName || '').trim(),
+          qrCodeImage: (hp.qrCodeImage || '').trim(),
+          instructions: (hp.instructions || meta.paymentDescription || '').trim(),
           isActive: true,
         };
 
@@ -862,9 +868,8 @@ export const SectionModulesList: React.FC = () => {
           walletService: (meta.paymentWalletService || meta.walletService || 'HesabPay') as any,
           walletAccount: meta.paymentWalletAccount || meta.walletAccount || hpFinancial?.accountNumber || '',
           walletAccountName: meta.paymentWalletAccountName || meta.walletAccountName || hpFinancial?.accountName || '',
-          isApiEnabled: meta.paymentIsApiEnabled ?? meta.isApiEnabled ?? hpFinancial?.isApiEnabled ?? false,
-          merchantId: meta.paymentMerchantId || meta.merchantId || hpFinancial?.merchantId || '',
-          apiKey: meta.paymentApiKey || meta.apiKey || hpFinancial?.apiKey || '',
+          qrCodeImage: meta.paymentQrCodeImage || meta.qrCodeImage || hpFinancial?.qrCodeImage || '',
+          instructions: meta.paymentDescription || meta.paymentInstructions || hpFinancial?.instructions || '',
           bankName: (meta.paymentBankName || meta.bankName || 'AIB') as any,
           bankAccountHolder: meta.paymentAccountHolder || meta.bankAccountHolder || '',
           bankAccountNumber: meta.paymentAccountNumber || meta.bankAccountNumber || '',
@@ -881,7 +886,7 @@ export const SectionModulesList: React.FC = () => {
       const primary: Partial<PaymentMethodItem> = newMethods[0] || {};
       updateLinkMetadata(link.id, {
         supportedMethods: newMethods,
-        // Sync top-level for legacy fallbacks
+        // Sync top-level for legacy fallbacks (strictly offline for mini-site users)
         paymentProviderType: primary.providerType || 'wallet',
         paymentWalletService: primary.walletService,
         walletService: primary.walletService,
@@ -889,12 +894,14 @@ export const SectionModulesList: React.FC = () => {
         walletAccount: primary.walletAccount,
         paymentWalletAccountName: primary.walletAccountName,
         walletAccountName: primary.walletAccountName,
-        paymentIsApiEnabled: primary.isApiEnabled,
-        isApiEnabled: primary.isApiEnabled,
-        paymentMerchantId: primary.merchantId,
-        merchantId: primary.merchantId,
-        paymentApiKey: primary.apiKey,
-        apiKey: primary.apiKey,
+        paymentQrCodeImage: primary.qrCodeImage,
+        qrCodeImage: primary.qrCodeImage,
+        paymentIsApiEnabled: false,
+        isApiEnabled: false,
+        paymentMerchantId: '',
+        merchantId: '',
+        paymentApiKey: '',
+        apiKey: '',
         paymentBankName: primary.bankName,
         bankName: primary.bankName,
         paymentAccountHolder: primary.bankAccountHolder,
@@ -913,9 +920,10 @@ export const SectionModulesList: React.FC = () => {
         cryptoNetwork: primary.cryptoNetwork,
         paymentCryptoAddress: primary.cryptoWalletAddress,
         cryptoWalletAddress: primary.cryptoWalletAddress,
+        ...(primary.instructions !== undefined ? { paymentDescription: primary.instructions } : {}),
       });
 
-      // Synchronize HesabPay credentials to profile financial settings in state
+      // Synchronize offline HesabPay settings to profile financial settings in state
       const hp = newMethods.find(
         (m) =>
           (m.providerType === 'wallet' && (m.walletService || '').toLowerCase().includes('hesabpay')) ||
@@ -924,11 +932,13 @@ export const SectionModulesList: React.FC = () => {
       if (hp && updateFinancialSettings) {
         updateFinancialSettings({
           hesabPay: {
-            isApiEnabled: Boolean(hp.isApiEnabled),
-            merchantId: (hp.merchantId || '').trim(),
-            apiKey: (hp.apiKey || '').trim(),
+            isApiEnabled: false,
+            merchantId: '',
+            apiKey: '',
             accountNumber: (hp.walletAccount || '').trim(),
             accountName: (hp.walletAccountName || '').trim(),
+            qrCodeImage: (hp.qrCodeImage || '').trim(),
+            instructions: (hp.instructions || meta.paymentDescription || '').trim(),
             isActive: true,
           },
         });
@@ -945,9 +955,8 @@ export const SectionModulesList: React.FC = () => {
         walletService: 'HesabPay',
         walletAccount: '',
         walletAccountName: '',
-        isApiEnabled: false,
-        merchantId: '',
-        apiKey: '',
+        qrCodeImage: '',
+        instructions: '',
         cryptoNetwork: 'TRC20',
       };
       updateMethods([...rawMethods, newMethod]);
@@ -967,6 +976,50 @@ export const SectionModulesList: React.FC = () => {
     const handleMethodChange = (index: number, patch: Partial<PaymentMethodItem>) => {
       const updated = rawMethods.map((m, i) => (i === index ? { ...m, ...patch } : m));
       updateMethods(updated);
+    };
+
+    const handleQrUpload = async (index: number, key: string, file?: File) => {
+      if (!file) return;
+      if (!file.type.startsWith('image/')) {
+        toast.error('لطفاً صرفاً فایل تصویری (PNG یا JPG) انتخاب فرمایید.');
+        return;
+      }
+      if (file.size > 3.5 * 1024 * 1024) {
+        toast.error('حجم تصویر نباید بیشتر از ۳.۵ مگابایت باشد.');
+        return;
+      }
+
+      setUploadingQrMap((prev) => ({ ...prev, [key]: true }));
+      const convertToBase64 = () => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          if (typeof reader.result === 'string') {
+            handleMethodChange(index, { qrCodeImage: reader.result });
+            toast.success('تصویر بارکد QR ذخیره گردید.');
+          }
+        };
+        reader.readAsDataURL(file);
+      };
+
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        const res = await fetch('/api/receipt/upload', {
+          method: 'POST',
+          body: formData,
+        });
+        const data = await res.json();
+        if (res.ok && data.success && data.url) {
+          handleMethodChange(index, { qrCodeImage: data.url });
+          toast.success('تصویر QR Code اختصاصی شما با موفقیت آپلود شد.');
+        } else {
+          convertToBase64();
+        }
+      } catch {
+        convertToBase64();
+      } finally {
+        setUploadingQrMap((prev) => ({ ...prev, [key]: false }));
+      }
     };
 
     // Category options for dropdown (filtered by super admin active settings)
@@ -1133,7 +1186,7 @@ export const SectionModulesList: React.FC = () => {
                   </div>
 
                   {/* فیلدهای اختصاصی هر روش */}
-                  {/* ۱. کیف پول دیجیتال */}
+                  {/* ۱. کیف پول دیجیتال (صرفاً حالت آفلاین برای مینی‌سایت) */}
                   {currentProvider === 'wallet' && (
                     <div className="space-y-3 pt-1">
                       <div>
@@ -1149,7 +1202,7 @@ export const SectionModulesList: React.FC = () => {
 
                       <div>
                         <label className="block text-[11px] font-semibold text-foreground mb-1">
-                          شماره حساب یا مبایل کیف پول:
+                          شماره حساب یا شماره مبایل متصل به حساب‌پی:
                         </label>
                         <input
                           type="text"
@@ -1161,100 +1214,99 @@ export const SectionModulesList: React.FC = () => {
                         />
                       </div>
 
-                      {/* ۱. فیلد نام صاحب حساب (انگلیسی) دقیقاً زیر شماره حساب */}
                       <div>
                         <div className="flex items-center justify-between mb-1">
                           <label className="block text-[11px] font-semibold text-foreground">
-                            نام صاحب حساب (انگلیسی):
+                            نام صاحب حساب:
                           </label>
-                          <span className="text-[10px] text-muted-foreground">جهت تولید بارکد صراف / دکاندار</span>
+                          <span className="text-[10px] text-muted-foreground">نمایش برای پرداخت‌کننده</span>
                         </div>
                         <input
                           type="text"
                           value={method.walletAccountName || ''}
-                          onChange={(e) => handleMethodChange(index, { walletAccountName: e.target.value.toUpperCase() })}
-                          placeholder="مثال: AHMAD WALI RASOOLI"
-                          className="w-full bg-background border border-border rounded-xl px-3 py-2 text-xs text-foreground placeholder-muted-foreground focus:outline-none focus:border-emerald-500 font-sans uppercase text-left"
-                          dir="ltr"
+                          onChange={(e) => handleMethodChange(index, { walletAccountName: e.target.value })}
+                          placeholder="مثال: احمد ولی رسولی یا AHMAD WALI"
+                          className="w-full bg-background border border-border rounded-xl px-3 py-2 text-xs text-foreground placeholder-muted-foreground focus:outline-none focus:border-emerald-500"
                         />
-                        <p className="text-[10px] text-muted-foreground mt-1">
-                          این نام برای ساخت پیلود بارکد آفلاین/دستی و اسکن توسط صراف یا دکاندار ضروری است.
-                        </p>
                       </div>
 
-                      {/* ۲. تاگل سوئیچ فعالسازی اتصال مستقیم به درگاه (API) */}
-                      <div className="p-3 rounded-2xl bg-muted/40 border border-border/80 flex items-center justify-between gap-3">
-                        <div className="space-y-0.5">
-                          <label className="text-[11px] font-bold text-foreground block cursor-pointer">
-                            فعالسازی اتصال مستقیم به درگاه (API)
+                      {/* آپلود تصویر QR Code اختصاصی کاربر */}
+                      <div className="p-3 rounded-2xl bg-background/70 border border-border space-y-2">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[11px] font-semibold text-foreground flex items-center gap-1.5">
+                            <QrCode className="w-3.5 h-3.5 text-emerald-500" />
+                            <span>تصویر QR Code اختصاصی حساب شما:</span>
                           </label>
-                          <p className="text-[10px] text-muted-foreground">
-                            هدایت مستقیم پرداخت‌کننده به اپلیکیشن حساب‌پی بدون نیاز به آپلود فیش
-                          </p>
+                          <span className="text-[10px] text-muted-foreground">JPG / PNG</span>
                         </div>
-                        <Switch
-                          checked={Boolean(method.isApiEnabled)}
-                          onCheckedChange={(checked) =>
-                            handleMethodChange(index, { isApiEnabled: checked })
-                          }
-                        />
+
+                        {method.qrCodeImage ? (
+                          <div className="flex items-center justify-between gap-3 p-2 rounded-xl bg-emerald-500/5 border border-emerald-500/30">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <img
+                                src={method.qrCodeImage}
+                                alt="QR Code اختصاصی"
+                                className="w-12 h-12 rounded-lg object-contain bg-white p-1 border border-border shrink-0"
+                              />
+                              <div className="min-w-0">
+                                <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 block truncate">
+                                  تصویر QR Code بارگذاری شد
+                                </span>
+                                <span className="text-[10px] text-muted-foreground block">
+                                  هنگام پرداخت به مشتری نمایش داده می‌شود
+                                </span>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleMethodChange(index, { qrCodeImage: '' })}
+                              className="p-1.5 rounded-lg bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 transition-colors shrink-0"
+                              title="حذف تصویر QR Code"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ) : (
+                          <label className="w-full py-2.5 px-3 rounded-xl border border-dashed border-emerald-500/40 hover:border-emerald-500 bg-emerald-500/5 hover:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[11px] font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              disabled={Boolean(uploadingQrMap[method.id || String(index)])}
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                handleQrUpload(index, method.id || String(index), file);
+                                e.target.value = '';
+                              }}
+                            />
+                            {uploadingQrMap[method.id || String(index)] ? (
+                              <>
+                                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                <span>در حال آپلود تصویر QR Code...</span>
+                              </>
+                            ) : (
+                              <>
+                                <Upload className="w-3.5 h-3.5" />
+                                <span>آپلود تصویر QR Code اختصاصی</span>
+                              </>
+                            )}
+                          </label>
+                        )}
                       </div>
 
-                      {/* ۳. نمایش شرطی فیلدهای API */}
-                      {Boolean(method.isApiEnabled) && (
-                        <div className="p-3.5 rounded-2xl bg-emerald-500/5 border border-emerald-500/25 space-y-3 animate-in fade-in slide-in-from-top-1 duration-150">
-                          <div>
-                            <label className="block text-[11px] font-semibold text-foreground mb-1">
-                              شناسه پذیرنده (Merchant ID):
-                            </label>
-                            <input
-                              type="text"
-                              value={method.merchantId || ''}
-                              onChange={(e) => handleMethodChange(index, { merchantId: e.target.value.trim() })}
-                              placeholder="مثال: MER-93799123456"
-                              className="w-full bg-background border border-border rounded-xl px-3 py-2 text-xs text-foreground placeholder-muted-foreground focus:outline-none focus:border-emerald-500 font-mono text-left"
-                              dir="ltr"
-                            />
-                          </div>
-
-                          <div>
-                            <div className="flex items-center justify-between mb-1">
-                              <label className="block text-[11px] font-semibold text-foreground">
-                                کلید ارتباطی درگاه (API Key / Secret):
-                              </label>
-                              <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">محرمانه و امن</span>
-                            </div>
-                            <div className="relative">
-                              <input
-                                type={showApiKeys[method.id || index] ? 'text' : 'password'}
-                                value={method.apiKey || ''}
-                                onChange={(e) => handleMethodChange(index, { apiKey: e.target.value.trim() })}
-                                placeholder="کلید امنیتی اتصال حساب‌پی را وارد فرمایید"
-                                className="w-full bg-background border border-border rounded-xl pr-3 pl-9 py-2 text-xs text-foreground placeholder-muted-foreground focus:outline-none focus:border-emerald-500 font-mono text-left"
-                                dir="ltr"
-                              />
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setShowApiKeys((prev) => ({
-                                    ...prev,
-                                    [method.id || index]: !prev[method.id || index],
-                                  }))
-                                }
-                                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1"
-                                tabIndex={-1}
-                                title={showApiKeys[method.id || index] ? 'مخفی‌سازی کلید' : 'نمایش کلید'}
-                              >
-                                {showApiKeys[method.id || index] ? (
-                                  <EyeOff className="w-3.5 h-3.5" />
-                                ) : (
-                                  <Eye className="w-3.5 h-3.5" />
-                                )}
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      )}
+                      {/* متن راهنمای واریز (دلخواه) */}
+                      <div>
+                        <label className="block text-[11px] font-semibold text-foreground mb-1">
+                          متن راهنمای واریز (دلخواه):
+                        </label>
+                        <textarea
+                          rows={2}
+                          value={method.instructions ?? meta.paymentDescription ?? ''}
+                          onChange={(e) => handleMethodChange(index, { instructions: e.target.value })}
+                          placeholder="مثال: لطفاً مبلغ را به شماره حساب یا بارکد بالا واریز کرده و تصویر رسید را آپلود نمایید."
+                          className="w-full bg-background border border-border rounded-xl p-2.5 text-xs text-foreground placeholder-muted-foreground focus:outline-none focus:border-emerald-500 resize-none"
+                        />
+                      </div>
                     </div>
                   )}
 

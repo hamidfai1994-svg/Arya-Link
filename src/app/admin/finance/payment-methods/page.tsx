@@ -235,6 +235,116 @@ const LogoUploadField: React.FC<{
 };
 
 // =========================================================================
+// REUSABLE QR CODE UPLOAD & PREVIEW COMPONENT (STRICT RTL SUPPORT)
+// =========================================================================
+const QrCodeUploadField: React.FC<{
+  qrCodeImage?: string;
+  onChange: (url: string) => void;
+  title?: string;
+}> = ({ qrCodeImage, onChange, title = 'تصویر QR Code اختصاصی حساب' }) => {
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('لطفاً صرفاً فایل تصویری (PNG, JPG, WebP) انتخاب فرمایید.');
+      return;
+    }
+
+    setIsUploading(true);
+
+    const convertToBase64 = () => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (typeof reader.result === 'string') {
+          onChange(reader.result);
+          toast.success('تصویر بارکد QR ذخیره شد. لطفاً دکمه «ذخیره تغییرات سراسری» را بزنید.');
+        }
+      };
+      reader.readAsDataURL(file);
+    };
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await fetch('/api/receipt/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (res.ok && data.success && data.url) {
+        onChange(data.url);
+        toast.success('تصویر QR Code جدید با موفقیت آپلود شد. لطفاً دکمه «ذخیره تغییرات سراسری» را بزنید.');
+      } else {
+        convertToBase64();
+      }
+    } catch {
+      convertToBase64();
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/40 border border-border/70 text-right" dir="rtl">
+      <div className="w-12 h-12 rounded-xl bg-white border border-border flex items-center justify-center shrink-0 overflow-hidden p-1">
+        {qrCodeImage ? (
+          <img src={qrCodeImage} alt="QR Code" className="w-full h-full object-contain" />
+        ) : (
+          <QrCode className="w-6 h-6 text-slate-400" />
+        )}
+      </div>
+
+      <div className="flex-1 min-w-0 text-right">
+        <span className="text-[11px] font-bold text-foreground block truncate text-right">{title}:</span>
+        <span className="text-[10px] text-muted-foreground block mt-0.5">
+          در صورت آپلود تصویر QR اختصاصی، در صفحه ارتقای اشتراک و پرداخت پلتفرم به مشتریان نمایش داده می‌شود.
+        </span>
+        <div className="flex items-center gap-2 mt-2">
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            accept="image/*"
+            className="hidden"
+          />
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={isUploading}
+            onClick={() => fileInputRef.current?.click()}
+            className="h-7 px-2.5 text-[10px] rounded-lg border-border flex items-center gap-1.5"
+          >
+            {isUploading ? <RefreshCw className="w-3 h-3 animate-spin me-1" /> : <Upload className="w-3 h-3 me-1" />}
+            <span>{qrCodeImage ? 'تغییر تصویر QR Code' : 'آپلود تصویر QR Code'}</span>
+          </Button>
+
+          {qrCodeImage && (
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() => onChange('')}
+              className="h-7 px-2 text-[10px] rounded-lg text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 flex items-center gap-1"
+              title="حذف تصویر بارکد و استفاده از QR خودکار"
+            >
+              <RotateCcw className="w-3 h-3 me-1" />
+              <span>حذف تصویر</span>
+            </Button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// =========================================================================
 // MASTER GROUP CONTROL CARD (HIGHLY DISTINCTIVE PARENT CONTROLLER UI - STRICT RTL)
 // =========================================================================
 interface MasterGroupControlCardProps {
@@ -1123,9 +1233,10 @@ export default function AdminPaymentMethodsPage() {
                               {/* Secret Key with Password Eye Toggle */}
                               <PasswordInputField
                                 label="کلید امنیتی محرمانه (Secret Key)"
-                                value={wallet.hesabPayConfig?.apiSecret || ''}
+                                value={wallet.apiSecret || wallet.hesabPayConfig?.apiSecret || ''}
                                 onChange={(val) =>
                                   updateWallet(wallet.id, {
+                                    apiSecret: val,
                                     hesabPayConfig: {
                                       ...(wallet.hesabPayConfig || {
                                         isSandbox: true,
@@ -1215,30 +1326,48 @@ export default function AdminPaymentMethodsPage() {
                               </div>
                             </div>
 
+                            {/* Custom QR Code Image Upload for HesabPay */}
+                            <QrCodeUploadField
+                              qrCodeImage={wallet.qrCodeImage || wallet.qrCodeUrl}
+                              onChange={(url) => updateWallet(wallet.id, { qrCodeImage: url, qrCodeUrl: url })}
+                              title="آپلود تصویر QR Code اختصاصی حساب‌پی (اختیاری)"
+                            />
+
                             {/* Real-time Dynamic HesabPay QR Code Preview */}
                             {(() => {
                               const cleanP = (wallet.accountNumber || '0729736813').replace(/^0+/, '');
                               const cleanN = (wallet.accountName || wallet.accountHolder || 'HAMID FASIHI').toUpperCase();
                               const previewQr = `1:01*2:p*3:93.${cleanP}*4:general*5:${cleanN}*6:971*7:1307100`;
+                              const customQr = wallet.qrCodeImage || wallet.qrCodeUrl;
 
                               return (
                                 <div className="p-3 rounded-xl bg-card border border-border/80 flex flex-col sm:flex-row items-center gap-4">
                                   <div className="p-2 bg-white rounded-xl shadow-md shrink-0">
-                                    <QRCodeSVG value={previewQr} size={96} level="M" />
+                                    {customQr ? (
+                                      <img
+                                        src={customQr}
+                                        alt="QR Code حساب‌پی"
+                                        className="w-24 h-24 object-contain rounded-lg"
+                                      />
+                                    ) : (
+                                      <QRCodeSVG value={previewQr} size={96} level="M" />
+                                    )}
                                   </div>
                                   <div className="space-y-1 text-right flex-1 min-w-0">
                                     <div className="flex items-center gap-2">
                                       <span className="text-xs font-bold text-foreground">پیش‌نمایش زنده بارکد حساب‌پی:</span>
                                       <Badge variant="outline" className="text-[9px] bg-emerald-500/10 text-emerald-400 border-emerald-500/30">
-                                        تولید خودکار
+                                        {customQr ? 'بارکد اختصاصی آپلودشده' : 'تولید خودکار'}
                                       </Badge>
                                     </div>
                                     <p className="text-[10px] text-muted-foreground">
-                                      این بارکد دقیقاً با الگوی استاندارد حساب‌پی برای خریدارانی که گزینه «صراف / دکاندار» را برمی‌گزینند رندر خواهد شد.
+                                      این بارکد دقیقاً برای خریدارانی که گزینه «صراف / دکاندار» یا پرداخت با فیش را برمی‌گزینند نمایش داده خواهد شد.
                                     </p>
-                                    <div className="p-1.5 rounded-lg bg-muted/40 font-mono text-[10px] text-muted-foreground truncate" dir="ltr">
-                                      {previewQr}
-                                    </div>
+                                    {!customQr && (
+                                      <div className="p-1.5 rounded-lg bg-muted/40 font-mono text-[10px] text-muted-foreground truncate" dir="ltr">
+                                        {previewQr}
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
                               );
@@ -1247,29 +1376,37 @@ export default function AdminPaymentMethodsPage() {
                         </div>
                       ) : (
                         /* General Mobile Wallet Technology Fields */
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-right" dir="rtl">
-                          <div className="space-y-1 text-right">
-                            <label className="text-[11px] font-bold text-foreground block text-right">
-                              شماره موبایل / حساب در {wallet.name}:
-                            </label>
-                            <Input
-                              value={wallet.accountNumber || ''}
-                              onChange={(e) => updateWallet(wallet.id, { accountNumber: e.target.value })}
-                              className="h-9 rounded-xl font-mono text-xs text-start"
-                              dir="ltr"
-                              placeholder="0799001122"
-                            />
+                        <div className="space-y-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-right" dir="rtl">
+                            <div className="space-y-1 text-right">
+                              <label className="text-[11px] font-bold text-foreground block text-right">
+                                شماره موبایل / حساب در {wallet.name}:
+                              </label>
+                              <Input
+                                value={wallet.accountNumber || ''}
+                                onChange={(e) => updateWallet(wallet.id, { accountNumber: e.target.value })}
+                                className="h-9 rounded-xl font-mono text-xs text-start"
+                                dir="ltr"
+                                placeholder="0799001122"
+                              />
+                            </div>
+
+                            <div className="space-y-1 text-right">
+                              <label className="text-[11px] font-bold text-foreground block text-right">نام صاحب حساب:</label>
+                              <Input
+                                value={wallet.accountHolder || ''}
+                                onChange={(e) => updateWallet(wallet.id, { accountHolder: e.target.value })}
+                                className="h-9 rounded-xl text-xs text-right"
+                                placeholder="Aryalink LLC یا نام شخص"
+                              />
+                            </div>
                           </div>
 
-                          <div className="space-y-1 text-right">
-                            <label className="text-[11px] font-bold text-foreground block text-right">نام صاحب حساب:</label>
-                            <Input
-                              value={wallet.accountHolder || ''}
-                              onChange={(e) => updateWallet(wallet.id, { accountHolder: e.target.value })}
-                              className="h-9 rounded-xl text-xs text-right"
-                              placeholder="Aryalink LLC یا نام شخص"
-                            />
-                          </div>
+                          <QrCodeUploadField
+                            qrCodeImage={wallet.qrCodeImage || wallet.qrCodeUrl}
+                            onChange={(url) => updateWallet(wallet.id, { qrCodeImage: url, qrCodeUrl: url })}
+                            title={`تصویر QR Code اختصاصی ${wallet.nameFa}`}
+                          />
                         </div>
                       )}
 

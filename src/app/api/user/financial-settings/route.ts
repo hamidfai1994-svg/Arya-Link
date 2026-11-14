@@ -25,6 +25,8 @@ export async function GET(req: NextRequest) {
       apiKey: '',
       accountNumber: '',
       accountName: '',
+      qrCodeImage: '',
+      instructions: '',
       isActive: true,
     };
 
@@ -32,11 +34,13 @@ export async function GET(req: NextRequest) {
       success: true,
       settings: {
         hesabPay: {
-          isApiEnabled: hesabPay.isApiEnabled === true,
-          merchantId: hesabPay.merchantId || '',
-          apiKey: hesabPay.apiKey || '',
+          isApiEnabled: false,
+          merchantId: '',
+          apiKey: '',
           accountNumber: hesabPay.accountNumber || '',
           accountName: hesabPay.accountName || '',
+          qrCodeImage: hesabPay.qrCodeImage || '',
+          instructions: hesabPay.instructions || '',
           isActive: hesabPay.isActive !== false,
         },
       },
@@ -72,12 +76,15 @@ export async function PUT(req: NextRequest) {
 
     await connectToDatabase();
 
+    // Mini-site users are strictly offline (API credentials stripped)
     const sanitizedHesabPay = {
-      isApiEnabled: Boolean(hesabPay.isApiEnabled),
-      merchantId: (hesabPay.merchantId || '').trim(),
-      apiKey: (hesabPay.apiKey || '').trim(),
+      isApiEnabled: false,
+      merchantId: '',
+      apiKey: '',
       accountNumber: (hesabPay.accountNumber || '').trim(),
       accountName: (hesabPay.accountName || '').trim(),
+      qrCodeImage: (hesabPay.qrCodeImage || '').trim(),
+      instructions: (hesabPay.instructions || '').trim(),
       isActive: hesabPay.isActive !== false,
     };
 

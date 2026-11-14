@@ -37,6 +37,8 @@ export interface IHesabPayGatewayConfig {
   callbackUrl?: string;
   accountName?: string;
   accountNumber?: string;
+  qrCodeImage?: string;
+  qrCodeUrl?: string;
 }
 
 export interface IStoreWalletToggle {
@@ -82,7 +84,9 @@ export interface IStoreWalletItem {
   isApiEnabled?: boolean;
   merchantId?: string;
   apiKey?: string;
+  apiSecret?: string;
   instructions: string;
+  qrCodeImage?: string;
   qrCodeUrl?: string;
   logoUrl?: string;
   isActive: boolean;
@@ -220,7 +224,9 @@ const StoreWalletItemSchema = new Schema<IStoreWalletItem>(
     isApiEnabled: { type: Boolean, default: true },
     merchantId: { type: String, default: 'ARYALINK_MERCHANT_01' },
     apiKey: { type: String, default: 'hp_live_test_key_aryalink_af' },
+    apiSecret: { type: String, default: '' },
     instructions: { type: String, default: '' },
+    qrCodeImage: { type: String, default: '' },
     qrCodeUrl: { type: String, default: '' },
     logoUrl: { type: String, default: '' },
     isActive: { type: Boolean, default: true },
@@ -289,8 +295,11 @@ export const DEFAULT_DETAILED_WALLETS: IStoreWalletItem[] = [
     accountName: 'HAMID FASIHI',
     merchantId: 'ARYALINK_MERCHANT_01',
     apiKey: 'hp_live_test_key_aryalink_af',
+    apiSecret: '',
     isApiEnabled: true,
     instructions: 'پرداخت آنی از طریق اپلیکیشن یا درگاه رسمی حساب‌پی.',
+    qrCodeImage: '',
+    qrCodeUrl: '',
     logoUrl: '',
     isActive: true,
     hesabPayConfig: {
@@ -580,6 +589,8 @@ const StorePaymentSettingsSchema = new Schema<IStorePaymentSettingsDocument>(
       isSandbox: { type: Boolean, default: true },
       accountName: { type: String, default: 'HAMID FASIHI' },
       accountNumber: { type: String, default: '0729736813' },
+      qrCodeImage: { type: String, default: '' },
+      qrCodeUrl: { type: String, default: '' },
       merchantId: { type: String, default: 'ARYALINK_MERCHANT_01' },
       apiKey: { type: String, default: 'hp_live_test_key_aryalink_af' },
       apiSecret: { type: String, default: '' },

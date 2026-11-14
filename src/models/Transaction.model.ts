@@ -3,9 +3,10 @@ import mongoose, { Schema, Document, Model } from 'mongoose';
 export interface ITransactionDocument extends Document {
   profileId?: mongoose.Types.ObjectId | string;
   userId?: mongoose.Types.ObjectId | string;
+  payerName?: string;
   amount: number;
   type: string;
-  status: 'pending' | 'successful' | 'failed';
+  status: 'pending' | 'pending_verification' | 'successful' | 'failed';
   currency?: string;
   description?: string;
   paymentGateway?: string;
@@ -28,6 +29,11 @@ const TransactionSchema = new Schema<ITransactionDocument>(
       ref: 'User',
       index: true,
     },
+    payerName: {
+      type: String,
+      default: '',
+      trim: true,
+    },
     amount: {
       type: Number,
       required: true,
@@ -41,7 +47,7 @@ const TransactionSchema = new Schema<ITransactionDocument>(
     },
     status: {
       type: String,
-      enum: ['pending', 'successful', 'failed'],
+      enum: ['pending', 'pending_verification', 'successful', 'failed'],
       default: 'pending',
       index: true,
     },

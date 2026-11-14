@@ -28,10 +28,7 @@ import {
   FileImage,
   RefreshCw,
   X,
-  Layers,
-  Smartphone,
-  Store,
-  Zap,
+  User,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ProfileLinkItem, PaymentMethodItem } from '@/types/profile.types';
@@ -60,6 +57,8 @@ interface PaymentCheckoutModalProps {
       merchantId?: string;
       accountNumber?: string;
       accountName?: string;
+      qrCodeImage?: string;
+      instructions?: string;
     };
     [key: string]: any;
   } | null;
@@ -144,48 +143,14 @@ export const PaymentCheckoutModal: React.FC<PaymentCheckoutModalProps> = ({
 
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
-  // Receipt Upload & Tracking States
+  // Offline Receipt Upload, Payer Name & Tracking States
+  const [payerName, setPayerName] = useState('');
   const [trackingNumber, setTrackingNumber] = useState('');
   const [receiptImageUrl, setReceiptImageUrl] = useState('');
   const [isUploadingReceipt, setIsUploadingReceipt] = useState(false);
+  const [isSubmittingReceipt, setIsSubmittingReceipt] = useState(false);
   const [receiptSubmitted, setReceiptSubmitted] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // HesabPay Dual-Mode Payment State (Direct App API vs Sarraf/Dukkandar QR)
-  const [hesabPayMode, setHesabPayMode] = useState<'direct' | 'agent'>('direct');
-  const [isInitiatingPayment, setIsInitiatingPayment] = useState(false);
-
-  const handleInitiateDirectPayment = async () => {
-    setIsInitiatingPayment(true);
-    try {
-      const res = await fetch('/api/payments/initiate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          amount: amount || 100,
-          currency: currency || 'AFN',
-          profileName,
-          description: displayTitle,
-          customerPhone: recipientPhone,
-          profileId,
-          profileAlias,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data.message || 'خطا در اتصال به درگاه حساب‌پی.');
-      }
-      toast.success('در حال انتقال به درگاه پرداخت مستقیم حساب‌پی...');
-      if (data.checkoutUrl) {
-        window.location.href = data.checkoutUrl;
-      }
-    } catch (err: any) {
-      console.error('Direct payment initiate error:', err);
-      toast.error(err.message || 'خطا در برقراری ارتباط با درگاه پرداخت مستقیم.');
-    } finally {
-      setIsInitiatingPayment(false);
-    }
-  };
 
   const displayTitle = customDetails?.title || link?.title || providerDef.title;
   const amount = customDetails?.amount ?? meta.paymentAmount;
@@ -308,6 +273,9 @@ export const PaymentCheckoutModal: React.FC<PaymentCheckoutModalProps> = ({
       `سلام و احترام به ${profileName}،`,
       `درخواست واریز وجه بابت: ${displayTitle}`,
     ];
+    if (payerName.trim()) {
+      lines.push(`نام پرداخت‌کننده: ${payerName.trim()}`);
+    }
     if (amount) {
       lines.push(`مبلغ: ${Number(amount).toLocaleString('fa-IR')} ${currencyLabel}`);
     }
@@ -329,47 +297,57 @@ export const PaymentCheckoutModal: React.FC<PaymentCheckoutModalProps> = ({
   };
 
   const handleFinalReceiptSubmit = async () => {
+    if (!payerName.trim()) {
+      toast.error('لطفاً نام پرداخت‌کننده را وارد فرمایید.');
+      return;
+    }
+
+    if (!receiptImageUrl) {
+      toast.error('لطفاً تصویر فیش یا رسید واریزی را بارگذاری فرمایید.');
+      fileInputRef.current?.click();
+      return;
+    }
+
     const isHesabPay =
       activeProviderType === 'wallet' &&
       ((activeMethod.walletService || '').toLowerCase().includes('hesabpay') ||
         activeMethod.walletService === 'HesabPay');
 
-    if (isHesabPay && hesabPayMode === 'agent' && !receiptImageUrl) {
-      toast.error('لطفاً تصویر فیش یا رسید واریزی از صراف / دکاندار را بارگذاری فرمایید.');
-      fileInputRef.current?.click();
-      return;
-    }
-
-    if (!receiptImageUrl && !trackingNumber) {
-      toast.error('لطفاً ابتدا تصویر فیش واریزی را آپلود کرده یا شماره پیگیری را وارد فرمایید.');
-      return;
-    }
-
+    setIsSubmittingReceipt(true);
     try {
-      await fetch('/api/payments/record-receipt', {
+      const res = await fetch('/api/payments/record-receipt', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           profileId,
           profileAlias,
+          payerName: payerName.trim(),
           amount: amount || 0,
           currency: currency || 'AFN',
           description: displayTitle,
-          trackingNumber,
+          trackingNumber: trackingNumber.trim(),
           receiptImageUrl,
           paymentGateway: isHesabPay ? 'hesabpay' : activeProviderType,
           paymentMode: 'manual',
+          status: 'pending_verification',
         }),
       });
-    } catch (recErr) {
-      console.warn('Could not record receipt in database:', recErr);
-    }
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || 'خطا در ثبت فیش واریزی.');
+      }
 
-    setReceiptSubmitted(true);
-    toast.success('رسید شما با موفقیت ثبت گردید. جهت تسریع در بررسی، ارسال در واتساپ را بزنید.');
+      setReceiptSubmitted(true);
+      toast.success('رسید واریزی شما با وضعیت «در انتظار بررسی» ثبت گردید.');
+    } catch (recErr: any) {
+      console.error('Could not record receipt in database:', recErr);
+      toast.error(recErr?.message || 'خطا در ثبت مشخصات رسید در سیستم.');
+    } finally {
+      setIsSubmittingReceipt(false);
+    }
   };
 
-  // Values from active method
+  // Values from active method (Strictly Offline for Mini-Site)
   const userWalletService = activeMethod.walletService || 'HesabPay';
   const userWalletAccount = activeMethod.walletAccount || '';
 
@@ -379,35 +357,31 @@ export const PaymentCheckoutModal: React.FC<PaymentCheckoutModalProps> = ({
       userWalletService === 'HesabPay');
 
   const hpOwner = profileFinancialSettings?.hesabPay;
-  const isOwnerApiConfigured = Boolean(
-    (hpOwner?.isApiEnabled && hpOwner?.merchantId) ||
-    (activeMethod.isApiEnabled && activeMethod.merchantId)
-  );
   const rawUserPhone = (
     activeMethod.walletAccount ||
-    hpOwner?.accountNumber ||
+    (isHesabPay ? hpOwner?.accountNumber : '') ||
     userWalletAccount ||
     ''
   ).trim();
   const rawUserName = (
     activeMethod.walletAccountName ||
-    hpOwner?.accountName ||
+    (isHesabPay ? hpOwner?.accountName : '') ||
     profileName ||
     ''
   ).trim();
-  const isOwnerManualConfigured = Boolean(rawUserPhone);
-  const isHesabPayConfigured = isHesabPay ? (isOwnerApiConfigured || isOwnerManualConfigured) : true;
-
-  // Auto-align HesabPay mode to available owner setup
-  useEffect(() => {
-    if (isHesabPay) {
-      if (isOwnerManualConfigured && !isOwnerApiConfigured) {
-        setHesabPayMode('agent');
-      } else if (isOwnerApiConfigured && !isOwnerManualConfigured) {
-        setHesabPayMode('direct');
-      }
-    }
-  }, [isHesabPay, isOwnerApiConfigured, isOwnerManualConfigured]);
+  const ownerCustomQrImage = (
+    activeMethod.qrCodeImage ||
+    meta.qrCodeImage ||
+    (isHesabPay ? hpOwner?.qrCodeImage : '') ||
+    ''
+  ).trim();
+  const depositInstructions = (
+    activeMethod.instructions ||
+    meta.paymentDescription ||
+    meta.paymentInstructions ||
+    (isHesabPay ? hpOwner?.instructions : '') ||
+    ''
+  ).trim();
 
   const userBankName = activeMethod.bankName || 'AIB';
   const userAccountHolder = activeMethod.bankAccountHolder || '';
@@ -521,41 +495,23 @@ export const PaymentCheckoutModal: React.FC<PaymentCheckoutModalProps> = ({
               </div>
             )}
 
-            {/* 1. WALLET PROVIDER */}
+            {/* 1. WALLET PROVIDER (STRICTLY OFFLINE ACCOUNT + QR CODE) */}
             {activeProviderType === 'wallet' && (() => {
               const walletOpt = AFGHAN_WALLETS.find((w) => w.id === userWalletService) || AFGHAN_WALLETS[0];
-              const isHesabPay =
-                (walletOpt.id || '').toLowerCase().includes('hesabpay') ||
-                (userWalletService || '').toLowerCase().includes('hesabpay');
-
-              const hpOwner = profileFinancialSettings?.hesabPay;
-              const isOwnerApiConfigured = Boolean(hpOwner?.isApiEnabled && hpOwner?.merchantId);
-              const rawUserPhone = (
-                hpOwner?.accountNumber ||
-                userWalletAccount ||
-                ''
-              ).trim();
-              const rawUserName = (
-                hpOwner?.accountName ||
-                profileName ||
-                ''
-              ).trim();
-              const isOwnerManualConfigured = Boolean(rawUserPhone);
-              const isHesabPayConfigured = isOwnerApiConfigured || isOwnerManualConfigured;
-
+              const isWalletConfigured = Boolean(rawUserPhone || ownerCustomQrImage);
               const formattedPhone = rawUserPhone.replace(/^0+/, '');
               const formattedName = rawUserName.toUpperCase();
               const qrPayload = `1:01*2:p*3:93.${formattedPhone}*4:general*5:${formattedName}*6:971*7:1307100`;
 
-              if (isHesabPay && !isHesabPayConfigured) {
+              if (!isWalletConfigured) {
                 return (
                   <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-center space-y-2.5">
                     <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center mx-auto">
                       <CreditCard className="w-5 h-5" />
                     </div>
-                    <div className="text-xs font-bold text-white">درگاه پرداخت حساب‌پی تنظیم نشده است</div>
+                    <div className="text-xs font-bold text-white">اطلاعات حساب کیف پول تنظیم نشده است</div>
                     <p className="text-[11px] text-amber-200/90 leading-relaxed">
-                      صاحب این کارت هنوز مشخصات درگاه آنلاین یا شماره حساب/کیف پول خود را تنظیم نکرده است. در حال حاضر امکان واریز وجه از این طریق وجود ندارد.
+                      صاحب این کارت هنوز شماره حساب یا تصویر QR Code خود را برای این روش ثبت نکرده است.
                     </p>
                   </div>
                 );
@@ -572,205 +528,91 @@ export const PaymentCheckoutModal: React.FC<PaymentCheckoutModalProps> = ({
                     <PaymentLogoBadge type="wallet" id={walletOpt.id} customLogoUrl={activeCustomLogoUrl} size={36} />
                   </div>
 
-                  {/* DUAL-MODE SELECTOR FOR HESABPAY */}
-                  {isHesabPay && (
-                    <div className="space-y-2 p-2 rounded-2xl bg-white/[0.04] border border-white/10">
-                      <span className="text-[10px] font-bold text-slate-300 block px-1">
-                        نحوه پرداخت با حساب‌پی را انتخاب فرمایید:
+                  {/* نام صاحب حساب */}
+                  {rawUserName && (
+                    <div className="space-y-1">
+                      <span className="text-[11px] text-slate-300 block font-medium">نام صاحب حساب:</span>
+                      <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950/80 border border-white/15 gap-2">
+                        <span className="text-xs font-bold text-white truncate">{rawUserName}</span>
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard(rawUserName, 'wallet_name', 'نام صاحب حساب')}
+                          className="py-1 px-2.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-[11px] font-medium flex items-center gap-1 transition-all active:scale-95 cursor-pointer shrink-0"
+                        >
+                          {copiedKey === 'wallet_name' ? (
+                            <>
+                              <Check className="w-3.5 h-3.5 text-emerald-400" />
+                              <span>کاپی شد</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3.5 h-3.5" />
+                              <span>کاپی</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* شماره حساب / مبایل کیف پول */}
+                  {rawUserPhone && (
+                    <div className="space-y-1">
+                      <span className="text-[11px] text-slate-300 block font-medium">
+                        شماره حساب یا شماره مبایل کیف پول:
                       </span>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {/* Option A: Direct Online App */}
+                      <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950/80 border border-white/15 gap-2">
+                        <span className="font-mono text-sm tracking-wider text-emerald-400 font-bold truncate" dir="ltr">
+                          {rawUserPhone}
+                        </span>
                         <button
                           type="button"
-                          onClick={() => setHesabPayMode('direct')}
-                          className={`p-3 rounded-xl border text-right transition-all flex items-start gap-2.5 cursor-pointer ${hesabPayMode === 'direct'
-                              ? 'bg-emerald-500/20 border-emerald-500 text-white shadow-md shadow-emerald-500/10'
-                              : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'
-                            }`}
+                          onClick={() => copyToClipboard(rawUserPhone, 'wallet_acc', 'شماره حساب')}
+                          className="py-1 px-2.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-[11px] font-medium flex items-center gap-1 transition-all active:scale-95 cursor-pointer shrink-0"
                         >
-                          <div
-                            className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${hesabPayMode === 'direct'
-                                ? 'bg-emerald-500 text-slate-950 font-bold'
-                                : 'bg-white/10 text-slate-400'
-                              }`}
-                          >
-                            <Smartphone className="w-4 h-4" />
-                          </div>
-                          <div className="min-w-0">
-                            <span className="text-xs font-bold block">
-                              خودم اپلیکیشن حساب‌پی دارم
-                            </span>
-                            <span className="text-[10px] text-emerald-300/80 block mt-0.5">
-                              (پرداخت مستقیم و آنی)
-                            </span>
-                          </div>
-                        </button>
-
-                        {/* Option B: Sarraf / Shopkeeper */}
-                        <button
-                          type="button"
-                          onClick={() => setHesabPayMode('agent')}
-                          className={`p-3 rounded-xl border text-right transition-all flex items-start gap-2.5 cursor-pointer ${hesabPayMode === 'agent'
-                              ? 'bg-cyan-500/20 border-cyan-500 text-white shadow-md shadow-cyan-500/10'
-                              : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'
-                            }`}
-                        >
-                          <div
-                            className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${hesabPayMode === 'agent'
-                                ? 'bg-cyan-500 text-slate-950 font-bold'
-                                : 'bg-white/10 text-slate-400'
-                              }`}
-                          >
-                            <Store className="w-4 h-4" />
-                          </div>
-                          <div className="min-w-0">
-                            <span className="text-xs font-bold block">
-                              از طریق صراف / دکاندار پرداخت می‌کنم
-                            </span>
-                            <span className="text-[10px] text-cyan-300/80 block mt-0.5">
-                              (اسکن بارکد + آپلود فیش)
-                            </span>
-                          </div>
+                          {copiedKey === 'wallet_acc' ? (
+                            <>
+                              <Check className="w-3.5 h-3.5 text-emerald-400" />
+                              <span>کاپی شد</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3.5 h-3.5" />
+                              <span>کاپی</span>
+                            </>
+                          )}
                         </button>
                       </div>
                     </div>
                   )}
 
-                  {/* HesabPay Option A (Direct App Payment View) */}
-                  {isHesabPay && hesabPayMode === 'direct' && (
-                    <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 space-y-3">
-                      <div className="flex items-center gap-2 text-emerald-400">
-                        <Zap className="w-4 h-4 shrink-0" />
-                        <span className="text-xs font-bold">پرداخت مستقیم با اپلیکیشن حساب‌پی</span>
-                      </div>
-                      <p className="text-[11px] text-slate-300 leading-relaxed">
-                        با زدن دکمه زیر، مستقیماً به درگاه پرداخت رسمی حساب‌پی منتقل شده و تراکنش شما به صورت الکترونیک، خودکار و آنی ثبت و تأیید می‌گردد. در این حالت نیازی به آپلود فیش رسید نمی‌باشد.
-                      </p>
-                      <div className="p-2.5 rounded-xl bg-slate-950/80 border border-white/10 flex items-center justify-between text-[11px]">
-                        <span className="text-slate-400">شناسه پذیرنده اختصاصی صاحب پروفایل:</span>
-                        <span className="font-mono text-emerald-400 font-bold" dir="ltr">
-                          {hpOwner?.merchantId || 'تنظیم نشده'}
-                        </span>
-                      </div>
-
-                      <button
-                        type="button"
-                        disabled={isInitiatingPayment}
-                        onClick={handleInitiateDirectPayment}
-                        className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 cursor-pointer mt-1"
-                      >
-                        {isInitiatingPayment ? (
-                          <>
-                            <RefreshCw className="w-4 h-4 animate-spin" />
-                            <span>در حال اتصال به حساب‌پی...</span>
-                          </>
+                  {/* تصویر QR Code اختصاصی کاربر یا تولید خودکار */}
+                  {(ownerCustomQrImage || rawUserPhone) && (
+                    <div className="flex flex-col items-center justify-center p-4 rounded-2xl bg-white/5 border border-white/10 text-center space-y-2">
+                      <div className="p-3 bg-white rounded-2xl shadow-xl border border-white/20">
+                        {ownerCustomQrImage ? (
+                          <img
+                            src={ownerCustomQrImage}
+                            alt="QR Code حساب"
+                            className="w-40 h-40 object-contain rounded-lg"
+                          />
                         ) : (
-                          <>
-                            <Zap className="w-4 h-4" />
-                            <span>ورود به درگاه و پرداخت مستقیم</span>
-                          </>
+                          <QRCodeSVG
+                            value={isHesabPay ? qrPayload : rawUserPhone}
+                            size={150}
+                            level="M"
+                          />
                         )}
-                      </button>
-                    </div>
-                  )}
-
-                  {/* HesabPay Option B (Sarraf / Shopkeeper Dynamic QR Code View) */}
-                  {isHesabPay && hesabPayMode === 'agent' && (
-                    <div className="space-y-3">
-                      {/* Dynamic QR Code Card */}
-                      <div className="flex flex-col items-center justify-center p-4 rounded-2xl bg-white/5 border border-white/10 text-center space-y-2">
-                        <div className="p-3 bg-white rounded-2xl shadow-xl border border-white/20">
-                          <QRCodeSVG value={qrPayload} size={150} level="M" />
-                        </div>
-                        <div className="space-y-1 mt-1">
-                          <span className="text-xs font-bold text-emerald-400 block">
-                            این بارکد را به صراف یا دکاندار نشان دهید تا با اپلیکیشن حساب‌پی خود اسکن کند.
-                          </span>
-                          <span className="text-[10px] text-slate-300 block">
-                            صراف یا دکاندار پس از اسکن، وجه را مستقیماً به حساب پذیرنده منتقل می‌نماید.
-                          </span>
-                        </div>
                       </div>
-
-                      {/* Account Details for Manual Transfer */}
-                      <div className="space-y-1.5">
-                        <span className="text-[11px] text-slate-300 block font-medium">
-                          یا واریز با شماره موبایل حساب:
-                        </span>
-                        <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950/80 border border-white/15 gap-2">
-                          <span className="font-mono text-sm tracking-wider text-emerald-400 font-bold truncate" dir="ltr">
-                            {rawUserPhone}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => copyToClipboard(rawUserPhone, 'hp_acc', 'شماره حساب')}
-                            className="py-1 px-2.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-[11px] font-medium flex items-center gap-1 transition-all active:scale-95 cursor-pointer shrink-0"
-                          >
-                            {copiedKey === 'hp_acc' ? (
-                              <>
-                                <Check className="w-3.5 h-3.5 text-emerald-400" />
-                                <span>کاپی شد</span>
-                              </>
-                            ) : (
-                              <>
-                                <Copy className="w-3.5 h-3.5" />
-                                <span>کاپی</span>
-                              </>
-                            )}
-                          </button>
-                        </div>
-                      </div>
+                      <span className="text-xs font-bold text-emerald-400 block mt-1">
+                        {isHesabPay
+                          ? 'بارکد را اسکن کنید یا توسط صراف/دکاندار واریز نمایید'
+                          : `اسکن بارکد در اپلیکیشن ${walletOpt.nameFa} جهت واریز وجه`}
+                      </span>
+                      <span className="text-[10px] text-slate-300 block">
+                        پس از انتقال وجه، نام پرداخت‌کننده و تصویر فیش رسید را در فرم زیر ثبت کنید.
+                      </span>
                     </div>
-                  )}
-
-                  {/* Non-HesabPay Wallets fallback */}
-                  {!isHesabPay && (
-                    <>
-                      {userWalletAccount ? (
-                        <div className="space-y-1.5">
-                          <span className="text-[11px] text-slate-300 block font-medium">
-                            شماره حساب / شماره موبایل کیف پول کاربر:
-                          </span>
-                          <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950/80 border border-white/15 gap-2">
-                            <span className="font-mono text-sm tracking-wider text-emerald-400 font-bold truncate" dir="ltr">
-                              {userWalletAccount}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => copyToClipboard(userWalletAccount, 'wallet_acc', 'شماره کیف پول')}
-                              className="py-1 px-2.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-[11px] font-medium flex items-center gap-1 transition-all active:scale-95 cursor-pointer shrink-0"
-                            >
-                              {copiedKey === 'wallet_acc' ? (
-                                <>
-                                  <Check className="w-3.5 h-3.5 text-emerald-400" />
-                                  <span>کاپی شد</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Copy className="w-3.5 h-3.5" />
-                                  <span>کاپی</span>
-                                </>
-                              )}
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <p className="text-amber-400 text-center text-xs p-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
-                          شماره حساب کیف پول توسط صاحب پروفایل ثبت نشده است.
-                        </p>
-                      )}
-
-                      {userWalletAccount && (
-                        <div className="flex flex-col items-center justify-center p-3 rounded-2xl bg-white/5 border border-white/10">
-                          <div className="p-2.5 bg-white rounded-xl shadow-md">
-                            <QRCodeSVG value={userWalletAccount} size={130} level="M" />
-                          </div>
-                          <span className="text-[10px] text-slate-400 mt-2 text-center">
-                            اسکن بارکد در اپلیکیشن {walletOpt.name} جهت انتقال آنی
-                          </span>
-                        </div>
-                      )}
-                    </>
                   )}
                 </div>
               );
@@ -979,208 +821,157 @@ export const PaymentCheckoutModal: React.FC<PaymentCheckoutModalProps> = ({
               );
             })()}
 
-            {/* توضیحات صاحب پروفایل - در حالت پرداخت مستقیم آنلاین حساب‌پی کاملاً مخفی می‌شود */}
-            {!(
-              activeProviderType === 'wallet' &&
-              ((activeMethod.walletService || '').toLowerCase().includes('hesabpay') ||
-                activeMethod.walletService === 'HesabPay') &&
-              hesabPayMode === 'direct'
-            ) && (meta.paymentDescription || meta.paymentInstructions) && (
-                <div className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-xs text-slate-300 leading-relaxed">
-                  <span className="text-[10px] text-slate-400 block mb-0.5 font-medium">راهنمای صاحب پروفایل:</span>
-                  {meta.paymentDescription || meta.paymentInstructions}
+            {/* توضیحات و راهنمای واریز صاحب پروفایل */}
+            {depositInstructions && (
+              <div className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-xs text-slate-300 leading-relaxed">
+                <span className="text-[10px] text-slate-400 block mb-0.5 font-medium">راهنمای صاحب پروفایل:</span>
+                {depositInstructions}
+              </div>
+            )}
+
+            {/* فرم ثبت نام پرداخت‌کننده و آپلود فیش/رسید واریزی */}
+            <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-emerald-400 font-bold">
+                  <Upload className="w-4 h-4 shrink-0" />
+                  <span>ثبت مشخصات واریز و آپلود فیش / رسید:</span>
                 </div>
-              )}
+                <span className="text-[9px] px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 font-bold">
+                  الزامی
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-300 leading-relaxed">
+                لطفاً پس از واریز وجه به حساب فوق، نام پرداخت‌کننده و تصویر فیش/رسید را وارد کنید تا تراکنش شما در وضعیت در انتظار بررسی ثبت گردد.
+              </p>
 
-            {/* فیلد ثبت رسید و کد پیگیری تراکنش (در حالت پرداخت مستقیم آنلاین مخفی می‌شود) */}
-            {!(
-              activeProviderType === 'wallet' &&
-              ((activeMethod.walletService || '').toLowerCase().includes('hesabpay') ||
-                activeMethod.walletService === 'HesabPay') &&
-              hesabPayMode === 'direct'
-            ) && (
-                <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-emerald-400 font-bold">
-                      <Upload className="w-4 h-4 shrink-0" />
-                      <span>
-                        {activeProviderType === 'wallet' &&
-                          ((activeMethod.walletService || '').toLowerCase().includes('hesabpay') ||
-                            activeMethod.walletService === 'HesabPay') &&
-                          hesabPayMode === 'agent'
-                          ? 'بارگذاری عکس فیش پرداختی صراف / دکاندار (الزامی):'
-                          : 'لطفاً رسید خود را اینجا ثبت کنید:'}
-                      </span>
-                    </div>
-                    {activeProviderType === 'wallet' &&
-                      ((activeMethod.walletService || '').toLowerCase().includes('hesabpay') ||
-                        activeMethod.walletService === 'HesabPay') &&
-                      hesabPayMode === 'agent' && (
-                        <span className="text-[9px] px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 font-bold">
-                          الزامی
+              {/* فیلد نام پرداخت‌کننده */}
+              <div>
+                <label className="text-[10px] text-slate-300 mb-1 font-medium flex items-center gap-1">
+                  <User className="w-3 h-3 text-emerald-400" />
+                  <span>نام و تخلص پرداخت‌کننده (الزامی):</span>
+                </label>
+                <input
+                  type="text"
+                  value={payerName}
+                  onChange={(e) => setPayerName(e.target.value)}
+                  placeholder="مثلاً: فرهاد احمدی"
+                  className="w-full h-9 px-3 rounded-xl bg-slate-950/80 border border-white/20 text-white text-xs focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              {/* فیلد شماره پیگیری */}
+              <div>
+                <label className="text-[10px] text-slate-300 block mb-1 font-medium">
+                  کد پیگیری تراکنش یا شماره فیش (اختیاری):
+                </label>
+                <input
+                  type="text"
+                  value={trackingNumber}
+                  onChange={(e) => setTrackingNumber(e.target.value)}
+                  placeholder="مثلاً: 981240 یا هش تراکنش"
+                  className="w-full h-9 px-3 rounded-xl bg-slate-950/80 border border-white/20 text-white text-xs font-mono focus:outline-none focus:border-emerald-500"
+                  dir="ltr"
+                />
+              </div>
+
+              {/* آپلود فیش */}
+              <div className="space-y-1.5">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleReceiptUpload}
+                  className="hidden"
+                />
+
+                {receiptImageUrl ? (
+                  <div className="p-2 rounded-xl bg-slate-950/80 border border-emerald-500/40 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 overflow-hidden">
+                      <img
+                        src={receiptImageUrl}
+                        alt="فیش رسید"
+                        className="w-10 h-10 object-cover rounded-lg border border-white/15 shrink-0"
+                      />
+                      <div className="truncate text-right">
+                        <span className="text-[11px] font-bold text-emerald-400 block">فیش با موفقیت آپلود شد</span>
+                        <span className="text-[9px] text-slate-400 block truncate font-mono" dir="ltr">
+                          {receiptImageUrl}
                         </span>
-                      )}
-                  </div>
-                  <p className="text-[11px] text-slate-300 leading-relaxed">
-                    {activeProviderType === 'wallet' &&
-                      ((activeMethod.walletService || '').toLowerCase().includes('hesabpay') ||
-                        activeMethod.walletService === 'HesabPay') &&
-                      hesabPayMode === 'agent'
-                      ? 'پس از اسکن بارکد توسط صراف یا دکاندار، تصویر فیش تاییدیه یا رسید چاپی را در این بخش آپلود نمایید تا تراکنش شما تایید گردد.'
-                      : 'پس از واریز وجه، عکس فیش رسید یا شماره پیگیری خود را ثبت نمایید تا واریزی شما تایید گردد.'}
-                  </p>
-
-                  {/* فیلد شماره پیگیری */}
-                  <div>
-                    <label className="text-[10px] text-slate-300 block mb-1 font-medium">
-                      کد پیگیری تراکنش یا شماره فیش بانکی / حواله (اختیاری):
-                    </label>
-                    <input
-                      type="text"
-                      value={trackingNumber}
-                      onChange={(e) => setTrackingNumber(e.target.value)}
-                      placeholder="مثلاً: 981240 یا هش تراکنش"
-                      className="w-full h-9 px-3 rounded-xl bg-slate-950/80 border border-white/20 text-white text-xs font-mono focus:outline-none focus:border-emerald-500"
-                      dir="ltr"
-                    />
-                  </div>
-
-                  {/* آپلود فیش */}
-                  <div className="space-y-1.5">
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={handleReceiptUpload}
-                      className="hidden"
-                    />
-
-                    {receiptImageUrl ? (
-                      <div className="p-2 rounded-xl bg-slate-950/80 border border-emerald-500/40 flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2 overflow-hidden">
-                          <img
-                            src={receiptImageUrl}
-                            alt="فیش رسید"
-                            className="w-10 h-10 object-cover rounded-lg border border-white/15 shrink-0"
-                          />
-                          <div className="truncate text-right">
-                            <span className="text-[11px] font-bold text-emerald-400 block">فیش با موفقیت آپلود شد</span>
-                            <span className="text-[9px] text-slate-400 block truncate font-mono" dir="ltr">
-                              {receiptImageUrl}
-                            </span>
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setReceiptImageUrl('')}
-                          className="p-1.5 rounded-lg bg-white/10 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition-colors shrink-0"
-                          title="حذف و آپلود مجدد"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
                       </div>
-                    ) : (
-                      <button
-                        type="button"
-                        disabled={isUploadingReceipt}
-                        onClick={() => fileInputRef.current?.click()}
-                        className={`w-full py-2.5 px-3 rounded-xl border border-dashed text-xs flex items-center justify-center gap-2 transition-all cursor-pointer ${activeProviderType === 'wallet' &&
-                            ((activeMethod.walletService || '').toLowerCase().includes('hesabpay') ||
-                              activeMethod.walletService === 'HesabPay') &&
-                            hesabPayMode === 'agent'
-                            ? 'border-emerald-500/60 bg-emerald-500/5 hover:bg-emerald-500/10 text-emerald-200'
-                            : 'border-white/20 hover:border-emerald-500/50 bg-black/20 hover:bg-black/40 text-slate-300'
-                          }`}
-                      >
-                        {isUploadingReceipt ? (
-                          <>
-                            <RefreshCw className="w-4 h-4 animate-spin text-emerald-400" />
-                            <span>در حال بارگذاری فیش رسید...</span>
-                          </>
-                        ) : (
-                          <>
-                            <FileImage className="w-4 h-4 text-emerald-400" />
-                            <span>انتخاب و بارگذاری تصویر فیش رسید (JPG / PNG)</span>
-                          </>
-                        )}
-                      </button>
-                    )}
-                  </div>
-
-                  {/* نتیجه ثبت رسید */}
-                  {receiptSubmitted ? (
-                    <div className="p-2.5 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-center space-y-1">
-                      <CheckCircle2 className="w-5 h-5 text-emerald-400 mx-auto" />
-                      <span className="text-xs font-bold text-white block">رسید شما با موفقیت ثبت شد</span>
-                      <span className="text-[10px] text-emerald-300 block">
-                        جهت اطلاع‌رسانی مستقیم به صاحب پروفایل، دکمه ارسال در واتساپ را بزنید.
-                      </span>
                     </div>
-                  ) : (
                     <button
                       type="button"
-                      onClick={handleFinalReceiptSubmit}
-                      className="w-full py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-xs transition-all shadow-md active:scale-95 cursor-pointer"
+                      onClick={() => setReceiptImageUrl('')}
+                      className="p-1.5 rounded-lg bg-white/10 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition-colors shrink-0"
+                      title="حذف و آپلود مجدد"
                     >
-                      تأیید و ثبت نهایی رسید
+                      <X className="w-3.5 h-3.5" />
                     </button>
-                  )}
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={isUploadingReceipt}
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full py-2.5 px-3 rounded-xl border border-dashed border-emerald-500/60 bg-emerald-500/5 hover:bg-emerald-500/10 text-emerald-200 text-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
+                  >
+                    {isUploadingReceipt ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin text-emerald-400" />
+                        <span>در حال بارگذاری فیش رسید...</span>
+                      </>
+                    ) : (
+                      <>
+                        <FileImage className="w-4 h-4 text-emerald-400" />
+                        <span>انتخاب و بارگذاری تصویر فیش رسید (JPG / PNG)</span>
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+
+              {/* نتیجه ثبت رسید */}
+              {receiptSubmitted ? (
+                <div className="p-2.5 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-center space-y-1">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400 mx-auto" />
+                  <span className="text-xs font-bold text-white block">
+                    رسید شما با وضعیت «در انتظار بررسی» ثبت گردید
+                  </span>
+                  <span className="text-[10px] text-emerald-300 block">
+                    جهت اطلاع‌رسانی مستقیم به صاحب پروفایل، دکمه ارسال در واتساپ را بزنید.
+                  </span>
                 </div>
+              ) : (
+                <button
+                  type="button"
+                  disabled={isSubmittingReceipt || isUploadingReceipt}
+                  onClick={handleFinalReceiptSubmit}
+                  className="w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 disabled:opacity-60 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-md active:scale-95 cursor-pointer"
+                >
+                  {isSubmittingReceipt ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>در حال ثبت فیش در سیستم...</span>
+                    </>
+                  ) : (
+                    <span>تأیید و ثبت نهایی فیش واریزی</span>
+                  )}
+                </button>
               )}
+            </div>
           </div>
 
           {/* Modal Actions */}
           <div className="pt-3 border-t border-white/10 flex flex-col sm:flex-row items-center gap-2 relative z-10">
-            {activeProviderType === 'wallet' && isHesabPay && !isHesabPayConfigured ? (
-              <button
-                type="button"
-                disabled={true}
-                className="w-full sm:flex-1 py-2.5 px-4 rounded-xl bg-white/10 text-slate-400 font-bold text-xs flex items-center justify-center gap-2 cursor-not-allowed border border-white/10"
-              >
-                <AlertCircle className="w-4 h-4 text-amber-400" />
-                <span>ماژول پرداخت غیرفعال است (عدم تنظیم حساب توسط مالک)</span>
-              </button>
-            ) : activeProviderType === 'wallet' &&
-              ((activeMethod.walletService || '').toLowerCase().includes('hesabpay') ||
-                activeMethod.walletService === 'HesabPay') &&
-              hesabPayMode === 'direct' ? (
-              <button
-                type="button"
-                disabled={isInitiatingPayment || !isOwnerApiConfigured}
-                onClick={handleInitiateDirectPayment}
-                className={`w-full sm:flex-1 py-2.5 px-4 rounded-xl text-xs font-black flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95 ${!isOwnerApiConfigured
-                    ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 cursor-pointer'
-                  }`}
-              >
-                {isInitiatingPayment ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>در حال اتصال به درگاه حساب‌پی...</span>
-                  </>
-                ) : !isOwnerApiConfigured ? (
-                  <>
-                    <AlertCircle className="w-4 h-4" />
-                    <span>درگاه مستقیم آنلاین فعال نیست</span>
-                  </>
-                ) : (
-                  <>
-                    <Zap className="w-4 h-4" />
-                    <span>پرداخت مستقیم و آنی با حساب‌پی</span>
-                  </>
-                )}
-              </button>
-            ) : (
-              <a
-                href={generateWhatsAppUrl()}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full sm:flex-1 py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black text-xs flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95 cursor-pointer"
-              >
-                <MessageSquare className="w-4 h-4" />
-                <span>ارسال فیش / رسید در واتساپ</span>
-              </a>
-            )}
+            <a
+              href={generateWhatsAppUrl()}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full sm:flex-1 py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black text-xs flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95 cursor-pointer"
+            >
+              <MessageSquare className="w-4 h-4" />
+              <span>ارسال فیش / رسید در واتساپ</span>
+            </a>
 
             <button
               type="button"

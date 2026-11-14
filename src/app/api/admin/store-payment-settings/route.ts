@@ -86,6 +86,9 @@ export async function PUT(req: NextRequest) {
           accountNumber: hp.accountNumber || settings.hesabPay?.accountNumber || '0729736813',
           merchantId: hp.merchantId || hp.hesabPayConfig?.merchantId || settings.hesabPay?.merchantId || 'ARYALINK_MERCHANT_01',
           apiKey: hp.apiKey || hp.hesabPayConfig?.apiKey || settings.hesabPay?.apiKey || '',
+          apiSecret: hp.apiSecret || hp.hesabPayConfig?.apiSecret || settings.hesabPay?.apiSecret || '',
+          qrCodeImage: hp.qrCodeImage ?? hp.qrCodeUrl ?? settings.hesabPay?.qrCodeImage ?? '',
+          qrCodeUrl: hp.qrCodeUrl ?? hp.qrCodeImage ?? settings.hesabPay?.qrCodeUrl ?? '',
           isApiEnabled: hp.isApiEnabled !== undefined ? Boolean(hp.isApiEnabled) : (settings.hesabPay?.isApiEnabled ?? true),
           isActive: Boolean(hp.isActive),
         };

@@ -11,6 +11,7 @@ export async function POST(req: NextRequest) {
     const {
       profileId,
       profileAlias,
+      payerName,
       amount,
       currency,
       description,
@@ -30,15 +31,21 @@ export async function POST(req: NextRequest) {
     }
 
     const effectiveAmount = Math.max(Number(amount) || 0, 0);
+    const trimmedPayerName = (payerName || '').trim();
+    const baseDescription =
+      description || `ثبت فیش واریزی آفلاین (${targetProfile?.displayName || 'مینی‌سایت'})`;
 
     const transaction = await Transaction.create({
       profileId: targetProfile?._id || undefined,
       userId: targetProfile?.userId || undefined,
+      payerName: trimmedPayerName,
       amount: effectiveAmount,
       type: 'donation_hesabpay',
-      status: 'pending',
+      status: 'pending_verification',
       currency: currency || 'AFN',
-      description: description || `ثبت فیش واریزی صراف/دکاندار (${targetProfile?.displayName || 'پروفایل'})`,
+      description: trimmedPayerName
+        ? `${baseDescription} - پرداخت‌کننده: ${trimmedPayerName}`
+        : baseDescription,
       paymentGateway: (paymentGateway || 'hesabpay').toLowerCase(),
       paymentMode: (paymentMode || 'manual').toLowerCase(),
       referenceNumber: trackingNumber || '',
@@ -48,7 +55,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       transactionId: transaction._id.toString(),
-      message: 'رسید شما با موفقیت ثبت گردید و جهت تایید به صاحب پروفایل ارسال شد.',
+      status: transaction.status,
+      message: 'رسید شما با موفقیت با وضعیت در انتظار بررسی ثبت گردید و برای صاحب پروفایل ارسال شد.',
     });
   } catch (error: any) {
     console.error('Error recording payment receipt:', error);
