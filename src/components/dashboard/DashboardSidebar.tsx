@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
@@ -18,6 +18,7 @@ import {
   Settings,
   ShoppingBag,
   UserCog,
+  Building2,
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Badge } from '@/components/ui/badge';
@@ -57,12 +58,46 @@ const userNavItems: UserNavItem[] = [
   },
 ];
 
+const orgNavItem: UserNavItem = {
+  title: 'مدیریت سازمان / تیم من',
+  subtitle: 'مدیریت کارمندان و جوازهای B2B',
+  href: '/dashboard/organization',
+  icon: Building2,
+  badge: 'B2B',
+  badgeVariant: 'cyan',
+};
+
 export function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: () => void }) {
   const pathname = usePathname();
   const { data: session } = useSession();
+  const [liveIsOrgOwner, setLiveIsOrgOwner] = useState(false);
 
   const userRole = (session?.user?.role || '').toLowerCase();
   const isSuperAdmin = userRole === 'superadmin' || userRole === 'admin';
+  const sessionIsOrgOwner = session?.user?.orgRole === 'owner';
+  const isOrgOwner = sessionIsOrgOwner || liveIsOrgOwner;
+
+  useEffect(() => {
+    if (!session?.user) return;
+    let active = true;
+
+    fetch('/api/organization')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (active && data?.isOwner) {
+          setLiveIsOrgOwner(true);
+        }
+      })
+      .catch(() => {
+        // Ignore network errors cleanly
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [session?.user]);
+
+  const navItems = isOrgOwner ? [...userNavItems, orgNavItem] : userNavItems;
 
   return (
     <aside className="w-72 h-full flex flex-col bg-card/80 dark:bg-slate-950/90 backdrop-blur-xl border-l border-border select-none">
@@ -89,7 +124,7 @@ export function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: () => void
           مدیریت کارت و پروفایل
         </div>
 
-        {userNavItems.map((item) => {
+        {navItems.map((item) => {
           const isActive = pathname === item.href;
           const Icon = item.icon;
 

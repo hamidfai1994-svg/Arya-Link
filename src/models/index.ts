@@ -1,5 +1,5 @@
 export { default as Profile, type IProfileDocument } from './Profile.model';
-export { default as User, type IUserDocument, type UserRole, type SubscriptionPlan } from './User.model';
+export { default as User, type IUserDocument, type UserRole, type SubscriptionPlan, type OrgRole } from './User.model';
 export { default as Order, type IOrderDocument } from './Order.model';
 export { default as Payout, type IPayoutDocument } from './Payout.model';
 export { default as BlogPost, type IBlogPostDocument } from './BlogPost.model';
@@ -14,3 +14,4 @@ export { default as ToolHistory, type IToolHistoryDocument } from './ToolHistory
 export { default as Job, type IJobDocument } from './Job.model';
 export { default as PhysicalCard, type IPhysicalCardDocument, generatePhysicalCardCode } from './PhysicalCard.model';
 export { default as StorePaymentSettings, type IStorePaymentSettingsDocument, type IStoreBankAccount, type IStoreCryptoAddress, type IStoreHawalaInfo, type IHesabPayGatewayConfig } from './StorePaymentSettings.model';
+export { default as Organization, type IOrganizationDocument, type IOrganizationBranding } from './Organization.model';

@@ -88,6 +88,8 @@ export const authOptions: NextAuthOptions = {
           planExpiresAt: user.planExpiresAt || null,
           features: user.features || {},
           accountType: user.accountType || 'personal',
+          organizationId: user.organizationId ? user.organizationId.toString() : null,
+          orgRole: user.orgRole || null,
         };
       },
     }),
@@ -179,6 +181,8 @@ export const authOptions: NextAuthOptions = {
           planExpiresAt: user.planExpiresAt || null,
           features: user.features || {},
           accountType: user.accountType || 'personal',
+          organizationId: user.organizationId ? user.organizationId.toString() : null,
+          orgRole: user.orgRole || null,
         };
       },
     }),
@@ -300,6 +304,8 @@ export const authOptions: NextAuthOptions = {
           user.planExpiresAt = existingUser.planExpiresAt || null;
           user.features = existingUser.features || {};
           user.accountType = existingUser.accountType || 'personal';
+          user.organizationId = existingUser.organizationId ? existingUser.organizationId.toString() : null;
+          user.orgRole = existingUser.orgRole || null;
           return true;
         } catch (error) {
           console.error('Error in Google signIn callback:', error);
@@ -318,6 +324,8 @@ export const authOptions: NextAuthOptions = {
         token.planExpiresAt = user.planExpiresAt || null;
         token.features = user.features || {};
         token.accountType = user.accountType || 'personal';
+        token.organizationId = user.organizationId || null;
+        token.orgRole = user.orgRole || null;
       }
       return token;
     },
@@ -331,6 +339,8 @@ export const authOptions: NextAuthOptions = {
         session.user.planExpiresAt = token.planExpiresAt as any;
         session.user.features = (token.features as any) || {};
         session.user.accountType = (token.accountType as any) || 'personal';
+        session.user.organizationId = (token.organizationId as any) || null;
+        session.user.orgRole = (token.orgRole as any) || null;
       }
       return session;
     },

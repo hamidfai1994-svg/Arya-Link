@@ -11,6 +11,8 @@ declare module 'next-auth' {
       planExpiresAt?: string | Date | null;
       features?: Record<string, any>;
       accountType?: 'personal' | 'business' | 'corporate';
+      organizationId?: string | null;
+      orgRole?: 'owner' | 'member' | null;
     } & DefaultSession['user'];
   }
 
@@ -22,6 +24,8 @@ declare module 'next-auth' {
     planExpiresAt?: string | Date | null;
     features?: Record<string, any>;
     accountType?: 'personal' | 'business' | 'corporate';
+    organizationId?: string | null;
+    orgRole?: 'owner' | 'member' | null;
   }
 }
 
@@ -34,5 +38,7 @@ declare module 'next-auth/jwt' {
     planExpiresAt?: string | Date | null;
     features?: Record<string, any>;
     accountType?: 'personal' | 'business' | 'corporate';
+    organizationId?: string | null;
+    orgRole?: 'owner' | 'member' | null;
   }
 }

@@ -3,6 +3,7 @@ import mongoose, { Schema, Document, Model } from 'mongoose';
 export type UserRole = 'user' | 'admin' | 'superadmin' | 'content_editor' | 'financial_admin';
 export type SubscriptionPlan = 'free' | 'pro' | 'enterprise';
 export type PlanType = 'free' | 'pro' | 'vip';
+export type OrgRole = 'owner' | 'member' | null;
 
 export interface IAuthProvider {
   provider: 'credentials' | 'google' | 'apple' | 'github';
@@ -32,6 +33,8 @@ export interface IUserDocument extends Document {
     [key: string]: any;
   };
   accountType?: 'personal' | 'business' | 'corporate';
+  organizationId?: mongoose.Types.ObjectId | string | null;
+  orgRole?: OrgRole;
   providers: IAuthProvider[];
   isActive: boolean;
   isVerified?: boolean;
@@ -167,6 +170,18 @@ const UserSchema = new Schema<IUserDocument>(
       type: String,
       enum: ['personal', 'business', 'corporate'],
       default: 'personal',
+      index: true,
+    },
+    organizationId: {
+      type: Schema.Types.Mixed,
+      ref: 'Organization',
+      default: null,
+      index: true,
+    },
+    orgRole: {
+      type: String,
+      enum: ['owner', 'member', null],
+      default: null,
       index: true,
     },
     providers: {
