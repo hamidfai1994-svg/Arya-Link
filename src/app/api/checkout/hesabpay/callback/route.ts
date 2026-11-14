@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db/mongodb';
 import { Order } from '@/models/Order.model';
+import { activateUserSubscriptionFromOrder } from '@/lib/utils/subscription';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,9 +30,12 @@ export async function GET(req: NextRequest) {
       return NextResponse.redirect(`${host}/order?paymentError=order_not_found`);
     }
 
+    const isSubscription = order.orderType === 'subscription';
+
     if (status.toUpperCase() === 'SUCCESS' || status.toLowerCase() === 'paid') {
       order.paymentStatus = 'paid';
-      order.orderStatus = 'processing';
+      order.orderStatus = isSubscription ? 'completed' : 'processing';
+      order.status = order.orderStatus;
       if (!order.paymentProviderDetails) {
         order.paymentProviderDetails = {};
       }
@@ -40,14 +44,28 @@ export async function GET(req: NextRequest) {
       order.paymentProviderDetails.transactionRef = transactionId;
       await order.save();
 
+      if (isSubscription) {
+        await activateUserSubscriptionFromOrder(order);
+        return NextResponse.redirect(
+          `${host}/dashboard/upgrade?paymentSuccess=true&orderNumber=${encodeURIComponent(order.orderNumber)}`
+        );
+      }
+
       return NextResponse.redirect(
-        `${host}/order?paymentSuccess=true&orderNumber=${order.orderNumber}`
+        `${host}/order?paymentSuccess=true&orderNumber=${encodeURIComponent(order.orderNumber)}`
       );
     } else {
       order.paymentStatus = 'failed';
       await order.save();
+
+      if (isSubscription) {
+        return NextResponse.redirect(
+          `${host}/dashboard/upgrade?paymentFailed=true&orderNumber=${encodeURIComponent(order.orderNumber)}`
+        );
+      }
+
       return NextResponse.redirect(
-        `${host}/order?paymentFailed=true&orderNumber=${order.orderNumber}`
+        `${host}/order?paymentFailed=true&orderNumber=${encodeURIComponent(order.orderNumber)}`
       );
     }
   } catch (error: any) {
@@ -77,9 +95,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, message: 'Order not found' }, { status: 404 });
     }
 
+    const isSubscription = order.orderType === 'subscription';
+
     if (status?.toUpperCase() === 'SUCCESS' || status?.toLowerCase() === 'paid') {
       order.paymentStatus = 'paid';
-      order.orderStatus = 'processing';
+      order.orderStatus = isSubscription ? 'completed' : 'processing';
+      order.status = order.orderStatus;
       if (!order.paymentProviderDetails) {
         order.paymentProviderDetails = {};
       }
@@ -88,7 +109,16 @@ export async function POST(req: NextRequest) {
       order.paymentProviderDetails.transactionRef = transactionId || `HP-WH-${Date.now()}`;
       await order.save();
 
-      return NextResponse.json({ success: true, message: 'Payment confirmed successfully' });
+      let subscriptionResult: any = null;
+      if (isSubscription) {
+        subscriptionResult = await activateUserSubscriptionFromOrder(order);
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: 'Payment confirmed successfully',
+        subscription: subscriptionResult,
+      });
     } else {
       order.paymentStatus = 'failed';
       await order.save();
@@ -102,4 +132,3 @@ export async function POST(req: NextRequest) {
     );
   }
 }
-

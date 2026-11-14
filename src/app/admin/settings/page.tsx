@@ -182,66 +182,66 @@ export default function AdminSettingsPage() {
         </div>
       </div>
 
-      {/* Inner Tabs Navigation (Strictly 4 Tabs as Requested) */}
-      <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-card border border-border overflow-x-auto">
+      {/* Inner Tabs Navigation (5 Equal-Width Tabs) */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 w-full gap-1.5 p-1.5 rounded-2xl bg-card border border-border">
         <button
           type="button"
           onClick={() => setActiveTab('general')}
-          className={`flex items-center gap-2 px-5 py-3 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${activeTab === 'general'
+          className={`w-full flex-1 flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${activeTab === 'general'
             ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20 font-black'
             : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
             }`}
         >
-          <Globe className="w-4 h-4" />
-          <span>1. تنظیمات عمومی</span>
+          <Globe className="w-4 h-4 shrink-0" />
+          <span className="truncate">1. تنظیمات عمومی</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('landing')}
-          className={`flex items-center gap-2 px-5 py-3 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${activeTab === 'landing'
+          className={`w-full flex-1 flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${activeTab === 'landing'
             ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20 font-black'
             : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
             }`}
         >
-          <Layout className="w-4 h-4" />
-          <span>2. محتوای صفحه اصلی</span>
+          <Layout className="w-4 h-4 shrink-0" />
+          <span className="truncate">2. محتوای صفحه اصلی</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('plans')}
-          className={`flex items-center gap-2 px-5 py-3 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${activeTab === 'plans'
+          className={`w-full flex-1 flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${activeTab === 'plans'
             ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20 font-black'
             : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
             }`}
         >
-          <DollarSign className="w-4 h-4" />
-          <span>3. تعرفه‌ها و اشتراک‌ها</span>
+          <DollarSign className="w-4 h-4 shrink-0" />
+          <span className="truncate">3. تعرفه‌ها و اشتراک‌ها</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('products')}
-          className={`flex items-center gap-2 px-5 py-3 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${activeTab === 'products'
+          className={`w-full flex-1 flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${activeTab === 'products'
             ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20 font-black'
             : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
             }`}
         >
-          <Package className="w-4 h-4" />
-          <span>4. محصولات فیزیکی</span>
+          <Package className="w-4 h-4 shrink-0" />
+          <span className="truncate">4. محصولات فیزیکی</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('api_notifications')}
-          className={`flex items-center gap-2 px-5 py-3 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${activeTab === 'api_notifications'
+          className={`w-full flex-1 flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${activeTab === 'api_notifications'
             ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20 font-black'
             : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
             }`}
         >
-          <BellRing className="w-4 h-4" />
-          <span>5. مدیریت API و اعلان‌ها</span>
+          <BellRing className="w-4 h-4 shrink-0" />
+          <span className="truncate">5. مدیریت API و اعلان‌ها</span>
         </button>
       </div>
 

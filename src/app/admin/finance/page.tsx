@@ -216,17 +216,6 @@ export default function AdminFinancePage() {
         </div>
 
         <div className="flex items-center gap-2 self-start sm:self-auto">
-          <Link href="/admin/finance/payment-methods">
-            <Button
-              variant="default"
-              size="sm"
-              className="h-10 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white flex items-center gap-2 text-xs font-bold"
-            >
-              <CreditCard className="w-3.5 h-3.5" />
-              <span>تنظیمات درگاه‌ها و روش‌های پرداخت</span>
-            </Button>
-          </Link>
-
           <Button
             onClick={fetchFinanceData}
             variant="outline"

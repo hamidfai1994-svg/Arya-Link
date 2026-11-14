@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { connectToDatabase } from '@/lib/db/mongodb';
 import { Profile } from '@/models/Profile.model';
 import { buildUserIsolationQuery, isValidUserSession } from '@/lib/db/data-isolation';
+import { syncAndCheckUserSubscription } from '@/lib/utils/subscription';
 import { profileUpdateSchema } from '@/lib/validations/profile';
 import { getJobTemplate, generateDefaultModulesForJob } from '@/lib/constants/jobTemplates';
 import mongoose from 'mongoose';
@@ -127,9 +128,14 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    const subInfo = await syncAndCheckUserSubscription(currentUserId);
+
     const formattedProfile = {
       ...profile,
       id: (profile as any)._id.toString(),
+      planType: subInfo.planType,
+      planExpiresAt: subInfo.planExpiresAt || null,
+      features: subInfo.features || {},
     };
 
     return NextResponse.json(

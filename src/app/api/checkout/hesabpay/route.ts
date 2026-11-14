@@ -39,7 +39,10 @@ export async function POST(req: NextRequest) {
       currency: order.currency || 'AFN',
       customerName: order.customerName,
       customerPhone: order.customerPhone,
-      description: `خرید کارت هوشمند NFC #${order.orderNumber} آریا لینک`,
+      description:
+        order.orderType === 'subscription'
+          ? `خرید اشتراک سالانه پروفایل حرفه‌ای آریا لینک #${order.orderNumber}`
+          : `خرید کارت هوشمند NFC #${order.orderNumber} آریا لینک`,
       hostUrl,
     });
 

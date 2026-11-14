@@ -419,6 +419,9 @@ export interface ProfileData {
     };
     [key: string]: any;
   };
+  planType?: 'free' | 'pro' | 'vip' | string;
+  planExpiresAt?: string | Date | null;
+  features?: Record<string, any>;
 }
 
 export interface UserProfileSummary {

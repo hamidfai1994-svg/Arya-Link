@@ -31,6 +31,8 @@ import {
   Smartphone,
   Store,
   Building,
+  Crown,
+  FileImage,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -63,9 +65,18 @@ interface AdminOrder {
     | 'printing'
     | 'shipped'
     | 'pending';
+  orderType?: 'nfc_card' | 'subscription';
   paymentMethod: string;
   paymentGateway?: string;
   paymentMode?: string;
+  paymentProviderDetails?: {
+    providerType?: string;
+    walletService?: string;
+    walletAccount?: string;
+    receiptUrl?: string;
+    transactionRef?: string;
+    [key: string]: any;
+  };
   trackingNumber?: string;
   trackingShortCode?: string;
   provisionedBy?: string;
@@ -243,6 +254,40 @@ export default function AdminOrdersPage() {
       toast.error(err.message || 'خطا در برقراری ارتباط.');
     } finally {
       setIsUpdating(false);
+    }
+  };
+
+  // Quick Approve Subscription Order (Manual HesabPay Receipt -> 1 Year Pro)
+  const [isApprovingSubId, setIsApprovingSubId] = useState<string | null>(null);
+
+  const handleApproveSubscription = async (orderId: string) => {
+    setIsApprovingSubId(orderId);
+    try {
+      const res = await fetch('/api/orders', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId,
+          action: 'approve_subscription',
+          paymentStatus: 'paid',
+          orderStatus: 'completed',
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || 'خطا در تایید و فعال‌سازی اشتراک.');
+      }
+      toast.success(data.message || 'اشتراک حرفه‌ای (Pro) به مدت ۱ سال فعال گردید.');
+      setSelectedOrder((prev) =>
+        prev && prev.id === orderId
+          ? { ...prev, paymentStatus: 'paid', orderStatus: 'completed' }
+          : prev
+      );
+      await loadAdminOrders();
+    } catch (err: any) {
+      toast.error(err.message || 'خطای ارتباط با سرور.');
+    } finally {
+      setIsApprovingSubId(null);
     }
   };
 
@@ -539,11 +584,20 @@ export default function AdminOrdersPage() {
                       </td>
 
                       <td className="p-4">
-                        <div className="font-semibold text-white">
-                          {order.cardSpecs?.templateName || order.productTitle}
+                        <div className="font-semibold text-white flex items-center gap-1.5">
+                          {order.orderType === 'subscription' && (
+                            <Crown className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                          )}
+                          <span>{order.cardSpecs?.templateName || order.productTitle}</span>
                         </div>
-                        <div className="text-[11px] text-slate-400">
-                          {order.cardSpecs?.material || 'NFC Smart Card'}
+                        <div className="text-[11px] text-slate-400 mt-0.5">
+                          {order.orderType === 'subscription' ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 text-[10px] font-bold">
+                              اشتراک نرم‌افزاری (Pro سالانه)
+                            </span>
+                          ) : (
+                            order.cardSpecs?.material || 'NFC Smart Card'
+                          )}
                         </div>
                       </td>
 
@@ -648,48 +702,62 @@ export default function AdminOrdersPage() {
                           </Button>
 
                           {/* Quick Transitions */}
-                          {(order.orderStatus === 'pending_payment' || order.orderStatus === 'pending') && (
+                          {order.orderType === 'subscription' && order.paymentStatus !== 'paid' ? (
                             <button
                               type="button"
-                              onClick={() => handleQuickStatusChange(order.id, 'processing')}
-                              title="تایید پرداخت و ارسال به خط چاپ"
-                              className="px-2 py-1 rounded-md bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 text-[10px] font-bold border border-cyan-500/30 whitespace-nowrap"
+                              disabled={isApprovingSubId === order.id}
+                              onClick={() => handleApproveSubscription(order.id)}
+                              title="تایید فیش واریزی و فعال‌سازی اشتراک ۱ ساله Pro کاربر"
+                              className="px-2.5 py-1 rounded-md bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 text-[10px] font-bold border border-emerald-500/40 whitespace-nowrap cursor-pointer disabled:opacity-50"
                             >
-                              ارسال به چاپ
+                              {isApprovingSubId === order.id ? 'در حال فعال‌سازی...' : 'تایید و فعال‌سازی اشتراک'}
                             </button>
-                          )}
+                          ) : (
+                            <>
+                              {(order.orderStatus === 'pending_payment' || order.orderStatus === 'pending') && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleQuickStatusChange(order.id, 'processing')}
+                                  title="تایید پرداخت و ارسال به خط چاپ"
+                                  className="px-2 py-1 rounded-md bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 text-[10px] font-bold border border-cyan-500/30 whitespace-nowrap"
+                                >
+                                  ارسال به چاپ
+                                </button>
+                              )}
 
-                          {(order.orderStatus === 'processing' || order.orderStatus === 'printing') && (
-                            <button
-                              type="button"
-                              onClick={() => handleQuickStatusChange(order.id, 'nfc_writing')}
-                              title="چاپ تکمیل شد، انتقال به رایت NFC"
-                              className="px-2 py-1 rounded-md bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 text-[10px] font-bold border border-blue-500/30 whitespace-nowrap"
-                            >
-                              رایت NFC
-                            </button>
-                          )}
+                              {(order.orderStatus === 'processing' || order.orderStatus === 'printing') && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleQuickStatusChange(order.id, 'nfc_writing')}
+                                  title="چاپ تکمیل شد، انتقال به رایت NFC"
+                                  className="px-2 py-1 rounded-md bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 text-[10px] font-bold border border-blue-500/30 whitespace-nowrap"
+                                >
+                                  رایت NFC
+                                </button>
+                              )}
 
-                          {order.orderStatus === 'nfc_writing' && (
-                            <button
-                              type="button"
-                              onClick={() => handleOpenModal(order)}
-                              title="باز کردن مدیریت رایت چیپست"
-                              className="px-2 py-1 rounded-md bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 text-[10px] font-bold border border-emerald-500/30 whitespace-nowrap animate-pulse"
-                            >
-                              مدیریت رایت
-                            </button>
-                          )}
+                              {order.orderStatus === 'nfc_writing' && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenModal(order)}
+                                  title="باز کردن مدیریت رایت چیپست"
+                                  className="px-2 py-1 rounded-md bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 text-[10px] font-bold border border-emerald-500/30 whitespace-nowrap animate-pulse"
+                                >
+                                  مدیریت رایت
+                                </button>
+                              )}
 
-                          {(order.orderStatus === 'shipping' || order.orderStatus === 'shipped') && (
-                            <button
-                              type="button"
-                              onClick={() => handleQuickStatusChange(order.id, 'delivered')}
-                              title="تایید نهایی تحویل به مشتری"
-                              className="px-2 py-1 rounded-md bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-[10px] font-bold border border-emerald-500/30 whitespace-nowrap"
-                            >
-                              تحویل شد
-                            </button>
+                              {(order.orderStatus === 'shipping' || order.orderStatus === 'shipped') && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleQuickStatusChange(order.id, 'delivered')}
+                                  title="تایید نهایی تحویل به مشتری"
+                                  className="px-2 py-1 rounded-md bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-[10px] font-bold border border-emerald-500/30 whitespace-nowrap"
+                                >
+                                  تحویل شد
+                                </button>
+                              )}
+                            </>
                           )}
 
                           {/* Soft Delete Trigger */}
@@ -796,6 +864,62 @@ export default function AdminOrdersPage() {
                   <span className="text-slate-400 block text-[11px]">آدرس پستی و توضیحات تحویل:</span>
                   <p className="text-slate-200 mt-0.5 leading-relaxed">{selectedOrder.notes}</p>
                 </div>
+
+                {(selectedOrder.paymentProviderDetails?.receiptUrl ||
+                  selectedOrder.paymentProviderDetails?.transactionRef ||
+                  selectedOrder.orderType === 'subscription') && (
+                  <div className="pt-3 border-t border-slate-800/80 space-y-2.5">
+                    {selectedOrder.paymentProviderDetails?.transactionRef && (
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="text-slate-400">کد پیگیری / شماره تراکنش فیش:</span>
+                        <span className="font-mono text-emerald-400 font-bold" dir="ltr">
+                          {selectedOrder.paymentProviderDetails.transactionRef}
+                        </span>
+                      </div>
+                    )}
+
+                    {selectedOrder.paymentProviderDetails?.receiptUrl && (
+                      <div className="space-y-1.5">
+                        <span className="text-slate-400 text-[11px] flex items-center gap-1.5">
+                          <FileImage className="w-3.5 h-3.5 text-cyan-400" />
+                          <span>تصویر فیش واریزی آپلود شده:</span>
+                        </span>
+                        <div className="rounded-xl overflow-hidden border border-slate-800 bg-slate-950 p-2 flex items-center justify-between gap-3">
+                          <img
+                            src={selectedOrder.paymentProviderDetails.receiptUrl}
+                            alt="فیش واریزی"
+                            className="w-20 h-20 object-cover rounded-lg border border-slate-700"
+                          />
+                          <a
+                            href={selectedOrder.paymentProviderDetails.receiptUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="px-3 py-1.5 rounded-lg bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 text-xs font-bold flex items-center gap-1.5"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                            <span>مشاهده سایز کامل فیش</span>
+                          </a>
+                        </div>
+                      </div>
+                    )}
+
+                    {selectedOrder.orderType === 'subscription' && selectedOrder.paymentStatus !== 'paid' && (
+                      <Button
+                        type="button"
+                        disabled={isApprovingSubId === selectedOrder.id}
+                        onClick={() => handleApproveSubscription(selectedOrder.id)}
+                        className="w-full h-11 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25 cursor-pointer"
+                      >
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span>
+                          {isApprovingSubId === selectedOrder.id
+                            ? 'در حال تایید و فعال‌سازی...'
+                            : 'تایید فیش واریزی و فعال‌سازی اشتراک ۱ ساله Pro'}
+                        </span>
+                      </Button>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Status Selector Controller */}

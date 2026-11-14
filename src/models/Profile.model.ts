@@ -49,6 +49,9 @@ export interface IProfileDocument extends Document {
     };
     [key: string]: any;
   };
+  planType?: 'free' | 'pro' | 'vip' | string;
+  planExpiresAt?: Date | null;
+  features?: any;
   isActive: boolean;
   viewsCount: number;
   leadsCount: number;
@@ -228,6 +231,20 @@ const ProfileSchema = new Schema<IProfileDocument>(
     crmTelegramChatId: { type: String, default: '' },
     crmTelegramEnable: { type: Boolean, default: false },
     financialSettings: {
+      type: Schema.Types.Mixed,
+      default: () => ({}),
+    },
+    planType: {
+      type: String,
+      enum: ['free', 'pro', 'vip', 'enterprise'],
+      default: 'free',
+      index: true,
+    },
+    planExpiresAt: {
+      type: Date,
+      default: null,
+    },
+    features: {
       type: Schema.Types.Mixed,
       default: () => ({}),
     },

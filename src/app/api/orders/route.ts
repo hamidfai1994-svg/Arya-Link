@@ -8,6 +8,7 @@ import { PhysicalCard, generatePhysicalCardCode } from '@/models/PhysicalCard.mo
 import { buildOrderIsolationQuery } from '@/lib/db/data-isolation';
 import { SystemSettings } from '@/models/systemSettings.model';
 import { sendInsightsMessage } from '@/lib/telegram';
+import { activateUserSubscriptionFromOrder } from '@/lib/utils/subscription';
 
 export const dynamic = 'force-dynamic';
 
@@ -95,6 +96,7 @@ export async function GET(req: NextRequest) {
           currency: o.currency || 'AFN',
           paymentStatus: o.paymentStatus,
           orderStatus: o.orderStatus,
+          orderType: o.orderType || 'nfc_card',
           paymentMethod: o.paymentMethod,
           paymentGateway: o.paymentGateway || (o.paymentMethod === 'wallet' ? 'hesabpay' : o.paymentMethod || 'bank'),
           paymentMode: o.paymentMode || (o.paymentMethod === 'wallet' ? 'api' : 'manual'),
@@ -192,9 +194,11 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 4. Safely generate a unique 6-character shortCode for NFC tracking
+    const orderType = body.orderType === 'subscription' ? 'subscription' : 'nfc_card';
+
+    // 4. Safely generate a unique 6-character shortCode for NFC tracking (NFC card orders only)
     let trackingShortCode = (body.trackingShortCode || '').trim().toUpperCase();
-    if (!trackingShortCode) {
+    if (orderType === 'nfc_card' && !trackingShortCode) {
       try {
         let code = generatePhysicalCardCode();
         let codeAttempts = 0;
@@ -213,6 +217,11 @@ export async function POST(req: NextRequest) {
     const quantity = Number(body.quantity) || 1;
     const totalPrice = Number(body.totalPrice) || unitPrice * quantity;
 
+    const defaultProductTitle =
+      orderType === 'subscription'
+        ? 'اشتراک سالانه پروفایل حرفه‌ای (Pro)'
+        : 'سفارش کارت هوشمند NFC';
+
     // 5. Create Order record
     const newOrder = await Order.create({
       userId,
@@ -222,14 +231,14 @@ export async function POST(req: NextRequest) {
       customerName,
       customerEmail,
       customerPhone: body.customerPhone || '',
-      productTitle: body.productTitle || 'سفارش کارت هوشمند NFC',
+      productTitle: body.productTitle || defaultProductTitle,
       quantity,
       unitPrice,
       totalPrice,
       currency: body.currency === 'USD' ? 'USD' : 'AFN',
       paymentStatus,
       orderStatus,
-      orderType: body.orderType || 'nfc_card',
+      orderType,
       status: orderStatus,
       price: totalPrice,
       paymentMethod,
@@ -245,10 +254,19 @@ export async function POST(req: NextRequest) {
       notes: body.notes || '',
     });
 
-    // 6. Safely create or link PhysicalCard (NON-BLOCKING: will not fail order creation if it errors)
+    // If subscription order created already marked as paid, activate 1-year Pro subscription immediately
+    if (orderType === 'subscription' && paymentStatus === 'paid') {
+      try {
+        await activateUserSubscriptionFromOrder(newOrder);
+      } catch (subErr) {
+        console.error('Non-critical: Failed auto-activating subscription on order create:', subErr);
+      }
+    }
+
+    // 6. Safely create or link PhysicalCard (NON-BLOCKING & ONLY for nfc_card orders)
     let physicalCard = null;
-    try {
-      if (trackingShortCode) {
+    if (orderType === 'nfc_card' && trackingShortCode) {
+      try {
         physicalCard = await PhysicalCard.create({
           shortCode: trackingShortCode,
           ownerId: userId || undefined,
@@ -262,10 +280,10 @@ export async function POST(req: NextRequest) {
           newOrder.physicalCardId = physicalCard._id as any;
           await newOrder.save();
         }
+      } catch (cardError: any) {
+        console.error('Non-critical: Failed to create PhysicalCard for order:', cardError);
+        // Non-fatal error; order is safely saved, admin can provision/re-link card anytime in admin dashboard
       }
-    } catch (cardError: any) {
-      console.error('Non-critical: Failed to create PhysicalCard for order:', cardError);
-      // Non-fatal error; order is safely saved, admin can provision/re-link card anytime in admin dashboard
     }
 
     // 7. Non-blocking notification to Insights Telegram Bot
@@ -370,6 +388,32 @@ export async function PATCH(req: NextRequest) {
 
     // 1. ADMIN ACTIONS
     if (isSuperAdmin) {
+      // Approve & activate Pro subscription order
+      if (
+        order.orderType === 'subscription' &&
+        (action === 'approve_subscription' ||
+          paymentStatus === 'paid' ||
+          orderStatus === 'processing' ||
+          orderStatus === 'delivered' ||
+          orderStatus === 'completed')
+      ) {
+        order.paymentStatus = 'paid';
+        order.orderStatus = 'completed';
+        order.status = 'completed';
+        if (trackingNumber !== undefined) order.trackingNumber = trackingNumber;
+        if (notes !== undefined) order.notes = notes;
+        await order.save();
+
+        const subResult = await activateUserSubscriptionFromOrder(order);
+
+        return NextResponse.json({
+          success: true,
+          message: 'پرداخت تایید شد و اشتراک حرفه‌ای (Pro) کاربر به مدت ۱ سال (۳۶۵ روز) فعال گردید.',
+          order,
+          subscription: subResult,
+        });
+      }
+
       // Direct action: Confirm NFC Writing & activate (transitions to shipping)
       if (action === 'confirm_provision') {
         let card = await PhysicalCard.findOne({ orderId: order._id });

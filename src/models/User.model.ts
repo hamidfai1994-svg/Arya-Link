@@ -2,6 +2,7 @@ import mongoose, { Schema, Document, Model } from 'mongoose';
 
 export type UserRole = 'user' | 'admin' | 'superadmin' | 'content_editor' | 'financial_admin';
 export type SubscriptionPlan = 'free' | 'pro' | 'enterprise';
+export type PlanType = 'free' | 'pro' | 'vip';
 
 export interface IAuthProvider {
   provider: 'credentials' | 'google' | 'apple' | 'github';
@@ -20,6 +21,16 @@ export interface IUserDocument extends Document {
   jobCategory?: string;
   role: UserRole;
   subscriptionPlan: SubscriptionPlan;
+  planType: PlanType;
+  planExpiresAt?: Date | null;
+  features?: {
+    maxCards?: number;
+    customDomain?: boolean;
+    analyticsAdvanced?: boolean;
+    removeBranding?: boolean;
+    prioritySupport?: boolean;
+    [key: string]: any;
+  };
   accountType?: 'personal' | 'business' | 'corporate';
   providers: IAuthProvider[];
   isActive: boolean;
@@ -134,6 +145,21 @@ const UserSchema = new Schema<IUserDocument>(
       enum: ['free', 'pro', 'enterprise'],
       default: 'free',
       index: true,
+    },
+    planType: {
+      type: String,
+      enum: ['free', 'pro', 'vip', 'enterprise'],
+      default: 'free',
+      index: true,
+    },
+    planExpiresAt: {
+      type: Date,
+      default: null,
+      index: true,
+    },
+    features: {
+      type: Schema.Types.Mixed,
+      default: () => ({}),
     },
     accountType: {
       type: String,

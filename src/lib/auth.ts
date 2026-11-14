@@ -84,6 +84,9 @@ export const authOptions: NextAuthOptions = {
           image: user.avatar || '',
           role: user.role,
           subscriptionPlan: user.subscriptionPlan,
+          planType: user.planType || user.subscriptionPlan || 'free',
+          planExpiresAt: user.planExpiresAt || null,
+          features: user.features || {},
           accountType: user.accountType || 'personal',
         };
       },
@@ -172,6 +175,9 @@ export const authOptions: NextAuthOptions = {
           image: user.avatar || '',
           role: user.role,
           subscriptionPlan: user.subscriptionPlan,
+          planType: user.planType || user.subscriptionPlan || 'free',
+          planExpiresAt: user.planExpiresAt || null,
+          features: user.features || {},
           accountType: user.accountType || 'personal',
         };
       },
@@ -290,6 +296,9 @@ export const authOptions: NextAuthOptions = {
           user.id = existingUser._id.toString();
           user.role = existingUser.role;
           user.subscriptionPlan = existingUser.subscriptionPlan;
+          user.planType = existingUser.planType || existingUser.subscriptionPlan || 'free';
+          user.planExpiresAt = existingUser.planExpiresAt || null;
+          user.features = existingUser.features || {};
           user.accountType = existingUser.accountType || 'personal';
           return true;
         } catch (error) {
@@ -305,6 +314,9 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id;
         token.role = user.role || 'user';
         token.subscriptionPlan = user.subscriptionPlan || 'free';
+        token.planType = user.planType || user.subscriptionPlan || 'free';
+        token.planExpiresAt = user.planExpiresAt || null;
+        token.features = user.features || {};
         token.accountType = user.accountType || 'personal';
       }
       return token;
@@ -315,6 +327,9 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.id as string;
         session.user.role = token.role as string;
         session.user.subscriptionPlan = token.subscriptionPlan as string;
+        session.user.planType = (token.planType as any) || token.subscriptionPlan || 'free';
+        session.user.planExpiresAt = token.planExpiresAt as any;
+        session.user.features = (token.features as any) || {};
         session.user.accountType = (token.accountType as any) || 'personal';
       }
       return session;

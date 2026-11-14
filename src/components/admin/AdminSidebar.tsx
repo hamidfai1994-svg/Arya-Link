@@ -19,6 +19,7 @@ import {
   ShoppingBag,
   Trash2,
   CreditCard,
+  Layers,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SiteLogo } from '@/components/SiteLogo';
@@ -32,7 +33,7 @@ export interface AdminNavItem {
 }
 
 // Core Super Admin Navigation Items
-const adminNavItems: AdminNavItem[] = [
+const coreNavItems: AdminNavItem[] = [
   {
     title: 'نمای کلی پلتفرم',
     subtitle: 'آمار زنده، سرور و وضعیت سیستم',
@@ -52,18 +53,6 @@ const adminNavItems: AdminNavItem[] = [
     icon: ShoppingBag,
   },
   {
-    title: 'تراکنش‌ها و مالی',
-    subtitle: 'گردش حساب‌ها، درگاه‌های پرداخت و تسویه',
-    href: '/admin/finance',
-    icon: Wallet,
-  },
-  {
-    title: 'درگاه‌ها و روش‌های پرداخت',
-    subtitle: 'تنظیمات حساب‌پی، بانک‌ها، ولت‌ها و تتر',
-    href: '/admin/finance/payment-methods',
-    icon: CreditCard,
-  },
-  {
     title: 'تنظیمات پلتفرم',
     subtitle: 'تعرفه‌ها، درگاه‌های بانکی، امنیت و لجستیک',
     href: '/admin/settings',
@@ -74,6 +63,28 @@ const adminNavItems: AdminNavItem[] = [
     subtitle: 'لاگ امنیتی حسابرسی و رکوردهای حذف‌شده',
     href: '/admin/trash',
     icon: Trash2,
+  },
+];
+
+// Finance & Monetization Navigation Group
+const financeNavItems: AdminNavItem[] = [
+  {
+    title: 'مدیریت دسترسی ماژول‌ها',
+    subtitle: 'تعیین ماژول‌های رایگان و حرفه‌ای (Pro)',
+    href: '/admin/modules',
+    icon: Layers,
+  },
+  {
+    title: 'تراکنش‌ها و مالی',
+    subtitle: 'گردش حساب‌ها، درگاه‌های پرداخت و تسویه',
+    href: '/admin/finance',
+    icon: Wallet,
+  },
+  {
+    title: 'درگاه‌ها و روش‌های پرداخت',
+    subtitle: 'تنظیمات حساب‌پی، بانک‌ها، ولت‌ها و تتر',
+    href: '/admin/finance/payment-methods',
+    icon: CreditCard,
   },
 ];
 
@@ -117,55 +128,77 @@ export function AdminSidebar({ onCloseMobile }: { onCloseMobile?: () => void }) 
       </div>
 
       {/* Admin Navigation List */}
-      <nav className="flex-1 px-3 space-y-1.5 overflow-y-auto custom-scrollbar mt-3">
-        <div className="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-          مدیریت ارشد پلتفرم
-        </div>
+      <nav className="flex-1 px-3 space-y-4 overflow-y-auto custom-scrollbar mt-3">
+        {[
+          {
+            id: 'core',
+            label: 'مدیریت ارشد پلتفرم',
+            labelClass: 'text-slate-400',
+            items: coreNavItems,
+            divider: false,
+          },
+          {
+            id: 'finance',
+            label: 'مالی و درآمدزایی',
+            labelClass: 'text-amber-400/90',
+            items: financeNavItems,
+            divider: true,
+          },
+        ].map((group) => (
+          <div
+            key={group.id}
+            className={cn('space-y-1.5', group.divider && 'pt-2 border-t border-slate-800/70')}
+          >
+            <div className={cn('px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider', group.labelClass)}>
+              {group.label}
+            </div>
 
-        {adminNavItems.map((item) => {
-          const isActive = pathname === item.href;
-          const Icon = item.icon;
+            {group.items.map((item) => {
+              const isActive = pathname === item.href;
+              const Icon = item.icon;
 
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={onCloseMobile}
-              className={cn(
-                'flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs transition-all group',
-                isActive
-                  ? 'bg-gradient-to-r from-rose-500/25 to-amber-500/15 text-rose-400 font-bold border border-rose-500/30 shadow-md'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-900/70'
-              )}
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <Icon
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={onCloseMobile}
                   className={cn(
-                    'w-4 h-4 shrink-0 transition-colors',
-                    isActive ? 'text-rose-400' : 'text-slate-400 group-hover:text-white'
+                    'flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs transition-all group',
+                    isActive
+                      ? 'bg-gradient-to-r from-rose-500/25 to-amber-500/15 text-rose-400 font-bold border border-rose-500/30 shadow-md'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-900/70'
                   )}
-                />
-                <div className="text-right truncate">
-                  <span className="block truncate">{item.title}</span>
-                  <span
-                    className={cn(
-                      'text-[10px] block font-normal truncate opacity-70',
-                      isActive ? 'text-rose-200' : 'text-slate-400'
-                    )}
-                  >
-                    {item.subtitle}
-                  </span>
-                </div>
-              </div>
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Icon
+                      className={cn(
+                        'w-4 h-4 shrink-0 transition-colors',
+                        isActive ? 'text-rose-400' : 'text-slate-400 group-hover:text-white'
+                      )}
+                    />
+                    <div className="text-right truncate">
+                      <span className="block truncate">{item.title}</span>
+                      <span
+                        className={cn(
+                          'text-[10px] block font-normal truncate opacity-70',
+                          isActive ? 'text-rose-200' : 'text-slate-400'
+                        )}
+                      >
+                        {item.subtitle}
+                      </span>
+                    </div>
+                  </div>
 
-              {item.badge && (
-                <span className="text-[9px] px-2 py-0.5 rounded-full font-black font-sans uppercase shrink-0 bg-rose-500/20 text-rose-400 border border-rose-500/30">
-                  {item.badge}
-                </span>
-              )}
-            </Link>
-          );
-        })}
+                  {item.badge && (
+                    <span className="text-[9px] px-2 py-0.5 rounded-full font-black font-sans uppercase shrink-0 bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                      {item.badge}
+                    </span>
+                  )}
+                </Link>
+              );
+            })}
+          </div>
+        ))}
       </nav>
 
       {/* Footer Actions: Personal Dashboard & Sign Out in One Row */}

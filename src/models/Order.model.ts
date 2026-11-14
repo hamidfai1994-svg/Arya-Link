@@ -16,6 +16,9 @@ export const ORDER_STATUS_ENUM = [
 
 export type OrderStatus = (typeof ORDER_STATUS_ENUM)[number];
 
+export const ORDER_TYPE_ENUM = ['nfc_card', 'subscription'] as const;
+export type OrderType = (typeof ORDER_TYPE_ENUM)[number];
+
 export const PAYMENT_STATUS_ENUM = ['paid', 'pending', 'failed', 'refunded'] as const;
 export type PaymentStatus = (typeof PAYMENT_STATUS_ENUM)[number];
 
@@ -50,7 +53,7 @@ export interface IOrderDocument extends Document {
   currency: 'AFN' | 'USD';
   paymentStatus: PaymentStatus;
   orderStatus: OrderStatus;
-  orderType?: string;
+  orderType?: OrderType;
   status?: OrderStatus | string;
   price?: number;
   paymentMethod: 'online' | 'cod' | 'bank' | 'wallet' | 'hawala' | 'crypto' | 'installment' | string;
@@ -129,6 +132,10 @@ const OrderSchema = new Schema<IOrderDocument>(
     },
     orderType: {
       type: String,
+      enum: {
+        values: [...ORDER_TYPE_ENUM],
+        message: 'مقدار {VALUE} برای نوع سفارش نامعتبر است.',
+      },
       default: 'nfc_card',
       index: true,
     },

@@ -5,6 +5,7 @@ import { connectToDatabase } from '@/lib/db/mongodb';
 import { User } from '@/models/User.model';
 import { Profile } from '@/models/Profile.model';
 import { isValidUserSession } from '@/lib/db/data-isolation';
+import { syncAndCheckUserSubscription } from '@/lib/utils/subscription';
 import bcrypt from 'bcryptjs';
 
 export const dynamic = 'force-dynamic';
@@ -47,6 +48,8 @@ export async function GET() {
       );
     }
 
+    const subInfo = await syncAndCheckUserSubscription(session.user.id);
+
     return NextResponse.json({
       success: true,
       user: {
@@ -56,7 +59,10 @@ export async function GET() {
         phone: user.phone || '',
         avatar: user.avatar || '',
         role: user.role,
-        subscriptionPlan: user.subscriptionPlan,
+        subscriptionPlan: subInfo.planType,
+        planType: subInfo.planType,
+        planExpiresAt: subInfo.planExpiresAt || null,
+        features: subInfo.features || {},
         isVerified: Boolean(user.isVerified),
         verificationStatus: user.verificationStatus || 'unverified',
         createdAt: user.createdAt,
