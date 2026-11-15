@@ -11,16 +11,18 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useLandingCms } from '@/context/LandingCmsContext';
+import { useLanguage } from '@/lib/i18n/LanguageContext';
+import { getLocalizedText } from '@/lib/i18n/multilingual';
 
 export interface TestimonialItem {
   id: string;
-  name: string;
-  title: string;
+  name: any;
+  title: any;
   avatarUrl: string;
   rating: number;
-  reviewText: string;
-  verifiedBadge: string;
-  cardMaterialUsed: string;
+  reviewText: any;
+  verifiedBadge: any;
+  cardMaterialUsed: any;
   dateStr: string;
 }
 
@@ -80,9 +82,10 @@ function AnimatedCounter({
 
 export function TestimonialsAndSocialProof() {
   const { testimonials } = useLandingCms();
+  const { language, dir } = useLanguage();
 
   return (
-    <section id="social-proof" className="py-20 sm:py-28 border-t border-border/80 relative overflow-hidden font-sans">
+    <section id="social-proof" dir={dir} className="py-20 sm:py-28 border-t border-border/80 relative overflow-hidden font-sans">
       {/* Ambient Lighting Background */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[350px] bg-cyan-500/5 rounded-full blur-[150px] pointer-events-none -z-10" />
 
@@ -99,16 +102,26 @@ export function TestimonialsAndSocialProof() {
           <div className="inline-block">
             <Badge variant="cyan" className="text-xs flex items-center gap-1.5 mx-auto font-semibold">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>تجربه مشتریان واقعی</span>
+              <span>
+                {language === 'en' ? 'Real Customer Stories' : language === 'ps' ? 'د ریښتینو پیرودونکو تجربه' : 'تجربه مشتریان واقعی'}
+              </span>
             </Badge>
           </div>
 
           <h2 className="text-3xl sm:text-4xl font-black text-foreground tracking-tight">
-            نظرات رهبران تجاری و کاربران آریا لینک
+            {language === 'en'
+              ? 'Trusted by Business Leaders & Creators'
+              : language === 'ps'
+                ? 'د سوداګریزو مشرانو او کاروونکو نظرونه'
+                : 'نظرات رهبران تجاری و کاربران آریا لینک'}
           </h2>
 
           <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-            ببینید چگونه مدیران، داکتران، کارآفرینان و سازمان‌ها با کارت هوشمند آریا لینک کیفیت ارتباطات و نرخ تبدیل فروش خود را ارتقا داده‌اند.
+            {language === 'en'
+              ? 'See how executives, doctors, entrepreneurs, and teams elevate their networking and conversion rates with Arya Link.'
+              : language === 'ps'
+                ? 'وګورئ چې څنګه مدیران، ډاکټران او شرکتونه له آریا لینک سره خپلې اړیکې پیاوړې کوي.'
+                : 'ببینید چگونه مدیران، داکتران، کارآفرینان و سازمان‌ها با کارت هوشمند آریا لینک کیفیت ارتباطات و نرخ تبدیل فروش خود را ارتقا داده‌اند.'}
           </p>
         </motion.div>
 
@@ -120,71 +133,79 @@ export function TestimonialsAndSocialProof() {
           transition={{ duration: 0.6, ease: EASE_SNAPPY, staggerChildren: 0.12 }}
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
         >
-          {testimonials.map((t) => (
-            <div
-              key={t.id}
-              className="group p-6 sm:p-7 rounded-3xl bg-white/70 dark:bg-slate-900/60 border border-slate-200/80 dark:border-white/10 backdrop-blur-xl shadow-sm hover:shadow-xl hover:border-cyan-500/40 transition-all duration-300 flex flex-col justify-between relative overflow-hidden font-sans"
-            >
-              <Quote className="w-8 h-8 text-cyan-500/10 dark:text-cyan-400/10 absolute top-5 left-5 pointer-events-none" />
+          {testimonials.map((t) => {
+            const localizedName = getLocalizedText(t.name, language);
+            const localizedTitle = getLocalizedText(t.title, language);
+            const localizedReview = getLocalizedText(t.reviewText, language);
+            const localizedBadge = getLocalizedText(t.verifiedBadge, language);
+            const localizedMaterial = getLocalizedText(t.cardMaterialUsed, language);
 
-              <div className="space-y-4">
-                {/* 5 Golden Stars & Rating */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1 text-amber-400">
-                    {[1, 2, 3, 4, 5].map((starIdx) => (
-                      <Star key={starIdx} className="w-4 h-4 fill-amber-400 text-amber-400" />
-                    ))}
-                    <span className="text-xs font-black text-slate-800 dark:text-slate-200 mr-1.5">
-                      {t.rating.toFixed(1)}
+            return (
+              <div
+                key={t.id}
+                className="group p-6 sm:p-7 rounded-3xl bg-white/70 dark:bg-slate-900/60 border border-slate-200/80 dark:border-white/10 backdrop-blur-xl shadow-sm hover:shadow-xl hover:border-cyan-500/40 transition-all duration-300 flex flex-col justify-between relative overflow-hidden font-sans"
+              >
+                <Quote className="w-8 h-8 text-cyan-500/10 dark:text-cyan-400/10 absolute top-5 left-5 pointer-events-none" />
+
+                <div className="space-y-4">
+                  {/* 5 Golden Stars & Rating */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1 text-amber-400">
+                      {[1, 2, 3, 4, 5].map((starIdx) => (
+                        <Star key={starIdx} className="w-4 h-4 fill-amber-400 text-amber-400" />
+                      ))}
+                      <span className="text-xs font-black text-slate-800 dark:text-slate-200 mr-1.5">
+                        {t.rating.toFixed(1)}
+                      </span>
+                    </div>
+
+                    {/* Material used tag */}
+                    <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800/80 border border-slate-200/60 dark:border-white/5 flex items-center gap-1">
+                      <CreditCard className="w-3 h-3 text-cyan-500" />
+                      <span>{localizedMaterial}</span>
                     </span>
                   </div>
 
-                  {/* Material used tag */}
-                  <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800/80 border border-slate-200/60 dark:border-white/5 flex items-center gap-1">
-                    <CreditCard className="w-3 h-3 text-cyan-500" />
-                    <span>{t.cardMaterialUsed}</span>
+                  {/* Review Text */}
+                  <p className="text-xs sm:text-[13px] text-slate-700 dark:text-slate-200 leading-relaxed">
+                    {localizedReview}
+                  </p>
+                </div>
+
+                {/* User Profile Footer */}
+                <div className="pt-5 mt-5 border-t border-slate-100 dark:border-white/10 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    {/* Avatar */}
+                    <div className="relative shrink-0">
+                      <img
+                        src={t.avatarUrl}
+                        alt={localizedName}
+                        className="w-11 h-11 rounded-full object-cover border-2 border-cyan-500/30"
+                      />
+                      <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 text-white flex items-center justify-center border-2 border-white dark:border-slate-900">
+                        <CheckCircle2 className="w-2.5 h-2.5 stroke-[3]" />
+                      </div>
+                    </div>
+
+                    <div className="text-start truncate">
+                      <div className="flex items-center gap-1">
+                        <h4 className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white truncate">
+                          {localizedName}
+                        </h4>
+                      </div>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                        {localizedTitle}
+                      </p>
+                    </div>
+                  </div>
+
+                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 shrink-0 hidden sm:inline">
+                    {localizedBadge}
                   </span>
                 </div>
-
-                {/* Review Text */}
-                <p className="text-xs sm:text-[13px] text-slate-700 dark:text-slate-200 leading-relaxed">
-                  {t.reviewText}
-                </p>
               </div>
-
-              {/* User Profile Footer */}
-              <div className="pt-5 mt-5 border-t border-slate-100 dark:border-white/10 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3 min-w-0">
-                  {/* Avatar */}
-                  <div className="relative shrink-0">
-                    <img
-                      src={t.avatarUrl}
-                      alt={t.name}
-                      className="w-11 h-11 rounded-full object-cover border-2 border-cyan-500/30"
-                    />
-                    <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 text-white flex items-center justify-center border-2 border-white dark:border-slate-900">
-                      <CheckCircle2 className="w-2.5 h-2.5 stroke-[3]" />
-                    </div>
-                  </div>
-
-                  <div className="text-right truncate">
-                    <div className="flex items-center gap-1">
-                      <h4 className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white truncate">
-                        {t.name}
-                      </h4>
-                    </div>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                      {t.title}
-                    </p>
-                  </div>
-                </div>
-
-                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 shrink-0 hidden sm:inline">
-                  {t.verifiedBadge}
-                </span>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </motion.div>
 
         {/* Dynamic Number Counter Banner */}

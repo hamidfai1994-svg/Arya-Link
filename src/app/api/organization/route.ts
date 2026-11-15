@@ -6,6 +6,7 @@ import { connectToDatabase } from '@/lib/db/mongodb';
 import { Organization } from '@/models/Organization.model';
 import { User } from '@/models/User.model';
 import { Profile } from '@/models/Profile.model';
+import { Lead } from '@/models/Lead.model';
 
 export const dynamic = 'force-dynamic';
 
@@ -119,8 +120,75 @@ export async function GET() {
         { userId: { $in: [...userIds, ...userIdStrings] } },
       ],
     })
-      .select('userId orgId alias displayName headline avatarUrl email phone isActive createdAt')
+      .select(
+        'userId orgId alias displayName headline avatarUrl email phone isActive viewsCount leadsCount links createdAt'
+      )
       .lean();
+
+    const profileIds = orgProfiles.map((p: any) => p._id);
+    const profileIdStrings = orgProfiles.map((p: any) => p._id.toString());
+
+    const profileById = new Map<string, any>();
+    for (const p of orgProfiles) {
+      profileById.set(p._id.toString(), p);
+    }
+
+    const memberByUserId = new Map<string, any>();
+    for (const u of orgUsers) {
+      memberByUserId.set(u._id.toString(), u);
+    }
+
+    // Fetch all CRM leads belonging to this organization OR captured via any employee's card
+    const orgLeadsRaw = await Lead.find({
+      $or: [
+        { organizationId: org._id },
+        { organizationId: orgIdStr },
+        ...(profileIds.length > 0
+          ? [{ profileId: { $in: [...profileIds, ...profileIdStrings] } }]
+          : []),
+      ],
+    })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const leadCountByProfileId = new Map<string, number>();
+    for (const lead of orgLeadsRaw) {
+      const pid = String(lead.profileId || '');
+      if (pid) {
+        leadCountByProfileId.set(pid, (leadCountByProfileId.get(pid) || 0) + 1);
+      }
+    }
+
+    let totalTeamViews = 0;
+    let totalTeamClicks = 0;
+    const statsByUserId = new Map<
+      string,
+      { viewsCount: number; clicksCount: number; leadsCount: number }
+    >();
+
+    for (const p of orgProfiles) {
+      const uid = String(p.userId || '');
+      const pViews = Number(p.viewsCount || 0);
+      const pClicks = Array.isArray(p.links)
+        ? p.links.reduce((acc: number, ln: any) => acc + Number(ln?.clickCount || 0), 0)
+        : 0;
+      const pLeads = leadCountByProfileId.get(p._id.toString()) || 0;
+
+      totalTeamViews += pViews;
+      totalTeamClicks += pClicks;
+
+      if (uid) {
+        const current = statsByUserId.get(uid) || {
+          viewsCount: 0,
+          clicksCount: 0,
+          leadsCount: 0,
+        };
+        current.viewsCount += pViews;
+        current.clicksCount += pClicks;
+        current.leadsCount += pLeads;
+        statsByUserId.set(uid, current);
+      }
+    }
 
     const profileByUserId = new Map<string, any>();
     for (const p of orgProfiles) {
@@ -133,9 +201,15 @@ export async function GET() {
     }
 
     const members = orgUsers.map((u: any) => {
-      const p = profileByUserId.get(u._id.toString()) || null;
+      const uid = u._id.toString();
+      const p = profileByUserId.get(uid) || null;
+      const memberStats = statsByUserId.get(uid) || {
+        viewsCount: 0,
+        clicksCount: 0,
+        leadsCount: 0,
+      };
       return {
-        _id: u._id.toString(),
+        _id: uid,
         name: u.name,
         email: u.email,
         phone: u.phone || p?.phone || '',
@@ -143,6 +217,9 @@ export async function GET() {
         orgRole: u.orgRole || 'member',
         isActive: u.isActive,
         createdAt: u.createdAt,
+        viewsCount: memberStats.viewsCount,
+        clicksCount: memberStats.clicksCount,
+        leadsCount: memberStats.leadsCount,
         profile: p
           ? {
               _id: p._id.toString(),
@@ -153,6 +230,51 @@ export async function GET() {
               isActive: p.isActive,
             }
           : null,
+      };
+    });
+
+    const leaderboard = [...members]
+      .sort((a, b) => {
+        if (b.viewsCount !== a.viewsCount) return b.viewsCount - a.viewsCount;
+        if (b.clicksCount !== a.clicksCount) return b.clicksCount - a.clicksCount;
+        return b.leadsCount - a.leadsCount;
+      })
+      .map((m) => ({
+        memberId: m._id,
+        name: m.name,
+        email: m.email,
+        occupation: m.occupation,
+        orgRole: m.orgRole,
+        isActive: m.isActive,
+        alias: m.profile?.alias || '',
+        avatarUrl: m.profile?.avatarUrl || '',
+        viewsCount: m.viewsCount,
+        clicksCount: m.clicksCount,
+        leadsCount: m.leadsCount,
+      }));
+
+    const leads = orgLeadsRaw.map((lead: any) => {
+      const prof = profileById.get(String(lead.profileId));
+      const emp =
+        (lead.employeeUserId ? memberByUserId.get(String(lead.employeeUserId)) : null) ||
+        (prof?.userId ? memberByUserId.get(String(prof.userId)) : null);
+      return {
+        _id: lead._id.toString(),
+        profileId: String(lead.profileId),
+        organizationId: lead.organizationId ? String(lead.organizationId) : orgIdStr,
+        name: lead.name || 'مشتری بدون نام',
+        phone: lead.phone || '—',
+        email: lead.email || '',
+        message: lead.message || '',
+        status: lead.status || 'new',
+        createdAt: lead.createdAt,
+        employee: {
+          _id: emp?._id ? String(emp._id) : '',
+          name: emp?.name || prof?.displayName || 'کارمند سازمان',
+          email: emp?.email || '',
+          occupation: emp?.occupation || prof?.headline || '',
+          alias: prof?.alias || '',
+        },
       };
     });
 
@@ -176,6 +298,17 @@ export async function GET() {
         updatedAt: org.updatedAt,
       },
       members,
+      analytics: {
+        totalTeamViews,
+        totalTeamClicks,
+        totalTeamLeads: leads.length,
+        ctr:
+          totalTeamViews > 0
+            ? Number(((totalTeamClicks / totalTeamViews) * 100).toFixed(1))
+            : 0,
+        leaderboard,
+      },
+      leads,
     });
   } catch (error) {
     console.error('Error in GET /api/organization:', error);

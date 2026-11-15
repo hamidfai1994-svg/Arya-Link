@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
+import mongoose from 'mongoose';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { connectToDatabase } from '@/lib/db/mongodb';
 import { Message } from '@/models/Message.model';
 import { Profile } from '@/models/Profile.model';
 import { Lead } from '@/models/Lead.model';
+import { User } from '@/models/User.model';
 import { sendUserMessage } from '@/lib/telegram';
 
 export const dynamic = 'force-dynamic';
@@ -59,7 +61,7 @@ export async function POST(req: NextRequest) {
   try {
     await connectToDatabase();
     const body = await req.json();
-    const { name, email, phone, message, profileAlias } = body;
+    const { name, email, phone, message, profileAlias, organizationId } = body;
 
     if (!message || typeof message !== 'string' || !message.trim()) {
       return NextResponse.json(
@@ -83,10 +85,25 @@ export async function POST(req: NextRequest) {
     // 2. Also sync to Lead if profileAlias exists
     if (cleanAlias) {
       try {
-        const targetProfile = await Profile.findOne({ alias: cleanAlias }).select('_id');
+        const targetProfile = await Profile.findOne({ alias: cleanAlias }).select('_id userId orgId');
         if (targetProfile) {
+          let resolvedOrgId: any = targetProfile.orgId || null;
+          if (!resolvedOrgId && organizationId && mongoose.isValidObjectId(organizationId)) {
+            resolvedOrgId = new mongoose.Types.ObjectId(organizationId);
+          }
+          if (!resolvedOrgId && targetProfile.userId) {
+            const ownerUser = await User.findById(targetProfile.userId)
+              .select('organizationId')
+              .lean();
+            if (ownerUser?.organizationId) {
+              resolvedOrgId = ownerUser.organizationId;
+            }
+          }
+
           await Lead.create({
             profileId: targetProfile._id,
+            organizationId: resolvedOrgId || null,
+            employeeUserId: targetProfile.userId || null,
             name: savedMessage.name,
             phone: savedMessage.phone || '-',
             email: savedMessage.email || '',

@@ -10,6 +10,7 @@ import { useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 import { AnimatedOtpInput, OTPStatus } from '@/components/auth/AnimatedOtpInput';
 import { PhoneInput } from '@/components/ui/phone-input';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { SiteLogo } from '@/components/SiteLogo';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { SupportedLanguage } from '@/lib/i18n/types';
@@ -30,7 +31,6 @@ import {
   AlertOctagon,
   RotateCcw,
   Send,
-  Sparkles,
   Briefcase,
   ChevronDown,
 } from 'lucide-react';
@@ -139,13 +139,12 @@ const authDictionary = {
     sendOtpBtn: 'دریافت کد تایید یکبار مصرف',
     sendingOtp: 'در حال ارسال کد تایید...',
     verifyingOtp: 'در حال بررسی کد...',
-    otpSentSuccess: 'کد تایید 6 رقمی به ایمیل شما ارسال شد.',
+    otpSentSuccess: 'کد تایید با موفقیت به ایمیل شما ارسال شد. لطفاً صندوق ورودی (و پوشه اسپم) خود را بررسی کنید.',
     resendOtp: 'ارسال مجدد کد',
     resendCooldownText: 'ارسال مجدد تا {sec} ثانیه دیگر',
     changeEmail: 'تغییر ایمیل',
     orPasswordLogin: 'یا ورود با رمز عبور',
     orOtpLogin: 'یا ورود با کد تایید یکبار مصرف ایمیل',
-    devModeNotice: 'حالت توسعه فعال است (کد تایید: {code})',
   },
   ps: {
     backToHome: 'اصلي مخ ته ستنېدل',
@@ -245,7 +244,6 @@ const authDictionary = {
     changeEmail: 'د برېښنالیک بدلون',
     orPasswordLogin: 'یا په پټ نوم ننوتل',
     orOtpLogin: 'یا په یو ځلي کوډ ننوتل (له رمز پرته)',
-    devModeNotice: 'د ازموینې حالت فعال دی (کوډ: {code})',
   },
   en: {
     backToHome: 'Back to Home',
@@ -345,7 +343,6 @@ const authDictionary = {
     changeEmail: 'Change Email',
     orPasswordLogin: 'or sign in with password',
     orOtpLogin: 'or sign in with one-time code (passwordless)',
-    devModeNotice: 'Development mode active (OTP Code: {code})',
   },
 };
 
@@ -417,7 +414,6 @@ export function AuthPage({
   const [otpCooldown, setOtpCooldown] = useState(0);
   const [otpCodeStatus, setOtpCodeStatus] = useState<OTPStatus>('typing');
   const [otpErrorMessage, setOtpErrorMessage] = useState('');
-  const [devOtpCode, setDevOtpCode] = useState<string | null>(null);
 
   // Rate Limiting & Lockout States
   const [failedAttempts, setFailedAttempts] = useState(0);
@@ -609,14 +605,7 @@ export function AuthPage({
       setOtpCooldown(60);
       setOtpCodeStatus('typing');
 
-      if (data.devMode && data.devCode) {
-        setDevOtpCode(data.devCode);
-        toast.info(`[حالت توسعه] کد تایید: ${data.devCode}`, {
-          duration: 9000,
-        });
-      } else {
-        toast.success(t.otpSentSuccess);
-      }
+      toast.success(data.message || t.otpSentSuccess);
     } catch (err: any) {
       console.error('Send OTP error:', err);
       toast.error(t.errorNetwork);
@@ -940,8 +929,9 @@ export function AuthPage({
           <span className="hidden sm:inline font-medium">{t.backToHome}</span>
         </Link>
 
-        {/* Global Theme Toggle */}
+        {/* Global Language & Theme Toggles */}
         <div className="flex items-center gap-2">
+          <LanguageSwitcher />
           <ThemeToggle />
         </div>
       </div>
@@ -1157,14 +1147,6 @@ export function AuthPage({
                         <RotateCcw className="w-3.5 h-3.5" />
                         <span>{t.resendOtp}</span>
                       </button>
-                    )}
-
-                    {/* Dev Mode Banner (If OTP code was generated in dev mode) */}
-                    {devOtpCode && (
-                      <div className="mt-1 p-2 px-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-500 text-[11px] font-sans flex items-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5 shrink-0" />
-                        <span>{t.devModeNotice.replace('{code}', devOtpCode)}</span>
-                      </div>
                     )}
 
                     {/* Secondary Navigation */}

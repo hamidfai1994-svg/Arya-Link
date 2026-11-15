@@ -7,6 +7,9 @@ import { AuditLog } from '@/models/AuditLog.model';
 import { PhysicalCard, generatePhysicalCardCode } from '@/models/PhysicalCard.model';
 import { buildOrderIsolationQuery } from '@/lib/db/data-isolation';
 import { SystemSettings } from '@/models/systemSettings.model';
+import { User } from '@/models/User.model';
+import { Profile } from '@/models/Profile.model';
+import { Organization } from '@/models/Organization.model';
 import { sendInsightsMessage } from '@/lib/telegram';
 import { activateUserSubscriptionFromOrder } from '@/lib/utils/subscription';
 
@@ -60,6 +63,42 @@ export async function GET(req: NextRequest) {
       physicalCards.map((c) => [c.orderId?.toString(), c])
     );
 
+    // Enrich bulk_nfc_cards orders lacking full bulkItems metadata
+    const bulkEmployeeIdsToResolve = new Set<string>();
+    for (const o of orders as any[]) {
+      if (
+        o.orderType === 'bulk_nfc_cards' &&
+        (!Array.isArray(o.bulkItems) || o.bulkItems.length === 0) &&
+        Array.isArray(o.employeeIds)
+      ) {
+        for (const eid of o.employeeIds) {
+          if (eid) bulkEmployeeIdsToResolve.add(String(eid));
+        }
+      }
+    }
+
+    const bulkUserMap = new Map<string, any>();
+    const bulkProfileMap = new Map<string, any>();
+    if (bulkEmployeeIdsToResolve.size > 0) {
+      const empIdArr = Array.from(bulkEmployeeIdsToResolve);
+      const [resolvedUsers, resolvedProfiles] = await Promise.all([
+        User.find({ _id: { $in: empIdArr } }).select('name email occupation').lean(),
+        Profile.find({ userId: { $in: empIdArr } })
+          .select('userId orgId alias displayName headline email')
+          .lean(),
+      ]);
+      for (const u of resolvedUsers as any[]) {
+        bulkUserMap.set(String(u._id), u);
+      }
+      for (const p of resolvedProfiles as any[]) {
+        const uid = String(p.userId);
+        const existing = bulkProfileMap.get(uid);
+        if (!existing || p.orgId) {
+          bulkProfileMap.set(uid, p);
+        }
+      }
+    }
+
     const totalRevenue = orders
       .filter((o) => o.paymentStatus === 'paid')
       .reduce((sum, o) => sum + (o.totalPrice || 0), 0);
@@ -83,6 +122,27 @@ export async function GET(req: NextRequest) {
       success: true,
       orders: orders.map((o: any) => {
         const c = cardMap.get(o._id.toString());
+        const baseItems = Array.isArray(o.bulkItems) ? o.bulkItems : [];
+        const resolvedBulkItems =
+          baseItems.length > 0
+            ? baseItems
+            : Array.isArray(o.employeeIds) && o.orderType === 'bulk_nfc_cards'
+              ? o.employeeIds.map((eid: string) => {
+                  const u = bulkUserMap.get(String(eid));
+                  const p = bulkProfileMap.get(String(eid));
+                  const alias = p?.alias || '';
+                  return {
+                    employeeId: String(eid),
+                    name: u?.name || p?.displayName || 'کارمند سازمان',
+                    occupation: u?.occupation || p?.headline || '',
+                    email: u?.email || p?.email || '',
+                    alias,
+                    profileUrl: alias ? `https://aryal.ink/${alias}` : '',
+                    companyName: o.companyName || '',
+                  };
+                })
+              : [];
+
         return {
           id: o._id.toString(),
           orderNumber: o.orderNumber,
@@ -98,8 +158,12 @@ export async function GET(req: NextRequest) {
           orderStatus: o.orderStatus,
           orderType: o.orderType || 'nfc_card',
           subscriptionPlanType: o.subscriptionPlanType || 'pro',
+          organizationId: o.organizationId ? String(o.organizationId) : '',
           companyName: o.companyName || '',
           requestedLicenses: Number(o.requestedLicenses) || 0,
+          employeeIds: Array.isArray(o.employeeIds) ? o.employeeIds : [],
+          bulkItems: resolvedBulkItems,
+          shippingAddress: o.shippingAddress || '',
           paymentMethod: o.paymentMethod,
           paymentGateway: o.paymentGateway || (o.paymentMethod === 'wallet' ? 'hesabpay' : o.paymentMethod || 'bank'),
           paymentMode: o.paymentMode || (o.paymentMethod === 'wallet' ? 'api' : 'manual'),
@@ -197,9 +261,14 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const orderType = body.orderType === 'subscription' ? 'subscription' : 'nfc_card';
+    const orderType =
+      body.orderType === 'subscription'
+        ? 'subscription'
+        : body.orderType === 'bulk_nfc_cards'
+          ? 'bulk_nfc_cards'
+          : 'nfc_card';
 
-    // 4. Safely generate a unique 6-character shortCode for NFC tracking (NFC card orders only)
+    // 4. Safely generate a unique 6-character shortCode for NFC tracking (single nfc_card orders only)
     let trackingShortCode = (body.trackingShortCode || '').trim().toUpperCase();
     if (orderType === 'nfc_card' && !trackingShortCode) {
       try {
@@ -216,14 +285,119 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const unitPrice = Number(body.unitPrice) || 0;
-    const quantity = Number(body.quantity) || 1;
-    const totalPrice = Number(body.totalPrice) || unitPrice * quantity;
+    let unitPrice = Number(body.unitPrice) || 0;
+    let quantity = Number(body.quantity) || 1;
+    let totalPrice = Number(body.totalPrice) || unitPrice * quantity;
+    let resolvedOrganizationId: any = body.organizationId || null;
+    let resolvedCompanyName: string =
+      typeof body.companyName === 'string' ? body.companyName.trim() : '';
+    let resolvedEmployeeIds: string[] = Array.isArray(body.employeeIds)
+      ? Array.from(new Set(body.employeeIds.map((id: any) => String(id).trim()).filter(Boolean)))
+      : [];
+    let resolvedBulkItems: any[] = [];
+    const shippingAddress =
+      typeof body.shippingAddress === 'string' ? body.shippingAddress.trim() : '';
+
+    if (orderType === 'bulk_nfc_cards') {
+      const reqBulkItems: any[] = Array.isArray(body.bulkItems) ? body.bulkItems : [];
+      if (resolvedEmployeeIds.length === 0 && reqBulkItems.length > 0) {
+        resolvedEmployeeIds = Array.from(
+          new Set(
+            reqBulkItems
+              .map((it) => String(it?.employeeId || '').trim())
+              .filter(Boolean)
+          )
+        );
+      }
+
+      if (resolvedEmployeeIds.length === 0 && reqBulkItems.length === 0) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: 'لطفاً حداقل یک کارمند را برای ثبت سفارش گروهی کارت فیزیکی انتخاب نمایید.',
+          },
+          { status: 400 }
+        );
+      }
+
+      // Authoritatively resolve organization and employee details from DB
+      let orgDoc: any = null;
+      if (resolvedOrganizationId) {
+        orgDoc = await Organization.findById(resolvedOrganizationId).select('name ownerId').lean();
+      } else if (userId) {
+        orgDoc = await Organization.findOne({ ownerId: userId }).select('name ownerId').lean();
+      }
+      if (orgDoc) {
+        resolvedOrganizationId = orgDoc._id;
+        if (!resolvedCompanyName) {
+          resolvedCompanyName = orgDoc.name || '';
+        }
+      }
+
+      const siteOrigin = req.nextUrl?.origin || 'https://aryal.ink';
+      const userMap = new Map<string, any>();
+      const profileMap = new Map<string, any>();
+      const reqItemMap = new Map<string, any>(
+        reqBulkItems.map((it) => [String(it?.employeeId || '').trim(), it])
+      );
+
+      if (resolvedEmployeeIds.length > 0) {
+        const [empUsers, empProfiles] = await Promise.all([
+          User.find({ _id: { $in: resolvedEmployeeIds } }).select('name email occupation').lean(),
+          Profile.find({ userId: { $in: resolvedEmployeeIds } })
+            .select('userId orgId alias displayName headline email')
+            .lean(),
+        ]);
+
+        for (const u of empUsers as any[]) {
+          userMap.set(String(u._id), u);
+        }
+        for (const p of empProfiles as any[]) {
+          const uid = String(p.userId);
+          const existing = profileMap.get(uid);
+          if (!existing || String(p.orgId || '') === String(resolvedOrganizationId || '')) {
+            profileMap.set(uid, p);
+          }
+        }
+
+        resolvedBulkItems = resolvedEmployeeIds.map((empId) => {
+          const u = userMap.get(empId);
+          const p = profileMap.get(empId);
+          const fallback = reqItemMap.get(empId) || {};
+          const alias = p?.alias || fallback.alias || '';
+          return {
+            employeeId: empId,
+            name: u?.name || p?.displayName || fallback.name || 'کارمند سازمان',
+            occupation: u?.occupation || p?.headline || fallback.occupation || '—',
+            email: u?.email || p?.email || fallback.email || '',
+            alias,
+            profileUrl: alias ? `${siteOrigin}/${alias}` : fallback.profileUrl || '',
+            companyName: resolvedCompanyName || fallback.companyName || '',
+          };
+        });
+      } else {
+        resolvedBulkItems = reqBulkItems.map((it) => ({
+          employeeId: String(it?.employeeId || ''),
+          name: String(it?.name || 'کارمند سازمان'),
+          occupation: String(it?.occupation || '—'),
+          email: String(it?.email || ''),
+          alias: String(it?.alias || ''),
+          profileUrl: it?.alias ? `${siteOrigin}/${it.alias}` : String(it?.profileUrl || ''),
+          companyName: resolvedCompanyName || String(it?.companyName || ''),
+        }));
+      }
+
+      unitPrice = unitPrice > 0 ? unitPrice : 1500;
+      quantity = resolvedBulkItems.length || resolvedEmployeeIds.length || Math.max(1, quantity);
+      totalPrice = quantity * unitPrice;
+    }
 
     const defaultProductTitle =
       orderType === 'subscription'
         ? 'اشتراک سالانه پروفایل حرفه‌ای (Pro)'
-        : 'سفارش کارت هوشمند NFC';
+        : orderType === 'bulk_nfc_cards'
+          ? `سفارش گروهی کارت فیزیکی NFC (${resolvedCompanyName || 'سازمان'} - ${quantity} عدد)`
+          : 'سفارش کارت هوشمند NFC';
 
     // 5. Create Order record
     const newOrder = await Order.create({
@@ -242,9 +416,16 @@ export async function POST(req: NextRequest) {
       paymentStatus,
       orderStatus,
       orderType,
-      subscriptionPlanType: body.subscriptionPlanType === 'corporate' ? 'corporate' : 'pro',
-      companyName: typeof body.companyName === 'string' ? body.companyName.trim() : '',
-      requestedLicenses: Number(body.requestedLicenses) || 0,
+      subscriptionPlanType:
+        orderType === 'bulk_nfc_cards' || body.subscriptionPlanType === 'corporate'
+          ? 'corporate'
+          : 'pro',
+      organizationId: resolvedOrganizationId || null,
+      companyName: resolvedCompanyName,
+      requestedLicenses: Number(body.requestedLicenses) || (orderType === 'bulk_nfc_cards' ? quantity : 0),
+      employeeIds: resolvedEmployeeIds,
+      bulkItems: resolvedBulkItems,
+      shippingAddress,
       status: orderStatus,
       price: totalPrice,
       paymentMethod,

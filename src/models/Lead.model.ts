@@ -2,6 +2,8 @@ import mongoose, { Schema, Document, Model } from 'mongoose';
 
 export interface ILeadDocument extends Document {
   profileId: mongoose.Types.ObjectId | string;
+  organizationId?: mongoose.Types.ObjectId | string | null;
+  employeeUserId?: mongoose.Types.ObjectId | string | null;
   name: string;
   phone: string;
   message: string;
@@ -17,6 +19,18 @@ const LeadSchema = new Schema<ILeadDocument>(
       type: Schema.Types.ObjectId,
       ref: 'Profile',
       required: true,
+      index: true,
+    },
+    organizationId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Organization',
+      default: null,
+      index: true,
+    },
+    employeeUserId: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
       index: true,
     },
     name: {

@@ -35,6 +35,8 @@ async function autoInitSiteSettings(mongooseInstance: typeof mongoose) {
         {},
         {
           $setOnInsert: {
+            platformMainLogo: '',
+            platformFavicon: '',
             companyLogo: '',
             favicon: '',
             siteName: 'Arya Link',

@@ -16,6 +16,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
+import { getLocalizedText } from '@/lib/i18n/multilingual';
 import { useLandingCms } from '@/context/LandingCmsContext';
 
 const EASE_SNAPPY = [0, 0.7, 0.2, 1] as const;
@@ -45,7 +46,7 @@ const headerItemVariants = {
 };
 
 export function PricingSection() {
-  const { dir } = useLanguage();
+  const { dir, language, t } = useLanguage();
   const { plans } = useLandingCms();
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('yearly');
 
@@ -53,7 +54,7 @@ export function PricingSection() {
   const proPlan = plans.find((p) => p.planId === 'pro') || plans[1] || plans[0];
 
   return (
-    <section id="pricing" className="py-20 sm:py-28 relative border-t border-border/80 bg-muted/15 overflow-hidden select-none font-sans">
+    <section id="pricing" dir={dir} className="py-20 sm:py-28 relative border-t border-border/80 bg-muted/15 overflow-hidden select-none font-sans">
       {/* Background Soft Glows */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[500px] bg-gradient-to-tr from-cyan-500/10 via-blue-600/10 to-purple-600/10 rounded-full blur-[160px] pointer-events-none -z-10" />
 
@@ -68,7 +69,7 @@ export function PricingSection() {
         >
           <motion.div variants={headerItemVariants} className="inline-block">
             <Badge variant="cyan" className="text-xs font-semibold">
-              شفاف و اقتصادی
+              {t('pricing.badge', 'شفاف و اقتصادی')}
             </Badge>
           </motion.div>
 
@@ -76,17 +77,39 @@ export function PricingSection() {
             variants={headerItemVariants}
             className="text-3xl sm:text-5xl font-black text-foreground tracking-tight leading-[1.2]"
           >
-            پلن‌های قیمت‌گذاری متناسب با{' '}
-            <span className="bg-gradient-to-l from-cyan-400 via-blue-500 to-indigo-500 bg-clip-text text-transparent">
-              نیاز شما
-            </span>
+            {language === 'en' ? (
+              <>
+                Pricing Plans Built for{' '}
+                <span className="bg-gradient-to-l from-cyan-400 via-blue-500 to-indigo-500 bg-clip-text text-transparent">
+                  Every Stage
+                </span>
+              </>
+            ) : language === 'ps' ? (
+              <>
+                ستاسو د اړتیاو مطابق{' '}
+                <span className="bg-gradient-to-l from-cyan-400 via-blue-500 to-indigo-500 bg-clip-text text-transparent">
+                  غوره پلانونه
+                </span>
+              </>
+            ) : (
+              <>
+                پلن‌های قیمت‌گذاری متناسب با{' '}
+                <span className="bg-gradient-to-l from-cyan-400 via-blue-500 to-indigo-500 bg-clip-text text-transparent">
+                  نیاز شما
+                </span>
+              </>
+            )}
           </motion.h2>
 
           <motion.p
             variants={headerItemVariants}
             className="text-xs sm:text-sm text-muted-foreground leading-relaxed"
           >
-            از نسخه رایگان شروع کنید و هر زمان که نیاز داشتید به امکانات پیشرفته تجاری و نشان تیک آبی ارتقا دهید.
+            {language === 'en'
+              ? 'Start free forever and upgrade to advanced commercial tools and Blue Badge whenever you are ready.'
+              : language === 'ps'
+                ? 'له وړیا نسخې پیل وکړئ او هر کله چې اړتیا لرئ مسلکي سوداګریزو امکاناتو ته لوړ شئ.'
+                : 'از نسخه رایگان شروع کنید و هر زمان که نیاز داشتید به امکانات پیشرفته تجاری و نشان تیک آبی ارتقا دهید.'}
           </motion.p>
 
           {/* Billing Cycle Switcher Toggle */}
@@ -101,7 +124,7 @@ export function PricingSection() {
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                پرداخت ماهانه
+                {language === 'en' ? 'Monthly Billing' : language === 'ps' ? 'میاشتنۍ تادیه' : 'پرداخت ماهانه'}
               </button>
 
               <button
@@ -113,7 +136,7 @@ export function PricingSection() {
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                <span>پرداخت سالانه</span>
+                <span>{language === 'en' ? 'Yearly Billing' : language === 'ps' ? 'کلنۍ تادیه' : 'پرداخت سالانه'}</span>
                 <span className="px-1.5 py-0.2 rounded-full bg-emerald-400/25 text-emerald-300 text-[10px] font-bold">
                   35% OFF
                 </span>
@@ -139,11 +162,11 @@ export function PricingSection() {
               <div className="space-y-6">
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
-                    <h3 className="text-xl font-bold text-foreground">{freePlan.name}</h3>
-                    <Badge variant="outline" className="text-[10px]">{freePlan.badge}</Badge>
+                    <h3 className="text-xl font-bold text-foreground">{getLocalizedText(freePlan.name, language)}</h3>
+                    <Badge variant="outline" className="text-[10px]">{getLocalizedText(freePlan.badge, language)}</Badge>
                   </div>
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    {freePlan.description}
+                    {getLocalizedText(freePlan.description, language)}
                   </p>
                 </div>
 
@@ -157,18 +180,24 @@ export function PricingSection() {
                         {freePlan.currency}
                       </span>
                     </div>
-                    <span className="text-xs text-muted-foreground font-bold">/ برای همیشه</span>
+                    <span className="text-xs text-muted-foreground font-bold">
+                      {language === 'en' ? '/ forever' : language === 'ps' ? '/ د تل لپاره' : '/ برای همیشه'}
+                    </span>
                   </div>
                   <span className="text-xs text-emerald-500 font-semibold block">
-                    کاملاً رایگان بدون تاریخ انقضا
+                    {language === 'en'
+                      ? '100% Free with no expiration date'
+                      : language === 'ps'
+                        ? 'په بشپړ ډول وړیا بې له پای نیټې'
+                        : 'کاملاً رایگان بدون تاریخ انقضا'}
                   </span>
                 </div>
 
                 <div className="space-y-3 pt-4 border-t border-border/60 text-xs">
-                  {freePlan.features.map((feature, fIdx) => (
+                  {(freePlan.features || []).map((feature, fIdx) => (
                     <div key={fIdx} className="flex items-center gap-2.5 text-foreground">
                       <Check className="w-4 h-4 text-emerald-500 shrink-0" />
-                      <span>{feature}</span>
+                      <span>{getLocalizedText(feature, language)}</span>
                     </div>
                   ))}
                 </div>
@@ -186,7 +215,7 @@ export function PricingSection() {
                       variant="outline"
                       className="w-full h-14 rounded-2xl border-border bg-card/80 hover:bg-muted font-bold text-sm shadow-xs"
                     >
-                      {freePlan.ctaText}
+                      {getLocalizedText(freePlan.ctaText, language)}
                     </Button>
                   </motion.div>
                 </Link>
@@ -228,7 +257,7 @@ export function PricingSection() {
                 <div className="absolute top-4 left-4 sm:top-5 sm:left-5">
                   <Badge className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold text-[11px] py-1 px-3 border-0 flex items-center gap-1.5 shadow-md shadow-cyan-500/25">
                     <Flame className="w-3.5 h-3.5 fill-white text-white animate-pulse" />
-                    <span>{proPlan.badge}</span>
+                    <span>{getLocalizedText(proPlan.badge, language)}</span>
                   </Badge>
                 </div>
 
@@ -236,12 +265,12 @@ export function PricingSection() {
                   <div className="space-y-2 pr-1">
                     <div className="flex items-center gap-2">
                       <h3 className="text-xl sm:text-2xl font-black text-foreground">
-                        {proPlan.name}
+                        {getLocalizedText(proPlan.name, language)}
                       </h3>
                       <ShieldCheck className="w-5 h-5 text-cyan-400" />
                     </div>
                     <p className="text-xs text-muted-foreground leading-relaxed max-w-md">
-                      {proPlan.description}
+                      {getLocalizedText(proPlan.description, language)}
                     </p>
                   </div>
 
@@ -267,16 +296,16 @@ export function PricingSection() {
                           </span>
                         </div>
                         <span className="text-xs text-foreground font-bold">
-                          / ماهانه
+                          {language === 'en' ? '/ monthly' : language === 'ps' ? '/ میاشتنی' : '/ ماهانه'}
                         </span>
                       </div>
                       {billingCycle === 'yearly' ? (
                         <div className="text-xs text-emerald-500 font-bold flex items-center gap-1.5 flex-wrap">
-                          <span>پرداخت سالانه</span>
+                          <span>{language === 'en' ? 'Billed yearly' : language === 'ps' ? 'کلنۍ تادیه' : 'پرداخت سالانه'}</span>
                           <span dir="ltr" className="font-black">
                             {(proPlan.priceYearlyMonthly * 12).toLocaleString('en-US')} {proPlan.currency}
                           </span>
-                          <span>(صرفه‌جویی سالانه</span>
+                          <span>({language === 'en' ? 'Save yearly' : language === 'ps' ? 'کلنۍ سپما' : 'صرفه‌جویی سالانه'}</span>
                           <span dir="ltr" className="font-black">
                             {((proPlan.priceMonthly - proPlan.priceYearlyMonthly) * 12).toLocaleString('en-US')} {proPlan.currency}
                           </span>
@@ -284,7 +313,11 @@ export function PricingSection() {
                         </div>
                       ) : (
                         <span className="text-xs text-muted-foreground block">
-                          پرداخت ماهانه بدون قرارداد سالانه
+                          {language === 'en'
+                            ? 'Pay monthly with no annual lock-in'
+                            : language === 'ps'
+                              ? 'میاشتنۍ تادیه بې له کلني قرارداد څخه'
+                              : 'پرداخت ماهانه بدون قرارداد سالانه'}
                         </span>
                       )}
                     </motion.div>
@@ -292,10 +325,10 @@ export function PricingSection() {
 
                   {/* Pro Feature Checklist (Dual Column) */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4 border-t border-border/60 text-xs">
-                    {proPlan.features.map((feature, fIdx) => (
+                    {(proPlan.features || []).map((feature, fIdx) => (
                       <div key={fIdx} className="flex items-center gap-2.5 text-foreground font-semibold">
                         <CheckCircle2 className="w-4 h-4 text-cyan-500 shrink-0" />
-                        <span>{feature}</span>
+                        <span>{getLocalizedText(feature, language)}</span>
                       </div>
                     ))}
                   </div>
@@ -317,7 +350,7 @@ export function PricingSection() {
                         <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/25 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 pointer-events-none" />
                         
                         <Sparkles className="w-4 h-4 fill-white" />
-                        <span>{proPlan.ctaText}</span>
+                        <span>{getLocalizedText(proPlan.ctaText, language)}</span>
                         <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1.5 transition-transform" />
                       </Button>
                     </motion.div>

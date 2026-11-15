@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { QRCodeSVG } from 'qrcode.react';
 import { ProfileLinkItem, LinkModuleType, ProfileThemeConfig } from '@/types/profile.types';
@@ -33,6 +34,8 @@ import {
   SignalIcon,
 } from '@/components/icons';
 import { getSmartLink, formatDisplayValue } from '@/lib/smart-link';
+import { useLanguage } from '@/lib/i18n/LanguageContext';
+import { getProfileLocalizedText, getLinkLocalizedText } from '@/lib/i18n/multilingual';
 import { downloadVCard, convertToEnglishDigits } from '@/lib/generateVCard';
 import { ALL_COUNTRIES } from '@/constants/countries';
 import { LiveCountdown } from '@/components/ui/live-countdown';
@@ -96,9 +99,10 @@ interface PublicProfileClientProps {
   profile: {
     id: string;
     alias: string;
-    displayName: string;
-    headline?: string;
-    bio?: string;
+    displayName: any;
+    headline?: any;
+    bio?: any;
+    translations?: Record<string, any>;
     avatarUrl?: string;
     coverUrl?: string;
     headerLayout?: 'curve' | 'gradient_mask' | 'minimal';
@@ -158,7 +162,60 @@ const itemVariants = {
   },
 };
 
-export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profile }) => {
+function AutoConnectWatcher({
+  alias,
+  isUnlocked,
+  onTrigger,
+}: {
+  alias: string;
+  isUnlocked: boolean;
+  onTrigger: () => void;
+}) {
+  const searchParams = useSearchParams();
+  const hasTriggeredRef = useRef(false);
+  const isAutoConnect = searchParams?.get('autoConnect') === 'true';
+
+  useEffect(() => {
+    if (!isUnlocked || !isAutoConnect || hasTriggeredRef.current || !alias) return;
+    hasTriggeredRef.current = true;
+
+    // 1. Open Contact Exchange Lead Modal simultaneously (independent of download)
+    onTrigger();
+
+    // 2. Simulate hidden <a> click to /api/vcard/[username] for immediate background download
+    try {
+      const vcardUrl = `/api/vcard/${encodeURIComponent(alias)}`;
+      const anchor = document.createElement('a');
+      anchor.style.display = 'none';
+      anchor.href = vcardUrl;
+      anchor.setAttribute('download', `${alias}.vcf`);
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+    } catch (err) {
+      console.error('Auto-download vCard failed:', err);
+    }
+  }, [isUnlocked, isAutoConnect, alias, onTrigger]);
+
+  return null;
+}
+
+export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profile: rawProfile }) => {
+  const { language } = useLanguage();
+  const profile = React.useMemo(() => {
+    const fallbackName = rawProfile.alias || '';
+    return {
+      ...rawProfile,
+      displayName: getProfileLocalizedText(rawProfile, 'displayName', language, fallbackName),
+      headline: getProfileLocalizedText(rawProfile, 'headline', language, ''),
+      bio: getProfileLocalizedText(rawProfile, 'bio', language, ''),
+      links: (rawProfile.links || []).map((l) => ({
+        ...l,
+        title: getLinkLocalizedText(l, 'title', language, ''),
+      })),
+    };
+  }, [rawProfile, language]);
+
   const themeConfig = profile.themeConfig || {
     preset: 'dark_neon',
     primaryColor: '#0ea5e9',
@@ -373,7 +430,15 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
   const [isLeadModalOpen, setIsLeadModalOpen] = useState(false);
   const [leadName, setLeadName] = useState('');
   const [leadPhone, setLeadPhone] = useState('');
+  const [leadEmail, setLeadEmail] = useState('');
   const [isSubmittingLead, setIsSubmittingLead] = useState(false);
+
+  const handleAutoConnectTrigger = useCallback(() => {
+    setIsLeadModalOpen(true);
+  }, []);
+
+  const baseCardUrl = (currentUrl || `https://aryal.ink/${profile.alias}`).split('?')[0];
+  const desktopQrUrl = `${baseCardUrl}?autoConnect=true`;
 
   // 1. Social networks filter (excluding hidden)
   const socialModuleTypes: LinkModuleType[] = [
@@ -538,11 +603,11 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
 
   const handleSubmitLead = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!leadPhone.trim() && !leadName.trim()) {
+    if (!leadPhone.trim() && !leadName.trim() && !leadEmail.trim()) {
       toast.error(
         isLtr
-          ? 'Please enter your name or phone number.'
-          : 'لطفاً حداقل شماره تماس یا نام خود را وارد کنید.'
+          ? 'Please enter your name, phone number, or email.'
+          : 'لطفاً حداقل نام، شماره تماس یا ایمیل خود را وارد کنید.'
       );
       return;
     }
@@ -551,15 +616,18 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
     try {
       const cleanPhone = convertToEnglishDigits(leadPhone.trim());
       const cleanName = leadName.trim();
+      const cleanEmail = leadEmail.trim();
 
       const response = await fetch('/api/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           profileAlias: profile.alias,
-          name: cleanName || 'کاربر دریافت‌کننده کارت',
+          organizationId: profile.organizationBranding?.id || undefined,
+          name: cleanName || 'مشتری دریافت‌کننده کارت',
           phone: cleanPhone,
-          message: 'درخواست تبادل اطلاعات تماس (vCard Lead Capture)',
+          email: cleanEmail,
+          message: 'تبادل اطلاعات تماس از طریق کارت دیجیتال (vCard)',
         }),
       });
 
@@ -582,6 +650,7 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
 
       setLeadName('');
       setLeadPhone('');
+      setLeadEmail('');
       setIsLeadModalOpen(false);
     } catch (err) {
       console.error('Failed to submit public lead:', err);
@@ -846,32 +915,41 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
       ['--btn-border-width' as any]: bWidthVal,
     };
 
-    // Background color: Only apply inline if user chose a custom color and not the default cyan (#0ea5e9 / #38bdf8)
-    const rawBgColor = customStyle?.customBgColor || themeConfig.buttonBgColor;
+    // Background color: Enforce corporate branding when organizationBranding is active
+    const corpBranding = profile.organizationBranding;
+    const rawBgColor = corpBranding
+      ? corpBranding.primaryColor || themeConfig.buttonBgColor
+      : customStyle?.customBgColor || themeConfig.buttonBgColor;
     const isDefaultBg =
       !rawBgColor ||
       rawBgColor.trim() === '' ||
-      rawBgColor.toLowerCase() === '#0ea5e9' ||
-      rawBgColor.toLowerCase() === '#38bdf8';
+      (!corpBranding &&
+        (rawBgColor.toLowerCase() === '#0ea5e9' ||
+          rawBgColor.toLowerCase() === '#38bdf8'));
     if (!isDefaultBg) {
-      customCardStyle.backgroundColor = rawBgColor;
-      customCardStyle['--btn-bg' as any] = rawBgColor;
+      customCardStyle.backgroundColor = corpBranding ? `${rawBgColor}e6` : rawBgColor;
+      customCardStyle['--btn-bg' as any] = corpBranding ? `${rawBgColor}e6` : rawBgColor;
     }
 
     // Text color
-    const rawTextColor = customStyle?.customTextColor || themeConfig.buttonTextColor;
+    const rawTextColor = corpBranding
+      ? '#ffffff'
+      : customStyle?.customTextColor || themeConfig.buttonTextColor;
     if (rawTextColor && rawTextColor.trim() !== '') {
       customCardStyle.color = rawTextColor;
       customCardStyle['--btn-text' as any] = rawTextColor;
     }
 
-    // Border color: Only apply inline if user chose a custom color and not the default cyan border (#38bdf8 / #0ea5e9)
-    const rawBorderColor = customStyle?.customBorderColor || themeConfig.buttonBorderColor;
+    // Border color: Enforce corporate secondaryColor when organizationBranding is active
+    const rawBorderColor = corpBranding
+      ? corpBranding.secondaryColor || themeConfig.buttonBorderColor
+      : customStyle?.customBorderColor || themeConfig.buttonBorderColor;
     const isDefaultBorder =
       !rawBorderColor ||
       rawBorderColor.trim() === '' ||
-      rawBorderColor.toLowerCase() === '#38bdf8' ||
-      rawBorderColor.toLowerCase() === '#0ea5e9';
+      (!corpBranding &&
+        (rawBorderColor.toLowerCase() === '#38bdf8' ||
+          rawBorderColor.toLowerCase() === '#0ea5e9'));
     if (!isDefaultBorder) {
       customCardStyle.borderColor = rawBorderColor;
       customCardStyle['--btn-border' as any] = rawBorderColor;
@@ -1693,12 +1771,12 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
 
     return (
       <div
-        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full backdrop-blur-md border shadow-lg text-[11px] font-bold max-w-[220px] ${
+        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full backdrop-blur-md border shadow-lg text-[10px] font-bold max-w-[260px] ${
           isLight
-            ? 'bg-white/90 border-slate-200 text-slate-900'
-            : 'bg-slate-950/75 border-white/20 text-white'
+            ? 'bg-white/95 border-slate-200 text-slate-900'
+            : 'bg-slate-950/80 border-white/20 text-white'
         }`}
-        title={`تاییدشده توسط سازمان ${corp.name}`}
+        title={`نشان تایید و وابستگی سازمانی — ${corp.name}`}
       >
         {corp.logoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -1714,6 +1792,15 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
           />
         )}
         <span className="truncate">{corp.name}</span>
+        <span
+          className={`text-[9px] px-1.5 py-0.2 rounded-full border shrink-0 ${
+            isLight
+              ? 'bg-sky-50 text-sky-700 border-sky-200'
+              : 'bg-sky-500/15 text-sky-300 border-sky-400/30'
+          }`}
+        >
+          {isLtr ? 'Verified Org' : 'وابستگی سازمانی'}
+        </span>
         <BadgeCheck className="w-3.5 h-3.5 text-sky-400 shrink-0" />
       </div>
     );
@@ -2069,6 +2156,13 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
       data-font={isLtr ? (themeConfig.fontEn || 'inter') : (themeConfig.fontFa || 'vazirmatn')}
       dir={isLtr ? 'ltr' : 'rtl'}
     >
+      <Suspense fallback={null}>
+        <AutoConnectWatcher
+          alias={profile.alias}
+          isUnlocked={isUnlocked}
+          onTrigger={handleAutoConnectTrigger}
+        />
+      </Suspense>
       {/* Layer 1 (-z-20): Base Solid Background Color */}
       <div
         className="fixed inset-0 pointer-events-none -z-20"
@@ -2180,7 +2274,7 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
               {/* Vector SVG QR Code */}
               <div className="p-3.5 bg-white rounded-2xl shadow-md border border-slate-200/80 inline-block my-2 transition-transform duration-300 hover:scale-105">
                 <QRCodeSVG
-                  value={currentUrl}
+                  value={desktopQrUrl}
                   size={140}
                   level="M"
                   includeMargin={false}
@@ -2297,10 +2391,10 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
         {profile.organizationBranding && (
           <motion.div variants={itemVariants} className="pt-6 text-center shrink-0">
             <div
-              className={`inline-flex items-center gap-2.5 px-4 py-2 rounded-2xl border backdrop-blur-md shadow-sm text-xs ${
+              className={`inline-flex items-center gap-2.5 px-4 py-2.5 rounded-2xl border backdrop-blur-md shadow-sm text-xs ${
                 isLight
                   ? 'bg-white/90 border-slate-200 text-slate-800'
-                  : 'bg-white/[0.05] border-white/15 text-slate-200'
+                  : 'bg-white/[0.06] border-white/15 text-slate-200'
               }`}
             >
               {profile.organizationBranding.logoUrl ? (
@@ -2308,7 +2402,7 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
                 <img
                   src={profile.organizationBranding.logoUrl}
                   alt={profile.organizationBranding.name}
-                  className="w-5 h-5 rounded-md object-cover border border-white/20 shrink-0"
+                  className="w-6 h-6 rounded-lg object-cover border border-white/20 shrink-0"
                 />
               ) : (
                 <Building2
@@ -2316,11 +2410,16 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
                   style={{ color: profile.organizationBranding.primaryColor || '#0ea5e9' }}
                 />
               )}
-              <span className="font-semibold">
-                {isLtr
-                  ? `Official Member of ${profile.organizationBranding.name}`
-                  : `عضو رسمی و تاییدشده ${profile.organizationBranding.name}`}
-              </span>
+              <div className={isLtr ? 'text-left' : 'text-right'}>
+                <span className="font-bold block text-xs">
+                  {isLtr
+                    ? `Official Member of ${profile.organizationBranding.name}`
+                    : `عضو رسمی و تاییدشده ${profile.organizationBranding.name}`}
+                </span>
+                <span className={`text-[10px] block ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                  {isLtr ? 'Corporate Verification & Affiliation Badge' : 'نشان تایید و وابستگی سازمانی'}
+                </span>
+              </div>
               <BadgeCheck className="w-4 h-4 text-sky-400 shrink-0" />
             </div>
           </motion.div>
@@ -2585,6 +2684,7 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
           if (!open) {
             setLeadName('');
             setLeadPhone('');
+            setLeadEmail('');
           }
         }}
       >
@@ -2656,6 +2756,24 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-left font-sans text-white placeholder-slate-400 focus:outline-none focus:border-cyan-400 focus:bg-white/10 tracking-wider transition-all"
                 />
                 <Phone className={`w-4 h-4 text-slate-400 absolute ${isLtr ? 'right-3' : 'right-3'} top-1/2 -translate-y-1/2 pointer-events-none`} />
+              </div>
+            </div>
+
+            {/* Email Field (Optional) */}
+            <div className="space-y-1.5">
+              <label className={`block text-xs font-medium text-slate-200 ${isLtr ? 'text-left' : 'text-right'}`}>
+                {isLtr ? 'Email (Optional)' : isPashto ? 'بریښنالیک (اختیاري)' : 'ایمیل (اختیاری)'}
+              </label>
+              <div className="relative">
+                <input
+                  type="email"
+                  value={leadEmail}
+                  onChange={(e) => setLeadEmail(e.target.value)}
+                  placeholder="example@company.com"
+                  dir="ltr"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-left font-sans text-white placeholder-slate-400 focus:outline-none focus:border-cyan-400 focus:bg-white/10 transition-all"
+                />
+                <Mail className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               </div>
             </div>
 

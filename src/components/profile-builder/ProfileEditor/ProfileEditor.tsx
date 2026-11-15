@@ -10,6 +10,10 @@ import { CrmLeadsTable } from './CrmLeadsTable';
 import { CardOcrScannerModal, ScannedContactData } from '@/components/common/CardOcrScannerModal';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { FileUploader } from '@/components/ui/file-uploader';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { MultilingualInput } from '@/components/admin/MultilingualInput';
+import { MultilingualTextarea } from '@/components/admin/MultilingualTextarea';
+import { MultilingualText, normalizeMultilingual } from '@/lib/i18n/multilingual';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import { Switch } from '@/components/ui/switch';
 import { PhoneInput } from '@/components/ui/phone-input';
@@ -54,6 +58,7 @@ import {
   Upload,
   Clipboard,
   Lock,
+  Image as ImageIcon,
 } from 'lucide-react';
 
 const DEFAULT_PRESET_COLORS = [
@@ -342,6 +347,16 @@ export const ProfileEditor: React.FC = () => {
   }>({ isMember: false, orgName: '' });
 
   useEffect(() => {
+    if (profile.organizationBranding?.orgRole === 'member') {
+      setOrgMembership({
+        isMember: true,
+        orgName: profile.organizationBranding.name || 'سازمان شما',
+        branding: profile.organizationBranding,
+      });
+    }
+  }, [profile.organizationBranding]);
+
+  useEffect(() => {
     if (!session?.user) return;
     let active = true;
 
@@ -359,14 +374,17 @@ export const ProfileEditor: React.FC = () => {
       })
       .catch(() => {
         if (active && session?.user?.orgRole === 'member') {
-          setOrgMembership({ isMember: true, orgName: 'سازمان شما' });
+          setOrgMembership({
+            isMember: true,
+            orgName: profile.organizationBranding?.name || 'سازمان شما',
+          });
         }
       });
 
     return () => {
       active = false;
     };
-  }, [session?.user]);
+  }, [session?.user, profile.organizationBranding?.name]);
 
   // Business Card OCR Scanner States
   const [isOcrOpen, setIsOcrOpen] = useState(false);
@@ -864,12 +882,22 @@ export const ProfileEditor: React.FC = () => {
       const outputText = typeof data.data === 'string' ? data.data : (data.data?.text || data.text || '');
       if (data.success && outputText) {
         toast.success('متن هوش مصنوعی آماده شد!');
+        const existingTranslations = profile.translations || {};
+        const existingField = normalizeMultilingual(
+          existingTranslations[targetField] ?? profile[targetField]
+        );
         runTypewriter(outputText, (chunk) => {
-          if (targetField === 'bio') {
-            updateBasicInfo({ bio: chunk });
-          } else {
-            updateBasicInfo({ headline: chunk });
-          }
+          updateBasicInfo({
+            [targetField]: chunk,
+            translations: {
+              ...existingTranslations,
+              [targetField]: {
+                ...existingField,
+                da: chunk,
+                fa: chunk,
+              },
+            },
+          });
         });
       } else {
         setIsAiGenerating(false);
@@ -884,6 +912,20 @@ export const ProfileEditor: React.FC = () => {
         toast.error('خطای ارتباط با سرور.');
       }
     }
+  };
+
+  // Helper for updating trilingual basic profile fields
+  const updateLocalizedBasicField = (
+    field: 'displayName' | 'headline' | 'bio',
+    val: MultilingualText
+  ) => {
+    updateBasicInfo({
+      [field]: val.da || val.fa || val.en || val.ps || '',
+      translations: {
+        ...(profile.translations || {}),
+        [field]: val,
+      },
+    });
   };
 
   // Theme snapshot for "لغو تغییرات"
@@ -1111,6 +1153,7 @@ export const ProfileEditor: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
+          <LanguageSwitcher />
           {/* Link Settings Gear Icon Button */}
           <button
             type="button"
@@ -1219,22 +1262,26 @@ export const ProfileEditor: React.FC = () => {
 
               {isProfileInfoExpanded && (
                 <div className="pt-3 border-t border-border/80 space-y-4 animate-in fade-in duration-200">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-medium text-muted-foreground mb-1.5">{t.displayName}</label>
-                      <input
-                        type="text"
-                        value={profile.displayName}
-                        onChange={(e) => updateBasicInfo({ displayName: e.target.value })}
-                        onBlur={(e) => checkLanguageMismatch(e.target.value)}
-                        placeholder={t.displayNamePlaceholder}
-                        className="w-full bg-background border border-border rounded-xl px-3 py-2 text-sm text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-colors"
-                      />
-                    </div>
+                  <div className="grid grid-cols-1 gap-4">
+                    <MultilingualInput
+                      label={t.displayName}
+                      value={profile.translations?.displayName || profile.displayName}
+                      onChange={(val) => updateLocalizedBasicField('displayName', val)}
+                      onFieldBlur={(text, lang) => {
+                        if (lang === 'da') checkLanguageMismatch(text);
+                      }}
+                      placeholder={t.displayNamePlaceholder}
+                    />
 
-                    <div>
-                      <div className="flex items-center justify-between mb-1.5">
-                        <label className="text-xs font-medium text-muted-foreground">{t.headline}</label>
+                    <MultilingualInput
+                      label={t.headline}
+                      value={profile.translations?.headline || profile.headline}
+                      onChange={(val) => updateLocalizedBasicField('headline', val)}
+                      onFieldBlur={(text, lang) => {
+                        if (lang === 'da') checkLanguageMismatch(text);
+                      }}
+                      placeholder={t.headlinePlaceholder}
+                      labelAction={
                         <div className="relative">
                           <button
                             type="button"
@@ -1250,7 +1297,7 @@ export const ProfileEditor: React.FC = () => {
                           {isAiHeadlineMenuOpen && (
                             <div
                               ref={aiHeadlineMenuRef}
-                              className="absolute left-0 top-full mt-1 w-56 rounded-xl bg-slate-900 border border-cyan-500/30 shadow-2xl z-50 p-1 space-y-1 animate-in fade-in"
+                              className="absolute right-0 top-full mt-1 w-56 rounded-xl bg-slate-900 border border-cyan-500/30 shadow-2xl z-50 p-1 space-y-1 animate-in fade-in"
                             >
                               <button
                                 type="button"
@@ -1263,16 +1310,8 @@ export const ProfileEditor: React.FC = () => {
                             </div>
                           )}
                         </div>
-                      </div>
-                      <input
-                        type="text"
-                        value={profile.headline}
-                        onChange={(e) => updateBasicInfo({ headline: e.target.value })}
-                        onBlur={(e) => checkLanguageMismatch(e.target.value)}
-                        placeholder={t.headlinePlaceholder}
-                        className="w-full bg-background border border-border rounded-xl px-3 py-2 text-sm text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-colors"
-                      />
-                    </div>
+                      }
+                    />
                   </div>
 
                   {/* Direct Contact: Phone & Email */}
@@ -1300,30 +1339,38 @@ export const ProfileEditor: React.FC = () => {
                     </div>
                   </div>
 
-                  <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <label className="text-xs font-medium text-muted-foreground">{t.bio}</label>
+                  <MultilingualTextarea
+                    label={t.bio}
+                    rows={2}
+                    value={profile.translations?.bio || profile.bio}
+                    onChange={(val) => updateLocalizedBasicField('bio', val)}
+                    onFieldBlur={(text, lang) => {
+                      if (lang === 'da') checkLanguageMismatch(text);
+                    }}
+                    placeholder={t.bioPlaceholder}
+                    inputClassName="font-sans"
+                    labelAction={
                       <div className="relative">
                         <button
                           type="button"
                           disabled={isAiGenerating}
                           onClick={() => setIsAiMenuOpen(!isAiMenuOpen)}
-                          className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-purple-500/15 to-cyan-500/15 hover:from-purple-500/25 hover:to-cyan-500/25 border border-purple-500/30 text-purple-400 hover:text-purple-300 text-[11px] font-semibold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer disabled:opacity-50"
+                          className="px-2.5 py-0.5 rounded-lg bg-gradient-to-r from-purple-500/15 to-cyan-500/15 hover:from-purple-500/25 hover:to-cyan-500/25 border border-purple-500/30 text-purple-400 hover:text-purple-300 text-[10px] font-semibold flex items-center gap-1 transition-all shadow-xs cursor-pointer disabled:opacity-50"
                           title="دستیار هوش مصنوعی"
                         >
                           {isAiGenerating ? (
-                            <Loader2 className="w-3.5 h-3.5 animate-spin text-cyan-400" />
+                            <Loader2 className="w-3 h-3 animate-spin text-cyan-400" />
                           ) : (
-                            <Wand2 className="w-3.5 h-3.5 text-purple-400" />
+                            <Wand2 className="w-3 h-3 text-purple-400" />
                           )}
-                          <span>دستیار هوش مصنوعی</span>
+                          <span>دستیار AI</span>
                           <ChevronDown className="w-3 h-3 text-slate-400" />
                         </button>
 
                         {isAiMenuOpen && (
                           <div
                             ref={aiMenuRef}
-                            className="absolute left-0 top-full mt-1.5 w-64 rounded-2xl bg-slate-900 border border-purple-500/30 shadow-2xl z-50 p-1.5 space-y-1 animate-in fade-in"
+                            className="absolute right-0 top-full mt-1.5 w-64 rounded-2xl bg-slate-900 border border-purple-500/30 shadow-2xl z-50 p-1.5 space-y-1 animate-in fade-in"
                           >
                             <button
                               type="button"
@@ -1344,16 +1391,8 @@ export const ProfileEditor: React.FC = () => {
                           </div>
                         )}
                       </div>
-                    </div>
-                    <textarea
-                      rows={2}
-                      value={profile.bio}
-                      onChange={(e) => updateBasicInfo({ bio: e.target.value })}
-                      onBlur={(e) => checkLanguageMismatch(e.target.value)}
-                      placeholder={t.bioPlaceholder}
-                      className="w-full bg-background border border-border rounded-xl px-3 py-2 text-sm text-foreground placeholder:font-sans placeholder-muted-foreground focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-colors resize-none font-sans"
-                    />
-                  </div>
+                    }
+                  />
 
                   {/* Header Layout Selector */}
                   <div className="pt-2 border-t border-border/80 relative">
@@ -1373,8 +1412,9 @@ export const ProfileEditor: React.FC = () => {
                       {/* Mode 1: Curve */}
                       <button
                         type="button"
+                        disabled={orgMembership.isMember}
                         onClick={() => setHeaderLayout('curve')}
-                        className={`p-3 rounded-2xl border text-right transition-all flex flex-col justify-between relative overflow-hidden ${(profile.headerLayout || 'curve') === 'curve'
+                        className={`p-3 rounded-2xl border text-right transition-all flex flex-col justify-between relative overflow-hidden disabled:cursor-not-allowed ${(profile.headerLayout || 'curve') === 'curve'
                           ? 'bg-cyan-500/10 border-cyan-500 ring-2 ring-cyan-500/30'
                           : 'bg-card border-border hover:border-cyan-500/40'
                           }`}
@@ -1400,8 +1440,9 @@ export const ProfileEditor: React.FC = () => {
                       {/* Mode 2: Gradient Mask */}
                       <button
                         type="button"
+                        disabled={orgMembership.isMember}
                         onClick={() => setHeaderLayout('gradient_mask')}
-                        className={`p-3 rounded-2xl border text-right transition-all flex flex-col justify-between relative overflow-hidden ${profile.headerLayout === 'gradient_mask'
+                        className={`p-3 rounded-2xl border text-right transition-all flex flex-col justify-between relative overflow-hidden disabled:cursor-not-allowed ${profile.headerLayout === 'gradient_mask'
                           ? 'bg-cyan-500/10 border-cyan-500 ring-2 ring-cyan-500/30'
                           : 'bg-card border-border hover:border-cyan-500/40'
                           }`}
@@ -1423,8 +1464,9 @@ export const ProfileEditor: React.FC = () => {
                       {/* Mode 3: Minimal */}
                       <button
                         type="button"
+                        disabled={orgMembership.isMember}
                         onClick={() => setHeaderLayout('minimal')}
-                        className={`p-3 rounded-2xl border text-right transition-all flex flex-col justify-between relative overflow-hidden ${profile.headerLayout === 'minimal'
+                        className={`p-3 rounded-2xl border text-right transition-all flex flex-col justify-between relative overflow-hidden disabled:cursor-not-allowed ${profile.headerLayout === 'minimal'
                           ? 'bg-cyan-500/10 border-cyan-500 ring-2 ring-cyan-500/30'
                           : 'bg-card border-border hover:border-cyan-500/40'
                           }`}
@@ -1676,10 +1718,10 @@ export const ProfileEditor: React.FC = () => {
                   </div>
                   <div className="space-y-1">
                     <h3 className="text-xs sm:text-sm font-black text-foreground">
-                      ظاهر و رنگ‌بندی کارت شما توسط مدیر سازمان {orgMembership.orgName} مدیریت و یکپارچه‌سازی می‌شود و قابل تغییر نیست.
+                      رنگ‌بندی و ظاهر کارت شما توسط مدیر سازمانِ {orgMembership.orgName} مدیریت و یکپارچه‌سازی می‌شود و قابل تغییر نیست.
                     </h3>
                     <p className="text-[11px] text-muted-foreground leading-relaxed">
-                      در این بخش تم، رنگ‌بندی و تصویر کاور قفل هستند؛ اما می‌توانید عکس پروفایل شخصی خود را در کادر زیر تغییر دهید.
+                      در این بخش رنگ‌بندی، تم و تصویر پس‌زمینه (کاور) قفل هستند؛ اما می‌توانید عکس پروفایل شخصی، لینک‌ها و ماژول‌های خود را آزادانه مدیریت نمایید.
                     </p>
                   </div>
                 </div>
@@ -2376,6 +2418,40 @@ export const ProfileEditor: React.FC = () => {
                     >
                       نمونه دکمه
                     </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+
+              {/* 5. تصویر پس‌زمینه (کاور) و چیدمان هدر */}
+              <AccordionItem value="cover_header" className="border border-border rounded-2xl bg-card">
+                <AccordionTrigger className="px-5 py-4 hover:no-underline hover:bg-muted/30 rounded-2xl">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-7 h-7 rounded-lg bg-emerald-500/15 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                      <ImageIcon className="w-4 h-4" />
+                    </div>
+                    <div className="text-right">
+                      <span className="text-xs font-bold text-foreground block">تصویر پس‌زمینه (کاور) و چیدمان هدر</span>
+                      <span className="text-[10px] text-muted-foreground block">مدیریت تصویر بنر بالای کارت و حالت نمایش هدر</span>
+                    </div>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="px-5 pb-5 pt-1 space-y-4">
+                  <div className={orgMembership.isMember ? 'pointer-events-none select-none' : ''}>
+                    <FileUploader
+                      value={profile.coverUrl || ''}
+                      onChange={(url) => {
+                        if (!orgMembership.isMember) {
+                          updateBasicInfo({ coverUrl: url });
+                        }
+                      }}
+                      fileType="image"
+                      folder="covers"
+                      label="تصویر پس‌زمینه (کاور هدر)"
+                      description="تصویر بنر بالای پروفایل (در حساب‌های سازمانی به صورت خودکار قفل و همگام‌سازی می‌شود)"
+                      maxSizeMB={2}
+                      aspectRatio="banner"
+                      className="w-full"
+                    />
                   </div>
                 </AccordionContent>
               </AccordionItem>

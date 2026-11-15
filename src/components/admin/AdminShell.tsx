@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { Menu, X, ShieldAlert, Bell, Search, User } from 'lucide-react';
 import { AdminSidebar } from './AdminSidebar';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { Badge } from '@/components/ui/badge';
 import { useSession } from 'next-auth/react';
 
@@ -12,6 +14,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false);
   const [currentTime, setCurrentTime] = useState('');
   const { data: session } = useSession();
+  const { t, dir } = useLanguage();
 
   useEffect(() => {
     setMounted(true);
@@ -25,7 +28,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const role = (session?.user?.role || 'admin').toLowerCase();
 
   return (
-    <div className="min-h-screen w-full flex bg-slate-950 font-sans text-slate-100 select-none" dir="rtl">
+    <div className="min-h-screen w-full flex bg-slate-950 font-sans text-slate-100 select-none" dir={dir}>
       {/* Desktop Persistent Admin Sidebar */}
       <div className="hidden lg:block shrink-0 h-screen sticky top-0 z-30">
         <AdminSidebar />
@@ -48,13 +51,12 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
             <div className="flex items-center gap-2">
               <span className="font-extrabold text-foreground text-sm tracking-tight hidden sm:inline">
-                سیستم جامع مدیریت سازمانی آریا لینک
+                {t('admin.header.title', 'سیستم جامع مدیریت سازمانی آریا لینک')}
               </span>
-
             </div>
           </div>
 
-          {/* Left utility items: Server Time, Admin Profile, and ThemeToggle */}
+          {/* Left utility items: Server Time, Admin Profile, LanguageSwitcher, and ThemeToggle */}
           <div className="flex items-center gap-3">
             {mounted ? (
               <span className="text-xs text-muted-foreground hidden lg:inline font-sans" dir="ltr">
@@ -81,23 +83,26 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                   <span>{session?.user?.name?.charAt(0) || 'A'}</span>
                 )}
               </div>
-              <div className="hidden sm:block text-right">
+              <div className="hidden sm:block text-start">
                 <span className="text-xs font-bold text-foreground block leading-tight">
-                  {session?.user?.name || 'مدیر سیستم'}
+                  {session?.user?.name || t('admin.role.admin', 'مدیر سیستم')}
                 </span>
                 <span className="text-[10px] text-amber-500 dark:text-amber-400 font-medium block">
-                  {role === 'superadmin' ? 'مدیر ارشد پلتفرم' : 'مدیر سیستم'}
+                  {role === 'superadmin'
+                    ? t('admin.role.superadmin', 'مدیر ارشد پلتفرم')
+                    : t('admin.role.admin', 'مدیر سیستم')}
                 </span>
               </div>
             </div>
 
+            <LanguageSwitcher />
             <ThemeToggle />
           </div>
         </header>
 
         {/* Mobile Sidebar Drawer */}
         {mobileMenuOpen && (
-          <div className="fixed inset-0 z-50 lg:hidden flex" dir="rtl">
+          <div className="fixed inset-0 z-50 lg:hidden flex" dir={dir}>
             <div
               className="fixed inset-0 bg-black/80 backdrop-blur-sm"
               onClick={() => setMobileMenuOpen(false)}

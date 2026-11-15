@@ -16,9 +16,28 @@ import { Button } from '@/components/ui/button';
 import { HeroPhoneMockup } from './HeroPhoneMockup';
 import { AuroraBackground } from './AuroraBackground';
 import { useLandingCms } from '@/context/LandingCmsContext';
+import { INITIAL_LANDING_CMS } from '@/models/LandingCms.model';
+import { useLanguage } from '@/lib/i18n/LanguageContext';
+import { getLocalizedText, LocalizedFieldValue } from '@/lib/i18n/multilingual';
 
 export function HeroSection() {
   const { hero } = useLandingCms();
+  const { language, t, dir } = useLanguage();
+
+  const resolveHeroField = (
+    val: LocalizedFieldValue,
+    defaultDari: LocalizedFieldValue,
+    i18nKey: string
+  ) => {
+    if (val && typeof val === 'object') {
+      return getLocalizedText(val, language);
+    }
+    const strVal = typeof val === 'string' ? val : '';
+    if (language !== 'da' && (!strVal || strVal === defaultDari)) {
+      return t(i18nKey, strVal);
+    }
+    return strVal;
+  };
 
   // Mouse position normalized (-0.5 to 0.5) for parallax tracking
   const mouseX = useMotionValue(0);
@@ -102,15 +121,16 @@ export function HeroSection() {
             initial="hidden"
             whileInView="visible"
             viewport={{ once: false, amount: 0.2 }}
-            className="lg:col-span-7 space-y-7 text-center lg:text-right"
+            className="lg:col-span-7 space-y-7 text-center lg:text-start"
+            dir={dir}
           >
             {/* Top Badge: Link-in-Bio & Mini-website focus */}
             <motion.div variants={itemSlideRight} className="inline-block">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-600 dark:text-cyan-400 text-xs sm:text-sm font-semibold shadow-inner shadow-cyan-500/10 backdrop-blur-md">
                 <Link2 className="w-4 h-4 text-cyan-400" />
-                <span>{hero.badge}</span>
+                <span>{resolveHeroField(hero.badge, INITIAL_LANDING_CMS.hero.badge, 'hero.badge')}</span>
                 <span className="hidden sm:inline-block px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400 text-[10px] font-bold">
-                  نسل جدید
+                  {language === 'en' ? 'NEW GEN' : language === 'ps' ? 'نوی نسل' : 'نسل جدید'}
                 </span>
               </div>
             </motion.div>
@@ -120,13 +140,13 @@ export function HeroSection() {
               variants={itemSlideRight}
               className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight leading-[1.18] text-foreground"
             >
-              {hero.titlePart1}{' '}
+              {resolveHeroField(hero.titlePart1, INITIAL_LANDING_CMS.hero.titlePart1, 'hero.title_part1')}{' '}
               <span className="relative inline-block">
                 <span className="bg-gradient-to-l from-cyan-400 via-sky-300 to-indigo-400 bg-clip-text text-transparent text-glow-cyan drop-shadow-[0_0_35px_rgba(6,182,212,0.6)]">
-                  {hero.titleHighlight}
+                  {resolveHeroField(hero.titleHighlight, INITIAL_LANDING_CMS.hero.titleHighlight, 'hero.title_part2')}
                 </span>
               </span>{' '}
-              {hero.titlePart2}
+              {resolveHeroField(hero.titlePart2, INITIAL_LANDING_CMS.hero.titlePart2, 'hero.title_part3')}
             </motion.h1>
 
             {/* Subtitle: High-converting Bio Link Strategy */}
@@ -134,7 +154,7 @@ export function HeroSection() {
               variants={itemSlideRight}
               className="text-base sm:text-lg lg:text-xl text-muted-foreground leading-relaxed max-w-2xl mx-auto lg:mx-0 font-normal"
             >
-              {hero.subtitle}
+              {resolveHeroField(hero.subtitle, INITIAL_LANDING_CMS.hero.subtitle, 'hero.subtitle')}
             </motion.p>
 
             {/* CTA Buttons with Tactile Hover Scale & Light Sweep */}
@@ -157,7 +177,7 @@ export function HeroSection() {
                     <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/25 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 pointer-events-none" />
                     
                     <Sparkles className="w-4 h-4 fill-white" />
-                    <span>{hero.primaryCta}</span>
+                    <span>{resolveHeroField(hero.primaryCta, INITIAL_LANDING_CMS.hero.primaryCta, 'hero.cta')}</span>
                     <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1.5 transition-transform" />
                   </Button>
                 </motion.div>
@@ -176,7 +196,7 @@ export function HeroSection() {
                     className="w-full sm:w-auto h-14 px-6 rounded-2xl border-border/80 bg-card/60 backdrop-blur-xl text-foreground hover:bg-muted font-bold text-sm shadow-sm flex items-center justify-center gap-2 hover:border-cyan-500/40"
                   >
                     <Smartphone className="w-4 h-4 text-cyan-400" />
-                    <span>{hero.secondaryCta}</span>
+                    <span>{resolveHeroField(hero.secondaryCta, INITIAL_LANDING_CMS.hero.secondaryCta, 'hero.secondary_cta')}</span>
                   </Button>
                 </motion.div>
               </a>
@@ -187,7 +207,7 @@ export function HeroSection() {
               variants={itemSlideRight}
               className="pt-6 border-t border-border/60 flex flex-wrap items-center justify-center lg:justify-start gap-6 text-xs text-muted-foreground"
             >
-              {hero.trustBadges.map((badgeText, idx) => (
+              {(hero.trustBadges || []).map((badgeItem, idx) => (
                 <div key={idx} className="flex items-center gap-2">
                   {idx === 0 ? (
                     <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
@@ -196,7 +216,13 @@ export function HeroSection() {
                   ) : (
                     <Zap className="w-4 h-4 text-amber-500 fill-amber-500/20 shrink-0" />
                   )}
-                  <span>{badgeText}</span>
+                  <span>
+                    {resolveHeroField(
+                      badgeItem,
+                      INITIAL_LANDING_CMS.hero.trustBadges[idx],
+                      `hero.trust${idx + 1}`
+                    )}
+                  </span>
                 </div>
               ))}
             </motion.div>

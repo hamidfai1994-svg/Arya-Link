@@ -16,22 +16,24 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLandingCms } from '@/context/LandingCmsContext';
+import { useLanguage } from '@/lib/i18n/LanguageContext';
+import { getLocalizedText, LocalizedFieldValue } from '@/lib/i18n/multilingual';
 
 export interface CardMaterialItem {
   id: string;
-  name: string;
-  subtitle: string;
+  name: LocalizedFieldValue;
+  subtitle: LocalizedFieldValue;
   materialType: 'pvc' | 'black_metal' | 'gold_steel' | 'wood';
   orientation?: 'horizontal' | 'vertical';
   allowCustomUpload?: boolean;
-  badge: string;
+  badge: LocalizedFieldValue;
   badgeStyle?: string;
   price: string | number;
   thickness: string;
   weight: string;
   chipset: string;
-  description: string;
-  features: string[];
+  description: LocalizedFieldValue;
+  features: LocalizedFieldValue[];
   gradientBg?: string;
   accentColor?: string;
   engravingColor?: string;
@@ -156,6 +158,7 @@ const EASE_SNAPPY = [0, 0.7, 0.2, 1] as const;
 
 function InteractiveMaterialCard({ material }: { material: CardMaterialItem }) {
   const cardRef = useRef<HTMLDivElement>(null);
+  const { language } = useLanguage();
 
   const styling = MATERIAL_STYLING[material.materialType] || MATERIAL_STYLING.pvc;
 
@@ -272,11 +275,11 @@ function InteractiveMaterialCard({ material }: { material: CardMaterialItem }) {
               <h4
                 className={`text-sm font-extrabold tracking-tight truncate ${material.engravingColor || styling.engravingColor} drop-shadow-sm`}
               >
-                {material.name}
+                {getLocalizedText(material.name, language)}
               </h4>
-              {material.subtitle ? (
+              {getLocalizedText(material.subtitle, language) ? (
                 <p className="text-[10px] text-white/70 tracking-wide truncate">
-                  {material.subtitle}
+                  {getLocalizedText(material.subtitle, language)}
                 </p>
               ) : null}
             </div>
@@ -293,7 +296,7 @@ function InteractiveMaterialCard({ material }: { material: CardMaterialItem }) {
         <div className="space-y-2.5">
           <div className="flex items-center justify-between">
             <span className={`text-[11px] font-bold px-3 py-1 rounded-full border ${material.badgeStyle || styling.badgeStyle}`}>
-              {material.badge}
+              {getLocalizedText(material.badge, language)}
             </span>
             <span className="text-lg font-black text-slate-900 dark:text-white" dir="ltr">
               {displayPrice}
@@ -301,19 +304,19 @@ function InteractiveMaterialCard({ material }: { material: CardMaterialItem }) {
           </div>
 
           <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
-            {material.name}
+            {getLocalizedText(material.name, language)}
           </h3>
 
           <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-            {material.description}
+            {getLocalizedText(material.description, language)}
           </p>
 
           {/* Features Checkpoints */}
           <ul className="space-y-1.5 pt-2">
-            {material.features.map((feat, idx) => (
+            {(material.features || []).map((feat, idx) => (
               <li key={idx} className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300">
                 <CheckCircle2 className="w-3.5 h-3.5 text-cyan-500 shrink-0" />
-                <span className="text-[11px]">{feat}</span>
+                <span className="text-[11px]">{getLocalizedText(feat, language)}</span>
               </li>
             ))}
           </ul>
@@ -326,7 +329,9 @@ function InteractiveMaterialCard({ material }: { material: CardMaterialItem }) {
               variant="outline"
               className="w-full h-11 rounded-2xl border-slate-300 dark:border-slate-700 hover:border-cyan-500 dark:hover:border-cyan-400 text-xs font-bold flex items-center justify-center gap-2 group-hover:bg-cyan-500 group-hover:text-white group-hover:border-cyan-500 transition-all shadow-sm"
             >
-              <span>سفارش این کارت</span>
+              <span>
+                {language === 'en' ? 'Order This Card' : language === 'ps' ? 'دا کارټ وپیرئ' : 'سفارش این کارت'}
+              </span>
               <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-1 transition-transform" />
             </Button>
           </Link>
@@ -338,9 +343,10 @@ function InteractiveMaterialCard({ material }: { material: CardMaterialItem }) {
 
 export function LuxuryMaterialsShowcase() {
   const { materials } = useLandingCms();
+  const { language, dir } = useLanguage();
 
   return (
-    <section id="luxury-materials" className="py-20 sm:py-28 border-t border-border/80 relative overflow-hidden font-sans">
+    <section id="luxury-materials" dir={dir} className="py-20 sm:py-28 border-t border-border/80 relative overflow-hidden font-sans">
       {/* Background Ambient Glows */}
       <div className="absolute top-1/4 right-10 w-[500px] h-[350px] bg-cyan-500/5 rounded-full blur-[140px] pointer-events-none -z-10" />
       <div className="absolute bottom-10 left-10 w-[500px] h-[350px] bg-amber-500/5 rounded-full blur-[140px] pointer-events-none -z-10" />
@@ -354,11 +360,19 @@ export function LuxuryMaterialsShowcase() {
           className="text-center max-w-2xl mx-auto space-y-3"
         >
           <h2 className="text-3xl sm:text-4xl font-black text-foreground tracking-tight">
-            کارت ویزیت هوشمند با متریال واقعی و ماندگار
+            {language === 'en'
+              ? 'Smart Business Cards in Authentic, Lasting Materials'
+              : language === 'ps'
+                ? 'سمارټ ویزټ کارټونه له اصلي او دوامداره توکو څخه'
+                : 'کارت ویزیت هوشمند با متریال واقعی و ماندگار'}
           </h2>
 
           <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-            کارت فیزیکی شما، نخستین امضای برند شماست. از پی‌وی‌سی مخملی مات تا استیل آبکاری‌شده با طلای 24 عیار و چوب طبیعی گردو، برای هر سلیقه و جایگاه کاری.
+            {language === 'en'
+              ? 'Your physical card is your brand’s first signature. Choose from velvet matte PVC to 24K gold-plated steel and natural walnut wood.'
+              : language === 'ps'
+                ? 'ستاسو فزیکي کارټ ستاسو د برانډ لومړنۍ نښه ده. له مخملي PVC څخه تر طلايي فولادو او طبیعي لرګي پورې غوره کړئ.'
+                : 'کارت فیزیکی شما، نخستین امضای برند شماست. از پی‌وی‌سی مخملی مات تا استیل آبکاری‌شده با طلای 24 عیار و چوب طبیعی گردو، برای هر سلیقه و جایگاه کاری.'}
           </p>
         </motion.div>
 

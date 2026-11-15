@@ -24,6 +24,7 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { SiteLogo } from '@/components/SiteLogo';
+import { useLanguage } from '@/lib/i18n/LanguageContext';
 
 export interface UserNavItem {
   title: string;
@@ -34,43 +35,43 @@ export interface UserNavItem {
   badgeVariant?: 'cyan' | 'default' | 'outline' | 'secondary';
 }
 
-// User Dashboard Navigation Items (Master View - Strictly 3 Items)
-const userNavItems: UserNavItem[] = [
-  {
-    title: 'داشبورد و لینک‌های من',
-    subtitle: 'لیست لینک‌ها و آمار مجموع بازدیدها',
-    href: '/dashboard',
-    icon: Layers,
-  },
-  {
-    title: 'سفارشات من',
-    subtitle: 'پیگیری کارت‌های فیزیکی هوشمند NFC',
-    href: '/dashboard/orders',
-    icon: ShoppingBag,
-    badge: 'NFC',
-    badgeVariant: 'cyan',
-  },
-  {
-    title: 'تنظیمات حساب کاربری',
-    subtitle: 'اطلاعات هویتی، امنیت و اشتراک',
-    href: '/dashboard/account',
-    icon: UserCog,
-  },
-];
-
-const orgNavItem: UserNavItem = {
-  title: 'مدیریت سازمان / تیم من',
-  subtitle: 'مدیریت کارمندان و جوازهای B2B',
-  href: '/dashboard/organization',
-  icon: Building2,
-  badge: 'B2B',
-  badgeVariant: 'cyan',
-};
-
 export function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: () => void }) {
   const pathname = usePathname();
   const { data: session } = useSession();
+  const { t, dir } = useLanguage();
   const [liveIsOrgOwner, setLiveIsOrgOwner] = useState(false);
+
+  const userNavItems: UserNavItem[] = [
+    {
+      title: t('dashboard.sidebar.linksTitle', 'داشبورد و لینک‌های من'),
+      subtitle: t('dashboard.sidebar.linksSub', 'لیست لینک‌ها و آمار مجموع بازدیدها'),
+      href: '/dashboard',
+      icon: Layers,
+    },
+    {
+      title: t('dashboard.sidebar.ordersTitle', 'سفارشات من'),
+      subtitle: t('dashboard.sidebar.ordersSub', 'پیگیری کارت‌های فیزیکی هوشمند NFC'),
+      href: '/dashboard/orders',
+      icon: ShoppingBag,
+      badge: 'NFC',
+      badgeVariant: 'cyan',
+    },
+    {
+      title: t('dashboard.sidebar.accountTitle', 'تنظیمات حساب کاربری'),
+      subtitle: t('dashboard.sidebar.accountSub', 'اطلاعات هویتی، امنیت و اشتراک'),
+      href: '/dashboard/account',
+      icon: UserCog,
+    },
+  ];
+
+  const orgNavItem: UserNavItem = {
+    title: t('dashboard.sidebar.orgTitle', 'مدیریت سازمان / تیم من'),
+    subtitle: t('dashboard.sidebar.orgSub', 'مدیریت کارمندان و جوازهای B2B'),
+    href: '/dashboard/organization',
+    icon: Building2,
+    badge: 'B2B',
+    badgeVariant: 'cyan',
+  };
 
   const userRole = (session?.user?.role || '').toLowerCase();
   const isSuperAdmin = userRole === 'superadmin' || userRole === 'admin';
@@ -100,7 +101,7 @@ export function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: () => void
   const navItems = isOrgOwner ? [...userNavItems, orgNavItem] : userNavItems;
 
   return (
-    <aside className="w-72 h-full flex flex-col bg-card/80 dark:bg-slate-950/90 backdrop-blur-xl border-l border-border select-none">
+    <aside className="w-72 h-full flex flex-col bg-card/80 dark:bg-slate-950/90 backdrop-blur-xl border-e border-border select-none" dir={dir}>
       {/* Brand Header */}
       <div className="h-16 px-6 border-b border-border flex items-center justify-between shrink-0">
         <Link
@@ -113,15 +114,15 @@ export function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: () => void
             height={38}
             showText={true}
             showBadge={false}
-            subtitle="داشبورد کاربری"
+            subtitle={t('dashboard.sidebar.subtitle', 'داشبورد کاربری')}
           />
         </Link>
       </div>
 
-      {/* Main User Navigation List (Strictly 4 Items) */}
+      {/* Main User Navigation List */}
       <nav className="flex-1 px-3 space-y-1.5 overflow-y-auto custom-scrollbar">
         <div className="px-3 py-2 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-          مدیریت کارت و پروفایل
+          {t('dashboard.sidebar.sectionTitle', 'مدیریت کارت و پروفایل')}
         </div>
 
         {navItems.map((item) => {
@@ -147,7 +148,7 @@ export function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: () => void
                     isActive ? 'text-white' : 'text-muted-foreground group-hover:text-cyan-500'
                   )}
                 />
-                <div className="text-right truncate">
+                <div className="text-start truncate">
                   <span className="block truncate">{item.title}</span>
                   <span
                     className={cn(
@@ -187,7 +188,7 @@ export function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: () => void
             title="ورود به پنل مدیریت کل"
           >
             <ShieldAlert className="w-3.5 h-3.5 shrink-0 text-amber-500" />
-            <span className="truncate">پنل مدیریت</span>
+            <span className="truncate">{t('dashboard.sidebar.adminSwitch', 'پنل مدیریت')}</span>
           </Link>
         )}
 
@@ -198,10 +199,10 @@ export function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: () => void
             'flex items-center justify-center gap-1.5 h-9 px-2.5 rounded-xl text-xs font-bold text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 transition-colors truncate',
             isSuperAdmin ? 'flex-1 border border-border/60' : 'w-full'
           )}
-          title="خروج از حساب کاربری"
+          title={t('dashboard.sidebar.logout', 'خروج از حساب کاربری')}
         >
           <LogOut className="w-3.5 h-3.5 shrink-0" />
-          <span className="truncate">خروج</span>
+          <span className="truncate">{t('dashboard.sidebar.logout', 'خروج')}</span>
         </button>
       </div>
     </aside>

@@ -34,6 +34,9 @@ import {
   Crown,
   FileImage,
   Building2,
+  Download,
+  Printer,
+  Users,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -66,10 +69,22 @@ interface AdminOrder {
     | 'printing'
     | 'shipped'
     | 'pending';
-  orderType?: 'nfc_card' | 'subscription';
+  orderType?: 'nfc_card' | 'subscription' | 'bulk_nfc_cards';
   subscriptionPlanType?: 'pro' | 'corporate' | string;
+  organizationId?: string;
   companyName?: string;
   requestedLicenses?: number;
+  employeeIds?: string[];
+  shippingAddress?: string;
+  bulkItems?: Array<{
+    employeeId: string;
+    name: string;
+    occupation?: string;
+    email?: string;
+    alias?: string;
+    profileUrl?: string;
+    companyName?: string;
+  }>;
   paymentMethod: string;
   paymentGateway?: string;
   paymentMode?: string;
@@ -412,6 +427,62 @@ export default function AdminOrdersPage() {
     });
   };
 
+  const handleDownloadPrintCsv = (order: AdminOrder) => {
+    const items = Array.isArray(order.bulkItems) ? order.bulkItems : [];
+    if (items.length === 0) {
+      toast.error('اطلاعات کارمندان برای استخراج فایل چاپخانه در این سفارش یافت نشد.');
+      return;
+    }
+
+    const escapeCsv = (value: unknown) => {
+      const str = String(value ?? '')
+        .replace(/\r?\n|\r/g, ' ')
+        .trim();
+      return `"${str.replace(/"/g, '""')}"`;
+    };
+
+    const origin =
+      typeof window !== 'undefined' ? window.location.origin : 'https://aryal.ink';
+
+    const headers = [
+      'نام و تخلص کارمند',
+      'سِمت / عنوان شغلی',
+      'لینک اختصاصی مینی‌سایت (QR Code)',
+      'نام سازمان',
+    ];
+
+    const rows = items.map((item) => {
+      const profileLink = item.alias
+        ? `${origin}/${item.alias}`
+        : item.profileUrl || '—';
+      return [
+        item.name || 'کارمند سازمان',
+        item.occupation || '—',
+        profileLink,
+        item.companyName || order.companyName || '—',
+      ];
+    });
+
+    const csvLines = [
+      headers.map(escapeCsv).join(','),
+      ...rows.map((r) => r.map(escapeCsv).join(',')),
+    ];
+
+    // Add UTF-8 BOM (\uFEFF) so Microsoft Excel renders Dari/Persian characters properly
+    const csvContent = '\uFEFF' + csvLines.join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `print-batch-${order.orderNumber}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast.success(`فایل اکسل / CSV چاپخانه برای سفارش ${order.orderNumber} با موفقیت دانلود شد.`);
+  };
+
   return (
     <div className="p-4 sm:p-6 lg:p-1 space-y-6 max-w-7xl mx-auto" dir="rtl">
       {/* Admin Header */}
@@ -596,10 +667,17 @@ export default function AdminOrdersPage() {
                               <Crown className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                             )
                           )}
+                          {order.orderType === 'bulk_nfc_cards' && (
+                            <Printer className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                          )}
                           <span>{order.cardSpecs?.templateName || order.productTitle}</span>
                         </div>
                         <div className="text-[11px] text-slate-400 mt-0.5 flex flex-wrap gap-1">
-                          {order.orderType === 'subscription' ? (
+                          {order.orderType === 'bulk_nfc_cards' ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold">
+                              سفارش سازمانی B2B: {order.companyName || 'شرکت'} ({order.quantity} کارت)
+                            </span>
+                          ) : order.orderType === 'subscription' ? (
                             order.subscriptionPlanType === 'corporate' || order.companyName ? (
                               <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-300 border border-purple-500/30 text-[10px] font-bold">
                                 پکیج سازمانی: {order.companyName || 'شرکت'} ({order.requestedLicenses || 50} لایسنس)
@@ -715,6 +793,18 @@ export default function AdminOrdersPage() {
                             <span>مدیریت</span>
                           </Button>
 
+                          {order.orderType === 'bulk_nfc_cards' && (
+                            <button
+                              type="button"
+                              onClick={() => handleDownloadPrintCsv(order)}
+                              title="دانلود فایل اکسل / CSV برای چاپخانه"
+                              className="px-2.5 py-1 rounded-md bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 text-[10px] font-bold border border-emerald-500/40 whitespace-nowrap flex items-center gap-1 cursor-pointer"
+                            >
+                              <Download className="w-3 h-3" />
+                              <span>CSV چاپخانه</span>
+                            </button>
+                          )}
+
                           {/* Quick Transitions */}
                           {order.orderType === 'subscription' && order.paymentStatus !== 'paid' ? (
                             <button
@@ -827,7 +917,7 @@ export default function AdminOrdersPage() {
 
       {/* Order Management & Status Controller Modal */}
       <Dialog open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>
-        <DialogContent className="max-w-2xl bg-slate-900 border-slate-800 text-white rounded-3xl" dir="rtl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-slate-900 border-slate-800 text-white rounded-3xl" dir="rtl">
           <DialogHeader className="text-right">
             <DialogTitle className="text-base font-bold text-white flex items-center justify-between">
               <span>مدیریت سفارش {selectedOrder?.orderNumber}</span>
@@ -882,10 +972,61 @@ export default function AdminOrdersPage() {
                   </div>
                 </div>
 
-                <div className="pt-2 border-t border-slate-800/80">
+                <div className="pt-2 border-t border-slate-800/80 space-y-1">
                   <span className="text-slate-400 block text-[11px]">آدرس پستی و توضیحات تحویل:</span>
-                  <p className="text-slate-200 mt-0.5 leading-relaxed">{selectedOrder.notes}</p>
+                  {selectedOrder.shippingAddress && (
+                    <p className="text-cyan-300 font-semibold leading-relaxed">
+                      نشانی ارسال: {selectedOrder.shippingAddress}
+                    </p>
+                  )}
+                  <p className="text-slate-200 leading-relaxed">{selectedOrder.notes || '—'}</p>
                 </div>
+
+                {/* B2B Bulk NFC Cards Print Shop Details & CSV Export */}
+                {selectedOrder.orderType === 'bulk_nfc_cards' && (
+                  <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div>
+                        <div className="font-bold text-emerald-300 flex items-center gap-1.5 text-xs">
+                          <Building2 className="w-4 h-4" />
+                          <span>
+                            سفارش سازمانی B2B — {selectedOrder.companyName || 'سازمان'} (
+                            {selectedOrder.bulkItems?.length || selectedOrder.quantity} کارت فیزیکی)
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-300 mt-0.5">
+                          فایل خروجی چاپخانه شامل نام و تخلص کارمندان، سِمت، لینک اختصاصی QR Code و نام سازمان می‌باشد.
+                        </p>
+                      </div>
+
+                      <Button
+                        type="button"
+                        onClick={() => handleDownloadPrintCsv(selectedOrder)}
+                        className="rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black text-xs h-9 px-4 flex items-center gap-1.5 shrink-0 cursor-pointer"
+                      >
+                        <Download className="w-4 h-4" />
+                        <span>دانلود فایل اکسل / CSV برای چاپخانه</span>
+                      </Button>
+                    </div>
+
+                    {Array.isArray(selectedOrder.bulkItems) && selectedOrder.bulkItems.length > 0 && (
+                      <div className="max-h-40 overflow-y-auto rounded-xl bg-slate-950/70 border border-slate-800 divide-y divide-slate-800/70 text-[11px]">
+                        {selectedOrder.bulkItems.map((emp, i) => (
+                          <div key={emp.employeeId || i} className="px-3 py-2 flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <Users className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                              <span className="font-bold text-white truncate">{emp.name}</span>
+                              <span className="text-slate-400 truncate">({emp.occupation || 'کارمند'})</span>
+                            </div>
+                            <span className="font-mono text-cyan-400 shrink-0" dir="ltr">
+                              {emp.alias ? `/${emp.alias}` : '—'}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {(selectedOrder.paymentProviderDetails?.receiptUrl ||
                   selectedOrder.paymentProviderDetails?.transactionRef ||

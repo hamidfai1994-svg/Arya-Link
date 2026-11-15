@@ -23,6 +23,10 @@ export interface SiteLogoProps {
   priority?: boolean;
   /** If true, displays site name text next to logo */
   showText?: boolean;
+  /** Optional variant prop kept for backwards compatibility */
+  variant?: 'auto' | 'full' | 'icon';
+  /** Optional collapsed state prop kept for backwards compatibility */
+  collapsed?: boolean;
   /** Custom site name override */
   siteName?: string;
   /** If true, displays PRO or custom badge */
@@ -59,7 +63,14 @@ export function SiteLogo({
   const { settings } = useBranding();
   const [imageError, setImageError] = useState(false);
 
-  const effectiveLogo = overrideLogo !== undefined ? overrideLogo : settings?.companyLogo;
+  const dbLogo =
+    settings?.platformMainLogo?.trim() ||
+    settings?.companyLogo?.trim() ||
+    '';
+
+  const effectiveLogo =
+    overrideLogo !== undefined ? overrideLogo.trim() : dbLogo;
+
   const effectiveSiteName = siteName || settings?.siteName || 'Arya Link';
 
   // Reset error state if logo URL changes
@@ -69,13 +80,19 @@ export function SiteLogo({
 
   // Determine fallback size styling
   const fontSizeClass =
-    width >= 56 ? 'text-xl' : width >= 44 ? 'text-base' : width >= 36 ? 'text-sm' : 'text-xs';
+    width >= 56
+      ? 'text-xl'
+      : width >= 44
+      ? 'text-base'
+      : width >= 36
+      ? 'text-sm'
+      : 'text-xs';
 
   const logoGraphic =
     effectiveLogo && !imageError ? (
       <div
         className={cn(
-          'relative flex items-center justify-center shrink-0 bg-transparent',
+          'relative flex items-center justify-center overflow-hidden shrink-0 bg-transparent',
           imageClassName
         )}
         style={{ width: `${width}px`, height: `${height}px` }}

@@ -162,6 +162,10 @@ export async function GET(req: NextRequest) {
             accentColor: secondaryCol,
             buttonBgColor: primaryCol,
             buttonBorderColor: secondaryCol,
+            bgGradientColors: ['#090d16', `${primaryCol}33`, '#0f172a'],
+            backgroundColor:
+              ob.backgroundColor ||
+              `linear-gradient(135deg, #090d16 0%, ${primaryCol}26 50%, #0f172a 100%)`,
           };
           organizationBranding = {
             id: orgDoc._id.toString(),
@@ -171,6 +175,7 @@ export async function GET(req: NextRequest) {
             secondaryColor: secondaryCol,
             coverImage: ob.coverImage || '',
             companySlogan: ob.companySlogan || '',
+            orgRole: dbUser?.orgRole || null,
           };
         }
       }
@@ -256,6 +261,7 @@ export async function POST(req: NextRequest) {
       job,
       templateId,
       jobCategory,
+      translations,
     } = body;
 
     // 1. Validation
@@ -309,6 +315,7 @@ export async function POST(req: NextRequest) {
       displayName: displayName.trim(),
       headline: headline || '',
       bio: bio || '',
+      ...(translations !== undefined && { translations }),
       avatarUrl: avatarUrl || '',
       coverUrl: coverUrl || '',
       headerLayout: headerLayout || 'curve',
@@ -338,13 +345,20 @@ export async function POST(req: NextRequest) {
       console.log('Incoming themeConfig in /api/profile:', themeConfig);
     }
 
-    // Enforce corporate branding lock for organization members (orgRole === 'member')
+    // Enforce deactivated check + corporate branding lock for organization members (orgRole === 'member')
     try {
       const dbUser = mongoose.isValidObjectId(currentUserId)
-        ? await User.findById(currentUserId).select('organizationId orgRole').lean()
+        ? await User.findById(currentUserId).select('organizationId orgRole isActive').lean()
         : await User.findOne({ email: currentUserEmail.toLowerCase().trim() })
-            .select('organizationId orgRole')
+            .select('organizationId orgRole isActive')
             .lean();
+
+      if (dbUser && dbUser.isActive === false) {
+        return NextResponse.json(
+          { success: false, message: 'حساب کاربری شما غیرفعال شده است.' },
+          { status: 403 }
+        );
+      }
 
       if (dbUser?.orgRole === 'member' && dbUser?.organizationId) {
         const orgDoc = mongoose.isValidObjectId(String(dbUser.organizationId))
@@ -382,10 +396,10 @@ export async function POST(req: NextRequest) {
             accentColor: secondaryCol,
             buttonBgColor: primaryCol,
             buttonBorderColor: secondaryCol,
+            bgGradientColors: ['#090d16', `${primaryCol}33`, '#0f172a'],
             backgroundColor:
               ob.backgroundColor ||
-              existingProfileDoc?.themeConfig?.backgroundColor ||
-              'linear-gradient(135deg, #090d16 0%, #0f172a 50%, #1e1b4b 100%)',
+              `linear-gradient(135deg, #090d16 0%, ${primaryCol}26 50%, #0f172a 100%)`,
           };
         }
       }
@@ -481,6 +495,7 @@ export async function POST(req: NextRequest) {
         displayName: displayName.trim(),
         headline: headline || '',
         bio: bio || '',
+        translations: translations || {},
         avatarUrl: avatarUrl || '',
         coverUrl: coverUrl || '',
         headerLayout: headerLayout || 'curve',

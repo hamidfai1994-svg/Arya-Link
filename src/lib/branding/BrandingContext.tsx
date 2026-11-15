@@ -7,7 +7,9 @@ interface BrandingContextValue {
   settings: ISiteSettings;
   isLoading: boolean;
   refreshSettings: () => Promise<void>;
-  updateSettings: (newSettings: Partial<ISiteSettings>) => Promise<{ success: boolean; message?: string }>;
+  updateSettings: (
+    newSettings: Partial<ISiteSettings>
+  ) => Promise<{ success: boolean; message?: string }>;
 }
 
 const BrandingContext = createContext<BrandingContextValue>({
@@ -29,9 +31,21 @@ export function BrandingProvider({
   );
   const [isLoading, setIsLoading] = useState(false);
 
-  // Sync favicon with document <head> on change
+  // Sync when server-supplied initialSettings changes
   useEffect(() => {
-    if (typeof document !== 'undefined' && settings.favicon) {
+    if (initialSettings) {
+      setSettings(initialSettings);
+    }
+  }, [initialSettings]);
+
+  // Sync favicon with document <head> dynamically (falls back to '/favicon.ico')
+  useEffect(() => {
+    const targetFavicon =
+      settings?.platformFavicon?.trim() ||
+      settings?.favicon?.trim() ||
+      '/favicon.ico';
+
+    if (typeof document !== 'undefined') {
       let link: HTMLLinkElement | null =
         document.querySelector("link[rel*='icon']") ||
         document.querySelector("link[rel='shortcut icon']");
@@ -40,9 +54,9 @@ export function BrandingProvider({
         link.rel = 'icon';
         document.head.appendChild(link);
       }
-      link.href = settings.favicon;
+      link.href = targetFavicon;
     }
-  }, [settings.favicon]);
+  }, [settings.platformFavicon, settings.favicon]);
 
   const refreshSettings = useCallback(async () => {
     try {

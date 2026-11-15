@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { connectToDatabase } from '@/lib/db/mongodb';
 import { Profile } from '@/models/Profile.model';
 import { Lead } from '@/models/Lead.model';
+import { User } from '@/models/User.model';
 import mongoose from 'mongoose';
 
 export const dynamic = 'force-dynamic';
@@ -150,14 +151,14 @@ export async function POST(req: NextRequest) {
       targetProfile = await Profile.findOne({
         alias: profileAlias.toLowerCase().trim(),
         userId: session.user.id,
-      }).select('_id');
+      }).select('_id orgId');
     } else if (profileId && mongoose.isValidObjectId(profileId)) {
       targetProfile = await Profile.findOne({
         _id: new mongoose.Types.ObjectId(profileId),
         userId: session.user.id,
-      }).select('_id');
+      }).select('_id orgId');
     } else {
-      targetProfile = await Profile.findOne({ userId: session.user.id }).select('_id');
+      targetProfile = await Profile.findOne({ userId: session.user.id }).select('_id orgId');
     }
 
     if (!targetProfile) {
@@ -167,8 +168,20 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    let resolvedOrgId: any = targetProfile.orgId || null;
+    if (!resolvedOrgId) {
+      const currentUser = await User.findById(session.user.id)
+        .select('organizationId')
+        .lean();
+      if (currentUser?.organizationId) {
+        resolvedOrgId = currentUser.organizationId;
+      }
+    }
+
     const newLead = await Lead.create({
       profileId: targetProfile._id,
+      organizationId: resolvedOrgId || null,
+      employeeUserId: session.user.id,
       name: name.trim(),
       phone: phone.trim(),
       email: (email || '').trim(),

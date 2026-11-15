@@ -10,6 +10,8 @@ import mongoose from 'mongoose';
 import { PublicProfileClient } from '@/components/profile/PublicProfileClient';
 import { CreditCard, ArrowRight, ShieldAlert, Sparkles, Home, UserCheck } from 'lucide-react';
 import { SiteLogo } from '@/components/SiteLogo';
+import { getLocalizedText } from '@/lib/i18n/multilingual';
+import { getSiteSettings } from '@/lib/settings';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,10 +19,23 @@ interface PageProps {
   params: Promise<{ username: string }>;
 }
 
-// 1. Dynamic SEO Metadata Generation
+// 1. Dynamic SEO Metadata Generation (Open Graph & Twitter Cards)
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { username } = await params;
   const cleanAlias = decodeURIComponent(username || '').toLowerCase().trim();
+  const baseUrl = (
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    process.env.NEXTAUTH_URL ||
+    'https://aryal.ink'
+  ).replace(/\/+$/, '');
+  const fullProfileUrl = `${baseUrl}/${cleanAlias}`;
+
+  const toAbsoluteImageUrl = (rawUrl?: string | null): string => {
+    const clean = (rawUrl || '').trim();
+    if (!clean || clean.startsWith('data:')) return '';
+    if (/^https?:\/\//i.test(clean)) return clean;
+    return `${baseUrl}${clean.startsWith('/') ? '' : '/'}${clean}`;
+  };
 
   try {
     await connectToDatabase();
@@ -31,46 +46,87 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
     if (!profile) {
       return {
-        title: 'کارت ویزیت یافت نشد | Arya Link',
-        description: 'کارت هوشمند مورد نظر در سیستم آریا لینک پیدا نشد.',
+        title: 'کارت ویزیت یافت نشد | آریا لینک',
+        description: 'کارت ویزیت هوشمند و راهکارهای ارتباطی آریا لینک',
       };
     }
 
-    const displayName = profile.displayName || cleanAlias;
-    const title = profile.seoTitle || `${displayName} | کارت ویزیت هوشمند آریا لینک`;
+    let ownerUser: any = null;
+    if (profile.userId && mongoose.isValidObjectId(String(profile.userId))) {
+      ownerUser = await User.findById(profile.userId)
+        .select('name occupation isActive')
+        .lean()
+        .catch(() => null);
+    }
+
+    if (ownerUser && ownerUser.isActive === false) {
+      return {
+        title: 'کارت ویزیت غیرفعال است | آریا لینک',
+        description: 'کارت ویزیت هوشمند و راهکارهای ارتباطی آریا لینک',
+      };
+    }
+
+    const displayName =
+      getLocalizedText(profile.displayName, 'da', '')?.trim() ||
+      ownerUser?.name?.trim() ||
+      cleanAlias;
+    const jobTitle =
+      getLocalizedText(profile.headline, 'da', '')?.trim() ||
+      ownerUser?.occupation?.trim() ||
+      '';
+
+    const title = profile.seoTitle?.trim()
+      ? profile.seoTitle.trim()
+      : jobTitle
+        ? `${displayName} | ${jobTitle}`
+        : `${displayName} | آریا لینک`;
+
+    const bioText =
+      profile.seoDescription?.trim() ||
+      getLocalizedText(profile.bio, 'da', '')?.trim() ||
+      '';
     const description =
-      profile.seoDescription ||
-      profile.bio ||
-      profile.headline ||
-      `مشاهده اطلاعات تماس، شبکه‌های اجتماعی و راه‌های ارتباطی با ${displayName}`;
-    const images = profile.avatarUrl ? [profile.avatarUrl] : ['/favicon.ico'];
+      bioText || 'کارت ویزیت هوشمند و راهکارهای ارتباطی آریا لینک';
+
+    const siteSettings = await getSiteSettings();
+    const fallbackLogo =
+      toAbsoluteImageUrl(siteSettings?.platformMainLogo) ||
+      toAbsoluteImageUrl(siteSettings?.companyLogo) ||
+      toAbsoluteImageUrl(siteSettings?.platformFavicon) ||
+      toAbsoluteImageUrl(siteSettings?.favicon) ||
+      `${baseUrl}/favicon.ico`;
+
+    const profileImage = toAbsoluteImageUrl(profile.avatarUrl) || fallbackLogo;
+    const images = [{ url: profileImage, alt: displayName }];
 
     const robots = profile.noIndex ? { index: false, follow: false } : undefined;
 
     return {
+      metadataBase: new URL(baseUrl),
       title,
       description,
       robots,
       openGraph: {
         title,
         description,
+        url: fullProfileUrl,
         images,
         type: 'profile',
         siteName: 'Arya Link',
-        url: `https://aryal.ink/${cleanAlias}`,
         locale: profile.profileLanguage === 'en' ? 'en_US' : 'fa_AF',
       },
       twitter: {
         card: 'summary_large_image',
         title,
         description,
-        images,
+        images: [profileImage],
       },
     };
   } catch (error) {
     console.error('Error in generateMetadata for profile:', error);
     return {
-      title: 'کارت ویزیت هوشمند | Arya Link',
+      title: 'کارت ویزیت هوشمند | آریا لینک',
+      description: 'کارت ویزیت هوشمند و راهکارهای ارتباطی آریا لینک',
     };
   }
 }
@@ -137,21 +193,34 @@ export default async function PublicProfilePage({ params }: PageProps) {
   // Load owner user's financial settings and organization membership
   let ownerFinancialSettings = profile.financialSettings;
   let ownerUser: any = null;
-  if (profile.userId) {
+  if (profile.userId && mongoose.isValidObjectId(String(profile.userId))) {
     try {
       ownerUser = await User.findById(profile.userId)
-        .select('financialSettings organizationId orgRole')
+        .select('financialSettings organizationId orgRole isActive')
         .lean();
-      if (
-        !ownerFinancialSettings?.hesabPay?.accountNumber &&
-        !ownerFinancialSettings?.hesabPay?.merchantId &&
-        ownerUser?.financialSettings
-      ) {
-        ownerFinancialSettings = ownerUser.financialSettings;
-      }
     } catch (uErr) {
-      console.warn('Could not load owner user settings:', uErr);
+      console.warn('Could not load owner user settings by userId:', uErr);
     }
+  }
+  const ownerEmailFallback = (profile as any).userEmail || profile.email;
+  if (!ownerUser && typeof ownerEmailFallback === 'string' && ownerEmailFallback.trim()) {
+    try {
+      ownerUser = await User.findOne({ email: ownerEmailFallback.toLowerCase().trim() })
+        .select('financialSettings organizationId orgRole isActive')
+        .lean();
+    } catch (uErr) {
+      console.warn('Could not load owner user settings by email:', uErr);
+    }
+  }
+  if (ownerUser && ownerUser.isActive === false) {
+    return <NotFoundCard alias={cleanAlias} />;
+  }
+  if (
+    ownerUser?.financialSettings &&
+    !ownerFinancialSettings?.hesabPay?.accountNumber &&
+    !ownerFinancialSettings?.hesabPay?.merchantId
+  ) {
+    ownerFinancialSettings = ownerUser.financialSettings;
   }
 
   // Load corporate organization branding when profile owner belongs to an organization
@@ -197,6 +266,13 @@ export default async function PublicProfilePage({ params }: PageProps) {
           rawThemeConfig?.preset === 'minimal_light'
             ? 'dark_neon'
             : rawThemeConfig?.preset || 'dark_neon',
+        backgroundType: 'gradient',
+        bgGradientColors: [
+          '#090d16',
+          `${organizationBranding.primaryColor}38`,
+          `${organizationBranding.secondaryColor}28`,
+        ],
+        backgroundColor: `linear-gradient(135deg, #090d16 0%, ${organizationBranding.primaryColor}26 50%, #0f172a 100%)`,
         primaryColor: organizationBranding.primaryColor,
         accentColor: organizationBranding.secondaryColor,
         buttonBgColor: organizationBranding.primaryColor,
@@ -228,6 +304,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
     displayName: profile.displayName || '',
     headline: profile.headline || '',
     bio: profile.bio || '',
+    translations: (profile as any).translations || {},
     avatarUrl: profile.avatarUrl || '',
     coverUrl: effectiveCoverUrl,
     headerLayout: profile.headerLayout || 'curve',

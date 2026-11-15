@@ -80,13 +80,13 @@ export async function POST(req: NextRequest) {
 
     const { org } = authResult;
 
-    // Enforce license quota
-    if (org.usedLicenses >= org.totalLicenses) {
+    // Enforce license quota strictly
+    if ((org.usedLicenses || 0) >= (org.totalLicenses || 0)) {
       return NextResponse.json(
         {
           success: false,
           error:
-            'ظرفیت جوازهای (لایسنس‌های) سازمان شما تکمیل شده است. لطفاً بسته سازمانی خود را ارتقا دهید.',
+            'ظرفیت پکیج شما تکمیل شده است. برای افزودن کارمند جدید، پکیج خود را ارتقا دهید.',
         },
         { status: 403 }
       );
@@ -96,7 +96,12 @@ export async function POST(req: NextRequest) {
     const name = typeof body.name === 'string' ? body.name.trim() : '';
     const rawEmail = typeof body.email === 'string' ? body.email.toLowerCase().trim() : '';
     const phone = typeof body.phone === 'string' ? body.phone.trim() : '';
-    const headline = typeof body.headline === 'string' ? body.headline.trim() : '';
+    const headline =
+      typeof body.headline === 'string'
+        ? body.headline.trim()
+        : typeof body.occupation === 'string'
+          ? body.occupation.trim()
+          : '';
     const rawPassword = typeof body.password === 'string' ? body.password.trim() : '';
 
     if (!name) {
@@ -106,17 +111,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (!rawEmail && !phone) {
+    if (!rawEmail) {
       return NextResponse.json(
-        { success: false, error: 'وارد کردن ایمیل آدرس یا شماره تماس کارمند الزامی است.' },
+        { success: false, error: 'لطفاً ایمیل کارمند را برای ورود به سیستم وارد نمایید.' },
         { status: 400 }
       );
     }
 
-    // Generate valid placeholder corporate email when only phone is provided
-    const cleanPhoneDigits = phone.replace(/[^0-9]/g, '');
-    const resolvedEmail =
-      rawEmail || `staff_${cleanPhoneDigits || Date.now()}@aryalink.af`;
+    const resolvedEmail = rawEmail;
 
     const existingUser = await User.findOne({ email: resolvedEmail });
     if (existingUser) {
@@ -135,29 +137,31 @@ export async function POST(req: NextRequest) {
 
       if (
         existingUser.organizationId &&
-        String(existingUser.organizationId) === org._id.toString()
+        String(existingUser.organizationId) === org._id.toString() &&
+        existingUser.isActive !== false
       ) {
         return NextResponse.json(
           {
             success: false,
-            error: 'این کارمند قبلاً در سازمان شما ثبت شده است.',
+            error: 'این کارمند قبلاً در سازمان شما ثبت و فعال شده است.',
           },
           { status: 400 }
         );
       }
     }
 
+    const passwordToHash =
+      rawPassword || `Arya#${Math.floor(100000 + Math.random() * 900000)}!`;
+    const hashedPassword = await bcrypt.hash(passwordToHash, 10);
+
     let memberUser = existingUser;
     if (!memberUser) {
-      const passwordToHash = rawPassword || 'AryaCorp123!';
-      const hashedPassword = await bcrypt.hash(passwordToHash, 10);
-
       memberUser = await User.create({
         name,
         email: resolvedEmail,
         password: hashedPassword,
         phone,
-        occupation: headline || 'کارمند سازمان',
+        occupation: headline || 'عضو تیم',
         role: 'user',
         subscriptionPlan: 'pro',
         planType: 'pro',
@@ -168,65 +172,101 @@ export async function POST(req: NextRequest) {
         isActive: true,
       });
     } else {
+      memberUser.name = name;
       memberUser.organizationId = org._id;
       memberUser.orgRole = 'member';
       memberUser.accountType = 'corporate';
+      memberUser.isActive = true;
+      if (rawPassword) {
+        memberUser.password = hashedPassword;
+      }
       if (memberUser.planType === 'free') {
         memberUser.planType = 'pro';
         memberUser.subscriptionPlan = 'pro';
       }
-      if (phone && !memberUser.phone) {
+      if (phone) {
         memberUser.phone = phone;
       }
-      if (headline && !memberUser.occupation) {
+      if (headline) {
         memberUser.occupation = headline;
       }
       await memberUser.save();
     }
 
-    // Generate unique mini-site alias and create subordinate corporate profile
-    const aliasSeed = rawEmail ? rawEmail.split('@')[0] : name;
-    const uniqueAlias = await generateUniqueAlias(aliasSeed);
-
     const branding = org.branding || {};
     const primaryColor = branding.primaryColor || '#0ea5e9';
     const secondaryColor = branding.secondaryColor || branding.accentColor || '#10b981';
 
-    const employeeProfile = await Profile.create({
-      userId: memberUser._id,
-      orgId: org._id,
-      alias: uniqueAlias,
-      displayName: name,
-      headline: headline || `${org.name} — عضو تیم`,
-      bio:
-        branding.companySlogan ||
-        `عضو رسمی تیم ${org.name} در پلتفرم کارت هوشمند آریا لینک.`,
-      avatarUrl: '',
-      coverUrl: branding.coverImage || '',
-      email: rawEmail || '',
-      phone: phone || '',
-      whatsapp: phone || '',
-      location: 'افغانستان',
-      directModeEnabled: false,
-      hideBranding: false,
-      seoTitle: `${name} | ${org.name}`,
-      seoDescription: `کارت ویزیت دیجیتال رسمی ${name} از مجموعه ${org.name}`,
-      themeConfig: {
-        preset: 'corporate_pro',
+    let employeeProfile = await Profile.findOne({ userId: memberUser._id });
+    if (employeeProfile) {
+      employeeProfile.orgId = org._id;
+      employeeProfile.displayName = name;
+      employeeProfile.headline = headline || `${org.name} — عضو تیم`;
+      employeeProfile.email = resolvedEmail;
+      if (phone) employeeProfile.phone = phone;
+      if (branding.coverImage) employeeProfile.coverUrl = branding.coverImage;
+      employeeProfile.isActive = true;
+      const prevTheme =
+        (employeeProfile.themeConfig as any)?.toObject?.() ||
+        employeeProfile.themeConfig ||
+        {};
+      employeeProfile.themeConfig = {
+        ...prevTheme,
+        preset: 'dark_neon',
         primaryColor,
         accentColor: secondaryColor,
         buttonBgColor: primaryColor,
         buttonBorderColor: secondaryColor,
+        backgroundType: 'gradient',
+        bgGradientColors: ['#090d16', `${primaryColor}38`, `${secondaryColor}28`],
         backgroundColor:
           branding.backgroundColor ||
-          'linear-gradient(135deg, #090d16 0%, #0f172a 50%, #1e1b4b 100%)',
-        cardBlur: 'backdrop-blur-md bg-white/10 border-white/20',
-        textColor: '#ffffff',
-        borderRadius: 'rounded-2xl',
-      },
-      links: [],
-      isActive: true,
-    });
+          `linear-gradient(135deg, #090d16 0%, ${primaryColor}26 50%, #0f172a 100%)`,
+      };
+      await employeeProfile.save();
+    } else {
+      // Generate unique mini-site alias and create subordinate corporate profile
+      const aliasSeed = resolvedEmail.split('@')[0] || name;
+      const uniqueAlias = await generateUniqueAlias(aliasSeed);
+
+      employeeProfile = await Profile.create({
+        userId: memberUser._id,
+        orgId: org._id,
+        alias: uniqueAlias,
+        displayName: name,
+        headline: headline || `${org.name} — عضو تیم`,
+        bio:
+          branding.companySlogan ||
+          `عضو رسمی تیم ${org.name} در پلتفرم کارت هوشمند آریا لینک.`,
+        avatarUrl: '',
+        coverUrl: branding.coverImage || '',
+        email: resolvedEmail,
+        phone: phone || '',
+        whatsapp: phone || '',
+        location: 'افغانستان',
+        directModeEnabled: false,
+        hideBranding: false,
+        seoTitle: `${name} | ${org.name}`,
+        seoDescription: `کارت ویزیت دیجیتال رسمی ${name} از مجموعه ${org.name}`,
+        themeConfig: {
+          preset: 'dark_neon',
+          primaryColor,
+          accentColor: secondaryColor,
+          buttonBgColor: primaryColor,
+          buttonBorderColor: secondaryColor,
+          backgroundType: 'gradient',
+          bgGradientColors: ['#090d16', `${primaryColor}38`, `${secondaryColor}28`],
+          backgroundColor:
+            branding.backgroundColor ||
+            `linear-gradient(135deg, #090d16 0%, ${primaryColor}26 50%, #0f172a 100%)`,
+          cardBlur: 'backdrop-blur-md bg-white/10 border-white/20',
+          textColor: '#ffffff',
+          borderRadius: 'rounded-2xl',
+        },
+        links: [],
+        isActive: true,
+      });
+    }
 
     org.usedLicenses = (org.usedLicenses || 0) + 1;
     await org.save();
@@ -267,6 +307,222 @@ export async function POST(req: NextRequest) {
   }
 }
 
+export async function PATCH(req: NextRequest) {
+  try {
+    const authResult = await resolveOrgOwnerAndOrganization();
+    if ('error' in authResult) {
+      return NextResponse.json(
+        { success: false, error: authResult.error },
+        { status: authResult.status }
+      );
+    }
+
+    const { currentUser, org } = authResult;
+    const body = await req.json();
+    const memberId = typeof body.memberId === 'string' ? body.memberId.trim() : '';
+    const action = typeof body.action === 'string' ? body.action.trim() : 'update';
+
+    if (!memberId || !mongoose.Types.ObjectId.isValid(memberId)) {
+      return NextResponse.json(
+        { success: false, error: 'شناسه کارمند نامعتبر است.' },
+        { status: 400 }
+      );
+    }
+
+    const targetUser = await User.findById(memberId);
+    if (
+      !targetUser ||
+      String(targetUser.organizationId || '') !== org._id.toString()
+    ) {
+      return NextResponse.json(
+        { success: false, error: 'این کارمند در سازمان شما یافت نشد.' },
+        { status: 404 }
+      );
+    }
+
+    if (action === 'deactivate') {
+      if (memberId === currentUser._id.toString() || targetUser.orgRole === 'owner') {
+        return NextResponse.json(
+          { success: false, error: 'مدیر سازمان نمی‌تواند حساب خود را غیرفعال کند.' },
+          { status: 400 }
+        );
+      }
+
+      const wasActive = targetUser.isActive !== false;
+      targetUser.isActive = false;
+      await targetUser.save();
+
+      await Profile.updateMany(
+        { userId: targetUser._id },
+        { $set: { isActive: false } }
+      );
+
+      if (wasActive) {
+        org.usedLicenses = Math.max(0, (org.usedLicenses || 0) - 1);
+        await org.save();
+      }
+
+      const updatedProfile = await Profile.findOne({ userId: targetUser._id })
+        .select('alias displayName headline avatarUrl isActive')
+        .lean();
+
+      return NextResponse.json({
+        success: true,
+        message: 'اکانت کارمند مسدود شد، لینک مینی‌سایت وی از کار افتاد و ۱ جواز آزاد گردید.',
+        usedLicenses: org.usedLicenses,
+        totalLicenses: org.totalLicenses,
+        member: {
+          _id: targetUser._id.toString(),
+          name: targetUser.name,
+          email: targetUser.email,
+          phone: targetUser.phone || '',
+          occupation: targetUser.occupation || '',
+          orgRole: targetUser.orgRole || 'member',
+          isActive: false,
+          createdAt: targetUser.createdAt,
+          profile: updatedProfile
+            ? {
+                _id: updatedProfile._id.toString(),
+                alias: updatedProfile.alias,
+                displayName: updatedProfile.displayName,
+                headline: updatedProfile.headline || '',
+                avatarUrl: updatedProfile.avatarUrl || '',
+                isActive: false,
+              }
+            : null,
+        },
+      });
+    }
+
+    if (action === 'reactivate') {
+      const wasInactive = targetUser.isActive === false;
+      if (wasInactive && (org.usedLicenses || 0) >= (org.totalLicenses || 0)) {
+        return NextResponse.json(
+          {
+            success: false,
+            error:
+              'ظرفیت پکیج شما تکمیل شده است. برای افزودن کارمند جدید، پکیج خود را ارتقا دهید.',
+          },
+          { status: 403 }
+        );
+      }
+
+      targetUser.isActive = true;
+      await targetUser.save();
+
+      await Profile.updateMany(
+        { userId: targetUser._id },
+        { $set: { isActive: true } }
+      );
+
+      if (wasInactive) {
+        org.usedLicenses = (org.usedLicenses || 0) + 1;
+        await org.save();
+      }
+
+      const updatedProfile = await Profile.findOne({ userId: targetUser._id })
+        .select('alias displayName headline avatarUrl isActive')
+        .lean();
+
+      return NextResponse.json({
+        success: true,
+        message: 'دسترسی کارمند و لینک مینی‌سایت وی دوباره فعال شد.',
+        usedLicenses: org.usedLicenses,
+        totalLicenses: org.totalLicenses,
+        member: {
+          _id: targetUser._id.toString(),
+          name: targetUser.name,
+          email: targetUser.email,
+          phone: targetUser.phone || '',
+          occupation: targetUser.occupation || '',
+          orgRole: targetUser.orgRole || 'member',
+          isActive: true,
+          createdAt: targetUser.createdAt,
+          profile: updatedProfile
+            ? {
+                _id: updatedProfile._id.toString(),
+                alias: updatedProfile.alias,
+                displayName: updatedProfile.displayName,
+                headline: updatedProfile.headline || '',
+                avatarUrl: updatedProfile.avatarUrl || '',
+                isActive: true,
+              }
+            : null,
+        },
+      });
+    }
+
+    // Default action: update employee name & job title (سِمت)
+    const nextName = typeof body.name === 'string' ? body.name.trim() : '';
+    const nextHeadline =
+      typeof body.headline === 'string'
+        ? body.headline.trim()
+        : typeof body.occupation === 'string'
+          ? body.occupation.trim()
+          : '';
+
+    if (!nextName) {
+      return NextResponse.json(
+        { success: false, error: 'لطفاً نام و تخلص کارمند را وارد نمایید.' },
+        { status: 400 }
+      );
+    }
+
+    targetUser.name = nextName;
+    if (nextHeadline !== undefined) {
+      targetUser.occupation = nextHeadline || 'عضو تیم';
+    }
+    await targetUser.save();
+
+    await Profile.updateMany(
+      { userId: targetUser._id },
+      {
+        $set: {
+          displayName: nextName,
+          headline: nextHeadline || `${org.name} — عضو تیم`,
+        },
+      }
+    );
+
+    const updatedProfile = await Profile.findOne({ userId: targetUser._id })
+      .select('alias displayName headline avatarUrl isActive')
+      .lean();
+
+    return NextResponse.json({
+      success: true,
+      message: 'مشخصات و سِمت شغلی کارمند با موفقیت بروزرسانی شد.',
+      usedLicenses: org.usedLicenses,
+      totalLicenses: org.totalLicenses,
+      member: {
+        _id: targetUser._id.toString(),
+        name: targetUser.name,
+        email: targetUser.email,
+        phone: targetUser.phone || '',
+        occupation: targetUser.occupation || '',
+        orgRole: targetUser.orgRole || 'member',
+        isActive: targetUser.isActive,
+        createdAt: targetUser.createdAt,
+        profile: updatedProfile
+          ? {
+              _id: updatedProfile._id.toString(),
+              alias: updatedProfile.alias,
+              displayName: updatedProfile.displayName,
+              headline: updatedProfile.headline || '',
+              avatarUrl: updatedProfile.avatarUrl || '',
+              isActive: updatedProfile.isActive,
+            }
+          : null,
+      },
+    });
+  } catch (error) {
+    console.error('Error in PATCH /api/organization/members:', error);
+    return NextResponse.json(
+      { success: false, error: 'خطا در ویرایش مشخصات کارمند.' },
+      { status: 500 }
+    );
+  }
+}
+
 export async function DELETE(req: NextRequest) {
   try {
     const authResult = await resolveOrgOwnerAndOrganization();
@@ -299,7 +555,7 @@ export async function DELETE(req: NextRequest) {
 
     if (memberId === currentUser._id.toString()) {
       return NextResponse.json(
-        { success: false, error: 'مدیر سازمان نمی‌تواند حساب خود را حذف کند.' },
+        { success: false, error: 'مدیر سازمان نمی‌تواند حساب خود را حذف یا مسدود کند.' },
         { status: 400 }
       );
     }
@@ -315,34 +571,36 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    targetUser.organizationId = null;
-    targetUser.orgRole = null;
+    const wasActive = targetUser.isActive !== false;
+
+    // Block employee account & deactivate mini-site while freeing 1 organization license
+    targetUser.isActive = false;
     await targetUser.save();
 
-    // Detach and deactivate corporate profiles belonging to this employee under this org
     await Profile.updateMany(
+      { userId: targetUser._id },
       {
-        userId: targetUser._id,
-        $or: [{ orgId: org._id }, { orgId: org._id.toString() }],
-      },
-      {
-        $set: { isActive: false, orgId: null },
+        $set: { isActive: false },
       }
     );
 
-    org.usedLicenses = Math.max(0, (org.usedLicenses || 0) - 1);
-    await org.save();
+    if (wasActive) {
+      org.usedLicenses = Math.max(0, (org.usedLicenses || 0) - 1);
+      await org.save();
+    }
 
     return NextResponse.json({
       success: true,
-      message: 'کارمند از لیست سازمان خارج شد و جواز مربوطه آزاد گردید.',
+      message: 'اکانت کارمند غیرفعال شد، لینک مینی‌سایت وی مسدود گردید و ۱ جواز به ظرفیت سازمان بازگشت.',
+      memberId: targetUser._id.toString(),
+      isActive: false,
       usedLicenses: org.usedLicenses,
       totalLicenses: org.totalLicenses,
     });
   } catch (error) {
     console.error('Error in DELETE /api/organization/members:', error);
     return NextResponse.json(
-      { success: false, error: 'خطا در حذف کارمند از سازمان.' },
+      { success: false, error: 'خطا در غیرفعال‌سازی کارمند سازمان.' },
       { status: 500 }
     );
   }

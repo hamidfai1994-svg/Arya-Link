@@ -11,15 +11,15 @@ export interface LanguageMeta {
 export const LANGUAGES: Record<SupportedLanguage, LanguageMeta> = {
   da: {
     code: 'da',
-    name: 'Dari',
-    nativeName: 'دری',
+    name: 'Dari / Persian',
+    nativeName: 'دری / فارسی',
     flag: '🇦🇫',
     dir: 'rtl',
   },
   ps: {
     code: 'ps',
     name: 'Pashto',
-    nativeName: 'پشتو',
+    nativeName: 'پښتو',
     flag: '🇦🇫',
     dir: 'rtl',
   },
@@ -31,3 +31,10 @@ export const LANGUAGES: Record<SupportedLanguage, LanguageMeta> = {
     dir: 'ltr',
   },
 };
+
+export function normalizeLangCode(lang?: string | null): SupportedLanguage {
+  const lower = (lang || '').toLowerCase().trim();
+  if (lower === 'ps' || lower === 'pashto') return 'ps';
+  if (lower === 'en' || lower === 'english') return 'en';
+  return 'da';
+}

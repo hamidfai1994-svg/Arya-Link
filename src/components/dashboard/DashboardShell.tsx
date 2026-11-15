@@ -7,11 +7,14 @@ import { useSession } from 'next-auth/react';
 import { Menu, X, CreditCard, Sparkles, UserCheck } from 'lucide-react';
 import { DashboardSidebar } from './DashboardSidebar';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { SiteLogo } from '@/components/SiteLogo';
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { data: session } = useSession();
+  const { t, dir } = useLanguage();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Isolated Detail View environment (/dashboard/editor/[cardId]) renders its own dedicated sidebar & layout
@@ -20,7 +23,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen w-full flex bg-background font-sans" dir="rtl">
+    <div className="min-h-screen w-full flex bg-background font-sans" dir={dir}>
       {/* Desktop Persistent Master Sidebar */}
       <div className="hidden lg:block shrink-0 h-screen sticky top-0 z-30">
         <DashboardSidebar />
@@ -33,7 +36,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-2.5">
             <div className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse" />
             <span className="text-xs font-bold text-foreground">
-              داشبورد مدیریت یکپارچه آریا لینک
+              {t('dashboard.header.title', 'داشبورد مدیریت یکپارچه آریا لینک')}
             </span>
           </div>
 
@@ -43,7 +46,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20 text-xs font-bold transition-all"
             >
               <CreditCard className="w-3.5 h-3.5" />
-              <span>سفارش کارت فیزیکی NFC</span>
+              <span>{t('dashboard.header.orderNfc', 'سفارش کارت فیزیکی NFC')}</span>
             </Link>
 
             {session?.user && (
@@ -58,6 +61,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               </Link>
             )}
 
+            <LanguageSwitcher />
             <ThemeToggle />
           </div>
         </header>
@@ -81,12 +85,15 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             textClassName="text-sm"
           />
 
-          <ThemeToggle />
+          <div className="flex items-center gap-1.5">
+            <LanguageSwitcher />
+            <ThemeToggle />
+          </div>
         </header>
 
         {/* Mobile Drawer */}
         {isMobileMenuOpen && (
-          <div className="fixed inset-0 z-50 lg:hidden flex" dir="rtl">
+          <div className="fixed inset-0 z-50 lg:hidden flex" dir={dir}>
             <div
               className="fixed inset-0 bg-background/80 backdrop-blur-sm transition-opacity"
               onClick={() => setIsMobileMenuOpen(false)}

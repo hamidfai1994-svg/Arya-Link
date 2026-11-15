@@ -1,6 +1,8 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
 
 export interface ISiteSettingsDocument extends Document {
+  platformMainLogo: string;
+  platformFavicon: string;
   companyLogo: string;
   favicon: string;
   siteName: string;
@@ -12,6 +14,16 @@ export interface ISiteSettingsDocument extends Document {
 
 const SiteSettingsSchema = new Schema<ISiteSettingsDocument>(
   {
+    platformMainLogo: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    platformFavicon: {
+      type: String,
+      default: '',
+      trim: true,
+    },
     companyLogo: {
       type: String,
       default: '',

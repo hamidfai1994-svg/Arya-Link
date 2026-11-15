@@ -16,11 +16,21 @@ export const ORDER_STATUS_ENUM = [
 
 export type OrderStatus = (typeof ORDER_STATUS_ENUM)[number];
 
-export const ORDER_TYPE_ENUM = ['nfc_card', 'subscription'] as const;
+export const ORDER_TYPE_ENUM = ['nfc_card', 'subscription', 'bulk_nfc_cards'] as const;
 export type OrderType = (typeof ORDER_TYPE_ENUM)[number];
 
 export const PAYMENT_STATUS_ENUM = ['paid', 'pending', 'failed', 'refunded'] as const;
 export type PaymentStatus = (typeof PAYMENT_STATUS_ENUM)[number];
+
+export interface IBulkOrderItem {
+  employeeId: string;
+  name: string;
+  occupation?: string;
+  email?: string;
+  alias?: string;
+  profileUrl?: string;
+  companyName?: string;
+}
 
 export interface IOrderCardSpecs {
   material?: string;
@@ -55,8 +65,12 @@ export interface IOrderDocument extends Document {
   orderStatus: OrderStatus;
   orderType?: OrderType;
   subscriptionPlanType?: 'pro' | 'corporate' | string;
+  organizationId?: mongoose.Types.ObjectId | string | null;
   companyName?: string;
   requestedLicenses?: number;
+  employeeIds?: string[];
+  bulkItems?: IBulkOrderItem[];
+  shippingAddress?: string;
   status?: OrderStatus | string;
   price?: number;
   paymentMethod: 'online' | 'cod' | 'bank' | 'wallet' | 'hawala' | 'crypto' | 'installment' | string;
@@ -100,6 +114,19 @@ export interface IOrderDocument extends Document {
   createdAt: Date;
   updatedAt: Date;
 }
+
+const BulkOrderItemSchema = new Schema<IBulkOrderItem>(
+  {
+    employeeId: { type: String, required: true, trim: true },
+    name: { type: String, required: true, trim: true },
+    occupation: { type: String, default: '', trim: true },
+    email: { type: String, default: '', trim: true },
+    alias: { type: String, default: '', trim: true },
+    profileUrl: { type: String, default: '', trim: true },
+    companyName: { type: String, default: '', trim: true },
+  },
+  { _id: false }
+);
 
 const OrderSchema = new Schema<IOrderDocument>(
   {
@@ -147,6 +174,11 @@ const OrderSchema = new Schema<IOrderDocument>(
       default: 'pro',
       index: true,
     },
+    organizationId: {
+      type: Schema.Types.Mixed,
+      default: null,
+      index: true,
+    },
     companyName: {
       type: String,
       default: '',
@@ -155,6 +187,19 @@ const OrderSchema = new Schema<IOrderDocument>(
     requestedLicenses: {
       type: Number,
       default: 0,
+    },
+    employeeIds: {
+      type: [String],
+      default: [],
+    },
+    bulkItems: {
+      type: [BulkOrderItemSchema],
+      default: [],
+    },
+    shippingAddress: {
+      type: String,
+      default: '',
+      trim: true,
     },
     status: {
       type: String,

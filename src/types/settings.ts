@@ -1,4 +1,6 @@
 export interface ISiteSettings {
+  platformMainLogo: string;
+  platformFavicon: string;
   companyLogo: string;
   favicon: string;
   siteName: string;
@@ -7,6 +9,8 @@ export interface ISiteSettings {
 }
 
 export const DEFAULT_SITE_SETTINGS: ISiteSettings = {
+  platformMainLogo: '',
+  platformFavicon: '',
   companyLogo: '',
   favicon: '',
   siteName: 'Arya Link',

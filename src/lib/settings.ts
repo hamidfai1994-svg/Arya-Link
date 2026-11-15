@@ -1,32 +1,43 @@
 import { connectToDatabase } from '@/lib/db/mongodb';
 import { SiteSettings, ISiteSettingsDocument } from '@/models/SiteSettings.model';
+import { SystemSettings, ISystemSettings } from '@/models/systemSettings.model';
 import { ISiteSettings, DEFAULT_SITE_SETTINGS } from '@/types/settings';
 
 export { type ISiteSettings, DEFAULT_SITE_SETTINGS } from '@/types/settings';
+
+// Legacy URLs introduced during an earlier hardcoded replacement — strip if seeded automatically
+const LEGACY_HARDCODED_URLS = new Set([
+  'https://i.postimg.cc/wT3GQCv8/logo.png',
+  'https://i.postimg.cc/ncMPGyz8/fav.png',
+]);
+
+function sanitizeLogoUrl(value?: string | null): string {
+  const clean = (value || '').trim();
+  if (!clean || LEGACY_HARDCODED_URLS.has(clean)) return '';
+  return clean;
+}
 
 // In-memory cache flag to guarantee initialization check runs once per runtime lifecycle
 let isSiteSettingsInitialized = false;
 
 /**
  * Ensures a singleton SiteSettings document exists in MongoDB.
- * If no document exists in the collection, an initial document is created automatically.
- * Uses atomic upsert/check logic to prevent duplicate records.
  */
 export async function ensureSiteSettingsInitialized(): Promise<ISiteSettingsDocument> {
   await connectToDatabase();
 
-  // 1. Check if document already exists
   const existing = await SiteSettings.findOne({});
   if (existing) {
     isSiteSettingsInitialized = true;
     return existing;
   }
 
-  // 2. If no document exists, atomically create the initial default document
   const initial = await SiteSettings.findOneAndUpdate(
     {},
     {
       $setOnInsert: {
+        platformMainLogo: '',
+        platformFavicon: '',
         companyLogo: '',
         favicon: '',
         siteName: DEFAULT_SITE_SETTINGS.siteName,
@@ -45,37 +56,57 @@ export async function ensureSiteSettingsInitialized(): Promise<ISiteSettingsDocu
 }
 
 /**
- * Retrieves the global site branding and asset settings.
- * Automatically initializes default settings in the database if missing.
+ * Retrieves global platform branding settings from SystemSettings + SiteSettings.
+ * Empty values signify fallback to default source-code logo/favicon.
  */
 export async function getSiteSettings(): Promise<ISiteSettings> {
   try {
     await connectToDatabase();
 
-    // Fast check: find document
-    let doc = await SiteSettings.findOne({}).lean<ISiteSettingsDocument | null>();
+    const [sysDoc, existingSiteDoc] = await Promise.all([
+      SystemSettings.findOne({}).lean<ISystemSettings | null>(),
+      SiteSettings.findOne({}).lean<ISiteSettingsDocument | null>(),
+    ]);
 
-    // If not found, run singleton initialization
-    if (!doc) {
+    let siteDoc = existingSiteDoc;
+    if (!siteDoc) {
       const initialized = await ensureSiteSettingsInitialized();
-      doc = initialized.toObject ? initialized.toObject() : initialized;
+      siteDoc = initialized.toObject ? initialized.toObject() : initialized;
     }
 
+    const platformMainLogo =
+      sanitizeLogoUrl(sysDoc?.platformMainLogo) ||
+      sanitizeLogoUrl(siteDoc?.platformMainLogo) ||
+      sanitizeLogoUrl(siteDoc?.companyLogo) ||
+      '';
+
+    const platformFavicon =
+      sanitizeLogoUrl(sysDoc?.platformFavicon) ||
+      sanitizeLogoUrl(siteDoc?.platformFavicon) ||
+      sanitizeLogoUrl(siteDoc?.favicon) ||
+      '';
+
     return {
-      companyLogo: doc?.companyLogo ?? DEFAULT_SITE_SETTINGS.companyLogo,
-      favicon: doc?.favicon ?? DEFAULT_SITE_SETTINGS.favicon,
-      siteName: doc?.siteName ?? DEFAULT_SITE_SETTINGS.siteName,
-      siteDescription: doc?.siteDescription ?? DEFAULT_SITE_SETTINGS.siteDescription,
-      updatedAt: doc?.updatedAt,
+      platformMainLogo,
+      platformFavicon,
+      companyLogo: platformMainLogo,
+      favicon: platformFavicon,
+      siteName: siteDoc?.siteName?.trim() || DEFAULT_SITE_SETTINGS.siteName,
+      siteDescription:
+        siteDoc?.siteDescription?.trim() || DEFAULT_SITE_SETTINGS.siteDescription,
+      updatedAt: sysDoc?.updatedAt || siteDoc?.updatedAt,
     };
   } catch (error) {
-    console.error('Failed to get site settings from database, safely falling back to defaults:', error);
+    console.error(
+      'Failed to get site settings from database, safely falling back to defaults:',
+      error
+    );
     return DEFAULT_SITE_SETTINGS;
   }
 }
 
 /**
- * Updates the global site settings document (Singleton pattern).
+ * Updates global visual identity and site branding across SystemSettings & SiteSettings.
  */
 export async function updateSiteSettings(
   data: Partial<ISiteSettings>,
@@ -83,26 +114,72 @@ export async function updateSiteSettings(
 ): Promise<ISiteSettings> {
   await connectToDatabase();
 
-  // Ensure document exists first
   await ensureSiteSettingsInitialized();
 
+  const rawNextLogo =
+    data.platformMainLogo !== undefined ? data.platformMainLogo : data.companyLogo;
+  const rawNextFavicon =
+    data.platformFavicon !== undefined ? data.platformFavicon : data.favicon;
+
+  const nextLogo =
+    rawNextLogo !== undefined ? rawNextLogo.trim() : undefined;
+  const nextFavicon =
+    rawNextFavicon !== undefined ? rawNextFavicon.trim() : undefined;
+
+  // 1. Persist into SystemSettings (`platformMainLogo` & `platformFavicon`)
+  if (nextLogo !== undefined || nextFavicon !== undefined) {
+    const sysSet: Record<string, string> = {};
+    if (nextLogo !== undefined) sysSet.platformMainLogo = nextLogo;
+    if (nextFavicon !== undefined) sysSet.platformFavicon = nextFavicon;
+
+    await SystemSettings.findOneAndUpdate(
+      {},
+      { $set: sysSet },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+  }
+
+  // 2. Sync SiteSettings singleton document
   let doc = await SiteSettings.findOne({});
   if (!doc) {
-    doc = await SiteSettings.create({ ...data, updatedBy });
+    doc = await SiteSettings.create({
+      ...data,
+      ...(nextLogo !== undefined && {
+        platformMainLogo: nextLogo,
+        companyLogo: nextLogo,
+      }),
+      ...(nextFavicon !== undefined && {
+        platformFavicon: nextFavicon,
+        favicon: nextFavicon,
+      }),
+      updatedBy,
+    });
   } else {
-    if (data.companyLogo !== undefined) doc.companyLogo = data.companyLogo;
-    if (data.favicon !== undefined) doc.favicon = data.favicon;
+    if (nextLogo !== undefined) {
+      doc.platformMainLogo = nextLogo;
+      doc.companyLogo = nextLogo;
+    }
+    if (nextFavicon !== undefined) {
+      doc.platformFavicon = nextFavicon;
+      doc.favicon = nextFavicon;
+    }
     if (data.siteName !== undefined) doc.siteName = data.siteName;
     if (data.siteDescription !== undefined) doc.siteDescription = data.siteDescription;
     if (updatedBy) doc.updatedBy = updatedBy;
     await doc.save();
   }
 
+  const finalLogo = sanitizeLogoUrl(doc.platformMainLogo || doc.companyLogo);
+  const finalFavicon = sanitizeLogoUrl(doc.platformFavicon || doc.favicon);
+
   return {
-    companyLogo: doc.companyLogo || '',
-    favicon: doc.favicon || '',
-    siteName: doc.siteName || DEFAULT_SITE_SETTINGS.siteName,
-    siteDescription: doc.siteDescription || DEFAULT_SITE_SETTINGS.siteDescription,
+    platformMainLogo: finalLogo,
+    platformFavicon: finalFavicon,
+    companyLogo: finalLogo,
+    favicon: finalFavicon,
+    siteName: doc.siteName?.trim() || DEFAULT_SITE_SETTINGS.siteName,
+    siteDescription:
+      doc.siteDescription?.trim() || DEFAULT_SITE_SETTINGS.siteDescription,
     updatedAt: doc.updatedAt,
   };
 }

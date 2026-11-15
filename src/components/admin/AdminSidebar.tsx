@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SiteLogo } from '@/components/SiteLogo';
+import { useLanguage } from '@/lib/i18n/LanguageContext';
 
 export interface AdminNavItem {
   title: string;
@@ -33,71 +34,70 @@ export interface AdminNavItem {
   badge?: string;
 }
 
-// Core Super Admin Navigation Items
-const coreNavItems: AdminNavItem[] = [
-  {
-    title: 'نمای کلی پلتفرم',
-    subtitle: 'آمار زنده، سرور و وضعیت سیستم',
-    href: '/admin/dashboard',
-    icon: LayoutDashboard,
-  },
-  {
-    title: 'مدیریت کاربران',
-    subtitle: 'لیست کاربران، نقش‌ها و تایید هویت KYC',
-    href: '/admin/users',
-    icon: Users,
-  },
-  {
-    title: 'مدیریت سازمان‌ها (B2B)',
-    subtitle: 'ثبت شرکت‌ها، تخصیص مدیر سازمان و لایسنس تیمی',
-    href: '/admin/companies',
-    icon: Building2,
-  },
-  {
-    title: 'مدیریت سفارشات',
-    subtitle: 'سفارشات کارت فیزیکی و تغییر وضعیت چاپ',
-    href: '/admin/orders',
-    icon: ShoppingBag,
-  },
-  {
-    title: 'تنظیمات پلتفرم',
-    subtitle: 'تعرفه‌ها، درگاه‌های بانکی، امنیت و لجستیک',
-    href: '/admin/settings',
-    icon: Settings,
-  },
-  {
-    title: 'زباله‌دان سیستم',
-    subtitle: 'لاگ امنیتی حسابرسی و رکوردهای حذف‌شده',
-    href: '/admin/trash',
-    icon: Trash2,
-  },
-];
-
-// Finance & Monetization Navigation Group
-const financeNavItems: AdminNavItem[] = [
-  {
-    title: 'مدیریت دسترسی ماژول‌ها',
-    subtitle: 'تعیین ماژول‌های رایگان و حرفه‌ای (Pro)',
-    href: '/admin/modules',
-    icon: Layers,
-  },
-  {
-    title: 'تراکنش‌ها و مالی',
-    subtitle: 'گردش حساب‌ها، درگاه‌های پرداخت و تسویه',
-    href: '/admin/finance',
-    icon: Wallet,
-  },
-  {
-    title: 'درگاه‌ها و روش‌های پرداخت',
-    subtitle: 'تنظیمات حساب‌پی، بانک‌ها، ولت‌ها و تتر',
-    href: '/admin/finance/payment-methods',
-    icon: CreditCard,
-  },
-];
-
 export function AdminSidebar({ onCloseMobile }: { onCloseMobile?: () => void }) {
   const pathname = usePathname();
   const { data: session } = useSession();
+  const { t, dir } = useLanguage();
+
+  const coreNavItems: AdminNavItem[] = [
+    {
+      title: t('admin.sidebar.overview', 'نمای کلی پلتفرم'),
+      subtitle: t('admin.sidebar.overviewSub', 'آمار زنده، سرور و وضعیت سیستم'),
+      href: '/admin/dashboard',
+      icon: LayoutDashboard,
+    },
+    {
+      title: t('admin.sidebar.users', 'مدیریت کاربران'),
+      subtitle: t('admin.sidebar.usersSub', 'لیست کاربران، نقش‌ها و تایید هویت KYC'),
+      href: '/admin/users',
+      icon: Users,
+    },
+    {
+      title: t('admin.sidebar.companies', 'مدیریت سازمان‌ها (B2B)'),
+      subtitle: t('admin.sidebar.companiesSub', 'ثبت شرکت‌ها، تخصیص مدیر سازمان و لایسنس تیمی'),
+      href: '/admin/companies',
+      icon: Building2,
+    },
+    {
+      title: t('admin.sidebar.orders', 'مدیریت سفارشات'),
+      subtitle: t('admin.sidebar.ordersSub', 'سفارشات کارت فیزیکی و تغییر وضعیت چاپ'),
+      href: '/admin/orders',
+      icon: ShoppingBag,
+    },
+    {
+      title: t('admin.sidebar.settings', 'تنظیمات پلتفرم'),
+      subtitle: t('admin.sidebar.settingsSub', 'تعرفه‌ها، درگاه‌های بانکی، امنیت و لجستیک'),
+      href: '/admin/settings',
+      icon: Settings,
+    },
+    {
+      title: t('admin.sidebar.trash', 'زباله‌دان سیستم'),
+      subtitle: t('admin.sidebar.trashSub', 'لاگ امنیتی حسابرسی و رکوردهای حذف‌شده'),
+      href: '/admin/trash',
+      icon: Trash2,
+    },
+  ];
+
+  const financeNavItems: AdminNavItem[] = [
+    {
+      title: t('admin.sidebar.modules', 'مدیریت دسترسی ماژول‌ها'),
+      subtitle: t('admin.sidebar.modulesSub', 'تعیین ماژول‌های رایگان و حرفه‌ای (Pro)'),
+      href: '/admin/modules',
+      icon: Layers,
+    },
+    {
+      title: t('admin.sidebar.finance', 'تراکنش‌ها و مالی'),
+      subtitle: t('admin.sidebar.financeSub', 'گردش حساب‌ها، درگاه‌های پرداخت و تسویه'),
+      href: '/admin/finance',
+      icon: Wallet,
+    },
+    {
+      title: t('admin.sidebar.paymentMethods', 'درگاه‌ها و روش‌های پرداخت'),
+      subtitle: t('admin.sidebar.paymentMethodsSub', 'تنظیمات حساب‌پی، بانک‌ها، ولت‌ها و تتر'),
+      href: '/admin/finance/payment-methods',
+      icon: CreditCard,
+    },
+  ];
 
   const userRole = (session?.user?.role || '').toLowerCase();
 
@@ -116,7 +116,7 @@ export function AdminSidebar({ onCloseMobile }: { onCloseMobile?: () => void }) 
   };
 
   return (
-    <aside className="w-72 h-full flex flex-col bg-slate-950 text-slate-100 border-l border-slate-800 select-none">
+    <aside className="w-72 h-full flex flex-col bg-slate-950 text-slate-100 border-e border-slate-800 select-none" dir={dir}>
       {/* Admin Branding Header */}
       <div className="p-5 border-b border-slate-800/80 flex items-center justify-between">
         <Link
@@ -128,7 +128,7 @@ export function AdminSidebar({ onCloseMobile }: { onCloseMobile?: () => void }) 
             width={38}
             height={38}
             showText={true}
-            subtitle="پنل مدیریت ارشد سیستم"
+            subtitle={t('admin.sidebar.subtitle', 'پنل مدیریت ارشد سیستم')}
             textClassName="text-white text-sm"
           />
         </Link>
@@ -139,14 +139,14 @@ export function AdminSidebar({ onCloseMobile }: { onCloseMobile?: () => void }) 
         {[
           {
             id: 'core',
-            label: 'مدیریت ارشد پلتفرم',
+            label: t('admin.sidebar.coreGroup', 'مدیریت ارشد پلتفرم'),
             labelClass: 'text-slate-400',
             items: coreNavItems,
             divider: false,
           },
           {
             id: 'finance',
-            label: 'مالی و درآمدزایی',
+            label: t('admin.sidebar.financeGroup', 'مالی و درآمدزایی'),
             labelClass: 'text-amber-400/90',
             items: financeNavItems,
             divider: true,
@@ -183,7 +183,7 @@ export function AdminSidebar({ onCloseMobile }: { onCloseMobile?: () => void }) 
                         isActive ? 'text-rose-400' : 'text-slate-400 group-hover:text-white'
                       )}
                     />
-                    <div className="text-right truncate">
+                    <div className="text-start truncate">
                       <span className="block truncate">{item.title}</span>
                       <span
                         className={cn(
@@ -214,20 +214,20 @@ export function AdminSidebar({ onCloseMobile }: { onCloseMobile?: () => void }) 
           href="/dashboard"
           onClick={onCloseMobile}
           className="flex-1 flex items-center justify-center gap-1.5 h-9 px-2.5 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/25 text-cyan-400 text-xs font-bold transition-all truncate"
-          title="بازگشت به داشبورد کاربری شخصی"
+          title={t('admin.sidebar.backToUser', 'بازگشت به داشبورد کاربری شخصی')}
         >
           <User className="w-3.5 h-3.5 shrink-0" />
-          <span className="truncate">داشبورد من</span>
+          <span className="truncate">{t('admin.sidebar.backToUser', 'داشبورد من')}</span>
         </Link>
 
         <button
           type="button"
           onClick={() => signOut({ callbackUrl: '/login' })}
           className="flex-1 flex items-center justify-center gap-1.5 h-9 px-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/25 text-rose-400 text-xs font-bold transition-all truncate"
-          title="خروج از پنل مدیریت"
+          title={t('admin.sidebar.logout', 'خروج از پنل مدیریت')}
         >
           <LogOut className="w-3.5 h-3.5 shrink-0" />
-          <span className="truncate">خروج</span>
+          <span className="truncate">{t('admin.sidebar.logout', 'خروج')}</span>
         </button>
       </div>
     </aside>

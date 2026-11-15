@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { connectToDatabase } from '@/lib/db/mongodb';
 import { SystemSettings, ISystemSettings } from '@/models/systemSettings.model';
+import { updateSiteSettings } from '@/lib/settings';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,6 +21,8 @@ const DEFAULT_SETTINGS = {
   notifySupportTickets: true,
   notifySystemAlerts: false,
   appPushEnabled: false,
+  platformMainLogo: '',
+  platformFavicon: '',
 };
 
 export async function GET() {
@@ -75,6 +78,12 @@ export async function PUT(req: NextRequest) {
       notifySupportTickets: Boolean(body.notifySupportTickets),
       notifySystemAlerts: Boolean(body.notifySystemAlerts),
       appPushEnabled: false, // Future mobile app push feature
+      ...(typeof body.platformMainLogo === 'string' && {
+        platformMainLogo: body.platformMainLogo.trim(),
+      }),
+      ...(typeof body.platformFavicon === 'string' && {
+        platformFavicon: body.platformFavicon.trim(),
+      }),
     };
 
     let settings = await SystemSettings.findOneAndUpdate(
@@ -82,6 +91,23 @@ export async function PUT(req: NextRequest) {
       { $set: updateData },
       { new: true, upsert: true, runValidators: true }
     ).lean();
+
+    if (
+      typeof body.platformMainLogo === 'string' ||
+      typeof body.platformFavicon === 'string'
+    ) {
+      await updateSiteSettings(
+        {
+          ...(typeof body.platformMainLogo === 'string' && {
+            platformMainLogo: body.platformMainLogo.trim(),
+          }),
+          ...(typeof body.platformFavicon === 'string' && {
+            platformFavicon: body.platformFavicon.trim(),
+          }),
+        },
+        session.user?.email || 'admin'
+      );
+    }
 
     return NextResponse.json({
       success: true,

@@ -26,22 +26,37 @@ import {
   Truck,
   ExternalLink,
   BellRing,
+  Palette,
+  RotateCcw,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
+import { FileUploader } from '@/components/ui/file-uploader';
+import { SiteLogo } from '@/components/SiteLogo';
+import { useBranding } from '@/lib/branding/BrandingContext';
 import { toast } from 'sonner';
 import { INITIAL_LANDING_CMS } from '@/models/LandingCms.model';
 import { SuperAdminApiSettings } from '@/components/admin/SuperAdminApiSettings';
+import { MultilingualInput } from '@/components/admin/MultilingualInput';
+import { MultilingualTextarea } from '@/components/admin/MultilingualTextarea';
+import { getLocalizedText } from '@/lib/i18n/multilingual';
 
-type SettingsTab = 'general' | 'landing' | 'plans' | 'products' | 'api_notifications';
+type SettingsTab = 'general' | 'branding' | 'landing' | 'plans' | 'products' | 'api_notifications';
 
 export default function AdminSettingsPage() {
+  const { settings: brandingSettings, refreshSettings: refreshBranding, updateSettings: updateBrandingSettings } = useBranding();
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSavingBranding, setIsSavingBranding] = useState(false);
+
+  // Visual Identity State
+  const [platformMainLogo, setPlatformMainLogo] = useState('');
+  const [platformFavicon, setPlatformFavicon] = useState('');
 
   // CMS State
   const [general, setGeneral] = useState(INITIAL_LANDING_CMS.general);
@@ -53,6 +68,13 @@ export default function AdminSettingsPage() {
   useEffect(() => {
     fetchCmsSettings();
   }, []);
+
+  useEffect(() => {
+    if (brandingSettings) {
+      setPlatformMainLogo(brandingSettings.platformMainLogo || brandingSettings.companyLogo || '');
+      setPlatformFavicon(brandingSettings.platformFavicon || brandingSettings.favicon || '');
+    }
+  }, [brandingSettings]);
 
   const fetchCmsSettings = async () => {
     setIsLoading(true);
@@ -74,6 +96,41 @@ export default function AdminSettingsPage() {
     }
   };
 
+  const handleSaveBranding = async (silent = false) => {
+    setIsSavingBranding(true);
+    try {
+      const cleanLogo = platformMainLogo.trim();
+      const cleanFavicon = platformFavicon.trim();
+      const res = await updateBrandingSettings({
+        platformMainLogo: cleanLogo,
+        platformFavicon: cleanFavicon,
+        companyLogo: cleanLogo,
+        favicon: cleanFavicon,
+      });
+
+      if (res.success) {
+        await refreshBranding();
+        if (!silent) {
+          toast.success('هویت بصری و لوگوهای پلتفرم با موفقیت ذخیره شد.');
+        }
+        return true;
+      } else {
+        if (!silent) {
+          toast.error(res.message || 'خطا در ذخیره‌سازی هویت بصری.');
+        }
+        return false;
+      }
+    } catch (err) {
+      console.error('Branding save error:', err);
+      if (!silent) {
+        toast.error('خطای ارتباط با سرور هنگام ذخیره هویت بصری.');
+      }
+      return false;
+    } finally {
+      setIsSavingBranding(false);
+    }
+  };
+
   const handleSaveAll = async () => {
     setIsSaving(true);
     try {
@@ -85,15 +142,20 @@ export default function AdminSettingsPage() {
         testimonials,
       };
 
-      const res = await fetch('/api/admin/settings/cms', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+      const [cmsRes, brandingOk] = await Promise.all([
+        fetch('/api/admin/settings/cms', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        }),
+        handleSaveBranding(true),
+      ]);
 
-      const data = await res.json();
-      if (data.success) {
-        toast.success(data.message || 'تنظیمات با موفقیت ذخیره شد.');
+      const data = await cmsRes.json();
+      if (data.success && brandingOk) {
+        toast.success(data.message || 'تمام تنظیمات پلتفرم و هویت بصری با موفقیت ذخیره شد.');
+      } else if (data.success) {
+        toast.warning('تنظیمات محتوا ذخیره شد، اما در ذخیره هویت بصری مشکلی رخ داد.');
       } else {
         toast.error(data.message || 'خطا در ذخیره تنظیمات.');
       }
@@ -182,8 +244,8 @@ export default function AdminSettingsPage() {
         </div>
       </div>
 
-      {/* Inner Tabs Navigation (5 Equal-Width Tabs) */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 w-full gap-1.5 p-1.5 rounded-2xl bg-card border border-border">
+      {/* Inner Tabs Navigation (6 Equal-Width Tabs) */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 w-full gap-1.5 p-1.5 rounded-2xl bg-card border border-border">
         <button
           type="button"
           onClick={() => setActiveTab('general')}
@@ -198,6 +260,18 @@ export default function AdminSettingsPage() {
 
         <button
           type="button"
+          onClick={() => setActiveTab('branding')}
+          className={`w-full flex-1 flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${activeTab === 'branding'
+            ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20 font-black'
+            : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
+            }`}
+        >
+          <Palette className="w-4 h-4 shrink-0" />
+          <span className="truncate">2. هویت بصری و برندینگ</span>
+        </button>
+
+        <button
+          type="button"
           onClick={() => setActiveTab('landing')}
           className={`w-full flex-1 flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${activeTab === 'landing'
             ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20 font-black'
@@ -205,7 +279,7 @@ export default function AdminSettingsPage() {
             }`}
         >
           <Layout className="w-4 h-4 shrink-0" />
-          <span className="truncate">2. محتوای صفحه اصلی</span>
+          <span className="truncate">3. محتوای صفحه اصلی</span>
         </button>
 
         <button
@@ -217,7 +291,7 @@ export default function AdminSettingsPage() {
             }`}
         >
           <DollarSign className="w-4 h-4 shrink-0" />
-          <span className="truncate">3. تعرفه‌ها و اشتراک‌ها</span>
+          <span className="truncate">4. تعرفه‌ها و اشتراک‌ها</span>
         </button>
 
         <button
@@ -229,7 +303,7 @@ export default function AdminSettingsPage() {
             }`}
         >
           <Package className="w-4 h-4 shrink-0" />
-          <span className="truncate">4. محصولات فیزیکی</span>
+          <span className="truncate">5. محصولات فیزیکی</span>
         </button>
 
         <button
@@ -241,7 +315,7 @@ export default function AdminSettingsPage() {
             }`}
         >
           <BellRing className="w-4 h-4 shrink-0" />
-          <span className="truncate">5. مدیریت API و اعلان‌ها</span>
+          <span className="truncate">6. مدیریت API و اعلان‌ها</span>
         </button>
       </div>
 
@@ -268,14 +342,12 @@ export default function AdminSettingsPage() {
                 </div>
 
                 <div className="space-y-4">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-foreground">نام تجاری پلتفرم:</label>
-                    <Input
-                      value={general.platformName}
-                      onChange={(e) => setGeneral({ ...general, platformName: e.target.value })}
-                      className="h-11 rounded-2xl text-xs"
-                    />
-                  </div>
+                  <MultilingualInput
+                    compact
+                    label="نام تجاری پلتفرم:"
+                    value={general.platformName}
+                    onChange={(val) => setGeneral({ ...general, platformName: val })}
+                  />
 
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-foreground">شماره تماس پشتیبانی مشتریان:</label>
@@ -297,14 +369,12 @@ export default function AdminSettingsPage() {
                     />
                   </div>
 
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-foreground">نشانی دفتر مرکزی کابل:</label>
-                    <Input
-                      value={general.address}
-                      onChange={(e) => setGeneral({ ...general, address: e.target.value })}
-                      className="h-11 rounded-2xl text-xs"
-                    />
-                  </div>
+                  <MultilingualInput
+                    compact
+                    label="نشانی دفتر مرکزی کابل:"
+                    value={general.address}
+                    onChange={(val) => setGeneral({ ...general, address: val })}
+                  />
                 </div>
               </Card>
 
@@ -385,11 +455,11 @@ export default function AdminSettingsPage() {
                 <FileText className="w-4 h-4 text-cyan-500" />
                 <h2 className="text-sm font-bold text-foreground">قوانین و شرایط استفاده پلتفرم</h2>
               </div>
-              <textarea
+              <MultilingualTextarea
+                hideLabel
                 value={general.rulesTerms}
-                onChange={(e) => setGeneral({ ...general, rulesTerms: e.target.value })}
+                onChange={(val) => setGeneral({ ...general, rulesTerms: val })}
                 rows={4}
-                className="w-full rounded-2xl bg-background border border-border p-4 text-xs text-foreground leading-relaxed focus:outline-none focus:border-cyan-500"
               />
             </Card>
           </motion.div>
@@ -415,67 +485,61 @@ export default function AdminSettingsPage() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1.5 md:col-span-2">
-                  <label className="text-xs font-bold text-foreground">بج بالای عنوان هیرو:</label>
-                  <Input
+                <div className="md:col-span-2">
+                  <MultilingualInput
+                    label="بج بالای عنوان هیرو:"
                     value={hero.badge}
-                    onChange={(e) => setHero({ ...hero, badge: e.target.value })}
-                    className="h-11 rounded-2xl text-xs"
+                    onChange={(val) => setHero({ ...hero, badge: val })}
                   />
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-foreground">پیش‌تیتر اصلی:</label>
-                  <Input
+                <div>
+                  <MultilingualInput
+                    label="پیش‌تیتر اصلی:"
                     value={hero.titlePart1}
-                    onChange={(e) => setHero({ ...hero, titlePart1: e.target.value })}
-                    className="h-11 rounded-2xl text-xs"
+                    onChange={(val) => setHero({ ...hero, titlePart1: val })}
                   />
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-cyan-500">کلمه یا عبارت درخشان نئونی:</label>
-                  <Input
+                <div>
+                  <MultilingualInput
+                    label="کلمه یا عبارت درخشان نئونی:"
                     value={hero.titleHighlight}
-                    onChange={(e) => setHero({ ...hero, titleHighlight: e.target.value })}
-                    className="h-11 rounded-2xl text-xs font-bold"
+                    onChange={(val) => setHero({ ...hero, titleHighlight: val })}
+                    inputClassName="font-bold"
                   />
                 </div>
 
-                <div className="space-y-1.5 md:col-span-2">
-                  <label className="text-xs font-bold text-foreground">پس‌تیتر عنوان هیرو:</label>
-                  <Input
+                <div className="md:col-span-2">
+                  <MultilingualInput
+                    label="پس‌تیتر عنوان هیرو:"
                     value={hero.titlePart2}
-                    onChange={(e) => setHero({ ...hero, titlePart2: e.target.value })}
-                    className="h-11 rounded-2xl text-xs"
+                    onChange={(val) => setHero({ ...hero, titlePart2: val })}
                   />
                 </div>
 
-                <div className="space-y-1.5 md:col-span-2">
-                  <label className="text-xs font-bold text-foreground">توضیح تفصیلی هیرو:</label>
-                  <textarea
+                <div className="md:col-span-2">
+                  <MultilingualTextarea
+                    label="توضیح تفصیلی هیرو:"
                     value={hero.subtitle}
-                    onChange={(e) => setHero({ ...hero, subtitle: e.target.value })}
+                    onChange={(val) => setHero({ ...hero, subtitle: val })}
                     rows={3}
-                    className="w-full rounded-2xl bg-background border border-border p-3.5 text-xs text-foreground leading-relaxed focus:outline-none focus:border-cyan-500"
                   />
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-foreground">متن دکمه اصلی:</label>
-                  <Input
+                <div>
+                  <MultilingualInput
+                    label="متن دکمه اصلی:"
                     value={hero.primaryCta}
-                    onChange={(e) => setHero({ ...hero, primaryCta: e.target.value })}
-                    className="h-11 rounded-2xl text-xs"
+                    onChange={(val) => setHero({ ...hero, primaryCta: val })}
                   />
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-foreground">متن دکمه فرعی:</label>
-                  <Input
+                <div>
+                  <MultilingualInput
+                    label="متن دکمه فرعی:"
                     value={hero.secondaryCta}
-                    onChange={(e) => setHero({ ...hero, secondaryCta: e.target.value })}
-                    className="h-11 rounded-2xl text-xs"
+                    onChange={(val) => setHero({ ...hero, secondaryCta: val })}
                   />
                 </div>
               </div>
@@ -496,44 +560,46 @@ export default function AdminSettingsPage() {
                   <div key={t.id} className="p-4 rounded-2xl bg-muted/20 border border-border/80 space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-foreground">نظر #{idx + 1}:</span>
-                      <span className="text-[10px] text-cyan-500 font-bold">{t.cardMaterialUsed}</span>
+                      <span className="text-[10px] text-cyan-500 font-bold">
+                        {getLocalizedText(t.cardMaterialUsed, 'da')}
+                      </span>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2">
-                      <Input
+                    <div className="space-y-3">
+                      <MultilingualInput
+                        compact
+                        label="نام و تخلص:"
                         value={t.name}
-                        onChange={(e) => {
-                          const val = e.target.value;
+                        onChange={(val) =>
                           setTestimonials((prev) =>
                             prev.map((item) => (item.id === t.id ? { ...item, name: val } : item))
-                          );
-                        }}
+                          )
+                        }
                         placeholder="نام و تخلص"
-                        className="h-9 rounded-xl text-xs"
                       />
-                      <Input
+                      <MultilingualInput
+                        compact
+                        label="سمت و تخصص:"
                         value={t.title}
-                        onChange={(e) => {
-                          const val = e.target.value;
+                        onChange={(val) =>
                           setTestimonials((prev) =>
                             prev.map((item) => (item.id === t.id ? { ...item, title: val } : item))
-                          );
-                        }}
+                          )
+                        }
                         placeholder="سمت و تخصص"
-                        className="h-9 rounded-xl text-xs"
                       />
                     </div>
 
-                    <textarea
+                    <MultilingualTextarea
+                      compact
+                      label="متن نظر:"
                       value={t.reviewText}
-                      onChange={(e) => {
-                        const val = e.target.value;
+                      onChange={(val) =>
                         setTestimonials((prev) =>
                           prev.map((item) => (item.id === t.id ? { ...item, reviewText: val } : item))
-                        );
-                      }}
+                        )
+                      }
                       rows={3}
-                      className="w-full rounded-xl bg-background border border-border p-2.5 text-xs text-foreground leading-relaxed focus:outline-none focus:border-cyan-500"
                     />
                   </div>
                 ))}
@@ -566,8 +632,12 @@ export default function AdminSettingsPage() {
                   <div className="space-y-4">
                     <div className="flex items-center justify-between pb-3 border-b border-border">
                       <div>
-                        <h3 className="text-base font-bold text-foreground">{plan.name}</h3>
-                        <span className="text-[11px] text-muted-foreground">{plan.badge}</span>
+                        <h3 className="text-base font-bold text-foreground">
+                          {getLocalizedText(plan.name, 'da')}
+                        </h3>
+                        <span className="text-[11px] text-muted-foreground">
+                          {getLocalizedText(plan.badge, 'da')}
+                        </span>
                       </div>
                       {plan.isPopular && (
                         <Badge variant="cyan" className="text-[10px] py-0.5 px-2 flex items-center gap-1">
@@ -575,6 +645,21 @@ export default function AdminSettingsPage() {
                           <span>ویژه</span>
                         </Badge>
                       )}
+                    </div>
+
+                    <div className="space-y-3">
+                      <MultilingualInput
+                        compact
+                        label="نام پلن:"
+                        value={plan.name}
+                        onChange={(val) => updatePlan(plan.planId, 'name', val)}
+                      />
+                      <MultilingualInput
+                        compact
+                        label="بج پلن:"
+                        value={plan.badge}
+                        onChange={(val) => updatePlan(plan.planId, 'badge', val)}
+                      />
                     </div>
 
                     {/* Pricing Inputs */}
@@ -607,21 +692,19 @@ export default function AdminSettingsPage() {
                     </div>
 
                     {/* Description */}
-                    <div className="space-y-1">
-                      <label className="text-[11px] font-bold text-muted-foreground">توضیح پلن:</label>
-                      <textarea
-                        value={plan.description}
-                        onChange={(e) => updatePlan(plan.planId, 'description', e.target.value)}
-                        rows={2}
-                        className="w-full rounded-xl bg-background border border-border p-2.5 text-xs text-foreground focus:outline-none focus:border-cyan-500"
-                      />
-                    </div>
+                    <MultilingualTextarea
+                      compact
+                      label="توضیح پلن:"
+                      value={plan.description}
+                      onChange={(val) => updatePlan(plan.planId, 'description', val)}
+                      rows={2}
+                    />
 
                     {/* Features List */}
                     <div className="space-y-1.5">
                       <label className="text-[11px] font-bold text-muted-foreground">امکانات پلن (هر سطر یک ویژگی):</label>
                       <textarea
-                        value={plan.features.join('\n')}
+                        value={plan.features.map((f) => getLocalizedText(f, 'da')).join('\n')}
                         onChange={(e) =>
                           updatePlan(
                             plan.planId,
@@ -636,11 +719,13 @@ export default function AdminSettingsPage() {
                   </div>
 
                   <div className="pt-2 border-t border-border">
-                    <Input
+                    <MultilingualInput
+                      compact
+                      label="متن دکمه خرید:"
                       value={plan.ctaText}
-                      onChange={(e) => updatePlan(plan.planId, 'ctaText', e.target.value)}
+                      onChange={(val) => updatePlan(plan.planId, 'ctaText', val)}
                       placeholder="متن دکمه خرید"
-                      className="h-9 rounded-xl text-xs font-semibold"
+                      inputClassName="font-semibold"
                     />
                   </div>
                 </Card>
@@ -666,9 +751,13 @@ export default function AdminSettingsPage() {
                 <Card key={mat.id} className="rounded-3xl border-border bg-card/90 p-6 space-y-4 shadow-sm">
                   <div className="flex items-center justify-between pb-3 border-b border-border">
                     <div>
-                      <h3 className="text-base font-bold text-foreground">{mat.name}</h3>
+                      <h3 className="text-base font-bold text-foreground">
+                        {getLocalizedText(mat.name, 'da')}
+                      </h3>
                       {mat.subtitle ? (
-                        <span className="text-[11px] text-muted-foreground font-sans">{mat.subtitle}</span>
+                        <span className="text-[11px] text-muted-foreground font-sans">
+                          {getLocalizedText(mat.subtitle, 'da')}
+                        </span>
                       ) : null}
                     </div>
 
@@ -679,6 +768,25 @@ export default function AdminSettingsPage() {
                       <Switch
                         checked={mat.inStock}
                         onCheckedChange={(checked) => updateMaterial(mat.id, 'inStock', checked)}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                    <div className="md:col-span-2">
+                      <MultilingualInput
+                        compact
+                        label="نام محصول / کارت:"
+                        value={mat.name}
+                        onChange={(val) => updateMaterial(mat.id, 'name', val)}
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <MultilingualInput
+                        compact
+                        label="زیرعنوان محصول:"
+                        value={mat.subtitle}
+                        onChange={(val) => updateMaterial(mat.id, 'subtitle', val)}
                       />
                     </div>
                   </div>
@@ -732,19 +840,210 @@ export default function AdminSettingsPage() {
                       />
                     </div>
 
-                    <div className="space-y-1 md:col-span-2">
-                      <label className="text-[11px] font-bold text-muted-foreground">توضیحات و متریال ساخت:</label>
-                      <textarea
+                    <div className="md:col-span-2">
+                      <MultilingualTextarea
+                        compact
+                        label="توضیحات و متریال ساخت:"
                         value={mat.description}
-                        onChange={(e) => updateMaterial(mat.id, 'description', e.target.value)}
+                        onChange={(val) => updateMaterial(mat.id, 'description', val)}
                         rows={2}
-                        className="w-full rounded-xl bg-background border border-border p-2.5 text-xs text-foreground focus:outline-none focus:border-cyan-500"
                       />
                     </div>
                   </div>
                 </Card>
               ))}
             </div>
+          </motion.div>
+        )}
+
+        {/* =========================================================
+            TAB 2: VISUAL IDENTITY & BRANDING (هویت بصری و برندینگ)
+        ========================================================= */}
+        {activeTab === 'branding' && (
+          <motion.div
+            key="branding"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+            className="space-y-6"
+          >
+            <Card className="rounded-3xl border-border bg-card/90 p-6 space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-500 flex items-center justify-center shrink-0">
+                    <Palette className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-base font-bold text-foreground">
+                      هویت بصری و برندینگ پلتفرم
+                    </h2>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      مدیریت داینامیک لوگوی اصلی و فاوآیکن مرورگر در سراسر وب‌سایت. در صورت خالی ماندن، از نشان پیش‌فرض سورس‌کد استفاده می‌شود.
+                    </p>
+                  </div>
+                </div>
+
+                <Button
+                  type="button"
+                  onClick={() => handleSaveBranding(false)}
+                  disabled={isSavingBranding}
+                  className="h-10 px-5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs shadow-md shadow-cyan-500/20 flex items-center gap-2 shrink-0"
+                >
+                  {isSavingBranding ? (
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Save className="w-3.5 h-3.5" />
+                  )}
+                  <span>{isSavingBranding ? 'در حال ذخیره...' : 'ذخیره هویت بصری'}</span>
+                </Button>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Main Logo Control */}
+                <div className="rounded-2xl border border-border/80 bg-muted/20 p-5 space-y-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5">
+                      <ImageIcon className="w-4 h-4 text-cyan-500 shrink-0" />
+                      <div>
+                        <h3 className="text-sm font-bold text-foreground">لوگوی اصلی سایت (Main Logo)</h3>
+                        <p className="text-[11px] text-muted-foreground">
+                          نمایش در هدر، سایدبارها و صفحات ورود
+                        </p>
+                      </div>
+                    </div>
+
+                    {platformMainLogo && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setPlatformMainLogo('');
+                          toast.info('لوگوی اصلی به حالت پیش‌فرض سورس‌کد بازگردانده شد. برای ثبت نهایی ذخیره کنید.');
+                        }}
+                        className="h-8 px-2.5 text-[11px] text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 rounded-lg"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5 ml-1" />
+                        بازگشت به پیش‌فرض
+                      </Button>
+                    )}
+                  </div>
+
+                  {/* Preview */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-3 rounded-xl bg-white border border-slate-200 flex flex-col items-center justify-center gap-1.5">
+                      <span className="text-[10px] text-slate-500">پیش‌نمایش روشن</span>
+                      <SiteLogo overrideLogo={platformMainLogo} width={44} height={44} showText={false} />
+                    </div>
+                    <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex flex-col items-center justify-center gap-1.5">
+                      <span className="text-[10px] text-slate-400">پیش‌نمایش تیره</span>
+                      <SiteLogo overrideLogo={platformMainLogo} width={44} height={44} showText={false} />
+                    </div>
+                  </div>
+
+                  <FileUploader
+                    value={platformMainLogo}
+                    onChange={(url) => setPlatformMainLogo(url)}
+                    folder="branding"
+                    fileType="image"
+                    label="آپلود تصویر لوگوی اصلی"
+                    description="PNG شفاف، WEBP یا SVG"
+                    maxSizeMB={2.5}
+                  />
+
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-bold text-muted-foreground">
+                      یا آدرس مستقیم تصویر لوگوی اصلی (URL):
+                    </label>
+                    <Input
+                      type="url"
+                      dir="ltr"
+                      value={platformMainLogo}
+                      onChange={(e) => setPlatformMainLogo(e.target.value)}
+                      placeholder="https://example.com/logo.png (خالی = لوگوی پیش‌فرض)"
+                      className="h-10 rounded-xl text-xs font-sans text-left"
+                    />
+                  </div>
+                </div>
+
+                {/* Favicon Control */}
+                <div className="rounded-2xl border border-border/80 bg-muted/20 p-5 space-y-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5">
+                      <Globe className="w-4 h-4 text-amber-500 shrink-0" />
+                      <div>
+                        <h3 className="text-sm font-bold text-foreground">فاوآیکن سایت (Favicon)</h3>
+                        <p className="text-[11px] text-muted-foreground">
+                          آیکن تب مرورگر و بوک‌مارک‌ها
+                        </p>
+                      </div>
+                    </div>
+
+                    {platformFavicon && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setPlatformFavicon('');
+                          toast.info('فاوآیکن به حالت پیش‌فرض سورس‌کد بازگردانده شد. برای ثبت نهایی ذخیره کنید.');
+                        }}
+                        className="h-8 px-2.5 text-[11px] text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 rounded-lg"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5 ml-1" />
+                        بازگشت به پیش‌فرض
+                      </Button>
+                    )}
+                  </div>
+
+                  {/* Simulated Browser Tab Preview */}
+                  <div className="rounded-xl bg-slate-950 border border-slate-800 p-3 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-7 h-7 rounded-lg bg-slate-900 border border-slate-700 flex items-center justify-center overflow-hidden shrink-0">
+                        {platformFavicon ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={platformFavicon} alt="Favicon preview" className="w-5 h-5 object-contain" />
+                        ) : (
+                          <div className="w-4 h-4 rounded bg-gradient-to-tr from-cyan-500 to-blue-600" />
+                        )}
+                      </div>
+                      <span className="text-xs font-medium text-slate-200 truncate font-sans">
+                        Arya Link | تب مرورگر
+                      </span>
+                    </div>
+                    <Badge variant="outline" className="text-[10px] border-slate-700 text-slate-300 shrink-0">
+                      {platformFavicon ? 'فاوآیکن اختصاصی' : 'پیش‌فرض سیستم'}
+                    </Badge>
+                  </div>
+
+                  <FileUploader
+                    value={platformFavicon}
+                    onChange={(url) => setPlatformFavicon(url)}
+                    folder="branding"
+                    fileType="image"
+                    aspectRatio="square"
+                    label="آپلود تصویر فاوآیکن"
+                    description="PNG، ICO یا SVG مربعی (مثلاً 64×64)"
+                    maxSizeMB={1.5}
+                  />
+
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-bold text-muted-foreground">
+                      یا آدرس مستقیم فاوآیکن (URL):
+                    </label>
+                    <Input
+                      type="url"
+                      dir="ltr"
+                      value={platformFavicon}
+                      onChange={(e) => setPlatformFavicon(e.target.value)}
+                      placeholder="https://example.com/favicon.png (خالی = فاوآیکن پیش‌فرض)"
+                      className="h-10 rounded-xl text-xs font-sans text-left"
+                    />
+                  </div>
+                </div>
+              </div>
+            </Card>
           </motion.div>
         )}
 

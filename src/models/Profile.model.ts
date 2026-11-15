@@ -9,9 +9,10 @@ export interface IProfileDocument extends Document {
   userId: mongoose.Types.ObjectId | string;
   orgId?: mongoose.Types.ObjectId | string;
   alias: string;
-  displayName: string;
-  headline?: string;
-  bio?: string;
+  displayName: any;
+  headline?: any;
+  bio?: any;
+  translations?: Record<string, any>;
   avatarUrl?: string;
   coverUrl?: string;
   headerLayout?: 'curve' | 'gradient_mask' | 'minimal';
@@ -106,7 +107,7 @@ const LinkAdvancedSettingsSchema = new Schema(
 const ProfileLinkSubSchema = new Schema(
   {
     id: { type: String, default: () => `link_${Date.now()}` },
-    title: { type: String, default: '' },
+    title: { type: Schema.Types.Mixed, default: '' },
     url: { type: String, default: '' },
     icon: { type: String },
     moduleType: {
@@ -184,9 +185,10 @@ const ProfileSchema = new Schema<IProfileDocument>(
       trim: true,
       index: true,
     },
-    displayName: { type: String, required: true, trim: true },
-    headline: { type: String, default: '' },
-    bio: { type: String, default: '' },
+    displayName: { type: Schema.Types.Mixed, required: true },
+    headline: { type: Schema.Types.Mixed, default: '' },
+    bio: { type: Schema.Types.Mixed, default: '' },
+    translations: { type: Schema.Types.Mixed, default: () => ({}) },
     avatarUrl: { type: String, default: '' },
     coverUrl: { type: String, default: '' },
     headerLayout: {

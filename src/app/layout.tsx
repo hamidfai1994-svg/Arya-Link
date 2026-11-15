@@ -26,7 +26,10 @@ const outfit = Outfit({
 
 export async function generateMetadata(): Promise<Metadata> {
   const brandSettings = (await getSiteSettings()) || DEFAULT_SITE_SETTINGS;
-  const faviconUrl = brandSettings.favicon || '/favicon.ico';
+  const faviconUrl =
+    brandSettings.platformFavicon?.trim() ||
+    brandSettings.favicon?.trim() ||
+    '/favicon.ico';
   const siteTitle = brandSettings.siteName || 'Arya Link';
   const description =
     brandSettings.siteDescription ||
@@ -63,7 +66,14 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <head>
-        <link rel="icon" href={brandSettings?.favicon || '/favicon.ico'} />
+        <link
+          rel="icon"
+          href={
+            brandSettings?.platformFavicon?.trim() ||
+            brandSettings?.favicon?.trim() ||
+            '/favicon.ico'
+          }
+        />
       </head>
       <body
         className={`${vazirmatn.variable} ${outfit.variable} font-sans antialiased min-h-screen bg-background text-foreground selection:bg-cyan-500 selection:text-white`}

@@ -1,64 +1,65 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
+import { LocalizedFieldValue } from '@/lib/i18n/multilingual';
 
 export interface ILandingCmsHero {
-  badge: string;
-  titlePart1: string;
-  titleHighlight: string;
-  titlePart2: string;
-  subtitle: string;
-  primaryCta: string;
-  secondaryCta: string;
-  trustBadges: string[];
+  badge: LocalizedFieldValue;
+  titlePart1: LocalizedFieldValue;
+  titleHighlight: LocalizedFieldValue;
+  titlePart2: LocalizedFieldValue;
+  subtitle: LocalizedFieldValue;
+  primaryCta: LocalizedFieldValue;
+  secondaryCta: LocalizedFieldValue;
+  trustBadges: LocalizedFieldValue[];
 }
 
 export interface ILandingCmsPlan {
   planId: 'free' | 'pro' | 'enterprise';
-  name: string;
-  badge: string;
+  name: LocalizedFieldValue;
+  badge: LocalizedFieldValue;
   priceMonthly: number;
   priceYearlyMonthly: number;
   currency: string;
-  description: string;
-  features: string[];
+  description: LocalizedFieldValue;
+  features: LocalizedFieldValue[];
   isPopular?: boolean;
-  ctaText: string;
+  ctaText: LocalizedFieldValue;
 }
 
 export interface ILandingCmsMaterial {
   id: string;
-  name: string;
-  subtitle: string;
+  name: LocalizedFieldValue;
+  subtitle: LocalizedFieldValue;
   materialType: 'pvc' | 'black_metal' | 'gold_steel' | 'wood';
-  badge: string;
+  badge: LocalizedFieldValue;
   price: number;
   currency: string;
   thickness: string;
   weight: string;
   chipset: string;
-  description: string;
-  features: string[];
+  description: LocalizedFieldValue;
+  features: LocalizedFieldValue[];
   inStock: boolean;
   stockCount: number;
 }
 
 export interface ILandingCmsTestimonial {
   id: string;
-  name: string;
-  title: string;
+  name: LocalizedFieldValue;
+  title: LocalizedFieldValue;
   avatarUrl: string;
   rating: number;
-  reviewText: string;
-  verifiedBadge: string;
-  cardMaterialUsed: string;
+  reviewText: LocalizedFieldValue;
+  verifiedBadge: LocalizedFieldValue;
+  cardMaterialUsed: LocalizedFieldValue;
   dateStr: string;
 }
 
 export interface ILandingCmsGeneral {
-  platformName: string;
+  platformName: LocalizedFieldValue;
   supportPhone: string;
   supportEmail: string;
-  address: string;
-  rulesTerms: string;
+  address: LocalizedFieldValue;
+  rulesTerms: LocalizedFieldValue;
   socialLinks: {
     instagram: string;
     telegram: string;

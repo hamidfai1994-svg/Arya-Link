@@ -2,7 +2,7 @@ import mongoose, { Schema, models, model, Document, Model } from 'mongoose';
 
 export interface IModuleAccessConfigItem {
   moduleType: string;
-  title?: string;
+  title?: any;
   category?: string;
   requiredPlan: 'free' | 'pro' | 'vip';
   isPremium: boolean;
@@ -18,6 +18,8 @@ export interface ISystemSettings extends Document {
   notifySupportTickets: boolean;
   notifySystemAlerts: boolean;
   appPushEnabled: boolean;
+  platformMainLogo: string;
+  platformFavicon: string;
   moduleAccessConfig?: IModuleAccessConfigItem[];
   createdAt?: Date;
   updatedAt?: Date;
@@ -26,7 +28,7 @@ export interface ISystemSettings extends Document {
 const ModuleAccessItemSubSchema = new Schema(
   {
     moduleType: { type: String, required: true, trim: true },
-    title: { type: String, default: '' },
+    title: { type: Schema.Types.Mixed, default: '' },
     category: { type: String, default: '' },
     requiredPlan: {
       type: String,
@@ -49,6 +51,8 @@ const SystemSettingsSchema = new Schema(
     notifySupportTickets: { type: Boolean, default: true },
     notifySystemAlerts: { type: Boolean, default: false },
     appPushEnabled: { type: Boolean, default: false },
+    platformMainLogo: { type: String, default: '', trim: true },
+    platformFavicon: { type: String, default: '', trim: true },
     moduleAccessConfig: { type: [ModuleAccessItemSubSchema], default: [] },
   },
   { timestamps: true }

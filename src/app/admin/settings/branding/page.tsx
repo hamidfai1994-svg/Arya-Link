@@ -34,8 +34,12 @@ import { toast } from 'sonner';
 export default function AdminBrandingSettingsPage() {
   const { settings, refreshSettings, updateSettings } = useBranding();
 
-  const [companyLogo, setCompanyLogo] = useState(settings?.companyLogo || '');
-  const [favicon, setFavicon] = useState(settings?.favicon || '');
+  const [companyLogo, setCompanyLogo] = useState(
+    settings?.platformMainLogo || settings?.companyLogo || ''
+  );
+  const [favicon, setFavicon] = useState(
+    settings?.platformFavicon || settings?.favicon || ''
+  );
   const [siteName, setSiteName] = useState(settings?.siteName || 'Arya Link');
   const [siteDescription, setSiteDescription] = useState(
     settings?.siteDescription ||
@@ -47,8 +51,8 @@ export default function AdminBrandingSettingsPage() {
   // Synchronize state with context when loaded
   useEffect(() => {
     if (settings) {
-      setCompanyLogo(settings.companyLogo || '');
-      setFavicon(settings.favicon || '');
+      setCompanyLogo(settings.platformMainLogo || settings.companyLogo || '');
+      setFavicon(settings.platformFavicon || settings.favicon || '');
       setSiteName(settings.siteName || 'Arya Link');
       setSiteDescription(
         settings.siteDescription ||
@@ -60,9 +64,13 @@ export default function AdminBrandingSettingsPage() {
   const handleSave = async () => {
     setIsSaving(true);
     try {
+      const cleanLogo = companyLogo.trim();
+      const cleanFavicon = favicon.trim();
       const res = await updateSettings({
-        companyLogo: companyLogo.trim(),
-        favicon: favicon.trim(),
+        platformMainLogo: cleanLogo,
+        platformFavicon: cleanFavicon,
+        companyLogo: cleanLogo,
+        favicon: cleanFavicon,
         siteName: siteName.trim(),
         siteDescription: siteDescription.trim(),
       });

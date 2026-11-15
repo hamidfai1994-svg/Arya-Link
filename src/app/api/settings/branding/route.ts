@@ -37,10 +37,17 @@ export async function PUT(req: NextRequest) {
     }
 
     const body = await req.json();
+    const rawLogo =
+      body.platformMainLogo !== undefined ? body.platformMainLogo : body.companyLogo;
+    const rawFavicon =
+      body.platformFavicon !== undefined ? body.platformFavicon : body.favicon;
+
     const updated = await updateSiteSettings(
       {
-        companyLogo: typeof body.companyLogo === 'string' ? body.companyLogo.trim() : undefined,
-        favicon: typeof body.favicon === 'string' ? body.favicon.trim() : undefined,
+        platformMainLogo: typeof rawLogo === 'string' ? rawLogo.trim() : undefined,
+        platformFavicon: typeof rawFavicon === 'string' ? rawFavicon.trim() : undefined,
+        companyLogo: typeof rawLogo === 'string' ? rawLogo.trim() : undefined,
+        favicon: typeof rawFavicon === 'string' ? rawFavicon.trim() : undefined,
         siteName: typeof body.siteName === 'string' ? body.siteName.trim() : undefined,
         siteDescription: typeof body.siteDescription === 'string' ? body.siteDescription.trim() : undefined,
       },

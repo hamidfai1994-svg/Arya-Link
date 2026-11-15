@@ -34,7 +34,7 @@ export interface EditorState {
   cleanupProfiles: () => Promise<boolean>;
 
   // Profile Actions
-  updateBasicInfo: (fields: Partial<Pick<ProfileData, 'displayName' | 'headline' | 'bio' | 'avatarUrl' | 'coverUrl' | 'headerLayout' | 'alias' | 'phone' | 'whatsapp' | 'email' | 'location'>>) => void;
+  updateBasicInfo: (fields: Partial<Pick<ProfileData, 'displayName' | 'headline' | 'bio' | 'translations' | 'avatarUrl' | 'coverUrl' | 'headerLayout' | 'alias' | 'phone' | 'whatsapp' | 'email' | 'location'>>) => void;
   setHeaderLayout: (layout: HeaderLayoutType) => void;
   setProfileLanguage: (lang: ProfileLanguage) => void;
   updateTheme: (fields: Partial<ProfileThemeConfig>, skipAutoSave?: boolean) => void;
@@ -1302,6 +1302,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
           displayName: dbData.displayName,
           headline: dbData.headline || '',
           bio: dbData.bio || '',
+          translations: dbData.translations || {},
           avatarUrl: dbData.avatarUrl || '',
           coverUrl: dbData.coverUrl || '',
           headerLayout: dbData.headerLayout || 'curve',
@@ -1328,6 +1329,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
           profileLanguage: dbData.profileLanguage || 'dari',
           crmTelegramChatId: dbData.crmTelegramChatId || '',
           crmTelegramEnable: Boolean(dbData.crmTelegramEnable),
+          organizationBranding: dbData.organizationBranding || null,
         };
 
         const activeId = normalizedProfile.id;
@@ -1416,6 +1418,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         ...currentProfile,
         id: updatedId,
         alias: savedData.alias || currentProfile.alias,
+        translations: savedData.translations ?? currentProfile.translations,
         crmTelegramChatId: savedData.crmTelegramChatId ?? currentProfile.crmTelegramChatId,
         crmTelegramEnable: savedData.crmTelegramEnable ?? currentProfile.crmTelegramEnable,
       };

@@ -101,6 +101,7 @@ import {
   Folder,
   Copy,
   Check,
+  Building2,
 } from 'lucide-react';
 import { QRCodeSVG, QRCodeCanvas } from 'qrcode.react';
 import {
@@ -112,10 +113,12 @@ import {
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { PRESET_PATTERNS } from '@/lib/backgrounds';
+import { useLanguage } from '@/lib/i18n/LanguageContext';
+import { getProfileLocalizedText, getLinkLocalizedText } from '@/lib/i18n/multilingual';
 
 export const LivePreview: React.FC = () => {
   const {
-    profile,
+    profile: rawProfile,
     selectedDeviceId,
     setDevice,
     activeModuleId,
@@ -126,6 +129,27 @@ export const LivePreview: React.FC = () => {
     reorderLinks,
     saveProfileData,
   } = useEditorStore();
+  const { language } = useLanguage();
+  const previewLang =
+    rawProfile.profileLanguage === 'en'
+      ? 'en'
+      : rawProfile.profileLanguage === 'pashto'
+        ? 'ps'
+        : language;
+
+  const profile = React.useMemo(
+    () => ({
+      ...rawProfile,
+      displayName: getProfileLocalizedText(rawProfile, 'displayName', previewLang, ''),
+      headline: getProfileLocalizedText(rawProfile, 'headline', previewLang, ''),
+      bio: getProfileLocalizedText(rawProfile, 'bio', previewLang, ''),
+      links: (rawProfile.links || []).map((l) => ({
+        ...l,
+        title: getLinkLocalizedText(l, 'title', previewLang, ''),
+      })),
+    }),
+    [rawProfile, previewLang]
+  );
   const { themeConfig } = profile;
 
   const [activeVerticalDragId, setActiveVerticalDragId] = useState<string | null>(null);
@@ -552,14 +576,14 @@ export const LivePreview: React.FC = () => {
   };
 
   const resolveDisplayName =
-    profile.displayName ||
+    getProfileLocalizedText(rawProfile, 'displayName', previewLang, '') ||
     (isLtr ? 'Your Name' : isPashto ? 'ستاسو نوم' : 'نام شما');
 
   const resolveHeadline =
-    profile.headline ||
+    getProfileLocalizedText(rawProfile, 'headline', previewLang, '') ||
     (isLtr ? 'Job Title / Profession' : isPashto ? 'دندې سرلیک / تخصص' : 'عنوان شغلی / تخصص');
 
-  const resolveBio = profile.bio || '';
+  const resolveBio = getProfileLocalizedText(rawProfile, 'bio', previewLang, '');
 
   // Social modules separated into grid icon row
   const socialModuleTypes: LinkModuleType[] = [
@@ -781,32 +805,41 @@ export const LivePreview: React.FC = () => {
       ['--btn-border-width' as any]: bWidthVal,
     };
 
-    // Background color: Only apply inline if user chose a custom color and not the default cyan (#0ea5e9 / #38bdf8)
-    const rawBgColor = customStyle?.customBgColor || themeConfig.buttonBgColor;
+    // Background color: Enforce corporate branding when organizationBranding is active
+    const corpBranding = profile.organizationBranding;
+    const rawBgColor = corpBranding
+      ? corpBranding.primaryColor || themeConfig.buttonBgColor
+      : customStyle?.customBgColor || themeConfig.buttonBgColor;
     const isDefaultBg =
       !rawBgColor ||
       rawBgColor.trim() === '' ||
-      rawBgColor.toLowerCase() === '#0ea5e9' ||
-      rawBgColor.toLowerCase() === '#38bdf8';
+      (!corpBranding &&
+        (rawBgColor.toLowerCase() === '#0ea5e9' ||
+          rawBgColor.toLowerCase() === '#38bdf8'));
     if (!isDefaultBg) {
-      customCardStyle.backgroundColor = rawBgColor;
-      customCardStyle['--btn-bg' as any] = rawBgColor;
+      customCardStyle.backgroundColor = corpBranding ? `${rawBgColor}e6` : rawBgColor;
+      customCardStyle['--btn-bg' as any] = corpBranding ? `${rawBgColor}e6` : rawBgColor;
     }
 
     // Text color
-    const rawTextColor = customStyle?.customTextColor || themeConfig.buttonTextColor;
+    const rawTextColor = corpBranding
+      ? '#ffffff'
+      : customStyle?.customTextColor || themeConfig.buttonTextColor;
     if (rawTextColor && rawTextColor.trim() !== '') {
       customCardStyle.color = rawTextColor;
       customCardStyle['--btn-text' as any] = rawTextColor;
     }
 
-    // Border color: Only apply inline if user chose a custom color and not the default cyan border (#38bdf8 / #0ea5e9)
-    const rawBorderColor = customStyle?.customBorderColor || themeConfig.buttonBorderColor;
+    // Border color: Enforce corporate secondaryColor when organizationBranding is active
+    const rawBorderColor = corpBranding
+      ? corpBranding.secondaryColor || themeConfig.buttonBorderColor
+      : customStyle?.customBorderColor || themeConfig.buttonBorderColor;
     const isDefaultBorder =
       !rawBorderColor ||
       rawBorderColor.trim() === '' ||
-      rawBorderColor.toLowerCase() === '#38bdf8' ||
-      rawBorderColor.toLowerCase() === '#0ea5e9';
+      (!corpBranding &&
+        (rawBorderColor.toLowerCase() === '#38bdf8' ||
+          rawBorderColor.toLowerCase() === '#0ea5e9'));
     if (!isDefaultBorder) {
       customCardStyle.borderColor = rawBorderColor;
       customCardStyle['--btn-border' as any] = rawBorderColor;
@@ -1875,14 +1908,52 @@ export const LivePreview: React.FC = () => {
             {/* Scrollable Screen Content */}
             <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col">
               <div className="min-h-full flex flex-col">
+                {(() => {
+                  const effectiveCoverUrl = profile.organizationBranding?.coverImage || profile.coverUrl || '';
+                  const corp = profile.organizationBranding;
+                  const effectiveHeaderLayout =
+                    profile.headerLayout === 'minimal' && profile.organizationBranding?.coverImage
+                      ? 'curve'
+                      : profile.headerLayout || 'curve';
+                  const renderCorpBadge = () => {
+                    if (!corp) return null;
+                    return (
+                      <div
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full backdrop-blur-md border shadow-md text-[9px] font-bold max-w-[190px] ${
+                          isLight
+                            ? 'bg-white/95 border-slate-200 text-slate-900'
+                            : 'bg-slate-950/80 border-white/20 text-white'
+                        }`}
+                      >
+                        {corp.logoUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={corp.logoUrl}
+                            alt={corp.name}
+                            className="w-3.5 h-3.5 rounded-full object-cover shrink-0 border border-white/20"
+                          />
+                        ) : (
+                          <Building2
+                            className="w-3 h-3 shrink-0"
+                            style={{ color: corp.primaryColor || '#0ea5e9' }}
+                          />
+                        )}
+                        <span className="truncate">{corp.name}</span>
+                        <BadgeCheck className="w-3 h-3 text-sky-400 shrink-0" />
+                      </div>
+                    );
+                  };
+
+                  return (
+                    <>
                 {/* Header Layout 1: CURVE */}
-                {(profile.headerLayout || 'curve') === 'curve' && (
+                {effectiveHeaderLayout === 'curve' && (
                   <div className="flex flex-col items-center text-center mb-4 shrink-0">
                     {/* Cover Photo with Curved Lower Edge via CSS clip-path directly on cover */}
                     <div className="relative w-full h-40 overflow-hidden shrink-0 [clip-path:ellipse(85%_100%_at_50%_0%)]">
-                      {profile.coverUrl ? (
+                      {effectiveCoverUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={profile.coverUrl} alt="Cover" className="w-full h-full object-cover" />
+                        <img src={effectiveCoverUrl} alt="Cover" className="w-full h-full object-cover" />
                       ) : (
                         <div
                           className="w-full h-full"
@@ -1890,6 +1961,11 @@ export const LivePreview: React.FC = () => {
                             background: `linear-gradient(135deg, ${themeConfig.primaryColor}, ${themeConfig.accentColor})`,
                           }}
                         />
+                      )}
+                      {corp && (
+                        <div className={`absolute top-8 ${isLtr ? 'right-2.5' : 'left-2.5'} z-20`}>
+                          {renderCorpBadge()}
+                        </div>
                       )}
                     </div>
 
@@ -1952,13 +2028,13 @@ export const LivePreview: React.FC = () => {
                 )}
 
                 {/* Header Layout 2: GRADIENT MASK */}
-                {profile.headerLayout === 'gradient_mask' && (
+                {effectiveHeaderLayout === 'gradient_mask' && (
                   <div className="relative w-full mb-4 shrink-0">
                     {/* Horizontal Cover Photo fading into background using CSS Mask */}
                     <div className="relative w-full h-40 overflow-hidden shrink-0 [mask-image:linear-gradient(to_bottom,black_45%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_bottom,black_45%,transparent_100%)]">
-                      {profile.coverUrl ? (
+                      {effectiveCoverUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={profile.coverUrl} alt="Cover" className="w-full h-full object-cover" />
+                        <img src={effectiveCoverUrl} alt="Cover" className="w-full h-full object-cover" />
                       ) : (
                         <div
                           className="w-full h-full"
@@ -1968,6 +2044,11 @@ export const LivePreview: React.FC = () => {
                         />
                       )}
                     </div>
+                    {corp && (
+                      <div className={`absolute top-8 ${isLtr ? 'right-2.5' : 'left-2.5'} z-20`}>
+                        {renderCorpBadge()}
+                      </div>
+                    )}
 
                     {/* Squircle Avatar on Right + Info Beside it */}
                     <div className={`relative -mt-12 px-4 flex items-center gap-3.5 z-10 ${isLtr ? 'text-left' : 'text-right'}`}>
@@ -2014,8 +2095,9 @@ export const LivePreview: React.FC = () => {
                 )}
 
                 {/* Header Layout 3: MINIMAL */}
-                {profile.headerLayout === 'minimal' && (
-                  <div className="flex flex-col items-center text-center pt-8 px-4 mb-4 shrink-0">
+                {effectiveHeaderLayout === 'minimal' && (
+                  <div className="flex flex-col items-center text-center pt-10 px-4 mb-4 shrink-0">
+                    {corp && <div className="mb-2.5">{renderCorpBadge()}</div>}
                     {/* Large Circular Avatar */}
                     <div className="relative mb-3 group shrink-0">
                       <div
@@ -2060,7 +2142,6 @@ export const LivePreview: React.FC = () => {
                       {resolveHeadline || (isLtr ? 'Job Title / Profession' : 'عنوان شغلی / تخصص')}
                     </p>
 
-                    {/* Bio */}
                     {resolveBio && (
                       <p
                         className={`mt-2 leading-relaxed max-w-[260px] ${isLight ? 'text-slate-600' : 'text-slate-300/80'}`}
@@ -2071,6 +2152,9 @@ export const LivePreview: React.FC = () => {
                     )}
                   </div>
                 )}
+                    </>
+                  );
+                })()}
 
                 {/* Profile Action Buttons & Modules Container */}
                 <div className="px-4 flex-1 flex flex-col">
@@ -2259,6 +2343,42 @@ export const LivePreview: React.FC = () => {
                     </motion.button>
                   </div>
                 </div>
+
+                {/* Corporate Affiliation Badge in Footer */}
+                {profile.organizationBranding && (
+                  <div className="px-4 pt-4 text-center shrink-0">
+                    <div
+                      className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border backdrop-blur-md text-[10px] ${
+                        isLight
+                          ? 'bg-white/90 border-slate-200 text-slate-800'
+                          : 'bg-white/[0.06] border-white/15 text-slate-200'
+                      }`}
+                    >
+                      {profile.organizationBranding.logoUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={profile.organizationBranding.logoUrl}
+                          alt={profile.organizationBranding.name}
+                          className="w-4 h-4 rounded object-cover border border-white/20 shrink-0"
+                        />
+                      ) : (
+                        <Building2
+                          className="w-3.5 h-3.5 shrink-0"
+                          style={{ color: profile.organizationBranding.primaryColor || '#0ea5e9' }}
+                        />
+                      )}
+                      <div className={isLtr ? 'text-left' : 'text-right'}>
+                        <span className="font-bold block">
+                          {profile.organizationBranding.name}
+                        </span>
+                        <span className="text-[8px] opacity-75 block">
+                          {isLtr ? 'Verified Org' : 'نشان تایید و وابستگی سازمانی'}
+                        </span>
+                      </div>
+                      <BadgeCheck className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+                    </div>
+                  </div>
+                )}
 
                 {/* Footer Branding (Pinned to bottom of the screen) */}
                 {!profile.hideBranding && (

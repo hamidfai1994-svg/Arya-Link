@@ -381,6 +381,12 @@ export interface ProfileData {
   displayName: string;
   headline: string;
   bio: string;
+  translations?: {
+    displayName?: any;
+    headline?: any;
+    bio?: any;
+    [key: string]: any;
+  };
   avatarUrl: string;
   coverUrl?: string;
   headerLayout?: HeaderLayoutType;
@@ -427,6 +433,16 @@ export interface ProfileData {
   planType?: 'free' | 'pro' | 'vip' | string;
   planExpiresAt?: string | Date | null;
   features?: Record<string, any>;
+  organizationBranding?: {
+    id: string;
+    name: string;
+    logoUrl: string;
+    primaryColor: string;
+    secondaryColor: string;
+    coverImage: string;
+    companySlogan?: string;
+    orgRole?: string | null;
+  } | null;
 }
 
 export interface UserProfileSummary {
