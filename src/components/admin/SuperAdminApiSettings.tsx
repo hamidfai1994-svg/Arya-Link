@@ -16,6 +16,8 @@ import {
   CheckCircle2,
   Sparkles,
   Info,
+  HardDrive,
+  Trash2,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -51,6 +53,12 @@ export function SuperAdminApiSettings() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
+  const [isCleaningStorage, setIsCleaningStorage] = useState(false);
+  const [lastCleanupResult, setLastCleanupResult] = useState<{
+    freedMB: number;
+    deletedCount: number;
+    keptCount: number;
+  } | null>(null);
 
   useEffect(() => {
     fetchSettings();
@@ -112,6 +120,33 @@ export function SuperAdminApiSettings() {
   const updateField = <K extends keyof SystemSettingsState>(key: K, value: SystemSettingsState[K]) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
     setIsDirty(true);
+  };
+
+  const handleCleanupStorage = async () => {
+    setIsCleaningStorage(true);
+    const toastId = toast.loading('در حال بررسی و پاکسازی فایل‌های بلااستفاده هاست...');
+    try {
+      const res = await fetch('/api/admin/cleanup-uploads', { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        setLastCleanupResult({
+          freedMB: data.freedMB ?? 0,
+          deletedCount: data.deletedCount ?? 0,
+          keptCount: data.keptCount ?? 0,
+        });
+        toast.success(`${data.freedMB} مگابایت فضای هاست آزاد شد`, {
+          id: toastId,
+          description: `${data.deletedCount} فایل یتیم حذف گردید.`,
+        });
+      } else {
+        toast.error(data.message || 'خطا در پاکسازی فایل‌های اضافی.', { id: toastId });
+      }
+    } catch (err) {
+      console.error('Storage cleanup error:', err);
+      toast.error('خطای ارتباط با سرور در هنگام پاکسازی هاست.', { id: toastId });
+    } finally {
+      setIsCleaningStorage(false);
+    }
   };
 
   if (isLoading) {
@@ -373,6 +408,55 @@ export function SuperAdminApiSettings() {
             className="cursor-not-allowed opacity-50"
           />
         </div>
+      </Card>
+
+      {/* Storage Garbage Collector Panel */}
+      <Card className="p-5 sm:p-6 border-rose-500/20 bg-card/80 rounded-3xl space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-500 flex items-center justify-center shrink-0">
+              <HardDrive className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-foreground">
+                نگهداری و پاکسازی فضای ذخیره‌سازی هاست
+              </h3>
+              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                اسکن کامل تمام کالکشن‌های دیتابیس و حذف فیزیکی فایل‌های یتیم و بلااستفاده از پوشه آپلودها برای جلوگیری از پر شدن هاست
+              </p>
+            </div>
+          </div>
+
+          <Button
+            type="button"
+            onClick={handleCleanupStorage}
+            disabled={isCleaningStorage}
+            className="h-10 px-5 rounded-2xl bg-gradient-to-r from-rose-500 to-orange-600 hover:from-rose-400 hover:to-orange-500 text-white font-bold text-xs shadow-md shadow-rose-500/20 flex items-center gap-2 shrink-0 self-start sm:self-auto"
+          >
+            {isCleaningStorage ? (
+              <>
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                <span>در حال پاکسازی...</span>
+              </>
+            ) : (
+              <>
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>پاکسازی فایل‌های اضافی (آزادسازی هاست)</span>
+              </>
+            )}
+          </Button>
+        </div>
+
+        {lastCleanupResult && (
+          <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 flex items-center gap-2.5 text-xs text-emerald-600 dark:text-emerald-400 font-semibold">
+            <CheckCircle2 className="w-4 h-4 shrink-0" />
+            <span>
+              {lastCleanupResult.freedMB} مگابایت فضای هاست آزاد شد —{' '}
+              {lastCleanupResult.deletedCount} فایل اضافی حذف و{' '}
+              {lastCleanupResult.keptCount} فایل معتبر حفظ گردید.
+            </span>
+          </div>
+        )}
       </Card>
     </div>
   );

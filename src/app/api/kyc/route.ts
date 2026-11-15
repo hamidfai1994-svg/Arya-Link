@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { connectToDatabase } from '@/lib/db/mongodb';
 import { User } from '@/models/User.model';
 import { Profile } from '@/models/Profile.model';
+import { deleteReplacedFileIfUnused } from '@/lib/storage/file-manager';
 
 export const dynamic = 'force-dynamic';
 
@@ -67,6 +68,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const existingUser = await User.findById(userId).select('kycData').lean();
+
     const updatedUser = await User.findByIdAndUpdate(
       userId,
       {
@@ -84,6 +87,9 @@ export async function POST(req: NextRequest) {
       },
       { new: true }
     );
+
+    await deleteReplacedFileIfUnused(existingUser?.kycData?.selfieUrl, selfieUrl);
+    await deleteReplacedFileIfUnused(existingUser?.kycData?.documentUrl, documentUrl);
 
     // Also mark user's profiles with pending verification status
     await Profile.updateMany(

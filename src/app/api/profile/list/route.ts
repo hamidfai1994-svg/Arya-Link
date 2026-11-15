@@ -8,6 +8,7 @@ import { PhysicalCard } from '@/models/PhysicalCard.model';
 import { buildUserIsolationQuery, isValidUserSession } from '@/lib/db/data-isolation';
 import { getJobTemplate, generateDefaultModulesForJob } from '@/lib/constants/jobTemplates';
 import { getLocalizedText } from '@/lib/i18n/multilingual';
+import { deleteRemovedUploadUrlsBetweenDocs } from '@/lib/storage/file-manager';
 import mongoose from 'mongoose';
 
 export const dynamic = 'force-dynamic';
@@ -410,13 +411,15 @@ export async function DELETE(req: NextRequest) {
       ...userQuery,
     };
 
-    const deletedDoc = await Profile.findOneAndDelete(deleteQuery);
+    const deletedDoc = await Profile.findOneAndDelete(deleteQuery).lean();
     if (!deletedDoc) {
       return NextResponse.json(
         { success: false, message: 'پروفایل مورد نظر یافت نشد یا متعلق به شما نیست.' },
         { status: 404 }
       );
     }
+
+    await deleteRemovedUploadUrlsBetweenDocs(deletedDoc, null);
 
     return NextResponse.json({
       success: true,

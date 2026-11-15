@@ -6,6 +6,7 @@ import { User } from '@/models/User.model';
 import { Profile } from '@/models/Profile.model';
 import { isValidUserSession } from '@/lib/db/data-isolation';
 import { syncAndCheckUserSubscription } from '@/lib/utils/subscription';
+import { deleteReplacedFileIfUnused } from '@/lib/storage/file-manager';
 import bcrypt from 'bcryptjs';
 
 export const dynamic = 'force-dynamic';
@@ -257,7 +258,9 @@ export async function PATCH(req: NextRequest) {
     if (phone !== undefined && typeof phone === 'string') {
       user.phone = phone.trim();
     }
+    let previousAvatar: string | undefined;
     if (avatar !== undefined && typeof avatar === 'string') {
+      previousAvatar = user.avatar;
       user.avatar = avatar.trim();
     }
 
@@ -293,6 +296,10 @@ export async function PATCH(req: NextRequest) {
     }
 
     await user.save();
+
+    if (previousAvatar !== undefined) {
+      await deleteReplacedFileIfUnused(previousAvatar, user.avatar);
+    }
 
     return NextResponse.json({
       success: true,

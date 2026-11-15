@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { connectToDatabase } from '@/lib/db/mongodb';
 import { BlogPost } from '@/models/BlogPost.model';
+import { deleteRemovedUploadUrlsBetweenDocs } from '@/lib/storage/file-manager';
 
 export const dynamic = 'force-dynamic';
 
@@ -171,7 +172,11 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ success: false, message: 'آی دی مقاله الزامی است.' }, { status: 400 });
     }
 
-    const updated = await BlogPost.findByIdAndUpdate(id, { $set: updates }, { new: true });
+    const oldPost = await BlogPost.findById(id).lean();
+    const updated = await BlogPost.findByIdAndUpdate(id, { $set: updates }, { new: true }).lean();
+    if (oldPost && updated) {
+      await deleteRemovedUploadUrlsBetweenDocs(oldPost, updated);
+    }
     return NextResponse.json({ success: true, message: 'مقاله بروزرسانی شد.', post: updated });
   } catch (error: any) {
     console.error('Error updating blog post:', error);
@@ -194,7 +199,10 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ success: false, message: 'آی دی الزامی است.' }, { status: 400 });
     }
 
-    await BlogPost.findByIdAndDelete(id);
+    const deletedPost = await BlogPost.findByIdAndDelete(id).lean();
+    if (deletedPost) {
+      await deleteRemovedUploadUrlsBetweenDocs(deletedPost, null);
+    }
     return NextResponse.json({ success: true, message: 'مقاله با موفقیت حذف شد.' });
   } catch (error: any) {
     console.error('Error deleting blog post:', error);

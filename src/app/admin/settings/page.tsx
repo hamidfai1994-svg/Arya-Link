@@ -29,6 +29,7 @@ import {
   Palette,
   RotateCcw,
   Image as ImageIcon,
+  HardDrive,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -53,6 +54,7 @@ export default function AdminSettingsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isSavingBranding, setIsSavingBranding] = useState(false);
+  const [isCleaningStorage, setIsCleaningStorage] = useState(false);
 
   // Visual Identity State
   const [platformMainLogo, setPlatformMainLogo] = useState('');
@@ -167,6 +169,30 @@ export default function AdminSettingsPage() {
     }
   };
 
+  const handleCleanupUploads = async () => {
+    setIsCleaningStorage(true);
+    const toastId = toast.loading('در حال اسکن دیتابیس و پاکسازی فایل‌های اضافی هاست...');
+    try {
+      const res = await fetch('/api/admin/cleanup-uploads', {
+        method: 'POST',
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(`${data.freedMB} مگابایت فضای هاست آزاد شد`, {
+          id: toastId,
+          description: `${data.deletedCount} فایل بلااستفاده حذف گردید (${data.keptCount} فایل فعال حفظ شد).`,
+        });
+      } else {
+        toast.error(data.message || 'خطا در پاکسازی فایل‌های اضافی.', { id: toastId });
+      }
+    } catch (err) {
+      console.error('Cleanup error:', err);
+      toast.error('خطای ارتباط با سرور در هنگام پاکسازی فایل‌ها.', { id: toastId });
+    } finally {
+      setIsCleaningStorage(false);
+    }
+  };
+
   // Helper for Plan editing
   const updatePlan = (planId: string, field: string, value: any) => {
     setPlans((prev) =>
@@ -212,7 +238,28 @@ export default function AdminSettingsPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3 self-start sm:self-auto">
+        <div className="flex flex-wrap items-center gap-3 self-start sm:self-auto">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleCleanupUploads}
+            disabled={isCleaningStorage}
+            className="h-11 px-4 rounded-2xl border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 font-bold text-xs flex items-center gap-1.5"
+          >
+            {isCleaningStorage ? (
+              <>
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                <span>در حال پاکسازی...</span>
+              </>
+            ) : (
+              <>
+                <HardDrive className="w-3.5 h-3.5" />
+                <span>پاکسازی فایل‌های اضافی (آزادسازی هاست)</span>
+              </>
+            )}
+          </Button>
+
           <Link href="/" target="_blank">
             <Button
               variant="outline"

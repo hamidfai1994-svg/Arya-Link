@@ -7,6 +7,7 @@ import { Organization } from '@/models/Organization.model';
 import { User } from '@/models/User.model';
 import { Profile } from '@/models/Profile.model';
 import { Lead } from '@/models/Lead.model';
+import { deleteReplacedFileIfUnused } from '@/lib/storage/file-manager';
 
 export const dynamic = 'force-dynamic';
 
@@ -371,12 +372,18 @@ export async function POST(req: NextRequest) {
     };
 
     if (existingOrg) {
+      const oldLogoUrl = existingOrg.branding?.logoUrl;
+      const oldCoverImage = existingOrg.branding?.coverImage;
+
       existingOrg.name = name;
       existingOrg.branding = {
         ...existingOrg.branding,
         ...brandingPayload,
       };
       await existingOrg.save();
+
+      await deleteReplacedFileIfUnused(oldLogoUrl, existingOrg.branding?.logoUrl);
+      await deleteReplacedFileIfUnused(oldCoverImage, existingOrg.branding?.coverImage);
 
       return NextResponse.json({
         success: true,
@@ -461,7 +468,13 @@ export async function PATCH(req: NextRequest) {
       org.name = body.name.trim();
     }
 
+    let oldLogoUrl: string | undefined;
+    let oldCoverImage: string | undefined;
+
     if (body.branding && typeof body.branding === 'object') {
+      oldLogoUrl = org.branding?.logoUrl;
+      oldCoverImage = org.branding?.coverImage;
+
       const resolvedSecondary =
         body.branding.secondaryColor ||
         body.branding.accentColor ||
@@ -497,6 +510,11 @@ export async function PATCH(req: NextRequest) {
     }
 
     await org.save();
+
+    if (body.branding && typeof body.branding === 'object') {
+      await deleteReplacedFileIfUnused(oldLogoUrl, org.branding?.logoUrl);
+      await deleteReplacedFileIfUnused(oldCoverImage, org.branding?.coverImage);
+    }
 
     // Sync unified corporate theme and cover across all subordinate employee profiles
     const shouldSyncMembers = body.applyToAllMembers !== false;

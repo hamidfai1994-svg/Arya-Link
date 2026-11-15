@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { connectToDatabase } from '@/lib/db/mongodb';
 import { StorePaymentSettings } from '@/models/StorePaymentSettings.model';
+import { deleteRemovedUploadUrlsBetweenDocs } from '@/lib/storage/file-manager';
 
 export const dynamic = 'force-dynamic';
 
@@ -61,6 +62,7 @@ export async function PUT(req: NextRequest) {
     await connectToDatabase();
 
     let settings = await StorePaymentSettings.findOne();
+    const oldSnapshot = settings ? settings.toObject() : null;
     if (!settings) {
       settings = new StorePaymentSettings({});
     }
@@ -160,6 +162,10 @@ export async function PUT(req: NextRequest) {
     settings.updatedBy = session.user?.email || session.user?.name || 'admin';
 
     await settings.save();
+
+    if (oldSnapshot) {
+      await deleteRemovedUploadUrlsBetweenDocs(oldSnapshot, settings.toObject());
+    }
 
     return NextResponse.json({
       success: true,

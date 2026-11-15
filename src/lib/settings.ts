@@ -2,6 +2,7 @@ import { connectToDatabase } from '@/lib/db/mongodb';
 import { SiteSettings, ISiteSettingsDocument } from '@/models/SiteSettings.model';
 import { SystemSettings, ISystemSettings } from '@/models/systemSettings.model';
 import { ISiteSettings, DEFAULT_SITE_SETTINGS } from '@/types/settings';
+import { deleteReplacedFileIfUnused } from '@/lib/storage/file-manager';
 
 export { type ISiteSettings, DEFAULT_SITE_SETTINGS } from '@/types/settings';
 
@@ -116,6 +117,21 @@ export async function updateSiteSettings(
 
   await ensureSiteSettingsInitialized();
 
+  const [prevSys, prevSite] = await Promise.all([
+    SystemSettings.findOne({}).lean<ISystemSettings | null>(),
+    SiteSettings.findOne({}).lean<ISiteSettingsDocument | null>(),
+  ]);
+  const oldLogos = [
+    prevSys?.platformMainLogo,
+    prevSite?.platformMainLogo,
+    prevSite?.companyLogo,
+  ];
+  const oldFavicons = [
+    prevSys?.platformFavicon,
+    prevSite?.platformFavicon,
+    prevSite?.favicon,
+  ];
+
   const rawNextLogo =
     data.platformMainLogo !== undefined ? data.platformMainLogo : data.companyLogo;
   const rawNextFavicon =
@@ -167,6 +183,17 @@ export async function updateSiteSettings(
     if (data.siteDescription !== undefined) doc.siteDescription = data.siteDescription;
     if (updatedBy) doc.updatedBy = updatedBy;
     await doc.save();
+  }
+
+  if (nextLogo !== undefined) {
+    for (const oldLogo of Array.from(new Set(oldLogos))) {
+      await deleteReplacedFileIfUnused(oldLogo, nextLogo);
+    }
+  }
+  if (nextFavicon !== undefined) {
+    for (const oldFav of Array.from(new Set(oldFavicons))) {
+      await deleteReplacedFileIfUnused(oldFav, nextFavicon);
+    }
   }
 
   const finalLogo = sanitizeLogoUrl(doc.platformMainLogo || doc.companyLogo);

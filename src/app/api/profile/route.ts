@@ -11,6 +11,7 @@ import { profileUpdateSchema } from '@/lib/validations/profile';
 import { getJobTemplate, generateDefaultModulesForJob } from '@/lib/constants/jobTemplates';
 import mongoose from 'mongoose';
 import { revalidatePath } from 'next/cache';
+import { deleteRemovedUploadUrlsBetweenDocs } from '@/lib/storage/file-manager';
 
 export const dynamic = 'force-dynamic';
 
@@ -307,6 +308,29 @@ export async function POST(req: NextRequest) {
 
     const userCondition = buildUserIsolationQuery(session!.user);
 
+    // Snapshot previous profile state so replaced or removed local upload files can be cleaned up
+    let existingBeforeUpdate: any = null;
+    if (isObjectId) {
+      existingBeforeUpdate = await Profile.findOne({
+        _id: new mongoose.Types.ObjectId(id),
+        ...userCondition,
+      }).lean();
+      if (!existingBeforeUpdate) {
+        const directDoc = await Profile.findById(id).lean();
+        const sessEmail = String(currentUserEmail || '').toLowerCase();
+        if (
+          directDoc &&
+          (String(directDoc.userId || '') === String(currentUserId || '') ||
+            (sessEmail &&
+              String(directDoc.email || directDoc.userEmail || '').toLowerCase() === sessEmail))
+        ) {
+          existingBeforeUpdate = directDoc;
+        }
+      }
+    } else if (cleanAlias) {
+      existingBeforeUpdate = await Profile.findOne({ alias: cleanAlias, ...userCondition }).lean();
+    }
+
     // 3. Update existing user's profile or Create New (strictly isolated to current user)
     let savedProfile = null;
 
@@ -471,6 +495,9 @@ export async function POST(req: NextRequest) {
     }
 
     if (savedProfile) {
+      if (existingBeforeUpdate) {
+        await deleteRemovedUploadUrlsBetweenDocs(existingBeforeUpdate, savedProfile);
+      }
       console.log('Successfully saved profile themeConfig in DB:', savedProfile.themeConfig);
     }
 

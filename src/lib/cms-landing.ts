@@ -1,5 +1,6 @@
 import { connectToDatabase } from '@/lib/db/mongodb';
 import { LandingCms, ILandingCmsDocument, INITIAL_LANDING_CMS } from '@/models/LandingCms.model';
+import { deleteRemovedUploadUrlsBetweenDocs } from '@/lib/storage/file-manager';
 
 export { INITIAL_LANDING_CMS, type ILandingCmsDocument } from '@/models/LandingCms.model';
 
@@ -85,6 +86,7 @@ export async function updateLandingCms(
       updatedBy,
     });
   } else {
+    const oldSnapshot = doc.toObject();
     if (data.general) doc.general = { ...doc.general, ...data.general };
     if (data.hero) doc.hero = { ...doc.hero, ...data.hero };
     if (data.plans) doc.plans = data.plans;
@@ -92,6 +94,7 @@ export async function updateLandingCms(
     if (data.testimonials) doc.testimonials = data.testimonials;
     if (updatedBy) doc.updatedBy = updatedBy;
     await doc.save();
+    await deleteRemovedUploadUrlsBetweenDocs(oldSnapshot, doc.toObject());
   }
 
   return {
