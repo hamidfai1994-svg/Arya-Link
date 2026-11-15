@@ -24,11 +24,15 @@ import {
   CheckCircle2,
   Crown,
   Link2,
+  BadgeCheck,
+  Image as ImageIcon,
+  Eye,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { FileUploader } from '@/components/ui/file-uploader';
 import {
   Dialog,
   DialogContent,
@@ -40,7 +44,9 @@ import { toast } from 'sonner';
 
 interface OrgBranding {
   primaryColor?: string;
+  secondaryColor?: string;
   accentColor?: string;
+  coverImage?: string;
   backgroundColor?: string;
   logoUrl?: string;
   companySlogan?: string;
@@ -102,6 +108,7 @@ export default function OrganizationDashboardPage() {
   const [isOwner, setIsOwner] = useState(false);
   const [organization, setOrganization] = useState<OrganizationData | null>(null);
   const [members, setMembers] = useState<OrgMember[]>([]);
+  const [activeTab, setActiveTab] = useState<'members' | 'branding'>('members');
   const [searchQuery, setSearchQuery] = useState('');
   const [copiedAlias, setCopiedAlias] = useState<string | null>(null);
 
@@ -120,11 +127,11 @@ export default function OrganizationDashboardPage() {
   const [empPassword, setEmpPassword] = useState('');
   const [isSubmittingMember, setIsSubmittingMember] = useState(false);
 
-  // Corporate Branding Modal state
-  const [isBrandingModalOpen, setIsBrandingModalOpen] = useState(false);
+  // Corporate Branding state
   const [brandName, setBrandName] = useState('');
   const [brandPrimaryColor, setBrandPrimaryColor] = useState('#0ea5e9');
-  const [brandAccentColor, setBrandAccentColor] = useState('#10b981');
+  const [brandSecondaryColor, setBrandSecondaryColor] = useState('#10b981');
+  const [brandCoverImage, setBrandCoverImage] = useState('');
   const [brandLogoUrl, setBrandLogoUrl] = useState('');
   const [brandSlogan, setBrandSlogan] = useState('');
   const [brandEnforce, setBrandEnforce] = useState(true);
@@ -151,7 +158,12 @@ export default function OrganizationDashboardPage() {
       if (data.organization) {
         setBrandName(data.organization.name || '');
         setBrandPrimaryColor(data.organization.branding?.primaryColor || '#0ea5e9');
-        setBrandAccentColor(data.organization.branding?.accentColor || '#10b981');
+        setBrandSecondaryColor(
+          data.organization.branding?.secondaryColor ||
+            data.organization.branding?.accentColor ||
+            '#10b981'
+        );
+        setBrandCoverImage(data.organization.branding?.coverImage || '');
         setBrandLogoUrl(data.organization.branding?.logoUrl || '');
         setBrandSlogan(data.organization.branding?.companySlogan || '');
         setBrandEnforce(data.organization.branding?.enforceBranding ?? true);
@@ -329,7 +341,9 @@ export default function OrganizationDashboardPage() {
           name: brandName.trim(),
           branding: {
             primaryColor: brandPrimaryColor,
-            accentColor: brandAccentColor,
+            secondaryColor: brandSecondaryColor,
+            accentColor: brandSecondaryColor,
+            coverImage: brandCoverImage.trim(),
             logoUrl: brandLogoUrl.trim(),
             companySlogan: brandSlogan.trim(),
             enforceBranding: brandEnforce,
@@ -343,11 +357,10 @@ export default function OrganizationDashboardPage() {
         return;
       }
 
-      toast.success(data.message || 'تنظیمات برندینگ سازمان ذخیره شد.');
+      toast.success(data.message || 'تنظیمات برندینگ و قالب تیم با موفقیت ذخیره و اعمال شد.');
       if (data.organization) {
         setOrganization(data.organization);
       }
-      setIsBrandingModalOpen(false);
     } catch {
       toast.error('خطای شبکه هنگام ذخیره برندینگ.');
     } finally {
@@ -503,12 +516,14 @@ export default function OrganizationDashboardPage() {
         <div className="flex items-center gap-2.5 flex-wrap">
           <Button
             type="button"
-            variant="outline"
-            onClick={() => setIsBrandingModalOpen(true)}
+            variant={activeTab === 'branding' ? 'default' : 'outline'}
+            onClick={() =>
+              setActiveTab(activeTab === 'branding' ? 'members' : 'branding')
+            }
             className="rounded-xl gap-2 text-xs font-bold h-10"
           >
             <Palette className="w-4 h-4 text-cyan-500" />
-            تنظیمات برندینگ سازمان
+            تنظیمات برندینگ و قالب تیم
           </Button>
           <Button
             type="button"
@@ -522,7 +537,37 @@ export default function OrganizationDashboardPage() {
         </div>
       </div>
 
-      {/* License Quota & Corporate Overview Widgets */}
+      {/* Navigation Tabs */}
+      <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-card/80 border border-border w-full sm:w-fit">
+        <button
+          type="button"
+          onClick={() => setActiveTab('members')}
+          className={`flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+            activeTab === 'members'
+              ? 'bg-cyan-500 text-white shadow-md shadow-cyan-500/20'
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
+          }`}
+        >
+          <Users className="w-4 h-4" />
+          <span>اعضای تیم و جوازها</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('branding')}
+          className={`flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+            activeTab === 'branding'
+              ? 'bg-cyan-500 text-white shadow-md shadow-cyan-500/20'
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
+          }`}
+        >
+          <Palette className="w-4 h-4" />
+          <span>تنظیمات برندینگ و قالب تیم</span>
+        </button>
+      </div>
+
+      {activeTab === 'members' && (
+        <>
+          {/* License Quota & Corporate Overview Widgets */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* License Quota Widget */}
         <Card className="p-5 rounded-3xl border-border bg-card/80 backdrop-blur-md md:col-span-2 flex flex-col justify-between">
@@ -589,8 +634,13 @@ export default function OrganizationDashboardPage() {
               />
               <span
                 className="w-6 h-6 rounded-lg border border-white/20 shadow-sm"
-                style={{ backgroundColor: organization.branding?.accentColor || '#10b981' }}
-                title="رنگ دوم سازمانی"
+                style={{
+                  backgroundColor:
+                    organization.branding?.secondaryColor ||
+                    organization.branding?.accentColor ||
+                    '#10b981',
+                }}
+                title="رنگ ثانویه سازمانی"
               />
             </div>
           </div>
@@ -601,10 +651,10 @@ export default function OrganizationDashboardPage() {
             </span>
             <button
               type="button"
-              onClick={() => setIsBrandingModalOpen(true)}
-              className="text-cyan-500 hover:text-cyan-400 font-bold shrink-0"
+              onClick={() => setActiveTab('branding')}
+              className="text-cyan-500 hover:text-cyan-400 font-bold shrink-0 cursor-pointer"
             >
-              ویرایش رنگ و لوگو
+              تنظیم برندینگ و کاور
             </button>
           </div>
         </Card>
@@ -817,6 +867,314 @@ export default function OrganizationDashboardPage() {
           </div>
         )}
       </Card>
+        </>
+      )}
+
+      {/* TAB 2: Corporate Branding & Team Template Settings */}
+      {activeTab === 'branding' && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* Branding Settings Form */}
+          <Card className="lg:col-span-7 p-5 md:p-6 rounded-3xl border-border bg-card/85 backdrop-blur-md shadow-sm space-y-5">
+            <div className="flex items-start justify-between gap-3 pb-4 border-b border-border">
+              <div>
+                <h2 className="text-base md:text-lg font-black text-foreground flex items-center gap-2">
+                  <Palette className="w-5 h-5 text-cyan-500" />
+                  تنظیمات برندینگ و قالب تیم
+                </h2>
+                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                  هویت بصری، لوگو، تصویر کاور و رنگ‌های تم شرکت را تعیین نمایید تا ظاهر مینی‌سایت تمام کارمندان به صورت یکپارچه و قفل‌شده نمایش داده شود.
+                </p>
+              </div>
+              <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-[10px] font-bold gap-1 shrink-0">
+                <Lock className="w-3 h-3" />
+                یکپارچه‌سازی سازمانی
+              </Badge>
+            </div>
+
+            <form onSubmit={handleSaveBranding} className="space-y-5">
+              <div>
+                <label className="block text-xs font-bold text-foreground mb-1.5">
+                  نام رسمی شرکت / سازمان
+                </label>
+                <Input
+                  value={brandName}
+                  onChange={(e) => setBrandName(e.target.value)}
+                  placeholder="نام رسمی سازمان"
+                  className="rounded-xl"
+                  required
+                />
+              </div>
+
+              {/* 1. Corporate Logo Uploader */}
+              <FileUploader
+                value={brandLogoUrl}
+                onChange={(url) => setBrandLogoUrl(url)}
+                fileType="image"
+                folder="branding"
+                label="۱. لوگوی سازمانی (آپلود تصویر)"
+                description="این لوگو به عنوان نشان تایید و وابستگی سازمانی در هدر و فوتر مینی‌سایت تمام کارمندان نمایش داده می‌شود."
+                maxSizeMB={2}
+                aspectRatio="square"
+              />
+
+              {/* 2. Primary & Secondary Theme Colors */}
+              <div className="p-4 rounded-2xl border border-border bg-muted/20 space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-foreground">
+                    ۲. رنگ اصلی و رنگ ثانویه تم (Primary & Secondary Colors)
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    {[
+                      { p: '#0ea5e9', s: '#10b981', name: 'فیروزه‌ای و زمردی' },
+                      { p: '#2563eb', s: '#06b6d4', name: 'آبی رسمی' },
+                      { p: '#7c3aed', s: '#ec4899', name: 'بنفش مدرن' },
+                      { p: '#d97706', s: '#f59e0b', name: 'طلایی لوکس' },
+                    ].map((pal) => (
+                      <button
+                        key={pal.name}
+                        type="button"
+                        title={pal.name}
+                        onClick={() => {
+                          setBrandPrimaryColor(pal.p);
+                          setBrandSecondaryColor(pal.s);
+                        }}
+                        className="w-6 h-6 rounded-full border border-white/30 shadow-xs cursor-pointer transition-transform hover:scale-110"
+                        style={{
+                          background: `linear-gradient(135deg, ${pal.p}, ${pal.s})`,
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-foreground mb-1.5">
+                      رنگ اصلی تم (Primary Color)
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={brandPrimaryColor}
+                        onChange={(e) => setBrandPrimaryColor(e.target.value)}
+                        className="w-11 h-10 rounded-xl border border-border cursor-pointer bg-transparent p-0.5 shrink-0"
+                      />
+                      <Input
+                        value={brandPrimaryColor}
+                        onChange={(e) => setBrandPrimaryColor(e.target.value)}
+                        className="rounded-xl text-xs font-sans uppercase"
+                        dir="ltr"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-foreground mb-1.5">
+                      رنگ ثانویه تم (Secondary Color)
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={brandSecondaryColor}
+                        onChange={(e) => setBrandSecondaryColor(e.target.value)}
+                        className="w-11 h-10 rounded-xl border border-border cursor-pointer bg-transparent p-0.5 shrink-0"
+                      />
+                      <Input
+                        value={brandSecondaryColor}
+                        onChange={(e) => setBrandSecondaryColor(e.target.value)}
+                        className="rounded-xl text-xs font-sans uppercase"
+                        dir="ltr"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 3. Fixed Corporate Cover Image Uploader */}
+              <FileUploader
+                value={brandCoverImage}
+                onChange={(url) => setBrandCoverImage(url)}
+                fileType="image"
+                folder="covers"
+                label="۳. تصویر کاور پس‌زمینه ثابت تیم (Cover Image)"
+                description="این تصویر به عنوان کاور هدر ثابت روی مینی‌سایت تمام کارمندان اعمال شده و کارمندان امکان تغییر آن را نخواهند داشت."
+                maxSizeMB={2}
+                aspectRatio="banner"
+              />
+
+              <div>
+                <label className="block text-xs font-bold text-foreground mb-1.5">
+                  شعار سازمانی پیش‌فرض کارت‌ها (اختیاری)
+                </label>
+                <Input
+                  value={brandSlogan}
+                  onChange={(e) => setBrandSlogan(e.target.value)}
+                  placeholder="مثلاً: خدمات معیاری و نوین برای مشتریان عزیز"
+                  className="rounded-xl text-xs"
+                />
+              </div>
+
+              <div className="space-y-2.5 p-4 rounded-2xl bg-muted/25 border border-border">
+                <label className="flex items-center gap-2.5 text-xs cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={brandEnforce}
+                    onChange={(e) => setBrandEnforce(e.target.checked)}
+                    className="rounded border-border text-cyan-500 focus:ring-cyan-500"
+                  />
+                  <span className="font-semibold text-foreground">
+                    قفل کردن ابزارهای رنگ و کاور در ویرایشگر کارمندان (کارمند فقط عکس پروفایل شخصی را تغییر دهد)
+                  </span>
+                </label>
+
+                <label className="flex items-center gap-2.5 text-xs cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={applyToAllMembers}
+                    onChange={(e) => setApplyToAllMembers(e.target.checked)}
+                    className="rounded border-border text-cyan-500 focus:ring-cyan-500"
+                  />
+                  <span className="font-semibold text-cyan-600 dark:text-cyan-400">
+                    بروزرسانی و اعمال فوری روی پروفایل تمام کارمندان فعلی
+                  </span>
+                </label>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <Button
+                  type="submit"
+                  disabled={isSavingBranding}
+                  className="w-full sm:w-auto rounded-xl bg-cyan-500 hover:bg-cyan-600 text-white font-bold text-xs gap-2 px-6 h-11 shadow-lg shadow-cyan-500/20"
+                >
+                  {isSavingBranding ? (
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="w-4 h-4" />
+                  )}
+                  ذخیره و اعمال برندینگ روی تمام کارت‌های تیم
+                </Button>
+              </div>
+            </form>
+          </Card>
+
+          {/* Live Corporate Mini-Site Preview Column */}
+          <Card className="lg:col-span-5 p-5 rounded-3xl border-border bg-card/85 backdrop-blur-md shadow-sm space-y-4 lg:sticky lg:top-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Eye className="w-4 h-4 text-cyan-500" />
+                <span className="text-xs font-black text-foreground">
+                  پیش‌نمایش زنده قالب یکپارچه کارمندان
+                </span>
+              </div>
+              <Badge variant="outline" className="text-[10px] border-cyan-500/30 text-cyan-500">
+                نمای عمومی کارت
+              </Badge>
+            </div>
+
+            <div className="rounded-3xl overflow-hidden border border-white/15 bg-slate-950 text-white shadow-2xl">
+              {/* Cover Area */}
+              <div className="relative h-36 w-full overflow-hidden">
+                {brandCoverImage ? (
+                  <img
+                    src={brandCoverImage}
+                    alt="Corporate Cover"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div
+                    className="w-full h-full"
+                    style={{
+                      background: `linear-gradient(135deg, ${brandPrimaryColor}, ${brandSecondaryColor})`,
+                    }}
+                  />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-transparent to-black/30" />
+
+                {/* Floating Corporate Affiliation Badge */}
+                <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-950/75 backdrop-blur-md border border-white/15 text-[10px] font-bold shadow-lg">
+                  {brandLogoUrl ? (
+                    <img
+                      src={brandLogoUrl}
+                      alt={brandName}
+                      className="w-4 h-4 rounded-full object-cover"
+                    />
+                  ) : (
+                    <Building2 className="w-3.5 h-3.5" style={{ color: brandPrimaryColor }} />
+                  )}
+                  <span className="truncate max-w-[130px]">{brandName || 'نام سازمان'}</span>
+                  <BadgeCheck className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+                </div>
+              </div>
+
+              {/* Avatar & Employee Sample Body */}
+              <div className="px-5 pb-6 -mt-10 relative z-10 text-center space-y-3">
+                <div className="w-20 h-20 rounded-full mx-auto border-4 border-slate-950 shadow-xl flex items-center justify-center text-lg font-black text-white"
+                  style={{
+                    background: `linear-gradient(135deg, ${brandPrimaryColor}, ${brandSecondaryColor})`,
+                  }}
+                >
+                  اف
+                </div>
+
+                <div>
+                  <h3 className="text-base font-black text-white">احمد فرهاد نوری</h3>
+                  <p className="text-xs font-semibold mt-0.5" style={{ color: brandSecondaryColor }}>
+                    مسئول ارتباطات — {brandName || 'سازمان شما'}
+                  </p>
+                  {brandSlogan && (
+                    <p className="text-[11px] text-slate-300 mt-1.5 leading-relaxed">
+                      {brandSlogan}
+                    </p>
+                  )}
+                </div>
+
+                {/* Sample Corporate Action Buttons */}
+                <div className="space-y-2 pt-2">
+                  <div
+                    className="w-full py-2.5 px-4 rounded-2xl text-xs font-bold text-white shadow-md flex items-center justify-between border"
+                    style={{
+                      backgroundColor: `${brandPrimaryColor}26`,
+                      borderColor: brandPrimaryColor,
+                    }}
+                  >
+                    <span>تماس مستقیم و واتساپ کاری</span>
+                    <span className="text-[10px] opacity-80">←</span>
+                  </div>
+                  <div
+                    className="w-full py-2.5 px-4 rounded-2xl text-xs font-bold text-white shadow-md flex items-center justify-between border"
+                    style={{
+                      background: `linear-gradient(135deg, ${brandPrimaryColor}, ${brandSecondaryColor})`,
+                      borderColor: 'rgba(255,255,255,0.2)',
+                    }}
+                  >
+                    <span>ذخیره در مخاطبان موبایل (vCard)</span>
+                    <span className="text-[10px]">+</span>
+                  </div>
+                </div>
+
+                {/* Footer Affiliation Badge */}
+                <div className="pt-3 border-t border-white/10 flex items-center justify-center gap-2 text-[10px] text-slate-300">
+                  {brandLogoUrl && (
+                    <img
+                      src={brandLogoUrl}
+                      alt={brandName}
+                      className="w-4 h-4 rounded object-cover"
+                    />
+                  )}
+                  <span>تایید شده توسط {brandName || 'سازمان شما'}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-3 rounded-2xl bg-muted/40 border border-border text-[11px] text-muted-foreground leading-relaxed flex items-start gap-2">
+              <ImageIcon className="w-4 h-4 text-cyan-500 shrink-0 mt-0.5" />
+              <span>
+                تمام کارمندان تیم این کاور و رنگ‌بندی را روی کارت عمومی خود دریافت می‌کنند و در داشبورد خودشان فقط اجازه تغییر عکس پروفایل شخصی را خواهند داشت.
+              </span>
+            </div>
+          </Card>
+        </div>
+      )}
 
       {/* Modal 1: Add New Employee */}
       <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
@@ -941,149 +1299,6 @@ export default function OrganizationDashboardPage() {
                   <UserPlus className="w-4 h-4" />
                 )}
                 ثبت کارمند و ساخت کارت
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Modal 2: Corporate Branding Configuration */}
-      <Dialog open={isBrandingModalOpen} onOpenChange={setIsBrandingModalOpen}>
-        <DialogContent className="sm:max-w-lg rounded-3xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-lg font-black">
-              <Palette className="w-5 h-5 text-cyan-500" />
-              تنظیمات برندینگ و هویت بصری سازمان
-            </DialogTitle>
-            <DialogDescription className="text-xs leading-relaxed">
-              رنگ‌ها و لوگوی سازمانی را مشخص کنید تا تمام کارت‌های دیجیتال کارمندان ظاهر یکسان و حرفه‌ای داشته باشند.
-            </DialogDescription>
-          </DialogHeader>
-
-          <form onSubmit={handleSaveBranding} className="space-y-4 mt-2">
-            <div>
-              <label className="block text-xs font-bold text-foreground mb-1.5">
-                نام رسمی سازمان
-              </label>
-              <Input
-                value={brandName}
-                onChange={(e) => setBrandName(e.target.value)}
-                className="rounded-xl"
-                required
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-bold text-foreground mb-1.5">
-                  رنگ اصلی (Primary Color)
-                </label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={brandPrimaryColor}
-                    onChange={(e) => setBrandPrimaryColor(e.target.value)}
-                    className="w-10 h-10 rounded-xl border border-border cursor-pointer bg-transparent p-0.5"
-                  />
-                  <Input
-                    value={brandPrimaryColor}
-                    onChange={(e) => setBrandPrimaryColor(e.target.value)}
-                    className="rounded-xl text-xs"
-                    dir="ltr"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-foreground mb-1.5">
-                  رنگ مکمل (Accent Color)
-                </label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={brandAccentColor}
-                    onChange={(e) => setBrandAccentColor(e.target.value)}
-                    className="w-10 h-10 rounded-xl border border-border cursor-pointer bg-transparent p-0.5"
-                  />
-                  <Input
-                    value={brandAccentColor}
-                    onChange={(e) => setBrandAccentColor(e.target.value)}
-                    className="rounded-xl text-xs"
-                    dir="ltr"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-foreground mb-1.5">
-                لینک لوگوی شرکت (Logo URL)
-              </label>
-              <Input
-                value={brandLogoUrl}
-                onChange={(e) => setBrandLogoUrl(e.target.value)}
-                placeholder="https://..."
-                className="rounded-xl text-xs"
-                dir="ltr"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-foreground mb-1.5">
-                شعار سازمانی پیش‌فرض کارت‌ها
-              </label>
-              <Input
-                value={brandSlogan}
-                onChange={(e) => setBrandSlogan(e.target.value)}
-                placeholder="مثلاً: خدمات معیاری و مدرن برای مشتریان عزیز"
-                className="rounded-xl text-xs"
-              />
-            </div>
-
-            <div className="space-y-2.5 pt-1">
-              <label className="flex items-center gap-2.5 text-xs cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={brandEnforce}
-                  onChange={(e) => setBrandEnforce(e.target.checked)}
-                  className="rounded border-border text-cyan-500 focus:ring-cyan-500"
-                />
-                <span>اعمال خودکار برندینگ سازمان برای کارمندان جدید</span>
-              </label>
-
-              <label className="flex items-center gap-2.5 text-xs cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={applyToAllMembers}
-                  onChange={(e) => setApplyToAllMembers(e.target.checked)}
-                  className="rounded border-border text-cyan-500 focus:ring-cyan-500"
-                />
-                <span className="font-semibold text-cyan-600 dark:text-cyan-400">
-                  بروزرسانی فوری رنگ‌بندی روی تمام کارت‌های فعلی کارمندان
-                </span>
-              </label>
-            </div>
-
-            <div className="flex items-center justify-end gap-2 pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsBrandingModalOpen(false)}
-                className="rounded-xl text-xs"
-              >
-                بستن
-              </Button>
-              <Button
-                type="submit"
-                disabled={isSavingBranding}
-                className="rounded-xl bg-cyan-500 hover:bg-cyan-600 text-white font-bold text-xs gap-2 px-5"
-              >
-                {isSavingBranding ? (
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                ) : (
-                  <CheckCircle2 className="w-4 h-4" />
-                )}
-                ذخیره تنظیمات برندینگ
               </Button>
             </div>
           </form>

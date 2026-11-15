@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { connectToDatabase } from '@/lib/db/mongodb';
 import { Profile } from '@/models/Profile.model';
+import { User } from '@/models/User.model';
 import { PhysicalCard } from '@/models/PhysicalCard.model';
 import { buildUserIsolationQuery, isValidUserSession } from '@/lib/db/data-isolation';
 import { getJobTemplate, generateDefaultModulesForJob } from '@/lib/constants/jobTemplates';
@@ -41,6 +42,18 @@ export async function GET() {
     }
 
     await connectToDatabase();
+
+    let dbUser: any = null;
+    if (session?.user?.id && mongoose.isValidObjectId(session.user.id)) {
+      dbUser = await User.findById(session.user.id)
+        .select('organizationId orgRole accountType')
+        .lean();
+    }
+    if (!dbUser && session?.user?.email) {
+      dbUser = await User.findOne({ email: session.user.email.toLowerCase().trim() })
+        .select('organizationId orgRole accountType')
+        .lean();
+    }
 
     // Strict user isolation filter: only profiles belonging to this session's userId or email
     const userQuery = buildUserIsolationQuery(session!.user);
@@ -92,7 +105,19 @@ export async function GET() {
       displayName: p.displayName,
       headline: p.headline || '',
       avatarUrl: p.avatarUrl || '',
-      roleType: p.roleType || 'personal',
+      roleType: p.roleType || p.profileType || 'personal',
+      orgId: p.orgId ? String(p.orgId) : (dbUser?.organizationId ? String(dbUser.organizationId) : null),
+      isCorporate: Boolean(
+        p.orgId ||
+        p.roleType === 'corporate' ||
+        p.roleType === 'business' ||
+        p.profileType === 'business' ||
+        p.profileType === 'corporate' ||
+        dbUser?.organizationId ||
+        dbUser?.orgRole === 'owner' ||
+        dbUser?.orgRole === 'member' ||
+        dbUser?.accountType === 'corporate'
+      ),
       isActive: p.isActive !== false,
       isVerified: !!p.isVerified,
       verificationStatus: p.verificationStatus || 'unverified',
@@ -133,6 +158,7 @@ export async function GET() {
       data: formattedList,
       totalNfcScans,
       nfcCardsCount,
+      userOrgRole: dbUser?.orgRole || null,
     });
   } catch (error: any) {
     console.error('Error fetching profiles list:', error);

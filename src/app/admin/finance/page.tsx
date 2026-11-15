@@ -60,6 +60,11 @@ interface OrderItem {
   orderNumber: string;
   customerName: string;
   customerPhone: string;
+  productTitle?: string;
+  orderType?: string;
+  subscriptionPlanType?: string;
+  companyName?: string;
+  requestedLicenses?: number;
   totalPrice: number;
   paymentStatus: 'paid' | 'pending' | 'failed';
   paymentMethod: string;
@@ -97,6 +102,34 @@ export default function AdminFinancePage() {
   const [recordToDelete, setRecordToDelete] = useState<{ id: string; type: 'payout' | 'order'; title: string; amount: number } | null>(null);
   const [deleteReason, setDeleteReason] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
+  const [approvingOrderId, setApprovingOrderId] = useState<string | null>(null);
+
+  const handleApproveOrderPayment = async (order: OrderItem) => {
+    setApprovingOrderId(order._id);
+    try {
+      const res = await fetch('/api/orders', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId: order._id,
+          action: order.orderType === 'subscription' ? 'approve_subscription' : undefined,
+          paymentStatus: 'paid',
+          orderStatus: order.orderType === 'subscription' ? 'completed' : 'processing',
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success(data.message || 'پرداخت با موفقیت تایید شد.');
+        fetchFinanceData();
+      } else {
+        toast.error(data.message || 'خطا در تایید پرداخت سفارش');
+      }
+    } catch (err) {
+      toast.error('خطا در ارتباط با سرور');
+    } finally {
+      setApprovingOrderId(null);
+    }
+  };
 
   const handleConfirmDelete = async () => {
     if (!recordToDelete) return;
@@ -454,6 +487,11 @@ export default function AdminFinancePage() {
                       <div className="text-[10px] text-muted-foreground font-sans" dir="ltr">
                         {o.customerPhone}
                       </div>
+                      {(o.subscriptionPlanType === 'corporate' || o.companyName) && (
+                        <Badge variant="purple" className="text-[9px] py-0 px-1.5 mt-1">
+                          سازمانی: {o.companyName || 'شرکت'} ({o.requestedLicenses || 50})
+                        </Badge>
+                      )}
                     </TableCell>
 
                     <TableCell className="font-sans text-xs font-bold text-emerald-500">
@@ -484,24 +522,42 @@ export default function AdminFinancePage() {
                     </TableCell>
 
                     <TableCell className="text-center">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => {
-                          setRecordToDelete({
-                            id: o._id,
-                            type: 'order',
-                            title: `تراکنش سفارش #${o.orderNumber} (${o.customerName})`,
-                            amount: o.totalPrice,
-                          });
-                          setDeleteReason('');
-                        }}
-                        className="h-8 px-2 rounded-lg text-rose-400 hover:text-rose-300 hover:bg-rose-500/15 text-xs flex items-center gap-1 mx-auto"
-                        title="حذف تراکنش و ثبت در لاگ حسابرسی"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        <span>حذف</span>
-                      </Button>
+                      <div className="flex items-center justify-center gap-1.5">
+                        {o.paymentStatus === 'pending' && (
+                          <Button
+                            size="sm"
+                            disabled={approvingOrderId === o._id}
+                            onClick={() => handleApproveOrderPayment(o)}
+                            className="h-8 px-2.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-[11px] font-bold flex items-center gap-1"
+                            title="تایید فیش واریزی و فعال‌سازی خودکار"
+                          >
+                            {approvingOrderId === o._id ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <Check className="w-3.5 h-3.5" />
+                            )}
+                            <span>تایید فیش</span>
+                          </Button>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            setRecordToDelete({
+                              id: o._id,
+                              type: 'order',
+                              title: `تراکنش سفارش #${o.orderNumber} (${o.customerName})`,
+                              amount: o.totalPrice,
+                            });
+                            setDeleteReason('');
+                          }}
+                          className="h-8 px-2 rounded-lg text-rose-400 hover:text-rose-300 hover:bg-rose-500/15 text-xs flex items-center gap-1"
+                          title="حذف تراکنش و ثبت در لاگ حسابرسی"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>حذف</span>
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

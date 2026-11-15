@@ -189,6 +189,9 @@ export async function POST(req: NextRequest) {
     const uniqueAlias = await generateUniqueAlias(aliasSeed);
 
     const branding = org.branding || {};
+    const primaryColor = branding.primaryColor || '#0ea5e9';
+    const secondaryColor = branding.secondaryColor || branding.accentColor || '#10b981';
+
     const employeeProfile = await Profile.create({
       userId: memberUser._id,
       orgId: org._id,
@@ -198,7 +201,8 @@ export async function POST(req: NextRequest) {
       bio:
         branding.companySlogan ||
         `عضو رسمی تیم ${org.name} در پلتفرم کارت هوشمند آریا لینک.`,
-      avatarUrl: branding.logoUrl || '',
+      avatarUrl: '',
+      coverUrl: branding.coverImage || '',
       email: rawEmail || '',
       phone: phone || '',
       whatsapp: phone || '',
@@ -209,8 +213,10 @@ export async function POST(req: NextRequest) {
       seoDescription: `کارت ویزیت دیجیتال رسمی ${name} از مجموعه ${org.name}`,
       themeConfig: {
         preset: 'corporate_pro',
-        primaryColor: branding.primaryColor || '#0ea5e9',
-        accentColor: branding.accentColor || '#10b981',
+        primaryColor,
+        accentColor: secondaryColor,
+        buttonBgColor: primaryColor,
+        buttonBorderColor: secondaryColor,
         backgroundColor:
           branding.backgroundColor ||
           'linear-gradient(135deg, #090d16 0%, #0f172a 50%, #1e1b4b 100%)',

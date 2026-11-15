@@ -63,6 +63,8 @@ interface ProfileItem {
   headline?: string;
   avatarUrl?: string;
   roleType?: string;
+  orgId?: string | null;
+  isCorporate?: boolean;
   isActive?: boolean;
   isVerified?: boolean;
   viewsCount?: number;
@@ -78,6 +80,7 @@ export default function UserDashboardPage() {
 
   const [profiles, setProfiles] = useState<ProfileItem[]>([]);
   const [totalNfcScans, setTotalNfcScans] = useState<number>(0);
+  const [userOrgRole, setUserOrgRole] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -179,6 +182,9 @@ export default function UserDashboardPage() {
         setProfiles(data.data);
         if (data.totalNfcScans !== undefined) {
           setTotalNfcScans(Number(data.totalNfcScans) || 0);
+        }
+        if (data.userOrgRole !== undefined) {
+          setUserOrgRole(data.userOrgRole || null);
         }
       }
     } catch (err) {
@@ -639,9 +645,31 @@ export default function UserDashboardPage() {
                           <span>تایید شده</span>
                         </Badge>
                       )}
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border">
-                        {profile.roleType === 'business' ? 'کارت تجاری' : 'کارت شخصی'}
-                      </span>
+                      {(() => {
+                        const isCorporateCard = Boolean(
+                          profile.isCorporate ||
+                          profile.orgId ||
+                          profile.roleType === 'corporate' ||
+                          profile.roleType === 'business' ||
+                          session?.user?.orgRole === 'owner' ||
+                          session?.user?.orgRole === 'member' ||
+                          userOrgRole === 'owner' ||
+                          userOrgRole === 'member'
+                        );
+                        return (
+                          <span
+                            className={cn(
+                              'text-[10px] px-2.5 py-0.5 rounded-full inline-flex items-center gap-1 border',
+                              isCorporateCard
+                                ? 'bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/30 font-bold'
+                                : 'bg-muted text-muted-foreground border-border'
+                            )}
+                          >
+                            {isCorporateCard && <Building2 className="w-3 h-3" />}
+                            <span>{isCorporateCard ? 'کارت سازمانی' : 'کارت شخصی'}</span>
+                          </span>
+                        );
+                      })()}
                     </div>
 
                     {profile.headline && (

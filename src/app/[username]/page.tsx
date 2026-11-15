@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { connectToDatabase } from '@/lib/db/mongodb';
 import { Profile } from '@/models/Profile.model';
 import { User } from '@/models/User.model';
+import { Organization } from '@/models/Organization.model';
+import mongoose from 'mongoose';
 import { PublicProfileClient } from '@/components/profile/PublicProfileClient';
 import { CreditCard, ArrowRight, ShieldAlert, Sparkles, Home, UserCheck } from 'lucide-react';
 import { SiteLogo } from '@/components/SiteLogo';
@@ -132,20 +134,79 @@ export default async function PublicProfilePage({ params }: PageProps) {
     console.error('Error incrementing profile viewsCount:', e);
   }
 
-  // Load owner user's financial settings if not stored directly on profile
+  // Load owner user's financial settings and organization membership
   let ownerFinancialSettings = profile.financialSettings;
-  if (!ownerFinancialSettings?.hesabPay?.accountNumber && !ownerFinancialSettings?.hesabPay?.merchantId) {
-    if (profile.userId) {
-      try {
-        const ownerUser = await User.findById(profile.userId).select('financialSettings').lean();
-        if (ownerUser?.financialSettings) {
-          ownerFinancialSettings = ownerUser.financialSettings;
-        }
-      } catch (uErr) {
-        console.warn('Could not load owner user financial settings:', uErr);
+  let ownerUser: any = null;
+  if (profile.userId) {
+    try {
+      ownerUser = await User.findById(profile.userId)
+        .select('financialSettings organizationId orgRole')
+        .lean();
+      if (
+        !ownerFinancialSettings?.hesabPay?.accountNumber &&
+        !ownerFinancialSettings?.hesabPay?.merchantId &&
+        ownerUser?.financialSettings
+      ) {
+        ownerFinancialSettings = ownerUser.financialSettings;
       }
+    } catch (uErr) {
+      console.warn('Could not load owner user settings:', uErr);
     }
   }
+
+  // Load corporate organization branding when profile owner belongs to an organization
+  let organizationBranding: {
+    id: string;
+    name: string;
+    logoUrl: string;
+    primaryColor: string;
+    secondaryColor: string;
+    coverImage: string;
+    companySlogan: string;
+  } | null = null;
+
+  const resolvedOrgId = ownerUser?.organizationId || profile.orgId;
+  if (resolvedOrgId && mongoose.isValidObjectId(String(resolvedOrgId))) {
+    try {
+      const orgDoc = await Organization.findById(resolvedOrgId).lean();
+      if (orgDoc) {
+        const ob = orgDoc.branding || {};
+        organizationBranding = {
+          id: orgDoc._id.toString(),
+          name: orgDoc.name || '',
+          logoUrl: ob.logoUrl || '',
+          primaryColor: ob.primaryColor || '#0ea5e9',
+          secondaryColor: ob.secondaryColor || ob.accentColor || '#10b981',
+          coverImage: ob.coverImage || '',
+          companySlogan: ob.companySlogan || '',
+        };
+      }
+    } catch (orgErr) {
+      console.warn('Could not load organization branding for public profile:', orgErr);
+    }
+  }
+
+  const rawThemeConfig = profile.themeConfig
+    ? JSON.parse(JSON.stringify(profile.themeConfig))
+    : undefined;
+
+  const effectiveThemeConfig = organizationBranding
+    ? {
+        ...(rawThemeConfig || {}),
+        preset:
+          rawThemeConfig?.preset === 'minimal_light'
+            ? 'dark_neon'
+            : rawThemeConfig?.preset || 'dark_neon',
+        primaryColor: organizationBranding.primaryColor,
+        accentColor: organizationBranding.secondaryColor,
+        buttonBgColor: organizationBranding.primaryColor,
+        buttonBorderColor: organizationBranding.secondaryColor,
+      }
+    : rawThemeConfig;
+
+  const effectiveCoverUrl = organizationBranding?.coverImage
+    ? organizationBranding.coverImage
+    : profile.coverUrl || '';
 
   // Safe serialization of owner financial settings (SECRET API KEY MUST BE EXCLUDED!)
   const sanitizedFinancialSettings = ownerFinancialSettings?.hesabPay
@@ -168,7 +229,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
     headline: profile.headline || '',
     bio: profile.bio || '',
     avatarUrl: profile.avatarUrl || '',
-    coverUrl: profile.coverUrl || '',
+    coverUrl: effectiveCoverUrl,
     headerLayout: profile.headerLayout || 'curve',
     phone: profile.phone || '',
     whatsapp: profile.whatsapp || '',
@@ -176,7 +237,8 @@ export default async function PublicProfilePage({ params }: PageProps) {
     location: profile.location || '',
     directModeEnabled: Boolean(profile.directModeEnabled),
     directModeUrl: profile.directModeUrl || '',
-    themeConfig: profile.themeConfig ? JSON.parse(JSON.stringify(profile.themeConfig)) : undefined,
+    themeConfig: effectiveThemeConfig,
+    organizationBranding,
     links: (profile.links || []).map((l: any) => ({
       id: l.id || String(l._id || Math.random()),
       title: l.title || '',

@@ -81,6 +81,7 @@ import {
   KeyRound,
   Hourglass,
   ShieldAlert,
+  Building2,
 } from 'lucide-react';
 import {
   Dialog,
@@ -121,6 +122,15 @@ interface PublicProfileClientProps {
     };
     financialSettings?: any;
     noIndex?: boolean;
+    organizationBranding?: {
+      id: string;
+      name: string;
+      logoUrl?: string;
+      primaryColor?: string;
+      secondaryColor?: string;
+      coverImage?: string;
+      companySlogan?: string;
+    } | null;
   };
 }
 
@@ -1677,9 +1687,47 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
   };
 
   // 7. Render Header Layout Variants (Curve, Gradient Mask, Minimal)
+  const renderCorporateHeaderBadge = () => {
+    const corp = profile.organizationBranding;
+    if (!corp) return null;
+
+    return (
+      <div
+        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full backdrop-blur-md border shadow-lg text-[11px] font-bold max-w-[220px] ${
+          isLight
+            ? 'bg-white/90 border-slate-200 text-slate-900'
+            : 'bg-slate-950/75 border-white/20 text-white'
+        }`}
+        title={`تاییدشده توسط سازمان ${corp.name}`}
+      >
+        {corp.logoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={corp.logoUrl}
+            alt={corp.name}
+            className="w-4 h-4 rounded-full object-cover shrink-0 border border-white/20"
+          />
+        ) : (
+          <Building2
+            className="w-3.5 h-3.5 shrink-0"
+            style={{ color: corp.primaryColor || '#0ea5e9' }}
+          />
+        )}
+        <span className="truncate">{corp.name}</span>
+        <BadgeCheck className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+      </div>
+    );
+  };
+
   const renderHeaderLayout = () => {
+    const effectiveCoverUrl = profile.organizationBranding?.coverImage || profile.coverUrl || '';
+    const effectiveLayout =
+      profile.headerLayout === 'minimal' && profile.organizationBranding?.coverImage
+        ? 'curve'
+        : profile.headerLayout;
+
     // 1. CURVE LAYOUT (Default)
-    if (profile.headerLayout === 'curve' || !profile.headerLayout) {
+    if (effectiveLayout === 'curve' || !effectiveLayout) {
       return (
         <div className="relative w-full">
           {/* Cover Photo */}
@@ -1687,10 +1735,10 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
             className="w-full h-44 sm:h-48 md:h-52 overflow-hidden relative shadow-inner bg-slate-900 rounded-3xl md:rounded-none md:rounded-t-3xl"
             style={{ clipPath: 'ellipse(90% 100% at 50% 0%)' }}
           >
-            {profile.coverUrl ? (
+            {effectiveCoverUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={profile.coverUrl}
+                src={effectiveCoverUrl}
                 alt="Cover"
                 className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
               />
@@ -1705,6 +1753,13 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
 
             {/* Subtle Gradient Overlay */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/25 pointer-events-none" />
+
+            {/* Corporate Affiliation Logo & Badge */}
+            {profile.organizationBranding && (
+              <div className={`absolute top-3.5 ${isLtr ? 'right-3.5' : 'left-3.5'} z-20`}>
+                {renderCorporateHeaderBadge()}
+              </div>
+            )}
           </div>
 
           {/* Overlapping 3D Avatar */}
@@ -1778,15 +1833,15 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
     }
 
     // 2. GRADIENT MASK LAYOUT
-    if (profile.headerLayout === 'gradient_mask') {
+    if (effectiveLayout === 'gradient_mask') {
       return (
         <div className="relative w-full">
           {/* Cover Photo with gradient mask */}
           <div className="relative w-full h-44 sm:h-48 md:h-52 overflow-hidden shrink-0 rounded-3xl md:rounded-none md:rounded-t-3xl [mask-image:linear-gradient(to_bottom,black_60%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_bottom,black_60%,transparent_100%)]">
-            {profile.coverUrl ? (
+            {effectiveCoverUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={profile.coverUrl}
+                src={effectiveCoverUrl}
                 alt="Cover"
                 className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
               />
@@ -1799,6 +1854,11 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
               />
             )}
           </div>
+          {profile.organizationBranding && (
+            <div className={`absolute top-3.5 ${isLtr ? 'right-3.5' : 'left-3.5'} z-20`}>
+              {renderCorporateHeaderBadge()}
+            </div>
+          )}
 
           {/* Overlapping 3D Avatar */}
           <div className="relative -mt-14 md:-mt-16 flex flex-col items-center z-10 px-2 md:px-5">
@@ -1872,6 +1932,9 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
     // 3. MINIMAL LAYOUT
     return (
       <div className="pt-8 pb-3 px-2 md:px-5 flex flex-col items-center text-center relative">
+        {profile.organizationBranding && (
+          <div className="mb-3">{renderCorporateHeaderBadge()}</div>
+        )}
         <div className="relative mb-3.5 group">
           <div
             className={`w-28 h-28 md:w-32 md:h-32 rounded-full overflow-hidden border-4 shadow-2xl relative bg-slate-800 ring-2 ring-white/10 ${isLight ? 'border-white' : 'border-slate-950'
@@ -2230,7 +2293,39 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
           </div>
         </div>
 
-        {/* FOOTER WATERMARK BRANDING */}
+        {/* CORPORATE AFFILIATION & FOOTER WATERMARK BRANDING */}
+        {profile.organizationBranding && (
+          <motion.div variants={itemVariants} className="pt-6 text-center shrink-0">
+            <div
+              className={`inline-flex items-center gap-2.5 px-4 py-2 rounded-2xl border backdrop-blur-md shadow-sm text-xs ${
+                isLight
+                  ? 'bg-white/90 border-slate-200 text-slate-800'
+                  : 'bg-white/[0.05] border-white/15 text-slate-200'
+              }`}
+            >
+              {profile.organizationBranding.logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={profile.organizationBranding.logoUrl}
+                  alt={profile.organizationBranding.name}
+                  className="w-5 h-5 rounded-md object-cover border border-white/20 shrink-0"
+                />
+              ) : (
+                <Building2
+                  className="w-4 h-4 shrink-0"
+                  style={{ color: profile.organizationBranding.primaryColor || '#0ea5e9' }}
+                />
+              )}
+              <span className="font-semibold">
+                {isLtr
+                  ? `Official Member of ${profile.organizationBranding.name}`
+                  : `عضو رسمی و تاییدشده ${profile.organizationBranding.name}`}
+              </span>
+              <BadgeCheck className="w-4 h-4 text-sky-400 shrink-0" />
+            </div>
+          </motion.div>
+        )}
+
         {!profile.hideBranding && (
           <motion.div variants={itemVariants} className="pt-10 pb-6 text-center select-none shrink-0">
             <a

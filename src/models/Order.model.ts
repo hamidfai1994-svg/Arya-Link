@@ -54,6 +54,9 @@ export interface IOrderDocument extends Document {
   paymentStatus: PaymentStatus;
   orderStatus: OrderStatus;
   orderType?: OrderType;
+  subscriptionPlanType?: 'pro' | 'corporate' | string;
+  companyName?: string;
+  requestedLicenses?: number;
   status?: OrderStatus | string;
   price?: number;
   paymentMethod: 'online' | 'cod' | 'bank' | 'wallet' | 'hawala' | 'crypto' | 'installment' | string;
@@ -138,6 +141,20 @@ const OrderSchema = new Schema<IOrderDocument>(
       },
       default: 'nfc_card',
       index: true,
+    },
+    subscriptionPlanType: {
+      type: String,
+      default: 'pro',
+      index: true,
+    },
+    companyName: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    requestedLicenses: {
+      type: Number,
+      default: 0,
     },
     status: {
       type: String,

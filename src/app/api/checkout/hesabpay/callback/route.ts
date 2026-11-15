@@ -45,9 +45,12 @@ export async function GET(req: NextRequest) {
       await order.save();
 
       if (isSubscription) {
-        await activateUserSubscriptionFromOrder(order);
+        const subResult: any = await activateUserSubscriptionFromOrder(order);
+        const corporateQuery = subResult?.isCorporate
+          ? `&corporate=true&orgName=${encodeURIComponent(subResult.organizationName || '')}`
+          : '';
         return NextResponse.redirect(
-          `${host}/dashboard/upgrade?paymentSuccess=true&orderNumber=${encodeURIComponent(order.orderNumber)}`
+          `${host}/dashboard/upgrade?paymentSuccess=true&orderNumber=${encodeURIComponent(order.orderNumber)}${corporateQuery}`
         );
       }
 

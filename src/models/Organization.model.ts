@@ -2,7 +2,9 @@ import mongoose, { Schema, Document, Model } from 'mongoose';
 
 export interface IOrganizationBranding {
   primaryColor?: string;
+  secondaryColor?: string;
   accentColor?: string;
+  coverImage?: string;
   backgroundColor?: string;
   logoUrl?: string;
   companySlogan?: string;
@@ -49,9 +51,19 @@ const OrganizationSchema = new Schema<IOrganizationDocument>(
         default: '#0ea5e9',
         trim: true,
       },
+      secondaryColor: {
+        type: String,
+        default: '#10b981',
+        trim: true,
+      },
       accentColor: {
         type: String,
         default: '#10b981',
+        trim: true,
+      },
+      coverImage: {
+        type: String,
+        default: '',
         trim: true,
       },
       backgroundColor: {

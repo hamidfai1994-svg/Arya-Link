@@ -20,6 +20,7 @@ import {
   Trash2,
   CreditCard,
   Layers,
+  Building2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SiteLogo } from '@/components/SiteLogo';
@@ -45,6 +46,12 @@ const coreNavItems: AdminNavItem[] = [
     subtitle: 'لیست کاربران، نقش‌ها و تایید هویت KYC',
     href: '/admin/users',
     icon: Users,
+  },
+  {
+    title: 'مدیریت سازمان‌ها (B2B)',
+    subtitle: 'ثبت شرکت‌ها، تخصیص مدیر سازمان و لایسنس تیمی',
+    href: '/admin/companies',
+    icon: Building2,
   },
   {
     title: 'مدیریت سفارشات',

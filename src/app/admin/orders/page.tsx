@@ -33,6 +33,7 @@ import {
   Building,
   Crown,
   FileImage,
+  Building2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -66,6 +67,9 @@ interface AdminOrder {
     | 'shipped'
     | 'pending';
   orderType?: 'nfc_card' | 'subscription';
+  subscriptionPlanType?: 'pro' | 'corporate' | string;
+  companyName?: string;
+  requestedLicenses?: number;
   paymentMethod: string;
   paymentGateway?: string;
   paymentMode?: string;
@@ -586,15 +590,25 @@ export default function AdminOrdersPage() {
                       <td className="p-4">
                         <div className="font-semibold text-white flex items-center gap-1.5">
                           {order.orderType === 'subscription' && (
-                            <Crown className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                            order.subscriptionPlanType === 'corporate' || order.companyName ? (
+                              <Building2 className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                            ) : (
+                              <Crown className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                            )
                           )}
                           <span>{order.cardSpecs?.templateName || order.productTitle}</span>
                         </div>
-                        <div className="text-[11px] text-slate-400 mt-0.5">
+                        <div className="text-[11px] text-slate-400 mt-0.5 flex flex-wrap gap-1">
                           {order.orderType === 'subscription' ? (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 text-[10px] font-bold">
-                              اشتراک نرم‌افزاری (Pro سالانه)
-                            </span>
+                            order.subscriptionPlanType === 'corporate' || order.companyName ? (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-300 border border-purple-500/30 text-[10px] font-bold">
+                                پکیج سازمانی: {order.companyName || 'شرکت'} ({order.requestedLicenses || 50} لایسنس)
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 text-[10px] font-bold">
+                                اشتراک نرم‌افزاری (Pro سالانه)
+                              </span>
+                            )
                           ) : (
                             order.cardSpecs?.material || 'NFC Smart Card'
                           )}
@@ -707,10 +721,18 @@ export default function AdminOrdersPage() {
                               type="button"
                               disabled={isApprovingSubId === order.id}
                               onClick={() => handleApproveSubscription(order.id)}
-                              title="تایید فیش واریزی و فعال‌سازی اشتراک ۱ ساله Pro کاربر"
+                              title={
+                                order.subscriptionPlanType === 'corporate' || order.companyName
+                                  ? 'تایید فیش واریزی و ساخت خودکار سازمان و پنل مدیریت تیم'
+                                  : 'تایید فیش واریزی و فعال‌سازی اشتراک ۱ ساله Pro کاربر'
+                              }
                               className="px-2.5 py-1 rounded-md bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 text-[10px] font-bold border border-emerald-500/40 whitespace-nowrap cursor-pointer disabled:opacity-50"
                             >
-                              {isApprovingSubId === order.id ? 'در حال فعال‌سازی...' : 'تایید و فعال‌سازی اشتراک'}
+                              {isApprovingSubId === order.id
+                                ? 'در حال فعال‌سازی...'
+                                : order.subscriptionPlanType === 'corporate' || order.companyName
+                                ? 'تایید و ساخت سازمان'
+                                : 'تایید و فعال‌سازی اشتراک'}
                             </button>
                           ) : (
                             <>
@@ -879,7 +901,7 @@ export default function AdminOrdersPage() {
                     )}
 
                     {selectedOrder.paymentProviderDetails?.receiptUrl && (
-                      <div className="space-y-1.5">
+                      <div className="space-y-1">
                         <span className="text-slate-400 text-[11px] flex items-center gap-1.5">
                           <FileImage className="w-3.5 h-3.5 text-cyan-400" />
                           <span>تصویر فیش واریزی آپلود شده:</span>
@@ -903,6 +925,18 @@ export default function AdminOrdersPage() {
                       </div>
                     )}
 
+                    {(selectedOrder.subscriptionPlanType === 'corporate' || selectedOrder.companyName) && (
+                      <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/30 space-y-1 text-xs">
+                        <div className="font-bold text-purple-300 flex items-center gap-1.5">
+                          <Building2 className="w-4 h-4" />
+                          <span>درخواست ثبت سازمان خودکار (B2B):</span>
+                        </div>
+                        <div className="text-slate-200">
+                          نام سازمان: <strong>{selectedOrder.companyName || '—'}</strong> • ظرفیت لایسنس: <strong className="font-sans">{selectedOrder.requestedLicenses || 50}</strong>
+                        </div>
+                      </div>
+                    )}
+
                     {selectedOrder.orderType === 'subscription' && selectedOrder.paymentStatus !== 'paid' && (
                       <Button
                         type="button"
@@ -914,6 +948,8 @@ export default function AdminOrdersPage() {
                         <span>
                           {isApprovingSubId === selectedOrder.id
                             ? 'در حال تایید و فعال‌سازی...'
+                            : selectedOrder.subscriptionPlanType === 'corporate' || selectedOrder.companyName
+                            ? `تایید فیش و ساخت خودکار سازمان (${selectedOrder.companyName || 'سازمانی'})`
                             : 'تایید فیش واریزی و فعال‌سازی اشتراک ۱ ساله Pro'}
                         </span>
                       </Button>

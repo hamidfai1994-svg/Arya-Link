@@ -25,6 +25,8 @@ import {
   Lock,
   Loader2,
   AlertCircle,
+  Building2,
+  Users,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -68,6 +70,15 @@ const PRO_PLAN_FEATURES = [
   'اولویت در بررسی و دریافت نشان تیک آبی رسمی تایید هویت (KYC)',
 ];
 
+const CORPORATE_PLAN_FEATURES = [
+  'ظرفیت ۵۰ کارت و لایسنس دیجیتال فعال برای کارمندان و مدیران سازمان',
+  'پنل اختصاصی مدیریت سازمان (HR) جهت افزودن، حذف و مدیریت اعضای تیم',
+  'یکپارچه‌سازی و قفل برندینگ شرکتی (لوگو، رنگ و کاور ثابت برای همه کارمندان)',
+  'نشان متمایز «کارت سازمانی» روی کارت‌های پرسنل و تاییدیه رسمی شرکت',
+  'دسترسی کامل تمامی اعضای تیم به تمام ماژول‌های پیشرفته و حرفه‌ای (Pro)',
+  'ساخت خودکار سازمان و پنل مدیریت تیم بلافاصله پس از تایید پرداخت',
+];
+
 function UpgradePageContent() {
   const searchParams = useSearchParams();
   const { data: session, update: updateSession } = useSession();
@@ -82,9 +93,16 @@ function UpgradePageContent() {
 
   const paymentSuccess = searchParams.get('paymentSuccess') === 'true';
   const paymentFailed = searchParams.get('paymentFailed') === 'true';
+  const isCorporateSuccess = searchParams.get('corporate') === 'true';
+  const callbackOrgName = searchParams.get('orgName') || '';
   const callbackOrderNumber = searchParams.get('orderNumber') || '';
 
   const [annualPriceAfn, setAnnualPriceAfn] = useState<number>(4500);
+  const [corporatePriceAfn, setCorporatePriceAfn] = useState<number>(18000);
+  const [selectedPackage, setSelectedPackage] = useState<'pro' | 'corporate'>('pro');
+  const [isCompanyModalOpen, setIsCompanyModalOpen] = useState<boolean>(false);
+  const [companyNameInput, setCompanyNameInput] = useState<string>('');
+  const [requestedLicensesInput, setRequestedLicensesInput] = useState<number>(50);
   const [storeHesabPay, setStoreHesabPay] = useState<StoreHesabPaySettings>({
     isActive: true,
     isApiEnabled: true,
@@ -123,6 +141,10 @@ function UpgradePageContent() {
           if (pro?.priceYearlyMonthly && Number(pro.priceYearlyMonthly) > 0) {
             setAnnualPriceAfn(Math.round(Number(pro.priceYearlyMonthly) * 12));
           }
+          const ent = plans.find((p: any) => p.planId === 'enterprise' || p.planId === 'vip');
+          if (ent?.priceYearlyMonthly && Number(ent.priceYearlyMonthly) > 0) {
+            setCorporatePriceAfn(Math.round(Number(ent.priceYearlyMonthly) * 12));
+          }
         }
       })
       .catch(() => {});
@@ -159,17 +181,33 @@ function UpgradePageContent() {
     if (paymentSuccess) {
       refreshSubscription();
       updateSession().catch(() => {});
-      toast.success('اشتراک سالانه پروفایل حرفه‌ای شما با موفقیت فعال شد!');
+      if (isCorporateSuccess) {
+        toast.success(
+          callbackOrgName
+            ? `پکیج سازمانی فعال و سازمان «${callbackOrgName}» به‌صورت خودکار ساخته شد!`
+            : 'پکیج سازمانی شما فعال و سازمان به‌صورت خودکار ساخته شد!'
+        );
+      } else {
+        toast.success('اشتراک سالانه پروفایل حرفه‌ای شما با موفقیت فعال شد!');
+      }
     } else if (paymentFailed) {
       toast.error('پرداخت تکمیل نشد. در صورت کسر وجه با پشتیبانی در تماس شوید یا مجدداً تلاش کنید.');
     }
-  }, [paymentSuccess, paymentFailed, refreshSubscription]);
+  }, [paymentSuccess, paymentFailed, isCorporateSuccess, callbackOrgName, refreshSubscription]);
 
   // Pre-compute HesabPay QR payload using StorePaymentSettings (Super Admin account)
   const rawAdminPhone = (storeHesabPay.accountNumber || '0729736813').trim();
   const formattedPhone = rawAdminPhone.replace(/^0+/, '');
   const formattedName = (storeHesabPay.accountName || 'ARYALINK PLATFORM').trim().toUpperCase();
   const hesabPayQrPayload = `1:01*2:p*3:93.${formattedPhone}*4:general*5:${formattedName}*6:971*7:1307100`;
+
+  const isCorporateCheckout = selectedPackage === 'corporate';
+  const effectiveLicenses =
+    Number(requestedLicensesInput) > 0 ? Math.floor(Number(requestedLicensesInput)) : 50;
+  const activePriceAfn = isCorporateCheckout ? corporatePriceAfn : annualPriceAfn;
+  const activeProductTitle = isCorporateCheckout
+    ? `پکیج سازمانی / تیم (${companyNameInput.trim() || 'سازمان'} - ${effectiveLicenses} لایسنس)`
+    : 'اشتراک سالانه پروفایل حرفه‌ای (Pro)';
 
   const copyToClipboard = (text: string, key: string, label: string) => {
     if (!text) return;
@@ -182,6 +220,35 @@ function UpgradePageContent() {
   };
 
   const handleOpenCheckout = () => {
+    setSelectedPackage('pro');
+    setSubmittedOrderNumber(null);
+    setTrackingNumber('');
+    setReceiptImageUrl('');
+    setPayerName(session?.user?.name || '');
+    setHesabPayMode(storeHesabPay.isApiEnabled ? 'direct' : 'agent');
+    setIsCheckoutOpen(true);
+  };
+
+  const handleOpenCorporateForm = () => {
+    setRequestedLicensesInput(50);
+    setIsCompanyModalOpen(true);
+  };
+
+  const handleConfirmCompanyForm = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!companyNameInput.trim()) {
+      toast.error('لطفاً نام سازمان یا شرکت خود را وارد نمایید.');
+      return;
+    }
+    const cleanLicenses = Math.floor(Number(requestedLicensesInput));
+    if (!Number.isFinite(cleanLicenses) || cleanLicenses < 1) {
+      toast.error('تعداد لایسنس باید حداقل ۱ عدد باشد.');
+      return;
+    }
+
+    setRequestedLicensesInput(cleanLicenses);
+    setIsCompanyModalOpen(false);
+    setSelectedPackage('corporate');
     setSubmittedOrderNumber(null);
     setTrackingNumber('');
     setReceiptImageUrl('');
@@ -238,10 +305,13 @@ function UpgradePageContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           orderType: 'subscription',
-          productTitle: 'اشتراک سالانه پروفایل حرفه‌ای (Pro)',
+          subscriptionPlanType: isCorporateCheckout ? 'corporate' : 'pro',
+          companyName: isCorporateCheckout ? companyNameInput.trim() : '',
+          requestedLicenses: isCorporateCheckout ? effectiveLicenses : 0,
+          productTitle: activeProductTitle,
           quantity: 1,
-          unitPrice: annualPriceAfn,
-          totalPrice: annualPriceAfn,
+          unitPrice: activePriceAfn,
+          totalPrice: activePriceAfn,
           currency: 'AFN',
           customerName: session?.user?.name || 'کاربر آریا لینک',
           customerEmail: session?.user?.email || '',
@@ -251,7 +321,9 @@ function UpgradePageContent() {
           paymentMode: 'api',
           paymentStatus: 'pending',
           orderStatus: 'pending_payment',
-          notes: 'خرید اشتراک سالانه پروفایل حرفه‌ای از طریق درگاه مستقیم حساب‌پی',
+          notes: isCorporateCheckout
+            ? `خرید پکیج سازمانی «${companyNameInput.trim()}» (${effectiveLicenses} لایسنس) از طریق درگاه مستقیم حساب‌پی`
+            : 'خرید اشتراک سالانه پروفایل حرفه‌ای از طریق درگاه مستقیم حساب‌پی',
         }),
       });
       const orderData = await orderRes.json();
@@ -297,10 +369,13 @@ function UpgradePageContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           orderType: 'subscription',
-          productTitle: 'اشتراک سالانه پروفایل حرفه‌ای (Pro)',
+          subscriptionPlanType: isCorporateCheckout ? 'corporate' : 'pro',
+          companyName: isCorporateCheckout ? companyNameInput.trim() : '',
+          requestedLicenses: isCorporateCheckout ? effectiveLicenses : 0,
+          productTitle: activeProductTitle,
           quantity: 1,
-          unitPrice: annualPriceAfn,
-          totalPrice: annualPriceAfn,
+          unitPrice: activePriceAfn,
+          totalPrice: activePriceAfn,
           currency: 'AFN',
           customerName: effectiveCustomerName,
           customerEmail: session?.user?.email || '',
@@ -318,7 +393,11 @@ function UpgradePageContent() {
             receiptUrl: receiptImageUrl,
             transactionRef: trackingNumber.trim(),
           },
-          notes: `پرداخت اشتراک سالانه Pro با فیش واریزی (${effectiveCustomerName})${
+          notes: `${
+            isCorporateCheckout
+              ? `پرداخت پکیج سازمانی «${companyNameInput.trim()}» (${effectiveLicenses} لایسنس)`
+              : 'پرداخت اشتراک سالانه Pro'
+          } با فیش واریزی (${effectiveCustomerName})${
             trackingNumber.trim() ? ` - کد پیگیری: ${trackingNumber.trim()}` : ''
           }`,
         }),
@@ -329,7 +408,11 @@ function UpgradePageContent() {
       }
 
       setSubmittedOrderNumber(orderData.order?.orderNumber || 'SUB-ORDER');
-      toast.success('سفارش اشتراک و فیش واریزی شما با موفقیت ثبت شد و پس از تایید مدیر فعال می‌گردد.');
+      toast.success(
+        isCorporateCheckout
+          ? 'سفارش پکیج سازمانی و فیش واریزی با موفقیت ثبت شد و پس از تایید مدیر، سازمان شما به‌صورت خودکار ساخته می‌شود.'
+          : 'سفارش اشتراک و فیش واریزی شما با موفقیت ثبت شد و پس از تایید مدیر فعال می‌گردد.'
+      );
     } catch (err: any) {
       console.error('Subscription manual receipt submit error:', err);
       toast.error(err.message || 'خطا در ثبت فیش واریزی.');
@@ -340,8 +423,10 @@ function UpgradePageContent() {
 
   const formattedMonthlyEquivalent = Math.round(annualPriceAfn / 12).toLocaleString('en-US');
 
+  const corporateLicensePriceAfn = Math.round(corporatePriceAfn / 50);
+
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-8" dir="rtl">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-8" dir="rtl">
       {/* Top Breadcrumb / Back Navigation */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Link
@@ -356,7 +441,7 @@ function UpgradePageContent() {
           <span className="text-muted-foreground">وضعیت فعلی حساب:</span>
           {isVip ? (
             <Badge className="bg-purple-500/15 text-purple-500 border-purple-500/30 text-[11px]">
-              ویژه (VIP)
+              ویژه / سازمانی (VIP)
             </Badge>
           ) : isPro ? (
             <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30 text-[11px]">
@@ -379,16 +464,20 @@ function UpgradePageContent() {
             </div>
             <div className="space-y-1">
               <h2 className="text-base font-extrabold text-emerald-600 dark:text-emerald-400">
-                پرداخت موفق! حساب شما به پروفایل حرفه‌ای (Pro) ارتقا یافت
+                {isCorporateSuccess
+                  ? `پرداخت موفق! سازمان ${callbackOrgName ? `«${callbackOrgName}»` : 'شما'} به‌صورت خودکار ساخته شد`
+                  : 'پرداخت موفق! حساب شما به پروفایل حرفه‌ای (Pro) ارتقا یافت'}
               </h2>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                سفارش اشتراک شما {callbackOrderNumber ? `(شماره #${callbackOrderNumber})` : ''} با موفقیت تایید شد و تمامی ماژول‌های حرفه‌ای به مدت ۱ سال کامل (۳۶۵ روز) برای شما فعال گردید.
+                {isCorporateSuccess
+                  ? `سفارش پکیج سازمانی شما ${callbackOrderNumber ? `(شماره #${callbackOrderNumber})` : ''} تایید شد، داکیومنت سازمان در سیستم ایجاد گردید و دسترسی مدیر سازمان (Owner) به مدت ۱ سال فعال شد.`
+                  : `سفارش اشتراک شما ${callbackOrderNumber ? `(شماره #${callbackOrderNumber})` : ''} با موفقیت تایید شد و تمامی ماژول‌های حرفه‌ای به مدت ۱ سال کامل (۳۶۵ روز) برای شما فعال گردید.`}
               </p>
             </div>
           </div>
-          <Link href="/dashboard">
+          <Link href={isCorporateSuccess ? '/dashboard/organization' : '/dashboard'}>
             <Button className="bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold h-10 px-5 shrink-0">
-              شروع استفاده از امکانات Pro
+              {isCorporateSuccess ? 'ورود به پنل مدیریت سازمان' : 'شروع استفاده از امکانات Pro'}
             </Button>
           </Link>
         </div>
@@ -414,7 +503,7 @@ function UpgradePageContent() {
       <div className="text-center max-w-2xl mx-auto space-y-3">
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-xs font-bold">
           <Crown className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
-          <span>ارتقای حساب کاربری آریا لینک</span>
+          <span>ارتقای حساب کاربری و پکیج‌های سازمانی آریا لینک</span>
         </div>
         <h1 className="text-2xl sm:text-4xl font-black text-foreground tracking-tight">
           کارت دیجیتال خود را به یک{' '}
@@ -424,14 +513,14 @@ function UpgradePageContent() {
           تبدیل کنید
         </h1>
         <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-          با فعال‌سازی اشتراک سالانه پروفایل حرفه‌ای، درگاه پرداخت حساب‌پی شخصی خود را متصل کنید، کپی‌رایت را حذف نمایید و از تمام ماژول‌های ویژه استفاده ببرید.
+          با فعال‌سازی اشتراک سالانه پروفایل حرفه‌ای یا تهیه پکیج سازمانی ویژه شرکت‌ها و شفاخانه‌ها، امکانات کامل آریا لینک را در اختیار بگیرید.
         </p>
       </div>
 
-      {/* Pricing Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
+      {/* Pricing Cards Grid (3 Columns on Large Screens) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
         {/* Card 1: Basic Profile (Free) */}
-        <Card className="rounded-3xl border border-border bg-card/80 p-6 sm:p-8 flex flex-col justify-between gap-6 shadow-sm">
+        <Card className="rounded-3xl border border-border bg-card/80 p-6 sm:p-7 flex flex-col justify-between gap-6 shadow-sm">
           <div className="space-y-5">
             <div className="flex items-start justify-between gap-3">
               <div>
@@ -483,11 +572,11 @@ function UpgradePageContent() {
         </Card>
 
         {/* Card 2: Pro Profile (Annual Subscription) */}
-        <Card className="relative rounded-3xl border-2 border-emerald-500/60 bg-gradient-to-b from-emerald-500/[0.06] via-card to-card p-6 sm:p-8 flex flex-col justify-between gap-6 shadow-2xl shadow-emerald-500/10 overflow-hidden">
+        <Card className="relative rounded-3xl border-2 border-emerald-500/60 bg-gradient-to-b from-emerald-500/[0.06] via-card to-card p-6 sm:p-7 flex flex-col justify-between gap-6 shadow-2xl shadow-emerald-500/10 overflow-hidden">
           {/* Decorative Corner Badge */}
           <div className="absolute top-0 left-0 bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 text-[10px] font-black px-4 py-1.5 rounded-br-2xl flex items-center gap-1 shadow-md">
             <Sparkles className="w-3 h-3" />
-            <span>پیشنهاد ویژه • اشتراک سالانه</span>
+            <span>پیشنهاد ویژه • اشتراک فردی</span>
           </div>
 
           <div className="space-y-5 pt-2">
@@ -498,11 +587,11 @@ function UpgradePageContent() {
                   <h2 className="text-xl font-black text-foreground">پروفایل حرفه‌ای</h2>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  مخصوص کسب‌وکارها، فروشگاه‌ها، متخصصان، پزشکان و شرکت‌های افغانستان
+                  مخصوص کسب‌وکارها، فروشگاه‌ها، متخصصان و پزشکان
                 </p>
               </div>
               <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 text-[11px] font-bold">
-                ۱ سال کامل (۳۶۵ روز)
+                ۱ سال کامل
               </Badge>
             </div>
 
@@ -529,7 +618,7 @@ function UpgradePageContent() {
           </div>
 
           <div className="space-y-2.5">
-            {isPro && planExpiresAt ? (
+            {isPro && !isVip && planExpiresAt ? (
               <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-center space-y-1">
                 <div className="text-xs font-extrabold text-emerald-600 dark:text-emerald-400 flex items-center justify-center gap-1.5">
                   <Calendar className="w-4 h-4" />
@@ -547,16 +636,160 @@ function UpgradePageContent() {
               className="w-full h-12 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-sm flex items-center justify-center gap-2 shadow-xl shadow-emerald-600/25 transition-all active:scale-[0.99] cursor-pointer"
             >
               <Crown className="w-4 h-4" />
-              <span>{isPro ? 'تمدید ۱ ساله پروفایل حرفه‌ای' : 'خرید پروفایل حرفه‌ای'}</span>
+              <span>{isPro && !isVip ? 'تمدید ۱ ساله پروفایل حرفه‌ای' : 'خرید پروفایل حرفه‌ای'}</span>
             </Button>
 
             <p className="text-[10px] text-center text-muted-foreground flex items-center justify-center gap-1">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-              <span>پرداخت امن از طریق درگاه دوگانه حساب‌پی (پرداخت مستقیم اپلیکیشن یا صراف / دکاندار)</span>
+              <span>پرداخت امن با درگاه دوگانه حساب‌پی</span>
+            </p>
+          </div>
+        </Card>
+
+        {/* Card 3: Corporate / Team Package (50 Licenses) */}
+        <Card className="relative rounded-3xl border-2 border-purple-500/60 bg-gradient-to-b from-purple-500/[0.08] via-card to-card p-6 sm:p-7 flex flex-col justify-between gap-6 shadow-2xl shadow-purple-500/10 overflow-hidden">
+          <div className="absolute top-0 left-0 bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-[10px] font-black px-4 py-1.5 rounded-br-2xl flex items-center gap-1 shadow-md">
+            <Building2 className="w-3 h-3" />
+            <span>ویژه شرکت‌ها و تیم‌ها • ۵۰ لایسنس</span>
+          </div>
+
+          <div className="space-y-5 pt-2">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Building2 className="w-5 h-5 text-purple-500" />
+                  <h2 className="text-xl font-black text-foreground">پکیج سازمانی / تیم</h2>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  راه‌حل جامع کارت دیجیتال پرسنلی برای شرکت‌ها، بانک‌ها، شفاخانه‌ها و نهادها
+                </p>
+              </div>
+              <Badge className="bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/30 text-[11px] font-bold">
+                ۵۰ کارت فعال
+              </Badge>
+            </div>
+
+            <div className="py-4 border-y border-purple-500/20 flex flex-wrap items-baseline justify-between gap-2">
+              <div className="flex items-baseline gap-2">
+                <span className="text-3xl sm:text-4xl font-black font-sans text-purple-600 dark:text-purple-400">
+                  {corporatePriceAfn.toLocaleString('en-US')}
+                </span>
+                <span className="text-xs font-bold text-foreground">افغانی / سالانه</span>
+              </div>
+              <span className="text-[11px] px-2.5 py-1 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 font-semibold border border-purple-500/20">
+                هر کارمند سالانه {corporateLicensePriceAfn.toLocaleString('en-US')} افغانی
+              </span>
+            </div>
+
+            <ul className="space-y-3">
+              {CORPORATE_PLAN_FEATURES.map((feat, idx) => (
+                <li key={idx} className="flex items-start gap-2.5 text-xs">
+                  <CheckCircle2 className="w-4 h-4 text-purple-500 shrink-0 mt-0.5" />
+                  <span className="text-foreground font-semibold leading-relaxed">{feat}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="space-y-2.5">
+            {session?.user?.orgRole === 'owner' && session?.user?.organizationId ? (
+              <Link href="/dashboard/organization" className="block">
+                <div className="p-3 rounded-2xl bg-purple-500/10 border border-purple-500/30 text-center space-y-1 hover:bg-purple-500/15 transition-colors">
+                  <div className="text-xs font-extrabold text-purple-600 dark:text-purple-400 flex items-center justify-center gap-1.5">
+                    <Users className="w-4 h-4" />
+                    <span>سازمان شما هم‌اکنون فعال است — ورود به پنل مدیریت تیم</span>
+                  </div>
+                </div>
+              </Link>
+            ) : null}
+
+            <Button
+              type="button"
+              onClick={handleOpenCorporateForm}
+              className="w-full h-12 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black text-sm flex items-center justify-center gap-2 shadow-xl shadow-purple-600/25 transition-all active:scale-[0.99] cursor-pointer"
+            >
+              <Building2 className="w-4 h-4" />
+              <span>خرید پکیج سازمانی (۵۰ لایسنس)</span>
+            </Button>
+
+            <p className="text-[10px] text-center text-muted-foreground flex items-center justify-center gap-1">
+              <Sparkles className="w-3.5 h-3.5 text-purple-500" />
+              <span>ساخت خودکار سازمان بلافاصله پس از تایید پرداخت</span>
             </p>
           </div>
         </Card>
       </div>
+
+      {/* Company Info Pre-Checkout Modal for Corporate Package */}
+      <Dialog open={isCompanyModalOpen} onOpenChange={setIsCompanyModalOpen}>
+        <DialogContent
+          className="max-w-md w-[94vw] rounded-3xl bg-slate-950 border border-slate-800 text-white p-5 sm:p-6 shadow-2xl [&>button]:left-4 [&>button]:right-auto"
+          overlayClassName="backdrop-blur-md bg-black/70"
+          dir="rtl"
+        >
+          <DialogHeader className="text-right space-y-1.5 border-b border-slate-800 pb-4">
+            <div className="flex items-center gap-2 text-purple-400 text-xs font-bold">
+              <Building2 className="w-4 h-4" />
+              <span>مشخصات پکیج سازمانی / تیم</span>
+            </div>
+            <DialogTitle className="text-base sm:text-lg font-black text-white">
+              ثبت نام سازمان یا شرکت
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-400">
+              نام سازمان خود را وارد فرمایید تا بلافاصله پس از تکمیل یا تایید پرداخت، سازمان و پنل مدیریت تیم به‌صورت خودکار برایتان ساخته شود.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleConfirmCompanyForm} className="space-y-4 pt-2">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-200 block">
+                نام سازمان یا شرکت <span className="text-rose-400">*</span>
+              </label>
+              <input
+                type="text"
+                required
+                value={companyNameInput}
+                onChange={(e) => setCompanyNameInput(e.target.value)}
+                placeholder="مثلاً: شفاخانه مرکزی کابل یا شرکت پامیر"
+                className="w-full h-11 px-3.5 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-purple-500"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-200 block">
+                ظرفیت لایسنس پرسنلی (کارت فعال):
+              </label>
+              <input
+                type="number"
+                min={1}
+                value={requestedLicensesInput}
+                onChange={(e) => setRequestedLicensesInput(Number(e.target.value) || 50)}
+                className="w-full h-11 px-3.5 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white font-sans focus:outline-none focus:border-purple-500"
+              />
+              <p className="text-[11px] text-slate-400">
+                پکیج پیش‌فرض سازمانی شامل ۵۰ لایسنس کارمند همراه با کنترل برندینگ شرکتی است.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2.5 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsCompanyModalOpen(false)}
+                className="h-11 px-4 rounded-xl border-slate-700 bg-slate-900 text-slate-300 text-xs font-bold"
+              >
+                انصراف
+              </Button>
+              <Button
+                type="submit"
+                className="flex-1 h-11 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black text-xs flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <span>ادامه به درگاه پرداخت ({corporatePriceAfn.toLocaleString('en-US')} AFN)</span>
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Dual-Mode HesabPay Subscription Checkout Modal */}
       <Dialog open={isCheckoutOpen} onOpenChange={setIsCheckoutOpen}>
@@ -571,10 +804,15 @@ function UpgradePageContent() {
               <span>درگاه پرداخت دوگانه پلتفرم آریا لینک</span>
             </div>
             <DialogTitle className="text-base sm:text-lg font-black text-white">
-              تکمیل خرید اشتراک سالانه پروفایل حرفه‌ای
+              {isCorporateCheckout
+                ? `تکمیل خرید پکیج سازمانی «${companyNameInput.trim()}»`
+                : 'تکمیل خرید اشتراک سالانه پروفایل حرفه‌ای'}
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-400">
-              مبلغ قابل پرداخت: <strong className="text-emerald-400 font-sans">{annualPriceAfn.toLocaleString('en-US')} افغانی</strong> برای ۱ سال (۳۶۵ روز)
+              مبلغ قابل پرداخت: <strong className="text-emerald-400 font-sans">{activePriceAfn.toLocaleString('en-US')} افغانی</strong>{' '}
+              {isCorporateCheckout
+                ? `برای سازمان با ظرفیت ${effectiveLicenses} لایسنس (۱ سال کامل)`
+                : 'برای ۱ سال (۳۶۵ روز)'}
             </DialogDescription>
           </DialogHeader>
 
@@ -586,13 +824,17 @@ function UpgradePageContent() {
               </div>
               <div className="space-y-2">
                 <h3 className="text-base font-black text-white">
-                  سفارش اشتراک و فیش واریزی شما ثبت شد
+                  {isCorporateCheckout
+                    ? 'سفارش پکیج سازمانی و فیش واریزی شما ثبت شد'
+                    : 'سفارش اشتراک و فیش واریزی شما ثبت شد'}
                 </h3>
                 <p className="text-xs text-slate-300 leading-relaxed">
                   شماره پیگیری سفارش: <strong className="text-cyan-400 font-mono" dir="ltr">{submittedOrderNumber}</strong>
                 </p>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  تیم مالی آریا لینک فیش ارسالی شما را بررسی می‌کند و بلافاصله پس از تایید، پروفایل حرفه‌ای (Pro) به مدت ۳۶۵ روز به صورت خودکار روی حساب شما فعال می‌گردد.
+                  {isCorporateCheckout
+                    ? `تیم مالی آریا لینک فیش ارسالی شما را بررسی می‌کند و بلافاصله پس از تایید، سازمان «${companyNameInput.trim()}» با ${effectiveLicenses} لایسنس به‌صورت خودکار ساخته شده و پنل مدیریت تیم برای شما باز می‌شود.`
+                    : 'تیم مالی آریا لینک فیش ارسالی شما را بررسی می‌کند و بلافاصله پس از تایید، پروفایل حرفه‌ای (Pro) به مدت ۳۶۵ روز به صورت خودکار روی حساب شما فعال می‌گردد.'}
                 </p>
               </div>
               <div className="flex flex-col sm:flex-row gap-2.5 pt-2">
@@ -700,7 +942,9 @@ function UpgradePageContent() {
                     <span className="text-xs font-bold">پرداخت آنلاین مستقیم حساب‌پی (فعال‌سازی خودکار)</span>
                   </div>
                   <p className="text-[11px] text-slate-300 leading-relaxed">
-                    با کلیک روی دکمه زیر، سفارش اشتراک ثبت شده و به درگاه رسمی حساب‌پی پلتفرم منتقل می‌شوید. پس از تکمیل پرداخت، اشتراک ۱ ساله Pro فوراً و به‌صورت خودکار روی حساب شما فعال می‌شود.
+                    {isCorporateCheckout
+                      ? `با کلیک روی دکمه زیر، سفارش پکیج سازمانی ثبت شده و به درگاه رسمی حساب‌پی منتقل می‌شوید. پس از تکمیل پرداخت، سازمان «${companyNameInput.trim()}» با ظرفیت ${effectiveLicenses} لایسنس به‌صورت خودکار ساخته شده و پنل مدیریت تیم برای شما باز می‌شود.`
+                      : 'با کلیک روی دکمه زیر، سفارش اشتراک ثبت شده و به درگاه رسمی حساب‌پی پلتفرم منتقل می‌شوید. پس از تکمیل پرداخت، اشتراک ۱ ساله Pro فوراً و به‌صورت خودکار روی حساب شما فعال می‌شود.'}
                   </p>
                   <div className="p-2.5 rounded-xl bg-slate-900/90 border border-white/10 flex items-center justify-between text-[11px]">
                     <span className="text-slate-400">شناسه پذیرنده رسمی پلتفرم:</span>
@@ -723,7 +967,7 @@ function UpgradePageContent() {
                     ) : (
                       <>
                         <Lock className="w-4 h-4" />
-                        <span>ثبت سفارش و ورود به درگاه حساب‌پی ({annualPriceAfn.toLocaleString('en-US')} AFN)</span>
+                        <span>ثبت سفارش و ورود به درگاه حساب‌پی ({activePriceAfn.toLocaleString('en-US')} AFN)</span>
                       </>
                     )}
                   </Button>
@@ -746,7 +990,7 @@ function UpgradePageContent() {
                       )}
                     </div>
                     <span className="text-xs font-bold text-emerald-400">
-                      این کیوآر کد را به صراف یا دکاندار نشان دهید تا مبلغ {annualPriceAfn.toLocaleString('en-US')} افغانی را واریز نماید
+                      این کیوآر کد را به صراف یا دکاندار نشان دهید تا مبلغ {activePriceAfn.toLocaleString('en-US')} افغانی را واریز نماید
                     </span>
                     <span className="text-[10px] text-slate-400">
                       نام صاحب حساب پلتفرم: <strong className="text-white">{storeHesabPay.accountName}</strong>

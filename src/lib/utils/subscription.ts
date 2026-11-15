@@ -239,6 +239,7 @@ export async function activateUserSubscriptionFromOrder(order: any) {
   const { connectToDatabase } = await import('@/lib/db/mongodb');
   const { User } = await import('@/models/User.model');
   const { Profile } = await import('@/models/Profile.model');
+  const { Organization } = await import('@/models/Organization.model');
 
   await connectToDatabase();
 
@@ -262,6 +263,95 @@ export async function activateUserSubscriptionFromOrder(order: any) {
 
   const expiresAt = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
 
+  const isCorporateOrder = Boolean(
+    order.subscriptionPlanType === 'corporate' ||
+      (order.companyName && String(order.companyName).trim().length > 0) ||
+      Number(order.requestedLicenses) > 0 ||
+      (typeof order.productTitle === 'string' && order.productTitle.includes('سازمانی'))
+  );
+
+  if (isCorporateOrder) {
+    const orgName = (
+      order.companyName ||
+      order.cardSpecs?.companyName ||
+      `سازمان ${targetUser.name}`
+    ).trim();
+    const licensesCount =
+      Number(order.requestedLicenses) > 0 ? Math.floor(Number(order.requestedLicenses)) : 50;
+
+    let orgDoc: any = null;
+    if (targetUser.organizationId) {
+      try {
+        orgDoc = await Organization.findById(targetUser.organizationId);
+      } catch {
+        orgDoc = null;
+      }
+    }
+    if (!orgDoc) {
+      orgDoc = await Organization.findOne({ ownerId: targetUser._id });
+    }
+
+    if (orgDoc) {
+      orgDoc.name = orgName || orgDoc.name;
+      orgDoc.totalLicenses = Math.max(Number(orgDoc.totalLicenses) || 0, licensesCount);
+      await orgDoc.save();
+    } else {
+      orgDoc = await Organization.create({
+        name: orgName,
+        ownerId: targetUser._id,
+        totalLicenses: licensesCount,
+        usedLicenses: 0,
+      });
+    }
+
+    targetUser.organizationId = orgDoc._id;
+    targetUser.orgRole = 'owner';
+    targetUser.accountType = 'corporate';
+    targetUser.planType = 'vip';
+    targetUser.subscriptionPlan = 'enterprise';
+    targetUser.planExpiresAt = expiresAt;
+    targetUser.features = {
+      ...(targetUser.features || {}),
+      maxCards: licensesCount,
+      customDomain: true,
+      analyticsAdvanced: true,
+      removeBranding: true,
+      prioritySupport: true,
+    };
+    await targetUser.save();
+
+    const userIdStr = targetUser._id.toString();
+    await Profile.updateMany(
+      {
+        $or: [
+          { userId: targetUser._id },
+          { userId: userIdStr },
+          { userEmail: targetUser.email },
+        ],
+      },
+      {
+        $set: {
+          orgId: orgDoc._id,
+          roleType: 'business',
+          profileType: 'business',
+          planType: 'vip',
+          planExpiresAt: expiresAt,
+        },
+      }
+    );
+
+    return {
+      activated: true,
+      isCorporate: true,
+      userId: userIdStr,
+      planType: 'vip' as PlanType,
+      planExpiresAt: expiresAt,
+      organizationId: orgDoc._id.toString(),
+      organizationName: orgDoc.name,
+      totalLicenses: orgDoc.totalLicenses,
+    };
+  }
+
   targetUser.planType = 'pro';
   targetUser.subscriptionPlan = 'pro';
   targetUser.planExpiresAt = expiresAt;
@@ -282,6 +372,7 @@ export async function activateUserSubscriptionFromOrder(order: any) {
 
   return {
     activated: true,
+    isCorporate: false,
     userId: targetUser._id.toString(),
     planType: 'pro' as PlanType,
     planExpiresAt: expiresAt,

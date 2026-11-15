@@ -97,6 +97,9 @@ export async function GET(req: NextRequest) {
           paymentStatus: o.paymentStatus,
           orderStatus: o.orderStatus,
           orderType: o.orderType || 'nfc_card',
+          subscriptionPlanType: o.subscriptionPlanType || 'pro',
+          companyName: o.companyName || '',
+          requestedLicenses: Number(o.requestedLicenses) || 0,
           paymentMethod: o.paymentMethod,
           paymentGateway: o.paymentGateway || (o.paymentMethod === 'wallet' ? 'hesabpay' : o.paymentMethod || 'bank'),
           paymentMode: o.paymentMode || (o.paymentMethod === 'wallet' ? 'api' : 'manual'),
@@ -239,6 +242,9 @@ export async function POST(req: NextRequest) {
       paymentStatus,
       orderStatus,
       orderType,
+      subscriptionPlanType: body.subscriptionPlanType === 'corporate' ? 'corporate' : 'pro',
+      companyName: typeof body.companyName === 'string' ? body.companyName.trim() : '',
+      requestedLicenses: Number(body.requestedLicenses) || 0,
       status: orderStatus,
       price: totalPrice,
       paymentMethod,
@@ -404,11 +410,15 @@ export async function PATCH(req: NextRequest) {
         if (notes !== undefined) order.notes = notes;
         await order.save();
 
-        const subResult = await activateUserSubscriptionFromOrder(order);
+        const subResult: any = await activateUserSubscriptionFromOrder(order);
+
+        const successMessage = subResult?.isCorporate
+          ? `پرداخت تایید شد! سازمان «${subResult.organizationName}» با ظرفیت ${subResult.totalLicenses} لایسنس به‌صورت خودکار ساخته شد و پنل مدیریت تیم برای خریدار فعال گردید.`
+          : 'پرداخت تایید شد و اشتراک حرفه‌ای (Pro) کاربر به مدت ۱ سال (۳۶۵ روز) فعال گردید.';
 
         return NextResponse.json({
           success: true,
-          message: 'پرداخت تایید شد و اشتراک حرفه‌ای (Pro) کاربر به مدت ۱ سال (۳۶۵ روز) فعال گردید.',
+          message: successMessage,
           order,
           subscription: subResult,
         });

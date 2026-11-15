@@ -51,6 +51,34 @@ export async function GET() {
     }
 
     if (!org || (currentUser.orgRole !== 'owner' && String(org.ownerId) !== userIdStr)) {
+      if (currentUser.orgRole === 'member' && currentUser.organizationId) {
+        const orgIdVal = String(currentUser.organizationId);
+        const memberOrg = mongoose.Types.ObjectId.isValid(orgIdVal)
+          ? await Organization.findById(orgIdVal).lean()
+          : null;
+
+        if (memberOrg) {
+          return NextResponse.json({
+            success: true,
+            isOwner: false,
+            orgRole: 'member',
+            organization: {
+              _id: memberOrg._id.toString(),
+              name: memberOrg.name,
+              branding: {
+                ...(memberOrg.branding || {}),
+                secondaryColor:
+                  memberOrg.branding?.secondaryColor ||
+                  memberOrg.branding?.accentColor ||
+                  '#10b981',
+                coverImage: memberOrg.branding?.coverImage || '',
+              },
+            },
+            members: [],
+          });
+        }
+      }
+
       return NextResponse.json({
         success: true,
         isOwner: false,
@@ -138,7 +166,12 @@ export async function GET() {
         ownerId: String(org.ownerId),
         totalLicenses: org.totalLicenses,
         usedLicenses: org.usedLicenses,
-        branding: org.branding || {},
+        branding: {
+          ...(org.branding || {}),
+          secondaryColor:
+            org.branding?.secondaryColor || org.branding?.accentColor || '#10b981',
+          coverImage: org.branding?.coverImage || '',
+        },
         createdAt: org.createdAt,
         updatedAt: org.updatedAt,
       },
@@ -182,9 +215,17 @@ export async function POST(req: NextRequest) {
       $or: [{ ownerId: currentUser._id }, { ownerId: userIdStr }],
     });
 
+    const secondaryCol =
+      body.branding?.secondaryColor || body.branding?.accentColor || '#10b981';
+
     const brandingPayload = {
       primaryColor: body.branding?.primaryColor || '#0ea5e9',
-      accentColor: body.branding?.accentColor || '#10b981',
+      secondaryColor: secondaryCol,
+      accentColor: secondaryCol,
+      coverImage:
+        typeof body.branding?.coverImage === 'string'
+          ? body.branding.coverImage.trim()
+          : '',
       backgroundColor:
         body.branding?.backgroundColor ||
         'linear-gradient(135deg, #090d16 0%, #0f172a 50%, #1e1b4b 100%)',
@@ -288,9 +329,21 @@ export async function PATCH(req: NextRequest) {
     }
 
     if (body.branding && typeof body.branding === 'object') {
+      const resolvedSecondary =
+        body.branding.secondaryColor ||
+        body.branding.accentColor ||
+        org.branding?.secondaryColor ||
+        org.branding?.accentColor ||
+        '#10b981';
+
       org.branding = {
         primaryColor: body.branding.primaryColor || org.branding?.primaryColor || '#0ea5e9',
-        accentColor: body.branding.accentColor || org.branding?.accentColor || '#10b981',
+        secondaryColor: resolvedSecondary,
+        accentColor: resolvedSecondary,
+        coverImage:
+          typeof body.branding.coverImage === 'string'
+            ? body.branding.coverImage.trim()
+            : org.branding?.coverImage || '',
         backgroundColor:
           body.branding.backgroundColor ||
           org.branding?.backgroundColor ||
@@ -312,23 +365,48 @@ export async function PATCH(req: NextRequest) {
 
     await org.save();
 
-    // Sync unified corporate theme across all subordinate employee profiles if requested
-    if (body.applyToAllMembers) {
+    // Sync unified corporate theme and cover across all subordinate employee profiles
+    const shouldSyncMembers = body.applyToAllMembers !== false;
+    if (shouldSyncMembers) {
       const orgIdStr = org._id.toString();
+      const orgUsers = await User.find({
+        $or: [{ organizationId: org._id }, { organizationId: orgIdStr }],
+      })
+        .select('_id')
+        .lean();
+      const memberIds = orgUsers.map((u: any) => u._id);
+      const memberIdStrs = orgUsers.map((u: any) => u._id.toString());
+
+      const secondary =
+        org.branding?.secondaryColor || org.branding?.accentColor || '#10b981';
+      const primary = org.branding?.primaryColor || '#0ea5e9';
+
       const updateSet: Record<string, any> = {
-        'themeConfig.primaryColor': org.branding?.primaryColor || '#0ea5e9',
-        'themeConfig.accentColor': org.branding?.accentColor || '#10b981',
+        'themeConfig.primaryColor': primary,
+        'themeConfig.accentColor': secondary,
+        'themeConfig.buttonBgColor': primary,
+        'themeConfig.buttonBorderColor': secondary,
         'themeConfig.backgroundColor':
           org.branding?.backgroundColor ||
           'linear-gradient(135deg, #090d16 0%, #0f172a 50%, #1e1b4b 100%)',
       };
+
+      if (typeof org.branding?.coverImage === 'string') {
+        updateSet.coverUrl = org.branding.coverImage;
+      }
 
       if (body.syncLogoAsAvatar && org.branding?.logoUrl) {
         updateSet.avatarUrl = org.branding.logoUrl;
       }
 
       await Profile.updateMany(
-        { $or: [{ orgId: org._id }, { orgId: orgIdStr }] },
+        {
+          $or: [
+            { orgId: org._id },
+            { orgId: orgIdStr },
+            { userId: { $in: [...memberIds, ...memberIdStrs] } },
+          ],
+        },
         { $set: updateSet }
       );
     }

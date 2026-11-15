@@ -53,6 +53,7 @@ import {
   Scan,
   Upload,
   Clipboard,
+  Lock,
 } from 'lucide-react';
 
 const DEFAULT_PRESET_COLORS = [
@@ -334,6 +335,38 @@ export const ProfileEditor: React.FC = () => {
   const [isSubmittingKYC, setIsSubmittingKYC] = useState(false);
   const [isProfileInfoExpanded, setIsProfileInfoExpanded] = useState(false);
   const [isSavingTheme, setIsSavingTheme] = useState(false);
+  const [orgMembership, setOrgMembership] = useState<{
+    isMember: boolean;
+    orgName: string;
+    branding?: any;
+  }>({ isMember: false, orgName: '' });
+
+  useEffect(() => {
+    if (!session?.user) return;
+    let active = true;
+
+    fetch('/api/organization', { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!active || !data) return;
+        if (data.orgRole === 'member' || session?.user?.orgRole === 'member') {
+          setOrgMembership({
+            isMember: true,
+            orgName: data.organization?.name || 'سازمان شما',
+            branding: data.organization?.branding || {},
+          });
+        }
+      })
+      .catch(() => {
+        if (active && session?.user?.orgRole === 'member') {
+          setOrgMembership({ isMember: true, orgName: 'سازمان شما' });
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [session?.user]);
 
   // Business Card OCR Scanner States
   const [isOcrOpen, setIsOcrOpen] = useState(false);
@@ -1323,12 +1356,20 @@ export const ProfileEditor: React.FC = () => {
                   </div>
 
                   {/* Header Layout Selector */}
-                  <div className="pt-2 border-t border-border/80">
-                    <label className="block text-xs font-bold text-foreground mb-2 flex items-center gap-1.5">
-                      <LayoutTemplate className="w-3.5 h-3.5 text-cyan-500" />
-                      <span>{t.headerLayout}</span>
-                    </label>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="pt-2 border-t border-border/80 relative">
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                        <LayoutTemplate className="w-3.5 h-3.5 text-cyan-500" />
+                        <span>{t.headerLayout}</span>
+                      </label>
+                      {orgMembership.isMember && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-500 border border-amber-500/30 text-[10px] font-bold">
+                          <Lock className="w-3 h-3" />
+                          قفل سازمانی
+                        </span>
+                      )}
+                    </div>
+                    <div className={`grid grid-cols-1 sm:grid-cols-3 gap-3 ${orgMembership.isMember ? 'pointer-events-none opacity-50 select-none' : ''}`}>
                       {/* Mode 1: Curve */}
                       <button
                         type="button"
@@ -1419,17 +1460,29 @@ export const ProfileEditor: React.FC = () => {
                     />
 
                     {profile.headerLayout !== 'minimal' && (
-                      <FileUploader
-                        value={profile.coverUrl || ''}
-                        onChange={(url) => updateBasicInfo({ coverUrl: url })}
-                        fileType="image"
-                        folder="covers"
-                        label="تصویر کاور هدر"
-                        description="تصویر بنر بالای پروفایل (حداکثر 2 مگابایت با بهینه‌سازی خودکار)"
-                        maxSizeMB={2}
-                        aspectRatio="banner"
-                        className="w-full"
-                      />
+                      <div className="relative">
+                        {orgMembership.isMember && (
+                          <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold text-amber-500 bg-amber-500/10 border border-amber-500/25 rounded-xl px-3 py-2">
+                            <Lock className="w-3.5 h-3.5 shrink-0" />
+                            <span>
+                              تصویر کاور هدر توسط مدیر سازمان {orgMembership.orgName} ثابت شده و قابل تغییر نیست.
+                            </span>
+                          </div>
+                        )}
+                        <div className={orgMembership.isMember ? 'pointer-events-none opacity-45 select-none' : ''}>
+                          <FileUploader
+                            value={profile.coverUrl || ''}
+                            onChange={(url) => updateBasicInfo({ coverUrl: url })}
+                            fileType="image"
+                            folder="covers"
+                            label="تصویر کاور هدر"
+                            description="تصویر بنر بالای پروفایل (حداکثر 2 مگابایت با بهینه‌سازی خودکار)"
+                            maxSizeMB={2}
+                            aspectRatio="banner"
+                            className="w-full"
+                          />
+                        </div>
+                      </div>
                     )}
                   </div>
 
@@ -1615,6 +1668,50 @@ export const ProfileEditor: React.FC = () => {
         {/* TAB 2: APPEARANCE & CUSTOMIZATION (ACCORDION) */}
         {activeTab === 'appearance' && (
           <section className="space-y-4">
+            {orgMembership.isMember && (
+              <div className="rounded-2xl border border-amber-500/35 bg-amber-500/10 p-4 sm:p-5 space-y-4 shadow-sm">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/30 text-amber-500 flex items-center justify-center shrink-0">
+                    <Lock className="w-5 h-5" />
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="text-xs sm:text-sm font-black text-foreground">
+                      ظاهر و رنگ‌بندی کارت شما توسط مدیر سازمان {orgMembership.orgName} مدیریت و یکپارچه‌سازی می‌شود و قابل تغییر نیست.
+                    </h3>
+                    <p className="text-[11px] text-muted-foreground leading-relaxed">
+                      در این بخش تم، رنگ‌بندی و تصویر کاور قفل هستند؛ اما می‌توانید عکس پروفایل شخصی خود را در کادر زیر تغییر دهید.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Allow employee to customize ONLY their personal profile avatar */}
+                <div className="pt-3 border-t border-amber-500/20 space-y-3">
+                  <FileUploader
+                    value={profile.avatarUrl}
+                    onChange={(url) => updateBasicInfo({ avatarUrl: url })}
+                    fileType="image"
+                    folder="avatars"
+                    label="تصویر پروفایل شخصی شما (آواتار)"
+                    description="شما می‌توانید تصویر شخصی خود را بارگذاری یا ویرایش کنید."
+                    maxSizeMB={2}
+                    aspectRatio="square"
+                    className="w-full"
+                  />
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={handleSaveTheme}
+                      disabled={isSavingTheme}
+                      className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all cursor-pointer disabled:opacity-60"
+                    >
+                      <CheckCheck className="w-3.5 h-3.5" />
+                      <span>ذخیره عکس پروفایل شخصی</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Header Action Bar with Manual Save Button */}
             <div className="bg-muted/30 border border-border rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
               <div>
@@ -1626,10 +1723,18 @@ export const ProfileEditor: React.FC = () => {
                   قالب، نوع پس‌زمینه، استایل دکمه‌ها و پالت رنگی کارت خود را تنظیم نمایید.
                 </p>
               </div>
-
-
+              {orgMembership.isMember && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 text-amber-500 border border-amber-500/30 text-[11px] font-bold shrink-0">
+                  <Lock className="w-3.5 h-3.5" />
+                  ویرایش ظاهر قفل است
+                </span>
+              )}
             </div>
 
+            <div
+              className={orgMembership.isMember ? 'pointer-events-none opacity-45 select-none grayscale-[25%]' : ''}
+              aria-disabled={orgMembership.isMember}
+            >
             <Accordion type="single" collapsible defaultValue="templates" className="space-y-3">
               {/* 1. قالب‌ها (Templates) */}
               <AccordionItem value="templates" className="border border-border rounded-2xl bg-card">
@@ -2275,17 +2380,20 @@ export const ProfileEditor: React.FC = () => {
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
+            </div>
 
             {/* Bottom Action Bar for Tab 2 */}
             <div className="bg-card border border-border rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs">
               <span className="text-xs text-muted-foreground">
-                پس از اعمال تنظیمات طراحی و رنگ‌ها، برای ماندگاری تغییرات کلیک کنید.
+                {orgMembership.isMember
+                  ? `تغییرات تم و رنگ‌ها برای اعضای سازمان ${orgMembership.orgName} غیرفعال است.`
+                  : 'پس از اعمال تنظیمات طراحی و رنگ‌ها، برای ماندگاری تغییرات کلیک کنید.'}
               </span>
               <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
                 <button
                   type="button"
                   onClick={handleCancelTheme}
-                  disabled={isSavingTheme}
+                  disabled={isSavingTheme || orgMembership.isMember}
                   className="flex-1 sm:flex-initial px-3.5 py-2.5 rounded-xl bg-background hover:bg-muted border border-border text-muted-foreground hover:text-foreground font-semibold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer disabled:opacity-50"
                 >
                   <Undo2 className="w-3.5 h-3.5" />
@@ -2294,7 +2402,7 @@ export const ProfileEditor: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleSaveTheme}
-                  disabled={isSavingTheme}
+                  disabled={isSavingTheme || orgMembership.isMember}
                   className="flex-1 sm:flex-initial px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold text-xs shadow-md shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer disabled:opacity-60"
                 >
                   {isSavingTheme ? (

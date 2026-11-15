@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { connectToDatabase } from '@/lib/db/mongodb';
 import { Profile } from '@/models/Profile.model';
+import { User } from '@/models/User.model';
+import { Organization } from '@/models/Organization.model';
 import { buildUserIsolationQuery, isValidUserSession } from '@/lib/db/data-isolation';
 import { syncAndCheckUserSubscription } from '@/lib/utils/subscription';
 import { profileUpdateSchema } from '@/lib/validations/profile';
@@ -130,8 +132,57 @@ export async function GET(req: NextRequest) {
 
     const subInfo = await syncAndCheckUserSubscription(currentUserId);
 
+    // Apply corporate branding overrides when profile/user belongs to an Organization
+    let effectiveCoverUrl = (profile as any).coverUrl || '';
+    let effectiveThemeConfig = (profile as any).themeConfig || {};
+    let organizationBranding: any = null;
+
+    try {
+      const dbUser = mongoose.isValidObjectId(currentUserId)
+        ? await User.findById(currentUserId).select('organizationId orgRole').lean()
+        : await User.findOne({ email: currentUserEmail.toLowerCase().trim() })
+            .select('organizationId orgRole')
+            .lean();
+
+      const resolvedOrgId = dbUser?.organizationId || (profile as any)?.orgId;
+      if (resolvedOrgId && mongoose.isValidObjectId(String(resolvedOrgId))) {
+        const orgDoc = await Organization.findById(resolvedOrgId).lean();
+        if (orgDoc) {
+          const ob = orgDoc.branding || {};
+          const primaryCol = ob.primaryColor || effectiveThemeConfig.primaryColor || '#0ea5e9';
+          const secondaryCol =
+            ob.secondaryColor || ob.accentColor || effectiveThemeConfig.accentColor || '#10b981';
+
+          if (ob.coverImage) {
+            effectiveCoverUrl = ob.coverImage;
+          }
+          effectiveThemeConfig = {
+            ...effectiveThemeConfig,
+            primaryColor: primaryCol,
+            accentColor: secondaryCol,
+            buttonBgColor: primaryCol,
+            buttonBorderColor: secondaryCol,
+          };
+          organizationBranding = {
+            id: orgDoc._id.toString(),
+            name: orgDoc.name,
+            logoUrl: ob.logoUrl || '',
+            primaryColor: primaryCol,
+            secondaryColor: secondaryCol,
+            coverImage: ob.coverImage || '',
+            companySlogan: ob.companySlogan || '',
+          };
+        }
+      }
+    } catch (orgErr) {
+      console.warn('Could not load organization branding in GET /api/profile:', orgErr);
+    }
+
     const formattedProfile = {
       ...profile,
+      coverUrl: effectiveCoverUrl,
+      themeConfig: effectiveThemeConfig,
+      ...(organizationBranding && { organizationBranding }),
       id: (profile as any)._id.toString(),
       planType: subInfo.planType,
       planExpiresAt: subInfo.planExpiresAt || null,
@@ -285,6 +336,61 @@ export async function POST(req: NextRequest) {
     if (themeConfig && typeof themeConfig === 'object') {
       updateSet.themeConfig = themeConfig;
       console.log('Incoming themeConfig in /api/profile:', themeConfig);
+    }
+
+    // Enforce corporate branding lock for organization members (orgRole === 'member')
+    try {
+      const dbUser = mongoose.isValidObjectId(currentUserId)
+        ? await User.findById(currentUserId).select('organizationId orgRole').lean()
+        : await User.findOne({ email: currentUserEmail.toLowerCase().trim() })
+            .select('organizationId orgRole')
+            .lean();
+
+      if (dbUser?.orgRole === 'member' && dbUser?.organizationId) {
+        const orgDoc = mongoose.isValidObjectId(String(dbUser.organizationId))
+          ? await Organization.findById(dbUser.organizationId).lean()
+          : null;
+
+        if (orgDoc) {
+          const ob = orgDoc.branding || {};
+          const primaryCol = ob.primaryColor || '#0ea5e9';
+          const secondaryCol = ob.secondaryColor || ob.accentColor || '#10b981';
+
+          if (typeof ob.coverImage === 'string' && ob.coverImage) {
+            updateSet.coverUrl = ob.coverImage;
+          }
+
+          // Preserve locked visual theme fields for organization members
+          const existingProfileDoc = isObjectId
+            ? await Profile.findById(id).select('themeConfig headerLayout').lean()
+            : null;
+          if (existingProfileDoc?.headerLayout) {
+            updateSet.headerLayout = existingProfileDoc.headerLayout;
+          }
+          updateSet.themeConfig = {
+            ...(existingProfileDoc?.themeConfig || {}),
+            ...(themeConfig && typeof themeConfig === 'object'
+              ? {
+                  fontFa: themeConfig.fontFa,
+                  fontEn: themeConfig.fontEn,
+                  fontSizeDari: themeConfig.fontSizeDari,
+                  fontSizePashto: themeConfig.fontSizePashto,
+                  fontSizeEn: themeConfig.fontSizeEn,
+                }
+              : {}),
+            primaryColor: primaryCol,
+            accentColor: secondaryCol,
+            buttonBgColor: primaryCol,
+            buttonBorderColor: secondaryCol,
+            backgroundColor:
+              ob.backgroundColor ||
+              existingProfileDoc?.themeConfig?.backgroundColor ||
+              'linear-gradient(135deg, #090d16 0%, #0f172a 50%, #1e1b4b 100%)',
+          };
+        }
+      }
+    } catch (memberLockErr) {
+      console.warn('Could not enforce member branding lock on profile save:', memberLockErr);
     }
 
     if (isObjectId) {
