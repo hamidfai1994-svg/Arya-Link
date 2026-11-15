@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
+import { getLocalizedText } from '@/lib/i18n/multilingual';
 import { useEditorStore } from '@/store/editor-store';
 import { UserProfileSummary } from '@/types/profile.types';
 
@@ -42,20 +43,33 @@ export function ActiveCardProvider({ children }: { children: React.ReactNode }) 
   const activeCard: UserProfileSummary | null = useMemo(() => {
     if (activeProfileId) {
       const match = profilesList.find((p) => p.id === activeProfileId);
-      if (match) return match;
+      if (match) {
+        return {
+          ...match,
+          displayName: getLocalizedText(match.displayName, 'da', 'کارت هوشمند'),
+          headline: getLocalizedText(match.headline, 'da', ''),
+        };
+      }
     }
     if (profile?.id) {
       return {
         id: profile.id,
         alias: profile.alias || 'user',
-        displayName: profile.displayName || 'کارت هوشمند',
-        headline: profile.headline,
+        displayName: getLocalizedText(profile.displayName, 'da', 'کارت هوشمند'),
+        headline: getLocalizedText(profile.headline, 'da', ''),
         avatarUrl: profile.avatarUrl,
         roleType: (profile as any).roleType || 'personal',
         isActive: true,
       };
     }
-    return profilesList[0] || null;
+    const fallbackCard = profilesList[0];
+    return fallbackCard
+      ? {
+          ...fallbackCard,
+          displayName: getLocalizedText(fallbackCard.displayName, 'da', 'کارت هوشمند'),
+          headline: getLocalizedText(fallbackCard.headline, 'da', ''),
+        }
+      : null;
   }, [activeProfileId, profilesList, profile]);
 
   return (

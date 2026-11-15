@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { getLocalizedText } from '@/lib/i18n/multilingual';
 import { useEditorStore, getDefaultModuleConfig } from '@/store/editor-store';
 import { ProfileLinkItem, LinkModuleType, FAQItem, BusinessHourDay } from '@/types/profile.types';
 import { FileUploader } from '@/components/ui/file-uploader';
@@ -560,7 +561,7 @@ export const SectionModulesList: React.FC = () => {
           </div>
           <input
             type="text"
-            value={link.title || ''}
+            value={getLocalizedText(link.title, 'da', '')}
             onChange={(e) => updateLink(link.id, { title: e.target.value })}
             placeholder={defaultTitle}
             className="w-full bg-card border border-border rounded-xl px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 font-sans shadow-sm transition-all"
@@ -765,7 +766,7 @@ export const SectionModulesList: React.FC = () => {
           <label className="block text-[11px] font-medium text-foreground mb-1">عنوان بالای فرم تماس</label>
           <input
             type="text"
-            value={meta.leadHeadline || link.title || ''}
+            value={getLocalizedText(meta.leadHeadline || link.title, 'da', '')}
             onChange={(e) => {
               updateLinkMetadata(link.id, { leadHeadline: e.target.value });
               updateLink(link.id, { title: e.target.value });
@@ -1686,7 +1687,7 @@ export const SectionModulesList: React.FC = () => {
               <label className="block text-[11px] font-medium text-foreground mb-1">عنوان رویداد یا تخفیف</label>
               <input
                 type="text"
-                value={meta.countdownTitle || link.title || ''}
+                value={getLocalizedText(meta.countdownTitle || link.title, 'da', '')}
                 onChange={(e) => {
                   updateLinkMetadata(link.id, { countdownTitle: e.target.value });
                   updateLink(link.id, { title: e.target.value });
@@ -2354,7 +2355,7 @@ export const SectionModulesList: React.FC = () => {
               <label className="block text-[11px] font-medium text-foreground mb-1">نام محصول یا خدمات</label>
               <input
                 type="text"
-                value={meta.productTitle || link.title || ''}
+                value={getLocalizedText(meta.productTitle || link.title, 'da', '')}
                 onChange={(e) => {
                   updateLinkMetadata(link.id, { productTitle: e.target.value });
                   updateLink(link.id, { title: e.target.value });
@@ -2424,7 +2425,7 @@ export const SectionModulesList: React.FC = () => {
               <label className="block text-[11px] font-medium text-foreground mb-1">نام کالا یا خدمت جهت فروش مستقیم</label>
               <input
                 type="text"
-                value={meta.checkoutItemName || link.title || ''}
+                value={getLocalizedText(meta.checkoutItemName || link.title, 'da', '')}
                 onChange={(e) => {
                   updateLinkMetadata(link.id, { checkoutItemName: e.target.value });
                   updateLink(link.id, { title: e.target.value });
@@ -3830,7 +3831,11 @@ export const SectionModulesList: React.FC = () => {
                 {getModuleIcon(activeDragLink.moduleType)}
               </div>
               <span className="text-xs font-bold text-foreground truncate font-sans">
-                {activeDragLink.title || (activeDragLink.moduleType === 'container_group' ? 'گروه / کانتینر' : 'ماژول')}
+                {getLocalizedText(
+                  activeDragLink.title,
+                  'da',
+                  activeDragLink.moduleType === 'container_group' ? 'گروه / کانتینر' : 'ماژول'
+                )}
               </span>
             </div>
             {activeDragLink.moduleType === 'container_group' && (
@@ -3942,7 +3947,7 @@ const SortableSidebarContainerItem: React.FC<SortableSidebarContainerItemProps> 
           <div className="flex-1 min-w-0 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
             <input
               type="text"
-              value={container.title}
+              value={getLocalizedText(container.title, 'da', '')}
               onChange={(e) => updateLink(container.id, { title: e.target.value })}
               className="bg-transparent border-0 text-xs font-bold text-foreground focus:outline-none focus:ring-0 p-0 font-sans w-full truncate"
               placeholder="عنوان گروه / کانتینر..."
@@ -4171,7 +4176,7 @@ const SortableSidebarModuleItem: React.FC<SortableSidebarModuleItemProps> = ({
                 ? 'خط جداکننده'
                 : link.moduleType === 'spacer_divider'
                   ? 'فاصله خالی'
-                  : link.title || 'بدون عنوان'}
+                  : getLocalizedText(link.title, 'da', 'بدون عنوان')}
             </span>
             {isUnconfirmed && (
               <span className="text-[10px] bg-amber-500/15 text-amber-600 dark:text-amber-400 font-bold px-2 py-0.5 rounded-full border border-amber-500/30 shrink-0">

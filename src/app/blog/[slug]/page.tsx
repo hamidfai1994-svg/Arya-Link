@@ -116,7 +116,7 @@ export default function SingleBlogPostPage() {
         <div className="space-y-4">
           <div className="flex items-center gap-2">
             <Badge variant="cyan" className="text-xs">
-              {post.category}
+              {getLocalizedText(post.category, language)}
             </Badge>
             <span className="text-xs text-muted-foreground">•</span>
             <span className="text-xs text-muted-foreground flex items-center gap-1">
@@ -139,7 +139,7 @@ export default function SingleBlogPostPage() {
           </p>
 
           <div className="pt-2 flex items-center justify-between border-t border-border/60 text-xs text-muted-foreground">
-            <span>نویسنده: <strong className="text-foreground">{post.author}</strong></span>
+            <span>نویسنده: <strong className="text-foreground">{getLocalizedText(post.author, language)}</strong></span>
             <span>تاریخ انتشار: {dateStr}</span>
           </div>
         </div>
@@ -158,13 +158,13 @@ export default function SingleBlogPostPage() {
         />
 
         {/* Tags */}
-        {post.tags && post.tags.length > 0 && (
+        {Array.isArray(post.tags) && post.tags.length > 0 && (
           <div className="pt-6 border-t border-border flex items-center gap-2 flex-wrap">
             <Tag className="w-4 h-4 text-cyan-500" />
             <span className="text-xs font-semibold">برچسب‌ها:</span>
-            {post.tags.map((tag: string, i: number) => (
+            {post.tags.map((tag: any, i: number) => (
               <Badge key={i} variant="outline" className="text-[11px] font-normal">
-                #{tag}
+                #{getLocalizedText(tag, language)}
               </Badge>
             ))}
           </div>

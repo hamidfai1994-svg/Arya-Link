@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useLanguage } from '@/lib/i18n/LanguageContext';
+import { getLocalizedText } from '@/lib/i18n/multilingual';
 import { motion } from 'framer-motion';
 import {
   Sliders,
@@ -22,6 +24,7 @@ import { useEditorStore } from '@/store/editor-store';
 import { useActiveCard } from '@/context/ActiveCardContext';
 
 export function CardSettingsPanel({ cardId }: { cardId?: string }) {
+  const { language } = useLanguage();
   const { activeCard } = useActiveCard();
   const { profile, updateProSettings, toggleDirectMode, updateBasicInfo, saveProfileData } = useEditorStore();
 
@@ -37,14 +40,16 @@ export function CardSettingsPanel({ cardId }: { cardId?: string }) {
   // Sync with current profile in editor store
   useEffect(() => {
     if (profile) {
-      setSeoTitle(profile.seoTitle || `${profile.displayName || 'کارت هوشمند'} | آریا لینک`);
-      setSeoDescription(profile.seoDescription || profile.bio || 'صفحه ارتباطی هوشمند و کارت ویزیت NFC');
+      const safeName = getLocalizedText(profile.displayName, language, 'کارت هوشمند');
+      const safeBio = getLocalizedText(profile.bio, language, 'صفحه ارتباطی هوشمند و کارت ویزیت NFC');
+      setSeoTitle(profile.seoTitle || `${safeName} | آریا لینک`);
+      setSeoDescription(profile.seoDescription || safeBio);
       setAlias(profile.alias || '');
       setHideBranding(Boolean(profile.hideBranding));
       setDirectMode(Boolean(profile.directModeEnabled));
       setDirectUrl(profile.directModeUrl || '');
     }
-  }, [profile]);
+  }, [profile, language]);
 
   const handleSaveSettings = async () => {
     setIsSaving(true);
@@ -135,7 +140,7 @@ export function CardSettingsPanel({ cardId }: { cardId?: string }) {
           <div>
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold text-foreground">
-                تنظیمات سئو و دامنه مختص لینک: {profile?.displayName || activeCard?.displayName || 'کارت هوشمند'}
+                تنظیمات سئو و دامنه مختص لینک: {getLocalizedText(profile?.displayName || activeCard?.displayName, language, 'کارت هوشمند')}
               </span>
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 font-sans font-bold" dir="ltr">
                 aryal.ink/{profile?.alias || activeCard?.alias || 'card'}

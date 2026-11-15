@@ -101,8 +101,12 @@ export default function AdminServicesPage() {
       setTargetAudience(normalizeMultilingual(item.targetAudience));
       setSlug(item.slug);
       setIcon(item.icon || 'Layers');
-      setFeaturesStr((item.features || []).join('\n'));
-      setPricingInfo(item.pricingInfo || '');
+      setFeaturesStr(
+        Array.isArray(item.features)
+          ? item.features.map((f: any) => getLocalizedText(f, 'da')).filter(Boolean).join('\n')
+          : getLocalizedText(item.features, 'da', '')
+      );
+      setPricingInfo(getLocalizedText(item.pricingInfo, 'da', ''));
       setOrder(item.order || 0);
       setIsActive(item.isActive !== false);
     } else {
@@ -350,7 +354,7 @@ export default function AdminServicesPage() {
                       </TableCell>
 
                       <TableCell className="text-xs font-bold font-sans text-emerald-500">
-                        {item.pricingInfo}
+                        {getLocalizedText(item.pricingInfo, 'da', '')}
                       </TableCell>
 
                       <TableCell>

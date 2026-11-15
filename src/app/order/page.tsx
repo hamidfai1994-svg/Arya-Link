@@ -56,6 +56,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/lib/i18n/LanguageContext';
+import { getLocalizedText } from '@/lib/i18n/multilingual';
 import {
   PAYMENT_PROVIDERS,
   AFGHAN_WALLETS,
@@ -353,6 +355,7 @@ function OrderWizardInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: session, status } = useSession();
+  const { language } = useLanguage();
 
   // Wizard Step (1: Link, 2: Template, 3: Personalization, 4: Shipping/Checkout)
   const [currentStep, setCurrentStep] = useState<number>(1);
@@ -648,9 +651,9 @@ function OrderWizardInner() {
               // Pre-fill personalization if blank
               setPersonalization((prev) => ({
                 ...prev,
-                firstName: prev.firstName || (session?.user?.name ? session.user.name.split(' ')[0] : primary.displayName),
+                firstName: prev.firstName || (session?.user?.name ? session.user.name.split(' ')[0] : getLocalizedText(primary.displayName, language)),
                 lastName: prev.lastName || (session?.user?.name ? session.user.name.split(' ').slice(1).join(' ') : ''),
-                jobTitle: prev.jobTitle || primary.headline || '',
+                jobTitle: prev.jobTitle || getLocalizedText(primary.headline, language, ''),
               }));
             }
           }
@@ -1209,11 +1212,11 @@ function OrderWizardInner() {
                                   {p.avatarUrl ? (
                                     <img src={p.avatarUrl} alt="" className="w-full h-full object-cover rounded-xl" />
                                   ) : (
-                                    p.displayName.charAt(0)
+                                    (getLocalizedText(p.displayName, language) || 'A').charAt(0)
                                   )}
                                 </div>
                                 <div className="min-w-0 text-right">
-                                  <div className="text-xs font-bold text-white truncate">{p.displayName}</div>
+                                  <div className="text-xs font-bold text-white truncate">{getLocalizedText(p.displayName, language)}</div>
                                   <div className="text-[11px] font-sans text-cyan-400 truncate" dir="ltr">
                                     aryal.ink/{p.alias}
                                   </div>

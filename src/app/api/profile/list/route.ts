@@ -7,6 +7,7 @@ import { User } from '@/models/User.model';
 import { PhysicalCard } from '@/models/PhysicalCard.model';
 import { buildUserIsolationQuery, isValidUserSession } from '@/lib/db/data-isolation';
 import { getJobTemplate, generateDefaultModulesForJob } from '@/lib/constants/jobTemplates';
+import { getLocalizedText } from '@/lib/i18n/multilingual';
 import mongoose from 'mongoose';
 
 export const dynamic = 'force-dynamic';
@@ -102,8 +103,9 @@ export async function GET() {
     const formattedList = profiles.map((p: any) => ({
       id: p._id.toString(),
       alias: p.alias,
-      displayName: p.displayName,
-      headline: p.headline || '',
+      displayName: getLocalizedText(p.displayName, 'da', 'کاربر آریا لینک'),
+      headline: getLocalizedText(p.headline, 'da', ''),
+      translations: p.translations || {},
       avatarUrl: p.avatarUrl || '',
       roleType: p.roleType || p.profileType || 'personal',
       orgId: p.orgId ? String(p.orgId) : (dbUser?.organizationId ? String(dbUser.organizationId) : null),
@@ -243,8 +245,8 @@ export async function POST(req: NextRequest) {
           data: {
             id: duplicatedProfile._id.toString(),
             alias: duplicatedProfile.alias,
-            displayName: duplicatedProfile.displayName,
-            headline: duplicatedProfile.headline,
+            displayName: getLocalizedText(duplicatedProfile.displayName, 'da', 'کاربر آریا لینک'),
+            headline: getLocalizedText(duplicatedProfile.headline, 'da', ''),
             avatarUrl: duplicatedProfile.avatarUrl,
             roleType: ((duplicatedProfile as any).profileType || 'personal') as any,
             isActive: true,
@@ -347,8 +349,8 @@ export async function POST(req: NextRequest) {
         data: {
           id: newProfile._id.toString(),
           alias: newProfile.alias,
-          displayName: newProfile.displayName,
-          headline: newProfile.headline,
+          displayName: getLocalizedText(newProfile.displayName, 'da', 'کاربر آریا لینک'),
+          headline: getLocalizedText(newProfile.headline, 'da', ''),
           avatarUrl: newProfile.avatarUrl,
           roleType: roleType || 'personal',
           isActive: true,

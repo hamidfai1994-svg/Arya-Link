@@ -18,6 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { getLocalizedText } from '@/lib/i18n/multilingual';
 import { useLandingCms } from '@/context/LandingCmsContext';
+import { INITIAL_LANDING_CMS } from '@/models/LandingCms.model';
 
 const EASE_SNAPPY = [0, 0.7, 0.2, 1] as const;
 const SPRING_FAST = { type: 'spring', stiffness: 250, damping: 25, mass: 0.5 } as const;
@@ -50,8 +51,13 @@ export function PricingSection() {
   const { plans } = useLandingCms();
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('yearly');
 
-  const freePlan = plans.find((p) => p.planId === 'free') || plans[0];
-  const proPlan = plans.find((p) => p.planId === 'pro') || plans[1] || plans[0];
+  const freePlan = plans.find((p) => p.planId === 'free') || plans[0] || INITIAL_LANDING_CMS.plans[0];
+  const proPlan = plans.find((p) => p.planId === 'pro') || plans[1] || plans[0] || INITIAL_LANDING_CMS.plans[1];
+  const freePriceMonthly = Number(freePlan?.priceMonthly) || 0;
+  const proPriceMonthly = Number(proPlan?.priceMonthly) || 0;
+  const proPriceYearlyMonthly = Number(proPlan?.priceYearlyMonthly) || 0;
+  const freeCurrency = getLocalizedText(freePlan?.currency, language, 'AFN');
+  const proCurrency = getLocalizedText(proPlan?.currency, language, 'AFN');
 
   return (
     <section id="pricing" dir={dir} className="py-20 sm:py-28 relative border-t border-border/80 bg-muted/15 overflow-hidden select-none font-sans">
@@ -174,10 +180,10 @@ export function PricingSection() {
                   <div className="flex items-baseline gap-2">
                     <div className="flex items-baseline gap-1.5" dir="ltr">
                       <span className="text-4xl sm:text-5xl font-black text-foreground tracking-tight">
-                        {freePlan.priceMonthly.toLocaleString('en-US')}
+                        {freePriceMonthly.toLocaleString('en-US')}
                       </span>
                       <span className="text-xl sm:text-2xl font-bold text-muted-foreground">
-                        {freePlan.currency}
+                        {freeCurrency}
                       </span>
                     </div>
                     <span className="text-xs text-muted-foreground font-bold">
@@ -288,11 +294,11 @@ export function PricingSection() {
                         <div className="flex items-baseline gap-1.5" dir="ltr">
                           <span className="text-4xl sm:text-5xl font-black text-cyan-500 dark:text-cyan-400 tracking-tight">
                             {billingCycle === 'yearly'
-                              ? proPlan.priceYearlyMonthly.toLocaleString('en-US')
-                              : proPlan.priceMonthly.toLocaleString('en-US')}
+                              ? proPriceYearlyMonthly.toLocaleString('en-US')
+                              : proPriceMonthly.toLocaleString('en-US')}
                           </span>
                           <span className="text-xl sm:text-2xl font-bold text-cyan-600 dark:text-cyan-300">
-                            {proPlan.currency}
+                            {proCurrency}
                           </span>
                         </div>
                         <span className="text-xs text-foreground font-bold">
@@ -303,11 +309,11 @@ export function PricingSection() {
                         <div className="text-xs text-emerald-500 font-bold flex items-center gap-1.5 flex-wrap">
                           <span>{language === 'en' ? 'Billed yearly' : language === 'ps' ? 'کلنۍ تادیه' : 'پرداخت سالانه'}</span>
                           <span dir="ltr" className="font-black">
-                            {(proPlan.priceYearlyMonthly * 12).toLocaleString('en-US')} {proPlan.currency}
+                            {(proPriceYearlyMonthly * 12).toLocaleString('en-US')} {proCurrency}
                           </span>
                           <span>({language === 'en' ? 'Save yearly' : language === 'ps' ? 'کلنۍ سپما' : 'صرفه‌جویی سالانه'}</span>
                           <span dir="ltr" className="font-black">
-                            {((proPlan.priceMonthly - proPlan.priceYearlyMonthly) * 12).toLocaleString('en-US')} {proPlan.currency}
+                            {((proPriceMonthly - proPriceYearlyMonthly) * 12).toLocaleString('en-US')} {proCurrency}
                           </span>
                           <span>)</span>
                         </div>

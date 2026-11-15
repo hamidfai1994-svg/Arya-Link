@@ -51,6 +51,8 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/lib/i18n/LanguageContext';
+import { getLocalizedText } from '@/lib/i18n/multilingual';
 import { useEditorStore } from '@/store/editor-store';
 import { PaginationBar } from '@/components/ui/pagination-bar';
 import { CreditCard } from 'lucide-react';
@@ -75,6 +77,7 @@ interface ProfileItem {
 
 export default function UserDashboardPage() {
   const router = useRouter();
+  const { language } = useLanguage();
   const { data: session } = useSession();
   const { switchProfile } = useEditorStore();
 
@@ -261,7 +264,7 @@ export default function UserDashboardPage() {
       });
       const data = await res.json();
       if (data.success) {
-        toast.success(`کارت «${profileToDelete.displayName}» با موفقیت حذف شد.`);
+        toast.success(`کارت «${getLocalizedText(profileToDelete.displayName, language)}» با موفقیت حذف شد.`);
         setProfileToDelete(null);
         loadProfiles();
       } else {
@@ -303,7 +306,7 @@ export default function UserDashboardPage() {
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        toast.success(`یک نسخه کپی از کارت «${profile.displayName}» با موفقیت ساخته شد.`);
+        toast.success(`یک نسخه کپی از کارت «${getLocalizedText(profile.displayName, language)}» با موفقیت ساخته شد.`);
         loadProfiles();
       } else {
         toast.error('خطا در کپی کارت', { description: data.message });
@@ -320,9 +323,9 @@ export default function UserDashboardPage() {
     const q = searchQuery.toLowerCase().trim();
     if (!q) return true;
     return (
-      p.displayName?.toLowerCase().includes(q) ||
+      getLocalizedText(p.displayName, language).toLowerCase().includes(q) ||
       p.alias?.toLowerCase().includes(q) ||
-      p.headline?.toLowerCase().includes(q)
+      getLocalizedText(p.headline, language).toLowerCase().includes(q)
     );
   });
 
@@ -616,11 +619,11 @@ export default function UserDashboardPage() {
                       {profile.avatarUrl ? (
                         <img
                           src={profile.avatarUrl}
-                          alt={profile.displayName}
+                          alt={getLocalizedText(profile.displayName, language, '')}
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <span>{profile.displayName?.charAt(0) || 'A'}</span>
+                        <span>{(getLocalizedText(profile.displayName, language) || 'A').charAt(0)}</span>
                       )}
                     </div>
                     {profile.isVerified && (
@@ -637,7 +640,7 @@ export default function UserDashboardPage() {
                   <div className="min-w-0 flex-1 space-y-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <h2 className="text-base sm:text-lg font-bold text-foreground truncate">
-                        {profile.displayName}
+                        {getLocalizedText(profile.displayName, language, 'کارت هوشمند')}
                       </h2>
                       {profile.isVerified && (
                         <Badge variant="cyan" className="text-[10px] py-0 px-2 flex items-center gap-1">
@@ -672,9 +675,9 @@ export default function UserDashboardPage() {
                       })()}
                     </div>
 
-                    {profile.headline && (
+                    {getLocalizedText(profile.headline, language, '') && (
                       <p className="text-xs text-muted-foreground truncate max-w-md">
-                        {profile.headline}
+                        {getLocalizedText(profile.headline, language, '')}
                       </p>
                     )}
 
@@ -979,7 +982,7 @@ export default function UserDashboardPage() {
               <span>حذف لینک</span>
             </DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground mt-2">
-              آیا از حذف کارت هوشمند «{profileToDelete?.displayName}» اطمینان دارید؟ تمامی ماژول‌ها و اطلاعات این کارت حذف خواهد شد و این عملیات قابل بازگشت نیست.
+              آیا از حذف کارت هوشمند «{getLocalizedText(profileToDelete?.displayName, language)}» اطمینان دارید؟ تمامی ماژول‌ها و اطلاعات این کارت حذف خواهد شد و این عملیات قابل بازگشت نیست.
             </DialogDescription>
           </DialogHeader>
 

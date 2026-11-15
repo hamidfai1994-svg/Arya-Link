@@ -62,10 +62,11 @@ export default function BlogListingPage() {
     }
   };
 
-  const categories = ['all', ...Array.from(new Set(posts.map((p) => p.category)))];
+  const categories = ['all', ...Array.from(new Set(posts.map((p) => getLocalizedText(p.category, language)).filter(Boolean)))];
 
   const filteredPosts = posts.filter((p) => {
-    const matchesCat = selectedCategory === 'all' || p.category === selectedCategory;
+    const catLoc = getLocalizedText(p.category, language);
+    const matchesCat = selectedCategory === 'all' || catLoc === selectedCategory;
     const q = searchQuery.toLowerCase().trim();
     const titleLoc = getLocalizedText(p.title, language).toLowerCase();
     const summaryLoc = getLocalizedText(p.summary, language).toLowerCase();
@@ -73,7 +74,7 @@ export default function BlogListingPage() {
       !q ||
       titleLoc.includes(q) ||
       summaryLoc.includes(q) ||
-      p.tags?.some((t) => t.toLowerCase().includes(q));
+      (Array.isArray(p.tags) && p.tags.some((t) => getLocalizedText(t, language).toLowerCase().includes(q)));
     return matchesCat && matchesSearch;
   });
 
@@ -159,11 +160,11 @@ export default function BlogListingPage() {
                     <div className="h-48 w-full bg-slate-900 overflow-hidden relative">
                       <img
                         src={post.coverImage || 'https://images.unsplash.com/photo-1556742049-0a67c5574f73?w=800&auto=format&fit=crop&q=80'}
-                        alt={post.title}
+                        alt={getLocalizedText(post.title, language)}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                       <Badge className="absolute top-3 right-3 bg-black/60 backdrop-blur-md text-white border-0 text-[10px]">
-                        {post.category}
+                        {getLocalizedText(post.category, language)}
                       </Badge>
                     </div>
 

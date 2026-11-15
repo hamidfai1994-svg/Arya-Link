@@ -122,9 +122,14 @@ export default function AdminBlogCmsPage() {
     setContent(normalizeMultilingual(p.content));
     setSlug(p.slug);
     setCoverImage(p.coverImage || '');
-    setCategory(p.category);
-    setAuthor(p.author);
-    setTagsInput((p.tags || []).join(', '));
+    setCategory(getLocalizedText(p.category, 'da', ''));
+    setAuthor(getLocalizedText(p.author, 'da', ''));
+    setTagsInput(
+      (Array.isArray(p.tags)
+        ? p.tags.map((t: any) => getLocalizedText(t, 'da')).filter(Boolean)
+        : []
+      ).join(', ')
+    );
     setIsPublished(p.isPublished);
     setIsModalOpen(true);
   };
@@ -394,9 +399,9 @@ export default function AdminBlogCmsPage() {
                         </div>
                       </TableCell>
 
-                      <TableCell className="text-xs text-muted-foreground">{p.category}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{getLocalizedText(p.category, 'da', '')}</TableCell>
 
-                      <TableCell className="text-xs text-muted-foreground">{p.author}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{getLocalizedText(p.author, 'da', '')}</TableCell>
 
                       <TableCell className="font-sans text-xs font-bold text-foreground">
                         {p.viewsCount || 0}

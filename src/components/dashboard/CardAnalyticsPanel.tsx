@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { useLanguage } from '@/lib/i18n/LanguageContext';
+import { getLocalizedText } from '@/lib/i18n/multilingual';
 import { motion } from 'framer-motion';
 import {
   BarChart3,
@@ -175,7 +177,7 @@ const getCleanModuleTitle = (
   link: { title?: string; moduleType?: string; url?: string },
   fallbackLabel: string
 ): string => {
-  let title = (link.title || '').trim();
+  let title = getLocalizedText(link.title, 'da', '').trim();
 
   // If title is missing
   if (!title) {
@@ -250,6 +252,7 @@ const getCleanModuleTitle = (
 };
 
 export function CardAnalyticsPanel({ cardId }: { cardId?: string }) {
+  const { language } = useLanguage();
   const { activeCard, activeCardId } = useActiveCard();
   const { profile } = useEditorStore();
   const effectiveCardId = cardId || profile?.id || activeCardId;
@@ -487,7 +490,7 @@ export function CardAnalyticsPanel({ cardId }: { cardId?: string }) {
           <div>
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold text-foreground">
-                آمار و تحلیل مختص لینک: {profile?.displayName || activeCard?.displayName || 'کارت هوشمند'}
+                آمار و تحلیل مختص لینک: {getLocalizedText(profile?.displayName || activeCard?.displayName, language, 'کارت هوشمند')}
               </span>
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 font-sans font-bold" dir="ltr">
                 aryal.ink/{profile?.alias || activeCard?.alias || 'card'}

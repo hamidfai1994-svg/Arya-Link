@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { getLocalizedText } from '@/lib/i18n/multilingual';
 import {
   ProfileData,
   ProfileLinkItem,
@@ -736,7 +737,11 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       if (!res.ok) return [];
       const json = await res.json();
       if (json.success && Array.isArray(json.data)) {
-        const list: UserProfileSummary[] = json.data;
+        const list: UserProfileSummary[] = json.data.map((item: any) => ({
+          ...item,
+          displayName: getLocalizedText(item.displayName, 'da', 'کارت هوشمند'),
+          headline: getLocalizedText(item.headline, 'da', ''),
+        }));
 
         // Clean cache so no stale profiles from other sessions remain
         const validIds = new Set(list.map((p) => p.id));
@@ -1274,7 +1279,32 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       const json = await res.json();
       if (json.success && json.data) {
         const dbData = json.data;
-        let resolvedLinks = Array.isArray(dbData.links) ? [...dbData.links] : [];
+        let resolvedLinks = Array.isArray(dbData.links)
+          ? dbData.links.map((l: any) => {
+              const titleObj = l?.title && typeof l.title === 'object' ? l.title : undefined;
+              const descObj =
+                l?.metadata?.description && typeof l.metadata.description === 'object'
+                  ? l.metadata.description
+                  : undefined;
+              const existingTrans = l?.metadata?.translations || {};
+              const nextMetadata = l?.metadata ? { ...l.metadata } : {};
+              if (descObj) {
+                nextMetadata.description = getLocalizedText(descObj, 'da', '');
+              }
+              if (titleObj || descObj || l?.metadata?.translations) {
+                nextMetadata.translations = {
+                  ...existingTrans,
+                  ...(titleObj ? { title: existingTrans.title || titleObj } : {}),
+                  ...(descObj ? { description: existingTrans.description || descObj } : {}),
+                };
+              }
+              return {
+                ...l,
+                title: getLocalizedText(l?.title, 'da', ''),
+                metadata: Object.keys(nextMetadata).length > 0 ? nextMetadata : l?.metadata,
+              };
+            })
+          : [];
         if (!resolvedLinks.some((l: any) => l.moduleType === 'email_direct')) {
           const emailVal = dbData.email || 'info@aryal.ink';
           resolvedLinks.push({
@@ -1296,13 +1326,26 @@ export const useEditorStore = create<EditorState>((set, get) => ({
           });
         }
 
+        const rawTranslations = dbData.translations || {};
+        const mergedTranslations = {
+          ...rawTranslations,
+          ...(dbData.displayName && typeof dbData.displayName === 'object' && !rawTranslations.displayName
+            ? { displayName: dbData.displayName }
+            : {}),
+          ...(dbData.headline && typeof dbData.headline === 'object' && !rawTranslations.headline
+            ? { headline: dbData.headline }
+            : {}),
+          ...(dbData.bio && typeof dbData.bio === 'object' && !rawTranslations.bio
+            ? { bio: dbData.bio }
+            : {}),
+        };
         const normalizedProfile: ProfileData = {
           id: dbData.id || dbData._id,
           alias: dbData.alias,
-          displayName: dbData.displayName,
-          headline: dbData.headline || '',
-          bio: dbData.bio || '',
-          translations: dbData.translations || {},
+          displayName: getLocalizedText(dbData.displayName, 'da', 'کاربر آریا لینک'),
+          headline: getLocalizedText(dbData.headline, 'da', ''),
+          bio: getLocalizedText(dbData.bio, 'da', ''),
+          translations: mergedTranslations,
           avatarUrl: dbData.avatarUrl || '',
           coverUrl: dbData.coverUrl || '',
           headerLayout: dbData.headerLayout || 'curve',

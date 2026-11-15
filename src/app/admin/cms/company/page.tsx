@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { MultilingualInput } from '@/components/admin/MultilingualInput';
 import { MultilingualTextarea } from '@/components/admin/MultilingualTextarea';
-import { MultilingualText, normalizeMultilingual } from '@/lib/i18n/multilingual';
+import { MultilingualText, normalizeMultilingual, getLocalizedText } from '@/lib/i18n/multilingual';
 import { toast } from 'sonner';
 
 interface BranchOffice {
@@ -364,7 +364,7 @@ export default function AdminCompanyPage() {
                       <span className="w-6 h-6 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center font-sans text-xs font-bold">
                         {idx + 1}
                       </span>
-                      <span>{b.name || 'شعبه بدون نام'}</span>
+                      <span>{getLocalizedText(b.name, 'da', 'شعبه بدون نام')}</span>
                     </span>
 
                     <button
@@ -381,7 +381,7 @@ export default function AdminCompanyPage() {
                     <div>
                       <label className="text-[10px] text-muted-foreground">نام شعبه:</label>
                       <Input
-                        value={b.name}
+                        value={getLocalizedText(b.name, 'da', '')}
                         onChange={(e) => handleUpdateBranch(idx, 'name', e.target.value)}
                         className="h-8 rounded-lg text-xs"
                       />
@@ -389,7 +389,7 @@ export default function AdminCompanyPage() {
                     <div>
                       <label className="text-[10px] text-muted-foreground">شهر / ولایت:</label>
                       <Input
-                        value={b.city}
+                        value={getLocalizedText(b.city, 'da', '')}
                         onChange={(e) => handleUpdateBranch(idx, 'city', e.target.value)}
                         className="h-8 rounded-lg text-xs"
                       />
@@ -399,7 +399,7 @@ export default function AdminCompanyPage() {
                   <div className="space-y-1">
                     <label className="text-[10px] text-muted-foreground">آدرس کامل:</label>
                     <Input
-                      value={b.address}
+                      value={getLocalizedText(b.address, 'da', '')}
                       onChange={(e) => handleUpdateBranch(idx, 'address', e.target.value)}
                       className="h-8 rounded-lg text-xs"
                     />
@@ -409,7 +409,7 @@ export default function AdminCompanyPage() {
                     <div>
                       <label className="text-[10px] text-muted-foreground">تلفن تماس:</label>
                       <Input
-                        value={b.phone}
+                        value={getLocalizedText(b.phone, 'da', '')}
                         onChange={(e) => handleUpdateBranch(idx, 'phone', e.target.value)}
                         className="h-8 rounded-lg text-xs font-sans"
                         dir="ltr"
@@ -418,7 +418,7 @@ export default function AdminCompanyPage() {
                     <div>
                       <label className="text-[10px] text-muted-foreground">مدیر شعبه:</label>
                       <Input
-                        value={b.manager}
+                        value={getLocalizedText(b.manager, 'da', '')}
                         onChange={(e) => handleUpdateBranch(idx, 'manager', e.target.value)}
                         className="h-8 rounded-lg text-xs"
                       />

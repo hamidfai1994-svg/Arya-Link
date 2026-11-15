@@ -815,7 +815,7 @@ export default function AdminSettingsPage() {
                     <div className="space-y-1">
                       <label className="text-[11px] font-bold text-muted-foreground">ضخامت کارت:</label>
                       <Input
-                        value={mat.thickness}
+                        value={getLocalizedText(mat.thickness, 'da', '')}
                         onChange={(e) => updateMaterial(mat.id, 'thickness', e.target.value)}
                         className="h-10 rounded-xl text-xs"
                       />
@@ -824,7 +824,7 @@ export default function AdminSettingsPage() {
                     <div className="space-y-1">
                       <label className="text-[11px] font-bold text-muted-foreground">وزن کارت:</label>
                       <Input
-                        value={mat.weight}
+                        value={getLocalizedText(mat.weight, 'da', '')}
                         onChange={(e) => updateMaterial(mat.id, 'weight', e.target.value)}
                         className="h-10 rounded-xl text-xs"
                       />
@@ -833,7 +833,7 @@ export default function AdminSettingsPage() {
                     <div className="space-y-1 md:col-span-2">
                       <label className="text-[11px] font-bold text-muted-foreground">مدل چیپست NFC تعبیه‌شده:</label>
                       <Input
-                        value={mat.chipset}
+                        value={getLocalizedText(mat.chipset, 'da', '')}
                         onChange={(e) => updateMaterial(mat.id, 'chipset', e.target.value)}
                         className="h-10 rounded-xl text-xs font-sans"
                         dir="ltr"

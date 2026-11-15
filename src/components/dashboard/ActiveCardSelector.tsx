@@ -20,6 +20,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/lib/i18n/LanguageContext';
+import { getLocalizedText } from '@/lib/i18n/multilingual';
 import { toast } from 'sonner';
 
 interface ActiveCardSelectorProps {
@@ -29,6 +31,7 @@ interface ActiveCardSelectorProps {
 
 export function ActiveCardSelector({ className, variant = 'full' }: ActiveCardSelectorProps) {
   const router = useRouter();
+  const { language } = useLanguage();
   const { activeCard, activeCardId, cardsList, selectCard, isLoadingCards } = useActiveCard();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -96,7 +99,7 @@ export function ActiveCardSelector({ className, variant = 'full' }: ActiveCardSe
           <div className="min-w-0 text-right">
             <div className="flex items-center gap-1.5">
               <span className="text-xs font-bold text-foreground truncate max-w-[140px]">
-                {activeCard?.displayName || 'کارت هوشمند'}
+                {getLocalizedText(activeCard?.displayName, language, 'کارت هوشمند')}
               </span>
               <span className="text-[10px] px-1.5 py-0.2 rounded-md bg-cyan-500/10 text-cyan-500 border border-cyan-500/20 font-bold shrink-0">
                 فعال
@@ -151,7 +154,7 @@ export function ActiveCardSelector({ className, variant = 'full' }: ActiveCardSe
                       )}
                     </div>
                     <div className="min-w-0 text-right">
-                      <div className="text-xs truncate">{card.displayName}</div>
+                      <div className="text-xs truncate">{getLocalizedText(card.displayName, language, 'کارت هوشمند')}</div>
                       <div className="text-[11px] font-inter font-medium text-muted-foreground/80 truncate tracking-tight" dir="ltr">
                         aryal.ink/{card.alias}
                       </div>

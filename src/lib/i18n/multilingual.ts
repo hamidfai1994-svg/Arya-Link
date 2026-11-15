@@ -15,38 +15,81 @@ export type LocalizedFieldValue =
   | null;
 
 /**
- * Safely extracts localized string from either a multilingual object ({ fa, da, ps, en })
- * or a legacy plain string (smart fallback so old DB records never crash).
+ * Safely extracts a plain localized string from any dynamic value:
+ * - plain strings (legacy DB records)
+ * - numbers / booleans
+ * - arrays (first resolvable element)
+ * - multilingual objects ({ fa, da, ps, en, ... })
+ * Never returns an object or crashes on missing keys.
  */
 export function getLocalizedText(
-  value: LocalizedFieldValue,
-  lang: SupportedLanguage | 'fa' | string = 'da',
-  fallback: string = ''
+  value: any,
+  locale: SupportedLanguage | 'fa' | string = 'da',
+  fallback: string = '',
+  depth: number = 0
 ): string {
-  if (!value) return fallback;
+  if (value === null || value === undefined) return fallback;
+  if (depth > 4) return fallback;
 
   if (typeof value === 'string') {
-    return value;
+    return value.trim() ? value : fallback;
+  }
+
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
+
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const resolved = getLocalizedText(item, locale, '', depth + 1);
+      if (resolved.trim()) return resolved;
+    }
+    return fallback;
   }
 
   if (typeof value === 'object') {
-    const targetLang = normalizeLangCode(lang);
+    const rawLocale = String(locale || 'da').trim().toLowerCase();
+    const targetLang = normalizeLangCode(rawLocale);
 
-    if (targetLang === 'da') {
-      if (typeof value.fa === 'string' && value.fa.trim()) return value.fa;
-      if (typeof value.da === 'string' && value.da.trim()) return value.da;
-      if (typeof value.ps === 'string' && value.ps.trim()) return value.ps;
-      if (typeof value.en === 'string' && value.en.trim()) return value.en;
-    } else if (targetLang === 'ps') {
-      if (typeof value.ps === 'string' && value.ps.trim()) return value.ps;
-      if (typeof value.fa === 'string' && value.fa.trim()) return value.fa;
-      if (typeof value.da === 'string' && value.da.trim()) return value.da;
-      if (typeof value.en === 'string' && value.en.trim()) return value.en;
-    } else if (targetLang === 'en') {
-      if (typeof value.en === 'string' && value.en.trim()) return value.en;
-      if (typeof value.fa === 'string' && value.fa.trim()) return value.fa;
-      if (typeof value.da === 'string' && value.da.trim()) return value.da;
-      if (typeof value.ps === 'string' && value.ps.trim()) return value.ps;
+    const candidateKeys: string[] = [];
+    if (rawLocale === 'fa' || rawLocale === 'da' || rawLocale === 'dari' || targetLang === 'da') {
+      candidateKeys.push('fa', 'da', 'ps', 'en');
+    } else if (rawLocale === 'ps' || rawLocale === 'pashto' || targetLang === 'ps') {
+      candidateKeys.push('ps', 'fa', 'da', 'en');
+    } else if (rawLocale === 'en' || targetLang === 'en') {
+      candidateKeys.push('en', 'fa', 'da', 'ps');
+    } else {
+      candidateKeys.push(rawLocale, targetLang, 'fa', 'da', 'ps', 'en');
+    }
+
+    for (const key of candidateKeys) {
+      if (Object.prototype.hasOwnProperty.call(value, key)) {
+        const candidate = value[key];
+        if (typeof candidate === 'string' && candidate.trim()) {
+          return candidate;
+        }
+        if (typeof candidate === 'number' || typeof candidate === 'boolean') {
+          return String(candidate);
+        }
+        if (candidate && typeof candidate === 'object') {
+          const nested = getLocalizedText(candidate, locale, '', depth + 1);
+          if (nested.trim()) return nested;
+        }
+      }
+    }
+
+    // Fallback to the first available non-empty string key in the object
+    for (const val of Object.values(value)) {
+      if (typeof val === 'string' && val.trim()) {
+        return val;
+      }
+      if (typeof val === 'number' || typeof val === 'boolean') {
+        return String(val);
+      }
+      if (val && typeof val === 'object') {
+        const nested = getLocalizedText(val, locale, '', depth + 1);
+        if (nested.trim()) return nested;
+      }
     }
   }
 
@@ -73,13 +116,19 @@ export function normalizeMultilingual(
     };
   }
 
-  const primary = input.fa ?? input.da ?? defaultDa ?? '';
-  return {
-    da: primary,
-    fa: primary,
-    ps: input.ps || '',
-    en: input.en || '',
-  };
+  if (typeof input === 'object') {
+    const rawPrimary = input.fa ?? input.da ?? defaultDa ?? '';
+    const primary = typeof rawPrimary === 'string' ? rawPrimary : getLocalizedText(rawPrimary, 'da', defaultDa);
+    return {
+      da: primary,
+      fa: primary,
+      ps: typeof input.ps === 'string' ? input.ps : getLocalizedText(input.ps, 'ps', ''),
+      en: typeof input.en === 'string' ? input.en : getLocalizedText(input.en, 'en', ''),
+    };
+  }
+
+  const strFallback = String(input);
+  return { da: strFallback, fa: strFallback, ps: '', en: '' };
 }
 
 /**
@@ -96,11 +145,8 @@ export function getProfileLocalizedText(
   const targetLang = normalizeLangCode(lang);
   const translatedObj = profile?.translations?.[field];
   if (translatedObj && typeof translatedObj === 'object') {
-    const directVal =
-      targetLang === 'da'
-        ? translatedObj.fa || translatedObj.da
-        : translatedObj[targetLang];
-    if (typeof directVal === 'string' && directVal.trim()) {
+    const directVal = getLocalizedText(translatedObj, targetLang, '');
+    if (directVal.trim()) {
       return directVal;
     }
   }
@@ -121,11 +167,8 @@ export function getLinkLocalizedText(
   const targetLang = normalizeLangCode(lang);
   const translatedObj = link?.metadata?.translations?.[field];
   if (translatedObj && typeof translatedObj === 'object') {
-    const directVal =
-      targetLang === 'da'
-        ? translatedObj.fa || translatedObj.da
-        : translatedObj[targetLang];
-    if (typeof directVal === 'string' && directVal.trim()) {
+    const directVal = getLocalizedText(translatedObj, targetLang, '');
+    if (directVal.trim()) {
       return directVal;
     }
   }

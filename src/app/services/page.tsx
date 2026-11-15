@@ -112,7 +112,7 @@ export default function ServicesPage() {
                       {getServiceIcon(service.icon)}
                     </div>
                     <Badge variant="outline" className="text-xs font-bold font-sans text-cyan-500 border-cyan-500/30">
-                      {service.pricingInfo}
+                      {getLocalizedText(service.pricingInfo, language)}
                     </Badge>
                   </div>
 
@@ -126,12 +126,12 @@ export default function ServicesPage() {
                   </div>
 
                   {/* Features Checklist */}
-                  {service.features && service.features.length > 0 && (
+                  {Array.isArray(service.features) && service.features.length > 0 && (
                     <div className="pt-2 space-y-2 border-t border-border/60">
                       {service.features.map((feat, idx) => (
                         <div key={idx} className="flex items-center gap-2 text-xs text-foreground">
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                          <span>{feat}</span>
+                          <span>{getLocalizedText(feat, language)}</span>
                         </div>
                       ))}
                     </div>

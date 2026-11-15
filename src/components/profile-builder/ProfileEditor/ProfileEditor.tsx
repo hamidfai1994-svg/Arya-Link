@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useEditorStore } from '@/store/editor-store';
+import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { ProfileThemeConfig, HeaderLayoutType, ProfileLanguage, ProfileType, VerificationData, LinkModuleType, ProfileLinkItem } from '@/types/profile.types';
 import { ModuleSelectorModal } from './ModuleSelectorModal';
 import { SectionModulesList } from './SectionModulesList';
@@ -13,7 +14,7 @@ import { FileUploader } from '@/components/ui/file-uploader';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { MultilingualInput } from '@/components/admin/MultilingualInput';
 import { MultilingualTextarea } from '@/components/admin/MultilingualTextarea';
-import { MultilingualText, normalizeMultilingual } from '@/lib/i18n/multilingual';
+import { MultilingualText, normalizeMultilingual, getLocalizedText } from '@/lib/i18n/multilingual';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import { Switch } from '@/components/ui/switch';
 import { PhoneInput } from '@/components/ui/phone-input';
@@ -293,6 +294,7 @@ const getFontFamilyStyle = (fontKey?: string) => {
 };
 
 export const ProfileEditor: React.FC = () => {
+  const { language } = useLanguage();
   const { data: session } = useSession();
   const {
     profile,
@@ -849,7 +851,7 @@ export const ProfileEditor: React.FC = () => {
     setIsAiMenuOpen(false);
     setIsAiHeadlineMenuOpen(false);
 
-    const currentText = targetField === 'bio' ? profile.bio : profile.headline;
+    const currentText = getLocalizedText(targetField === 'bio' ? profile.bio : profile.headline, language, '');
     if (action === 'improve_text' && (!currentText || !currentText.trim())) {
       toast.error('لطفاً ابتدا متنی بنویسید تا هوش مصنوعی آن را اصلاح کند.');
       return;
@@ -870,8 +872,8 @@ export const ProfileEditor: React.FC = () => {
         signal: controller.signal,
         body: JSON.stringify({
           action,
-          displayName: profile.displayName,
-          headline: profile.headline,
+          displayName: getLocalizedText(profile.displayName, language, ''),
+          headline: getLocalizedText(profile.headline, language, ''),
           currentText: currentText,
         }),
       });
@@ -1131,13 +1133,13 @@ export const ProfileEditor: React.FC = () => {
               // eslint-disable-next-line @next/next/no-img-element
               <img src={profile.avatarUrl} alt="" className="w-full h-full object-cover" />
             ) : (
-              <span>{profile.displayName?.charAt(0) || 'A'}</span>
+              <span>{(getLocalizedText(profile.displayName, language) || 'A').charAt(0)}</span>
             )}
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <span className="text-sm font-extrabold text-foreground truncate">
-                {profile.displayName || 'کارت هوشمند'}
+                {getLocalizedText(profile.displayName, language, 'کارت هوشمند')}
               </span>
               {isSaving && (
                 <span className="text-[10px] text-cyan-500 flex items-center gap-1 font-medium animate-pulse">
@@ -1147,7 +1149,7 @@ export const ProfileEditor: React.FC = () => {
               )}
             </div>
             <p className="text-[11px] text-muted-foreground truncate">
-              {profile.headline || 'ویرایشگر کارت دیجیتال و مینی‌سایت'}
+              {getLocalizedText(profile.headline, language, 'ویرایشگر کارت دیجیتال و مینی‌سایت')}
             </p>
           </div>
         </div>
@@ -1227,17 +1229,17 @@ export const ProfileEditor: React.FC = () => {
                   <div className="w-11 h-11 rounded-2xl overflow-hidden border border-border bg-card flex items-center justify-center shrink-0 shadow-sm">
                     {profile.avatarUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={profile.avatarUrl} alt={profile.displayName} className="w-full h-full object-cover" />
+                      <img src={profile.avatarUrl} alt={getLocalizedText(profile.displayName, language, '')} className="w-full h-full object-cover" />
                     ) : (
                       <User className="w-5 h-5 text-muted-foreground" />
                     )}
                   </div>
                   <div>
                     <h2 className="text-xs font-bold text-foreground">
-                      {profile.displayName || 'نام و هویت تنظیم نشده'}
+                      {getLocalizedText(profile.displayName, language, 'نام و هویت تنظیم نشده')}
                     </h2>
                     <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">
-                      {profile.headline || 'عنوان یا تخصص شغلی وارد نشده است'}
+                      {getLocalizedText(profile.headline, language, 'عنوان یا تخصص شغلی وارد نشده است')}
                     </p>
                   </div>
                 </div>

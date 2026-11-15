@@ -63,15 +63,17 @@ export default function AboutPage() {
       </section>
 
       {/* Stats Row */}
-      {company?.stats && (
+      {Array.isArray(company?.stats) && (
         <div className="max-w-6xl mx-auto px-4 -mt-8 relative z-20">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {company.stats.map((s: any, idx: number) => (
               <Card key={idx} className="rounded-2xl border-border bg-card/90 backdrop-blur-xl p-5 text-center shadow-lg">
                 <span className="text-2xl sm:text-3xl font-black font-sans text-cyan-500 block mb-1">
-                  {s.value}
+                  {getLocalizedText(s.value, language)}
                 </span>
-                <span className="text-xs text-muted-foreground font-semibold">{s.label}</span>
+                <span className="text-xs text-muted-foreground font-semibold">
+                  {getLocalizedText(s.label, language)}
+                </span>
               </Card>
             ))}
           </div>
@@ -131,12 +133,12 @@ export default function AboutPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {company?.branches?.map((branch: any) => (
+            {Array.isArray(company?.branches) && company.branches.map((branch: any) => (
               <Card key={branch.id} className="rounded-3xl border-border bg-card p-6 space-y-4 shadow-sm hover:border-cyan-500/40 transition-all">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 font-bold text-sm text-foreground">
                     <Building2 className="w-4 h-4 text-cyan-500" />
-                    <span>{branch.name}</span>
+                    <span>{getLocalizedText(branch.name, language)}</span>
                   </div>
                   {branch.isMainBranch && (
                     <Badge variant="cyan" className="text-[10px]">
@@ -148,15 +150,15 @@ export default function AboutPage() {
                 <div className="space-y-2 text-xs text-muted-foreground pt-2 border-t border-border/60">
                   <div className="flex items-start gap-2">
                     <MapPin className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
-                    <span>{branch.address} ({branch.city})</span>
+                    <span>{getLocalizedText(branch.address, language)} ({getLocalizedText(branch.city, language)})</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Phone className="w-4 h-4 text-emerald-500 shrink-0" />
-                    <span className="font-sans" dir="ltr">{branch.phone}</span>
+                    <span className="font-sans" dir="ltr">{getLocalizedText(branch.phone, language)}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Users className="w-4 h-4 text-blue-500 shrink-0" />
-                    <span>مدیر شعبه: <strong>{branch.manager}</strong></span>
+                    <span>مدیر شعبه: <strong>{getLocalizedText(branch.manager, language)}</strong></span>
                   </div>
                 </div>
               </Card>

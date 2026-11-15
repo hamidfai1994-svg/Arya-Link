@@ -193,9 +193,16 @@ function InteractiveMaterialCard({ material }: { material: CardMaterialItem }) {
     mouseY.set(0);
   };
 
-  const displayPrice = typeof material.price === 'number'
-    ? `${material.price.toLocaleString('en-US')} AFN`
-    : material.price;
+  const numericPrice = typeof material.price === 'number' ? material.price : Number(material.price);
+  const displayPrice =
+    typeof material.price === 'number'
+      ? `${material.price.toLocaleString('en-US')} AFN`
+      : Number.isFinite(numericPrice) && typeof material.price === 'string' && /^\d+$/.test(material.price.trim())
+        ? `${numericPrice.toLocaleString('en-US')} AFN`
+        : getLocalizedText(material.price, language, '0 AFN');
+
+  const chipsetText = getLocalizedText(material.chipset, language, 'NTAG216');
+  const chipsetCode = chipsetText.split(' ')[0] || 'NTAG216';
 
   return (
     <div className="flex flex-col h-full justify-between p-6 rounded-3xl bg-white/70 dark:bg-slate-900/60 border border-slate-200/80 dark:border-white/10 shadow-sm hover:shadow-2xl hover:border-cyan-500/40 transition-all duration-300 group backdrop-blur-xl font-sans">
@@ -265,7 +272,7 @@ function InteractiveMaterialCard({ material }: { material: CardMaterialItem }) {
             </div>
 
             <span className="text-[10px] tracking-widest uppercase opacity-60 text-white font-sans">
-              {material.chipset ? material.chipset.split(' ')[0] : 'NTAG216'}
+              {chipsetCode}
             </span>
           </div>
 

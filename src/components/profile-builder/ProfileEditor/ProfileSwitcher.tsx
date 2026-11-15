@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import { useLanguage } from '@/lib/i18n/LanguageContext';
+import { getLocalizedText } from '@/lib/i18n/multilingual';
 import { useEditorStore } from '@/store/editor-store';
 import { UserProfileSummary } from '@/types/profile.types';
 import {
@@ -29,6 +31,7 @@ import {
 } from '@/components/ui/dialog';
 
 export const ProfileSwitcher: React.FC = () => {
+  const { language } = useLanguage();
   const {
     profile,
     profilesList,
@@ -73,8 +76,8 @@ export const ProfileSwitcher: React.FC = () => {
   const activeProfile: UserProfileSummary = profilesList.find((p) => p.id === activeProfileId) || profilesList[0] || {
     id: profile.id || 'default',
     alias: profile.alias || 'پروفایل من',
-    displayName: profile.displayName || 'کارت هوشمند',
-    headline: profile.headline,
+    displayName: getLocalizedText(profile.displayName, language, 'کارت هوشمند'),
+    headline: getLocalizedText(profile.headline, language, ''),
     avatarUrl: profile.avatarUrl,
     roleType: 'personal',
     isActive: true,
@@ -163,16 +166,16 @@ export const ProfileSwitcher: React.FC = () => {
         <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-sm overflow-hidden">
           {activeProfile.avatarUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={activeProfile.avatarUrl} alt={activeProfile.displayName} className="w-full h-full object-cover" />
+            <img src={activeProfile.avatarUrl} alt={getLocalizedText(activeProfile.displayName, language, 'کارت هوشمند')} className="w-full h-full object-cover" />
           ) : (
-            <span>{activeProfile.displayName.charAt(0) || 'A'}</span>
+            <span>{(getLocalizedText(activeProfile.displayName, language) || 'A').charAt(0)}</span>
           )}
         </div>
 
         <div className="min-w-0 flex-1 truncate">
           <div className="flex items-center gap-1">
             <span className="text-xs font-bold text-slate-900 dark:text-white truncate block">
-              {activeProfile.displayName}
+              {getLocalizedText(activeProfile.displayName, language, 'کارت هوشمند')}
             </span>
           </div>
         </div>
@@ -220,14 +223,14 @@ export const ProfileSwitcher: React.FC = () => {
                     <div className="w-7 h-7 rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold flex items-center justify-center shrink-0 overflow-hidden">
                       {p.avatarUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={p.avatarUrl} alt={p.displayName} className="w-full h-full object-cover" />
+                        <img src={p.avatarUrl} alt={getLocalizedText(p.displayName, language, 'کارت هوشمند')} className="w-full h-full object-cover" />
                       ) : (
-                        <span>{p.displayName.charAt(0) || 'A'}</span>
+                        <span>{(getLocalizedText(p.displayName, language) || 'A').charAt(0)}</span>
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-xs truncate block">{p.displayName}</span>
+                        <span className="text-xs truncate block">{getLocalizedText(p.displayName, language, 'کارت هوشمند')}</span>
                         {getRoleBadge(p.roleType)}
                       </div>
                     </div>

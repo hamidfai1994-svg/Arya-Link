@@ -7,6 +7,7 @@ import { PhysicalCard } from '@/models/PhysicalCard.model';
 import { Order } from '@/models/Order.model';
 import { Transaction } from '@/models/Transaction.model';
 import { buildUserIsolationQuery, isValidUserSession } from '@/lib/db/data-isolation';
+import { getLocalizedText } from '@/lib/i18n/multilingual';
 import mongoose from 'mongoose';
 
 export const dynamic = 'force-dynamic';
@@ -41,8 +42,8 @@ export async function GET(req: NextRequest) {
         selectedProfileSummary = {
           id: match._id.toString(),
           alias: match.alias,
-          displayName: match.displayName,
-          headline: match.headline,
+          displayName: getLocalizedText(match.displayName, 'da', 'کاربر آریا لینک'),
+          headline: getLocalizedText(match.headline, 'da', ''),
         };
       }
     }
@@ -122,7 +123,7 @@ export async function GET(req: NextRequest) {
         p.links.forEach((l) => {
           allLinks.push({
             id: l.id,
-            title: l.title,
+            title: getLocalizedText(l.title, 'da', ''),
             url: l.url,
             clickCount: l.clickCount || 0,
             moduleType: l.moduleType,

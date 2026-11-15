@@ -39,6 +39,17 @@ export function HeroSection() {
     return strVal;
   };
 
+  const resolveHeroArray = (raw: any, fallbackArr: any[]): any[] => {
+    if (Array.isArray(raw)) return raw;
+    if (raw && typeof raw === 'object') {
+      const candidate = raw[language] || raw.fa || raw.da || raw.ps || raw.en;
+      if (Array.isArray(candidate)) return candidate;
+    }
+    return fallbackArr;
+  };
+
+  const trustBadgesList = resolveHeroArray(hero.trustBadges, INITIAL_LANDING_CMS.hero.trustBadges);
+
   // Mouse position normalized (-0.5 to 0.5) for parallax tracking
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
@@ -207,7 +218,7 @@ export function HeroSection() {
               variants={itemSlideRight}
               className="pt-6 border-t border-border/60 flex flex-wrap items-center justify-center lg:justify-start gap-6 text-xs text-muted-foreground"
             >
-              {(hero.trustBadges || []).map((badgeItem, idx) => (
+              {trustBadgesList.map((badgeItem, idx) => (
                 <div key={idx} className="flex items-center gap-2">
                   {idx === 0 ? (
                     <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
