@@ -326,7 +326,7 @@ export function PublicNavbar() {
         </nav>
 
         {/* Auth Actions, LanguageSwitcher & ThemeToggle (Side) */}
-        <div className="hidden sm:flex items-center gap-2.5">
+        <div className="hidden lg:flex items-center gap-2.5">
           <LanguageSwitcher />
           <ThemeToggle />
 

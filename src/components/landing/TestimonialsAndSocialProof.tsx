@@ -155,7 +155,7 @@ export function TestimonialsAndSocialProof() {
                         <Star key={starIdx} className="w-4 h-4 fill-amber-400 text-amber-400" />
                       ))}
                       <span className="text-xs font-black text-slate-800 dark:text-slate-200 mr-1.5">
-                        {t.rating.toFixed(1)}
+                        {(Number(t.rating) || 5).toFixed(1)}
                       </span>
                     </div>
 
