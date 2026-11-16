@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { connectToDatabase } from '@/lib/db/mongodb';
 import { CompanyInfo } from '@/models/CompanyInfo.model';
+import { deleteRemovedUploadUrlsBetweenDocs } from '@/lib/storage/file-manager';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,8 +42,10 @@ export async function PUT(req: NextRequest) {
     if (!info) {
       info = await CompanyInfo.create(body);
     } else {
+      const oldSnapshot = info.toObject();
       Object.assign(info, body);
       await info.save();
+      await deleteRemovedUploadUrlsBetweenDocs(oldSnapshot, info.toObject());
     }
 
     return NextResponse.json({ success: true, message: 'اطلاعات شرکت و نمایندگی‌ها بروزرسانی شد.', company: info });

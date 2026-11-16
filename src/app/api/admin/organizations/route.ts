@@ -6,6 +6,7 @@ import { connectToDatabase } from '@/lib/db/mongodb';
 import { Organization } from '@/models/Organization.model';
 import { User } from '@/models/User.model';
 import { Profile } from '@/models/Profile.model';
+import { deleteRemovedUploadUrlsBetweenDocs } from '@/lib/storage/file-manager';
 
 export const dynamic = 'force-dynamic';
 
@@ -381,7 +382,9 @@ export async function DELETE(req: NextRequest) {
       }
     );
 
+    const orgSnapshot = org.toObject ? org.toObject() : org;
     await Organization.findByIdAndDelete(orgObjectId);
+    await deleteRemovedUploadUrlsBetweenDocs(orgSnapshot, null);
 
     return NextResponse.json({
       success: true,

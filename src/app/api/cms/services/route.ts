@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { connectToDatabase } from '@/lib/db/mongodb';
 import { ServiceItem } from '@/models/ServiceItem.model';
+import { deleteRemovedUploadUrlsBetweenDocs } from '@/lib/storage/file-manager';
 
 export const dynamic = 'force-dynamic';
 
@@ -125,7 +126,14 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ success: false, message: 'آی دی خدمت الزامی است.' }, { status: 400 });
     }
 
+    const oldService = await ServiceItem.findById(id).lean();
     const updated = await ServiceItem.findByIdAndUpdate(id, { $set: updates }, { new: true });
+    if (oldService) {
+      await deleteRemovedUploadUrlsBetweenDocs(
+        oldService,
+        updated ? updated.toObject() : updates
+      );
+    }
     return NextResponse.json({ success: true, message: 'خدمت با موفقیت ویرایش شد.', service: updated });
   } catch (error: any) {
     return NextResponse.json({ success: false, message: 'خطا در ویرایش خدمت.' }, { status: 500 });
@@ -147,7 +155,10 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ success: false, message: 'آی دی خدمت الزامی است.' }, { status: 400 });
     }
 
-    await ServiceItem.findByIdAndDelete(id);
+    const deletedService = await ServiceItem.findByIdAndDelete(id).lean();
+    if (deletedService) {
+      await deleteRemovedUploadUrlsBetweenDocs(deletedService, null);
+    }
     return NextResponse.json({ success: true, message: 'خدمت با موفقیت حذف شد.' });
   } catch (error: any) {
     return NextResponse.json({ success: false, message: 'خطا در حذف خدمت.' }, { status: 500 });

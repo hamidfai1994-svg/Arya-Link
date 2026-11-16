@@ -7,6 +7,7 @@ import { buildUserIsolationQuery, isValidUserSession } from '@/lib/db/data-isola
 import mongoose from 'mongoose';
 import { revalidatePath } from 'next/cache';
 import bcrypt from 'bcryptjs';
+import { deleteRemovedUploadUrlsBetweenDocs } from '@/lib/storage/file-manager';
 
 export const dynamic = 'force-dynamic';
 
@@ -92,6 +93,8 @@ export async function PUT(req: NextRequest) {
     );
 
     // 4. Find and update profile links in database
+    let existingDoc = await Profile.findOne(query, 'links userId email userEmail').lean();
+
     let updatedProfile = await Profile.findOneAndUpdate(
       query,
       {
@@ -104,10 +107,10 @@ export async function PUT(req: NextRequest) {
 
     // Fallback: match by _id or alias directly if strict query had isolation key mismatch
     if (!updatedProfile && isObjectId) {
-      const existingDoc = await Profile.findById(targetId).lean();
-      if (existingDoc) {
-        const docUserId = String(existingDoc.userId || '');
-        const docEmail = String(existingDoc.email || existingDoc.userEmail || '').toLowerCase();
+      const fallbackDoc = await Profile.findById(targetId).lean();
+      if (fallbackDoc) {
+        const docUserId = String(fallbackDoc.userId || '');
+        const docEmail = String(fallbackDoc.email || fallbackDoc.userEmail || '').toLowerCase();
         const sessUserId = String(session.user.id || '');
         const sessEmail = String(session.user.email || '').toLowerCase();
 
@@ -116,6 +119,7 @@ export async function PUT(req: NextRequest) {
           (sessEmail && docEmail === sessEmail);
 
         if (isOwner) {
+          existingDoc = fallbackDoc;
           updatedProfile = await Profile.findByIdAndUpdate(
             targetId,
             {
@@ -137,6 +141,10 @@ export async function PUT(req: NextRequest) {
         },
         { status: 404 }
       );
+    }
+
+    if (existingDoc?.links) {
+      await deleteRemovedUploadUrlsBetweenDocs(existingDoc.links, updatedProfile.links);
     }
 
     // Cache Invalidation for Public Profile (Mini-site)

@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { connectToDatabase } from '@/lib/db/mongodb';
 import { User } from '@/models/User.model';
 import { Profile } from '@/models/Profile.model';
+import { deleteReplacedFileIfUnused } from '@/lib/storage/file-manager';
 
 export const dynamic = 'force-dynamic';
 
@@ -88,6 +89,9 @@ export async function PUT(req: NextRequest) {
       isActive: hesabPay.isActive !== false,
     };
 
+    const existingUser = await User.findById(session.user.id).select('financialSettings').lean();
+    const previousQrCode = existingUser?.financialSettings?.hesabPay?.qrCodeImage;
+
     // Update User model
     await User.findByIdAndUpdate(session.user.id, {
       $set: {
@@ -104,6 +108,8 @@ export async function PUT(req: NextRequest) {
         },
       }
     );
+
+    await deleteReplacedFileIfUnused(previousQrCode, sanitizedHesabPay.qrCodeImage);
 
     return NextResponse.json({
       success: true,

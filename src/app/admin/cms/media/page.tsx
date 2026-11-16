@@ -12,6 +12,7 @@ import {
   Loader2,
   ExternalLink,
   FileText,
+  HardDrive,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -30,6 +31,7 @@ export default function AdminMediaPage() {
   const [files, setFiles] = useState<MediaFile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
+  const [isCleaningStorage, setIsCleaningStorage] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
 
@@ -110,6 +112,29 @@ export default function AdminMediaPage() {
     }
   };
 
+  const handleCleanupStorage = async () => {
+    setIsCleaningStorage(true);
+    try {
+      const res = await fetch('/api/admin/cleanup-uploads', {
+        method: 'POST',
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success(data.message || `${data.freedMB ?? 0} مگابایت فضای هاست آزاد شد`, {
+          description: `${data.deletedCount ?? 0} فایل اضافی پاکسازی گردید.`,
+        });
+        fetchMediaFiles();
+      } else {
+        toast.error(data.message || 'خطا در پاکسازی فایل‌های اضافی هاست.');
+      }
+    } catch (err) {
+      console.error('Error cleaning up uploads:', err);
+      toast.error('خطای ارتباط با سرور در پاکسازی فضای هاست.');
+    } finally {
+      setIsCleaningStorage(false);
+    }
+  };
+
   const formatBytes = (bytes: number) => {
     if (bytes === 0) return '0 B';
     const k = 1024;
@@ -140,7 +165,7 @@ export default function AdminMediaPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2.5">
           <input
             type="file"
             ref={fileInputRef}
@@ -148,6 +173,22 @@ export default function AdminMediaPage() {
             accept="image/*,application/pdf"
             className="hidden"
           />
+
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleCleanupStorage}
+            disabled={isCleaningStorage}
+            size="sm"
+            className="h-10 px-4 rounded-xl border-amber-500/30 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 font-semibold text-xs flex items-center gap-2"
+          >
+            {isCleaningStorage ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <HardDrive className="w-4 h-4" />
+            )}
+            <span>پاکسازی فایل‌های اضافی (آزادسازی هاست)</span>
+          </Button>
 
           <Button
             onClick={() => fileInputRef.current?.click()}

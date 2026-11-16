@@ -21,6 +21,8 @@ import {
   Smartphone,
   ShieldCheck,
   RotateCcw,
+  HardDrive,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -46,6 +48,7 @@ export default function AdminBrandingSettingsPage() {
     'پیشرفته‌ترین سیستم هویت دیجیتال، کارت ویزیت هوشمند NFC و درگاه لینک‌بایو در افغانستان'
   );
   const [isSaving, setIsSaving] = useState(false);
+  const [isCleaningStorage, setIsCleaningStorage] = useState(false);
   const [previewTab, setPreviewTab] = useState<'desktop' | 'mobile' | 'auth'>('desktop');
 
   // Synchronize state with context when loaded
@@ -103,6 +106,28 @@ export default function AdminBrandingSettingsPage() {
     toast.info('فاوآیکون اختصاصی حذف شد و به فاوآیکون پیش‌فرض بازگشت داده شد.');
   };
 
+  const handleCleanupStorage = async () => {
+    setIsCleaningStorage(true);
+    try {
+      const res = await fetch('/api/admin/cleanup-uploads', {
+        method: 'POST',
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success(data.message || `${data.freedMB ?? 0} مگابایت فضای هاست آزاد شد`, {
+          description: `${data.deletedCount ?? 0} فایل اضافی پاکسازی گردید و ${data.keptCount ?? 0} فایل معتبر حفظ شد.`,
+        });
+      } else {
+        toast.error(data.message || 'خطا در پاکسازی فایل‌های اضافی هاست.');
+      }
+    } catch (err) {
+      console.error('Error cleaning up uploads:', err);
+      toast.error('خطای ارتباط با سرور در پاکسازی فضای هاست.');
+    } finally {
+      setIsCleaningStorage(false);
+    }
+  };
+
   return (
     <div className="space-y-8 select-none" dir="rtl">
       {/* Top Breadcrumb & Actions Bar */}
@@ -133,7 +158,22 @@ export default function AdminBrandingSettingsPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleCleanupStorage}
+            disabled={isCleaningStorage}
+            className="h-10 px-4 text-xs font-semibold rounded-xl border-amber-500/30 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 flex items-center gap-1.5"
+          >
+            {isCleaningStorage ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <HardDrive className="w-3.5 h-3.5" />
+            )}
+            <span>پاکسازی فایل‌های اضافی (آزادسازی هاست)</span>
+          </Button>
+
           <Button
             type="button"
             variant="outline"
