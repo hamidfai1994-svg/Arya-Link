@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import path from 'path';
-import fs from 'fs/promises';
-import { optimizeImageBuffer, deleteReplacedFileIfUnused } from '@/lib/storage/file-manager';
+import { optimizeImageBuffer } from '@/lib/storage/file-manager';
+import { uploadToCloud, deleteFromCloud } from '@/lib/cloudStorage';
 
 export const dynamic = 'force-dynamic';
 
@@ -47,10 +47,6 @@ export async function POST(req: NextRequest) {
 
     // Sanitize folder name
     const sanitizedFolder = folder.replace(/[^a-zA-Z0-9_-]/g, '') || 'general';
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads', sanitizedFolder);
-
-    // Ensure upload directory exists
-    await fs.mkdir(uploadDir, { recursive: true });
 
     // Read file bytes and optimize images to WebP (max width 1080px, quality 80)
     const ext = path.extname(file.name) || (isImage ? '.jpg' : '.pdf');
@@ -63,21 +59,19 @@ export async function POST(req: NextRequest) {
       : { buffer: rawBuffer, ext, mimeType: file.type || 'application/pdf' };
 
     const uniqueFileName = `${cleanBase}_${Date.now()}_${Math.random().toString(36).substring(2, 7)}${processed.ext}`;
-    const filePath = path.join(uploadDir, uniqueFileName);
 
-    await fs.writeFile(filePath, processed.buffer);
+    // Upload directly to Dual Cloud (Cloudinary with ImageKit fallback) - no local disk writeFile
+    const cloudUrl = await uploadToCloud(processed.buffer, uniqueFileName, sanitizedFolder);
 
-    const publicUrl = `/uploads/${sanitizedFolder}/${uniqueFileName}`;
-
-    // If replacing an existing uploaded file in the same control, delete the old file immediately
+    // If replacing an existing uploaded file in the same control, delete the old file from cloud immediately
     if (previousUrl) {
-      await deleteReplacedFileIfUnused(previousUrl, publicUrl);
+      await deleteFromCloud(previousUrl);
     }
 
     return NextResponse.json({
       success: true,
-      message: 'فایل با موفقیت بهینه‌سازی و بارگذاری شد.',
-      url: publicUrl,
+      message: 'فایل با موفقیت بهینه‌سازی و در فضای ابری بارگذاری شد.',
+      url: cloudUrl,
       fileName: file.name,
       size: processed.buffer.length,
     });
@@ -86,7 +80,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        message: 'خطایی در آپلود فایل رخ داد.',
+        message: 'خطایی در بارگذاری ابری فایل رخ داد.',
         error: error?.message || 'Upload failed',
       },
       { status: 500 }

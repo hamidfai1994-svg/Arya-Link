@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import path from 'path';
-import fs from 'fs/promises';
-import { optimizeImageBuffer, deleteReplacedFileIfUnused } from '@/lib/storage/file-manager';
+import { optimizeImageBuffer } from '@/lib/storage/file-manager';
+import { uploadToCloud, deleteFromCloud } from '@/lib/cloudStorage';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,36 +33,31 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'receipts');
-    await fs.mkdir(uploadDir, { recursive: true });
-
     const ext = path.extname(file.name) || '.jpg';
     const arrayBuffer = await file.arrayBuffer();
     const rawBuffer = Buffer.from(arrayBuffer);
 
     const processed = await optimizeImageBuffer(rawBuffer, file.type, ext);
     const uniqueFileName = `receipt_${Date.now()}_${Math.random().toString(36).substring(2, 7)}${processed.ext}`;
-    const filePath = path.join(uploadDir, uniqueFileName);
 
-    await fs.writeFile(filePath, processed.buffer);
-
-    const publicUrl = `/uploads/receipts/${uniqueFileName}`;
+    // Upload directly to Dual Cloud (Cloudinary with ImageKit fallback) - no local disk writeFile
+    const cloudUrl = await uploadToCloud(processed.buffer, uniqueFileName, 'receipts');
 
     if (previousUrl) {
-      await deleteReplacedFileIfUnused(previousUrl, publicUrl);
+      await deleteFromCloud(previousUrl);
     }
 
     return NextResponse.json({
       success: true,
-      url: publicUrl,
+      url: cloudUrl,
       fileName: file.name,
       size: processed.buffer.length,
-      message: 'رسید با موفقیت بهینه‌سازی و بارگذاری شد.',
+      message: 'رسید با موفقیت بهینه‌سازی و در فضای ابری بارگذاری شد.',
     });
   } catch (error: any) {
     console.error('Receipt upload error:', error);
     return NextResponse.json(
-      { success: false, message: 'خطا در آپلود فایل رسید.' },
+      { success: false, message: 'خطا در بارگذاری ابری فایل رسید.' },
       { status: 500 }
     );
   }

@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import path from 'path';
 import fs from 'fs/promises';
+import { deleteFromCloud, cloudinaryClient, imagekitClient } from '@/lib/cloudStorage';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,16 +22,57 @@ export async function GET() {
       );
     }
 
-    const uploadsBase = path.join(process.cwd(), 'public', 'uploads');
-    
-    // Ensure dir exists
-    await fs.mkdir(uploadsBase, { recursive: true });
-
-    // Recursively get files
     const mediaFiles: { name: string; url: string; size: number; createdAt: string }[] = [];
 
-    const scanDir = async (dir: string, relativePath: string = '') => {
+    // 1. Fetch Cloudinary media assets if configured
+    if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY) {
       try {
+        const cloudRes = await cloudinaryClient.api.resources({
+          type: 'upload',
+          max_results: 60,
+        });
+        if (cloudRes?.resources && Array.isArray(cloudRes.resources)) {
+          for (const res of cloudRes.resources) {
+            mediaFiles.push({
+              name: path.basename(res.public_id),
+              url: res.secure_url || res.url,
+              size: res.bytes || 0,
+              createdAt: res.created_at || new Date().toISOString(),
+            });
+          }
+        }
+      } catch (err: any) {
+        console.warn('Could not list media from Cloudinary:', err?.message || err);
+      }
+    }
+
+    // 2. Fetch ImageKit media assets if configured
+    if (process.env.IMAGEKIT_PUBLIC_KEY && process.env.IMAGEKIT_PRIVATE_KEY) {
+      try {
+        const ikRes = await imagekitClient.listFiles({
+          limit: 60,
+        });
+        if (Array.isArray(ikRes)) {
+          for (const item of ikRes) {
+            if ('url' in item && item.url) {
+              mediaFiles.push({
+                name: item.name,
+                url: item.url,
+                size: item.size || 0,
+                createdAt: (item as any).createdAt || new Date().toISOString(),
+              });
+            }
+          }
+        }
+      } catch (err: any) {
+        console.warn('Could not list media from ImageKit:', err?.message || err);
+      }
+    }
+
+    // 3. Fallback: check legacy local uploads folder
+    const uploadsBase = path.join(process.cwd(), 'public', 'uploads');
+    try {
+      const scanDir = async (dir: string, relativePath: string = '') => {
         const entries = await fs.readdir(dir, { withFileTypes: true });
         for (const entry of entries) {
           const fullPath = path.join(dir, entry.name);
@@ -48,12 +90,12 @@ export async function GET() {
             });
           }
         }
-      } catch (err) {
-        console.error('Scan dir error:', err);
-      }
-    }
+      };
 
-    await scanDir(uploadsBase);
+      await scanDir(uploadsBase);
+    } catch {
+      // Local folder may not exist or be empty
+    }
 
     // Sort newest first
     mediaFiles.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -83,19 +125,16 @@ export async function DELETE(req: NextRequest) {
     }
 
     const { searchParams } = new URL(req.url);
-    const fileUrl = searchParams.get('url');
+    const fileUrl = searchParams.get('url')?.trim();
 
-    if (!fileUrl || !fileUrl.startsWith('/uploads/')) {
+    if (!fileUrl) {
       return NextResponse.json(
         { success: false, message: 'آدرس فایل نامعتبر است.' },
         { status: 400 }
       );
     }
 
-    const cleanPath = fileUrl.replace('/uploads/', '').replace(/\.\./g, '');
-    const fullPath = path.join(process.cwd(), 'public', 'uploads', cleanPath);
-
-    await fs.unlink(fullPath);
+    await deleteFromCloud(fileUrl);
 
     return NextResponse.json({
       success: true,

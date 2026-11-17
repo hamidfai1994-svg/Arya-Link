@@ -1,6 +1,9 @@
 import path from 'path';
 import fs from 'fs/promises';
 import sharp from 'sharp';
+import { uploadToCloud, deleteFromCloud } from '@/lib/cloudStorage';
+
+export { uploadToCloud, deleteFromCloud };
 
 const UPLOADS_ROOT = path.resolve(process.cwd(), 'public', 'uploads');
 const MAX_IMAGE_WIDTH = 1080;
@@ -147,23 +150,23 @@ export async function deleteLocalUploadFile(
 }
 
 /**
- * Deletes `oldUrl` from disk when a field is replaced with a different value or cleared.
+ * Deletes `oldUrl` from cloud/disk when a field is replaced with a different value or cleared.
  */
 export async function deleteReplacedFileIfUnused(
   oldUrl?: unknown,
   newUrl?: unknown
 ): Promise<void> {
-  const oldNorm = normalizeUploadUrl(oldUrl);
-  if (!oldNorm) return;
+  if (typeof oldUrl !== 'string') return;
+  const oldTrimmed = oldUrl.trim();
+  if (!oldTrimmed) return;
 
-  const newNorm = normalizeUploadUrl(newUrl);
-  if (oldNorm === newNorm) return;
+  if (typeof newUrl === 'string' && oldTrimmed === newUrl.trim()) return;
 
-  await deleteLocalUploadFile(oldNorm);
+  await deleteFromCloud(oldTrimmed);
 }
 
 /**
- * Recursively extracts all `/uploads/...` URLs from any document, array, object, or HTML string.
+ * Recursively extracts all `/uploads/...`, Cloudinary, and ImageKit URLs from any document, array, object, or HTML string.
  */
 export function extractAllLocalUploadUrls(
   input: unknown,
@@ -179,6 +182,14 @@ export function extractAllLocalUploadUrls(
         for (const match of matches) {
           const norm = normalizeUploadUrl(match);
           if (norm) collected.add(norm);
+        }
+      }
+    }
+    if (input.includes('cloudinary.com') || input.includes('imagekit.io')) {
+      const matches = input.match(/https?:\/\/[^\s"'<>`\\]*(?:cloudinary\.com|imagekit\.io)[^\s"'<>`\\]*/g);
+      if (matches) {
+        for (const match of matches) {
+          collected.add(match);
         }
       }
     }
@@ -218,7 +229,7 @@ export function extractAllLocalUploadUrls(
 }
 
 /**
- * Compares all local `/uploads/...` references in `oldDoc` vs `newDoc` and deletes any
+ * Compares all local/cloud upload references in `oldDoc` vs `newDoc` and deletes any
  * uploaded files that were removed or replaced during the update/delete operation.
  */
 export async function deleteRemovedUploadUrlsBetweenDocs(
@@ -233,7 +244,7 @@ export async function deleteRemovedUploadUrlsBetweenDocs(
 
   for (const oldUrl of Array.from(oldUrls)) {
     if (!newUrls.has(oldUrl)) {
-      await deleteLocalUploadFile(oldUrl);
+      await deleteFromCloud(oldUrl);
     }
   }
 }

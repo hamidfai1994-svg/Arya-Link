@@ -114,8 +114,8 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
       const formData = new FormData();
       formData.append('file', fileToUpload);
       formData.append('folder', folder);
-      if (value && value.includes('/uploads/')) {
-        formData.append('previousUrl', value);
+      if (value && typeof value === 'string' && value.trim()) {
+        formData.append('previousUrl', value.trim());
       }
 
       const res = await fetch('/api/upload', {
