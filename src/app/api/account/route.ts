@@ -8,6 +8,7 @@ import { isValidUserSession } from '@/lib/db/data-isolation';
 import { syncAndCheckUserSubscription } from '@/lib/utils/subscription';
 import { deleteReplacedFileIfUnused } from '@/lib/storage/file-manager';
 import bcrypt from 'bcryptjs';
+import { sendVerificationEmail, normalizeEmailLocale } from '@/lib/mail';
 
 export const dynamic = 'force-dynamic';
 
@@ -152,6 +153,15 @@ export async function PATCH(req: NextRequest) {
         otp: generatedOtp,
         expiresAt,
       });
+
+      // Send real localized verification email via Hostinger SMTP
+      const rawLocale = body.locale || req.headers.get('accept-language') || req.cookies.get('NEXT_LOCALE')?.value || 'fa';
+      const userLocale = normalizeEmailLocale(rawLocale);
+      try {
+        await sendVerificationEmail(targetEmail, generatedOtp, userLocale);
+      } catch (mailErr) {
+        console.warn('[Email Change OTP] Could not send email via SMTP:', mailErr);
+      }
 
       console.log(`[Email Change OTP] Code for user ${user._id} to ${targetEmail}: ${generatedOtp}`);
 

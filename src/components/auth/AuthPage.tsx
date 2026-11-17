@@ -584,13 +584,18 @@ export function AuthPage({
     }
 
     try {
+      const currentLocale = activeLang === 'da' ? 'fa' : activeLang;
       const res = await fetch('/api/auth/send-otp', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept-Language': currentLocale,
+        },
         body: JSON.stringify({
           email: loginEmail.trim(),
           recaptchaToken,
           isResend: typeof e === 'boolean' && e === true,
+          locale: currentLocale,
         }),
       });
 

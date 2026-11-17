@@ -2,14 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db/mongodb';
 import { Otp } from '@/models/Otp.model';
 import { verifyRecaptcha } from '@/lib/recaptcha';
-import { sendVerificationEmail } from '@/lib/mail';
+import { sendVerificationEmail, normalizeEmailLocale } from '@/lib/mail';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { email, recaptchaToken, isResend } = body;
+    const { email, recaptchaToken, isResend, locale: bodyLocale } = body;
 
     if (!email || typeof email !== 'string') {
       return NextResponse.json(
@@ -26,6 +26,13 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Resolve active locale from body, headers, or cookies
+    const headerLang = req.headers.get('accept-language');
+    const cookieLang =
+      req.cookies.get('NEXT_LOCALE')?.value ||
+      req.cookies.get('locale')?.value;
+    const userLocale = normalizeEmailLocale(bodyLocale || cookieLang || headerLang);
 
     await connectToDatabase();
 
@@ -67,12 +74,19 @@ export async function POST(req: NextRequest) {
       createdAt: new Date(),
     });
 
-    // Send real verification email via Hostinger SMTP
-    await sendVerificationEmail(cleanEmail, code);
+    // Send real verification email via Hostinger SMTP with user locale
+    await sendVerificationEmail(cleanEmail, code, userLocale);
+
+    const successMessage =
+      userLocale === 'en'
+        ? 'Verification code sent successfully to your email.'
+        : userLocale === 'ps'
+        ? 'د تایید کوډ ستاسو برېښنالیک ته واستول شو.'
+        : 'کد تایید با موفقیت به ایمیل شما ارسال شد. لطفاً صندوق ورودی (و پوشه اسپم) خود را بررسی کنید.';
 
     return NextResponse.json({
       success: true,
-      message: 'کد تایید با موفقیت به ایمیل شما ارسال شد. لطفاً صندوق ورودی (و پوشه اسپم) خود را بررسی کنید.',
+      message: successMessage,
     });
   } catch (error: any) {
     console.error('Send OTP Error:', error);
