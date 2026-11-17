@@ -210,13 +210,12 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
         <div className="relative rounded-2xl border border-border bg-card/60 p-3 shadow-sm flex items-center gap-3 overflow-hidden group">
           {fileType === 'image' ? (
             <div
-              className={`relative overflow-hidden rounded-xl border border-border/80 bg-slate-900 shrink-0 ${
-                aspectRatio === 'banner'
-                  ? 'w-24 h-14'
-                  : aspectRatio === 'square'
+              className={`relative overflow-hidden rounded-xl border border-border/80 bg-slate-900 shrink-0 ${aspectRatio === 'banner'
+                ? 'w-24 h-14'
+                : aspectRatio === 'square'
                   ? 'w-14 h-14'
                   : 'w-16 h-14'
-              }`}
+                }`}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={value} alt="Preview" className="w-full h-full object-cover" />
@@ -261,13 +260,12 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
           onDragLeave={() => setIsDragging(false)}
           onDrop={handleDrop}
           onClick={() => !isUploading && fileInputRef.current?.click()}
-          className={`rounded-xl border border-dashed p-2.5 px-3 transition-all flex items-center justify-between gap-3 select-none cursor-pointer ${
-            isUploading
-              ? 'border-cyan-500/50 bg-cyan-500/5 cursor-wait pointer-events-none'
-              : isDragging
+          className={`rounded-xl border border-dashed p-2.5 px-3 transition-all flex items-center justify-between gap-3 select-none cursor-pointer ${isUploading
+            ? 'border-cyan-500/50 bg-cyan-500/5 cursor-wait pointer-events-none'
+            : isDragging
               ? 'border-cyan-500 bg-cyan-500/10'
               : 'border-border/90 hover:border-cyan-500/60 bg-muted/20 hover:bg-muted/40'
-          }`}
+            }`}
         >
           {isUploading ? (
             <div className="py-1 w-full flex items-center justify-between gap-3">
@@ -348,7 +346,7 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
             className="text-[11px] text-muted-foreground hover:text-cyan-500 transition-colors flex items-center gap-1 disabled:opacity-50"
           >
             <Link2 className="w-3 h-3" />
-            <span>یا وارد کردن لینک مستقیم / Google Drive</span>
+            <span>یا وارد کردن لینک مستقیم</span>
           </button>
         ) : (
           <div className="flex items-center gap-1.5 pt-1">

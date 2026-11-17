@@ -1,3 +1,7 @@
+import { sanitizeWhatsAppNumber, buildWhatsAppLink } from '@/lib/utils/phone';
+
+export { sanitizeWhatsAppNumber, buildWhatsAppLink };
+
 /**
  * Smart Link & Deep Link Generator
  * Transforms raw inputs (phone, username, handle, ID) into proper native app deep links and web fallback URLs.
@@ -248,9 +252,26 @@ export function getSmartLink(type: string, value: string, options?: { preferDeep
     case 'whatsapp':
     case 'whatsapp_direct': {
       if (val.startsWith('whatsapp://')) return val;
-      if (options?.preferDeepLink && digitsOnly) return `whatsapp://send?phone=${digitsOnly}`;
-      if (val.startsWith('http://') || val.startsWith('https://')) return val;
-      return `https://wa.me/${digitsOnly}`;
+      const cleanPhone = sanitizeWhatsAppNumber(val);
+      if (!cleanPhone) return '#';
+
+      let prefilledText: string | null = null;
+      if (val.includes('text=')) {
+        try {
+          const u = new URL(val.startsWith('http') ? val : `https://wa.me/${val}`);
+          prefilledText = u.searchParams.get('text');
+        } catch {
+          // Ignore parse errors
+        }
+      }
+
+      if (options?.preferDeepLink) {
+        return prefilledText
+          ? `whatsapp://send?phone=${cleanPhone}&text=${encodeURIComponent(prefilledText)}`
+          : `whatsapp://send?phone=${cleanPhone}`;
+      }
+
+      return buildWhatsAppLink(cleanPhone, prefilledText);
     }
 
     case 'signal': {

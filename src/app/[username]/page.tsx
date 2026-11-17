@@ -12,6 +12,7 @@ import { CreditCard, ArrowRight, ShieldAlert, Sparkles, Home, UserCheck } from '
 import { SiteLogo } from '@/components/SiteLogo';
 import { getLocalizedText } from '@/lib/i18n/multilingual';
 import { getSiteSettings } from '@/lib/settings';
+import { getBaseUrl } from '@/lib/base-url';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,11 +24,7 @@ interface PageProps {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { username } = await params;
   const cleanAlias = decodeURIComponent(username || '').toLowerCase().trim();
-  const baseUrl = (
-    process.env.NEXT_PUBLIC_SITE_URL ||
-    process.env.NEXTAUTH_URL ||
-    'https://aryal.ink'
-  ).replace(/\/+$/, '');
+  const baseUrl = getBaseUrl();
   const fullProfileUrl = `${baseUrl}/${cleanAlias}`;
 
   const toAbsoluteImageUrl = (rawUrl?: string | null): string => {

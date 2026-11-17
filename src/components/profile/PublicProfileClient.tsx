@@ -34,6 +34,7 @@ import {
   SignalIcon,
 } from '@/components/icons';
 import { getSmartLink, formatDisplayValue } from '@/lib/smart-link';
+import { getBaseUrl } from '@/lib/base-url';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { getProfileLocalizedText, getLinkLocalizedText } from '@/lib/i18n/multilingual';
 import { downloadVCard, convertToEnglishDigits } from '@/lib/generateVCard';
@@ -240,10 +241,12 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
       : (themeConfig.fontSizeDari || 15);
 
   // Live URL for QR Code and sharing
-  const [currentUrl, setCurrentUrl] = useState(`https://aryal.ink/${profile.alias}`);
+  const [currentUrl, setCurrentUrl] = useState(`${getBaseUrl()}/${profile.alias}`);
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      setCurrentUrl(window.location.href);
+      const base = getBaseUrl();
+      const search = window.location.search || '';
+      setCurrentUrl(`${base}/${profile.alias}${search}`);
     }
   }, [profile.alias]);
 
@@ -437,7 +440,7 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
     setIsLeadModalOpen(true);
   }, []);
 
-  const baseCardUrl = (currentUrl || `https://aryal.ink/${profile.alias}`).split('?')[0];
+  const baseCardUrl = (currentUrl || `${getBaseUrl()}/${profile.alias}`).split('?')[0];
   const desktopQrUrl = `${baseCardUrl}?autoConnect=true`;
 
   // 1. Social networks filter (excluding hidden)
@@ -664,7 +667,7 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
 
   // 3. Share Card Link
   const handleShare = async () => {
-    const fullUrl = `https://aryal.ink/${profile.alias}`;
+    const fullUrl = `${getBaseUrl()}/${profile.alias}`;
     if (typeof navigator !== 'undefined' && navigator.share) {
       try {
         await navigator.share({
@@ -683,7 +686,7 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
 
   // 3.5. Copy Link
   const handleCopyLink = () => {
-    const fullUrl = typeof window !== 'undefined' ? window.location.href : `https://aryal.ink/${profile.alias}`;
+    const fullUrl = `${getBaseUrl()}/${profile.alias}`;
     if (navigator.clipboard) {
       navigator.clipboard.writeText(fullUrl);
       toast.success('لینک کارت هوشمند در کلیپ‌بورد کپی شد.');
@@ -2578,7 +2581,7 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
             {/* Vector QR Code */}
             <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-lg flex flex-col items-center justify-center">
               <QRCodeSVG
-                value={`https://aryal.ink/${profile.alias}`}
+                value={`${getBaseUrl()}/${profile.alias}`}
                 size={180}
                 level="H"
                 includeMargin={true}
@@ -2598,7 +2601,7 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
                 <input
                   type="text"
                   readOnly
-                  value={`https://aryal.ink/${profile.alias}`}
+                  value={`${getBaseUrl()}/${profile.alias}`}
                   className="flex-1 bg-transparent border-0 text-xs font-sans text-foreground px-2 focus:outline-none"
                   dir="ltr"
                 />
@@ -2606,7 +2609,7 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
                   type="button"
                   onClick={() => {
                     if (typeof navigator !== 'undefined' && navigator.clipboard) {
-                      navigator.clipboard.writeText(`https://aryal.ink/${profile.alias}`);
+                      navigator.clipboard.writeText(`${getBaseUrl()}/${profile.alias}`);
                       setCopiedShareLink(true);
                       toast.success(
                         isLtr
@@ -2650,7 +2653,7 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
               <div className="grid grid-cols-2 gap-2">
                 <a
                   href={`https://wa.me/?text=${encodeURIComponent(
-                    `${profile.displayName || 'کارت هوشمند'}: https://aryal.ink/${profile.alias}`
+                    `${profile.displayName || 'کارت هوشمند'}: ${getBaseUrl()}/${profile.alias}`
                   )}`}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -2661,7 +2664,7 @@ export const PublicProfileClient: React.FC<PublicProfileClientProps> = ({ profil
                 </a>
                 <a
                   href={`https://t.me/share/url?url=${encodeURIComponent(
-                    `https://aryal.ink/${profile.alias}`
+                    `${getBaseUrl()}/${profile.alias}`
                   )}&text=${encodeURIComponent(profile.displayName || 'کارت دیجیتال در آریا لینک')}`}
                   target="_blank"
                   rel="noopener noreferrer"

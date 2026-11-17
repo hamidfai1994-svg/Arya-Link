@@ -10,8 +10,22 @@ export const profileUpdateSchema = z
     avatarUrl: z.string().optional(),
     coverUrl: z.string().optional(),
     headerLayout: z.enum(['curve', 'gradient_mask', 'minimal']).optional(),
-    phone: z.string().optional(),
-    whatsapp: z.string().optional(),
+    phone: z
+      .string()
+      .max(20, 'شماره تماس نباید بیشتر از 20 کاراکتر باشد.')
+      .refine(
+        (val) => !val || /^\+?[0-9\s-]{1,20}$/.test(val.trim()),
+        'شماره تماس فقط باید شامل ارقام و علامت + در ابتدا باشد.'
+      )
+      .optional(),
+    whatsapp: z
+      .string()
+      .max(20, 'شماره واتساپ نباید بیشتر از 20 کاراکتر باشد.')
+      .refine(
+        (val) => !val || /^\+?[0-9\s-]{1,20}$/.test(val.trim()),
+        'شماره واتساپ فقط باید شامل ارقام و علامت + در ابتدا باشد.'
+      )
+      .optional(),
     email: z.string().optional(),
     location: z.string().optional(),
     directModeEnabled: z.boolean().optional(),

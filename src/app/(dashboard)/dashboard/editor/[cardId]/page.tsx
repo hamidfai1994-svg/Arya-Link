@@ -26,6 +26,7 @@ import { CardAnalyticsPanel } from '@/components/dashboard/CardAnalyticsPanel';
 import { useEditorStore } from '@/store/editor-store';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { SiteLogo } from '@/components/SiteLogo';
+import { getBaseUrl } from '@/lib/base-url';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -103,7 +104,7 @@ function IsolatedCardEditorInner() {
 
   const handleCopyCardUrl = () => {
     const alias = profile?.alias || cardId;
-    const url = `${window.location.origin}/${alias}`;
+    const url = `${getBaseUrl()}/${alias}`;
     navigator.clipboard.writeText(url);
     toast.success('آدرس لینک کپی شد!', { description: url });
   };

@@ -54,6 +54,7 @@ import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { getLocalizedText } from '@/lib/i18n/multilingual';
 import { useEditorStore } from '@/store/editor-store';
+import { getBaseUrl, getBaseDomain } from '@/lib/base-url';
 import { PaginationBar } from '@/components/ui/pagination-bar';
 import { CreditCard } from 'lucide-react';
 import { JobCombobox } from '@/components/ui/JobCombobox';
@@ -163,11 +164,11 @@ export default function UserDashboardPage() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Hostname for preview
-  const [domainHost, setDomainHost] = useState('aryal.ink');
+  const [domainHost, setDomainHost] = useState(getBaseDomain());
 
   useEffect(() => {
+    setDomainHost(getBaseDomain());
     if (typeof window !== 'undefined') {
-      setDomainHost(window.location.host || 'aryal.ink');
       const params = new URLSearchParams(window.location.search);
       if (params.get('error') === 'unauthorized_admin' || params.get('error') === 'admin_only') {
         toast.error('خطای 403: عدم دسترسی به پنل مدیریت ارشد. این بخش مخصوص مدیران کل است.');
@@ -279,7 +280,7 @@ export default function UserDashboardPage() {
   };
 
   const handleCopyLink = (alias: string) => {
-    const fullUrl = `${window.location.origin}/${alias}`;
+    const fullUrl = `${getBaseUrl()}/${alias}`;
     navigator.clipboard.writeText(fullUrl);
     toast.success('آدرس لینک کپی شد!', {
       description: fullUrl,

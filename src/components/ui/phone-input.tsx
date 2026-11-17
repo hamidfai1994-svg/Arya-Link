@@ -90,6 +90,10 @@ export function PhoneInput({
     if (raw.startsWith('0')) {
       raw = raw.replace(/^0+/, '');
     }
+    // Limit subscriber number to max 15 digits
+    if (raw.length > 15) {
+      raw = raw.substring(0, 15);
+    }
     setPhoneNumber(raw);
     const full = raw ? `${selectedCountry.dialCode} ${raw}`.trim() : '';
     onChange?.(full);
@@ -197,6 +201,8 @@ export function PhoneInput({
         value={phoneNumber}
         onChange={handleNumberChange}
         placeholder={placeholder}
+        maxLength={20}
+        pattern="^\+?[0-9]{1,20}$"
         className="h-11 border-0 bg-transparent rounded-none px-3 font-sans text-sm text-foreground focus-visible:ring-0 placeholder:text-muted-foreground/60 flex-1"
       />
     </div>

@@ -45,6 +45,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { PaginationBar } from '@/components/ui/pagination-bar';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { getBaseUrl } from '@/lib/base-url';
 
 interface AdminOrder {
   id: string;
@@ -415,10 +416,7 @@ export default function AdminOrdersPage() {
     selectedOrder?.physicalCard?.shortCode ||
     (selectedOrder?.id ? selectedOrder.id.slice(-6).toUpperCase() : 'X9B2V1');
 
-  const trackerUrl =
-    typeof window !== 'undefined'
-      ? `${window.location.origin}/t/${currentShortCode}`
-      : `https://aryal.ink/t/${currentShortCode}`;
+  const trackerUrl = `${getBaseUrl()}/t/${currentShortCode}`;
 
   const handleCopyTrackerLink = () => {
     navigator.clipboard.writeText(trackerUrl);
@@ -441,8 +439,7 @@ export default function AdminOrdersPage() {
       return `"${str.replace(/"/g, '""')}"`;
     };
 
-    const origin =
-      typeof window !== 'undefined' ? window.location.origin : 'https://aryal.ink';
+    const origin = getBaseUrl();
 
     const headers = [
       'نام و تخلص کارمند',

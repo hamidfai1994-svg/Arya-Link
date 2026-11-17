@@ -54,6 +54,7 @@ import {
   SignalIcon,
 } from '@/components/icons';
 import { getSmartLink, formatDisplayValue } from '@/lib/smart-link';
+import { getBaseUrl, getBaseDomain } from '@/lib/base-url';
 import { downloadVCard, convertToEnglishDigits } from '@/lib/generateVCard';
 import { LiveCountdown } from '@/components/ui/live-countdown';
 import { LiveBusinessHours } from '@/components/profile/LiveBusinessHours';
@@ -459,7 +460,7 @@ export const LivePreview: React.FC = () => {
   };
 
   const handleShare = async () => {
-    const profileUrl = `https://aryal.ink/${profile.alias}`;
+    const profileUrl = `${getBaseUrl()}/${profile.alias}`;
     if (typeof navigator !== 'undefined' && navigator.share) {
       try {
         await navigator.share({
@@ -1768,7 +1769,7 @@ export const LivePreview: React.FC = () => {
           <div className="p-4 bg-white rounded-2xl border border-slate-200 flex flex-col items-center justify-center relative">
             <QRCodeCanvas
               id="profile-qr-canvas"
-              value={`https://aryal.ink/${profile.alias}`}
+              value={`${getBaseUrl()}/${profile.alias}`}
               size={190}
               level="H"
               includeMargin={true}
@@ -1777,21 +1778,21 @@ export const LivePreview: React.FC = () => {
             <div className="hidden">
               <QRCodeCanvas
                 id="profile-qr-canvas-hires"
-                value={`https://aryal.ink/${profile.alias}`}
+                value={`${getBaseUrl()}/${profile.alias}`}
                 size={1500}
                 level="H"
                 includeMargin={true}
               />
               <QRCodeSVG
                 id="profile-qr-svg"
-                value={`https://aryal.ink/${profile.alias}`}
+                value={`${getBaseUrl()}/${profile.alias}`}
                 size={1500}
                 level="H"
                 includeMargin={true}
               />
             </div>
             <div className="mt-2 px-3 py-0.5 rounded-full bg-slate-100 text-slate-800 text-[11px] font-sans font-semibold border border-slate-200" dir="ltr">
-              aryal.ink/{profile.alias}
+              {getBaseDomain()}/{profile.alias}
             </div>
           </div>
 
@@ -2418,7 +2419,7 @@ export const LivePreview: React.FC = () => {
             {/* Vector QR Code */}
             <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-lg flex flex-col items-center justify-center">
               <QRCodeSVG
-                value={`https://aryal.ink/${profile.alias}`}
+                value={`${getBaseUrl()}/${profile.alias}`}
                 size={180}
                 level="H"
                 includeMargin={true}
@@ -2434,7 +2435,7 @@ export const LivePreview: React.FC = () => {
                 <input
                   type="text"
                   readOnly
-                  value={`https://aryal.ink/${profile.alias}`}
+                  value={`${getBaseUrl()}/${profile.alias}`}
                   className="flex-1 bg-transparent border-0 text-xs font-sans text-foreground px-2 focus:outline-none"
                   dir="ltr"
                 />
@@ -2442,7 +2443,7 @@ export const LivePreview: React.FC = () => {
                   type="button"
                   onClick={() => {
                     if (typeof navigator !== 'undefined' && navigator.clipboard) {
-                      navigator.clipboard.writeText(`https://aryal.ink/${profile.alias}`);
+                      navigator.clipboard.writeText(`${getBaseUrl()}/${profile.alias}`);
                       setCopiedShareLink(true);
                       toast.success('پیوند کارت با موفقیت در کلیپ‌بورد کپی شد');
                       setTimeout(() => setCopiedShareLink(false), 2000);
@@ -2475,7 +2476,7 @@ export const LivePreview: React.FC = () => {
               </span>
               <div className="grid grid-cols-2 gap-2">
                 <a
-                  href={`https://wa.me/?text=${encodeURIComponent(`کارت دیجیتال من در آریا لینک: https://aryal.ink/${profile.alias}`)}`}
+                  href={`https://wa.me/?text=${encodeURIComponent(`کارت دیجیتال من در آریا لینک: ${getBaseUrl()}/${profile.alias}`)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="py-2 px-3 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 border border-emerald-500/30 font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95"
@@ -2484,7 +2485,7 @@ export const LivePreview: React.FC = () => {
                   <span>واتساپ</span>
                 </a>
                 <a
-                  href={`https://t.me/share/url?url=${encodeURIComponent(`https://aryal.ink/${profile.alias}`)}&text=${encodeURIComponent('کارت دیجیتال من در آریا لینک')}`}
+                  href={`https://t.me/share/url?url=${encodeURIComponent(`${getBaseUrl()}/${profile.alias}`)}&text=${encodeURIComponent('کارت دیجیتال من در آریا لینک')}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="py-2 px-3 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 text-sky-500 border border-sky-500/30 font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95"

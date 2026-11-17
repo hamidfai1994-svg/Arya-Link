@@ -1,5 +1,6 @@
 import { ProfileData, ProfileLinkItem } from '@/types/profile.types';
 import { getSmartLink, formatDisplayValue } from '@/lib/smart-link';
+import { getBaseUrl } from '@/lib/base-url';
 
 /**
  * Converts Persian (Farsi/Dari) and Arabic digits to standard ASCII English digits (0-9).
@@ -212,7 +213,7 @@ export function generateVCard(profile: ProfileData, links?: ProfileLinkItem[]): 
 
   // Primary AryaLink Profile URL
   if (profile.alias) {
-    const profileUrl = `https://aryal.ink/${profile.alias.trim()}`;
+    const profileUrl = `${getBaseUrl()}/${profile.alias.trim()}`;
     urls.add(profileUrl);
     lines.push(`URL;TYPE=WORK:${profileUrl}`);
   }

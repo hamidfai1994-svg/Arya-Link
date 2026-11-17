@@ -36,6 +36,7 @@ import {
 } from '@/components/icons';
 import { getSmartLink, formatDisplayValue } from '@/lib/smart-link';
 import { PhoneInput } from '@/components/ui/phone-input';
+import { sanitizeWhatsAppNumber, buildWhatsAppLink } from '@/lib/utils/phone';
 import {
   PAYMENT_PROVIDERS,
   AFGHAN_WALLETS,
@@ -1719,11 +1720,10 @@ export const SectionModulesList: React.FC = () => {
               <PhoneInput
                 value={meta.phoneNumber || ''}
                 onChange={(val) => {
+                  const cleanWa = sanitizeWhatsAppNumber(val);
                   updateLinkMetadata(link.id, { phoneNumber: val });
                   updateLink(link.id, {
-                    url: `https://wa.me/${val.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
-                      meta.prefilledMessage || ''
-                    )}`,
+                    url: buildWhatsAppLink(cleanWa, meta.prefilledMessage),
                   });
                 }}
                 placeholder="799 123 456"
@@ -1740,10 +1740,7 @@ export const SectionModulesList: React.FC = () => {
                   const val = e.target.value;
                   updateLinkMetadata(link.id, { prefilledMessage: val });
                   updateLink(link.id, {
-                    url: `https://wa.me/${(meta.phoneNumber || '').replace(
-                      /[^0-9]/g,
-                      ''
-                    )}?text=${encodeURIComponent(val)}`,
+                    url: buildWhatsAppLink(meta.phoneNumber, val),
                   });
                 }}
                 placeholder="سلام، از طریق کارت دیجیتال شما پیام می‌دهم..."

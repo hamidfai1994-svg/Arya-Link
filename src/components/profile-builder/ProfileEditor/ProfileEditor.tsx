@@ -18,6 +18,7 @@ import { MultilingualText, normalizeMultilingual, getLocalizedText } from '@/lib
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import { Switch } from '@/components/ui/switch';
 import { PhoneInput } from '@/components/ui/phone-input';
+import { sanitizeWhatsAppNumber, buildWhatsAppLink } from '@/lib/utils/phone';
 import { ProfileSettingsModal } from './ProfileSettingsModal';
 import { PRESET_PATTERNS, PRESET_IMAGES } from '@/lib/backgrounds';
 import { toast } from 'sonner';
@@ -584,10 +585,10 @@ export const ProfileEditor: React.FC = () => {
               createModule('telegram_channel', 'کانال یا ارتباط در تلگرام', `https://t.me/${tgHandle}`, { username: tgHandle })
             );
           } else if (p === 'whatsapp') {
-            const rawWa = val.replace(/[^0-9]/g, '');
+            const rawWa = sanitizeWhatsAppNumber(val);
             newModules.push(
-              createModule('whatsapp_direct', 'ارتباط در واتساپ', `https://wa.me/${rawWa}`, {
-                phoneNumber: `+${rawWa}`,
+              createModule('whatsapp_direct', 'ارتباط در واتساپ', buildWhatsAppLink(rawWa), {
+                phoneNumber: rawWa ? `+${rawWa}` : '',
                 prefilledMessage: 'سلام، از طریق کارت هوشمند شما پیام می‌دهم.',
               })
             );
@@ -701,13 +702,13 @@ export const ProfileEditor: React.FC = () => {
 
       if (scanned.socials) {
         if (scanned.socials.whatsapp && scanned.socials.whatsapp.trim()) {
-          const rawWa = scanned.socials.whatsapp.trim().replace(/[^0-9]/g, '');
+          const rawWa = sanitizeWhatsAppNumber(scanned.socials.whatsapp.trim());
           newModules.push(
             createModule(
               'whatsapp_direct',
               'ارتباط در واتساپ',
-              `https://wa.me/${rawWa}`,
-              { phoneNumber: `+${rawWa}`, prefilledMessage: 'سلام، از طریق کارت هوشمند شما پیام می‌دهم.' }
+              buildWhatsAppLink(rawWa),
+              { phoneNumber: rawWa ? `+${rawWa}` : '', prefilledMessage: 'سلام، از طریق کارت هوشمند شما پیام می‌دهم.' }
             )
           );
         }

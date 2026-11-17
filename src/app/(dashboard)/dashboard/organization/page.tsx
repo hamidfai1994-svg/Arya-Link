@@ -58,6 +58,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
+import { getBaseUrl } from '@/lib/base-url';
 
 interface OrgBranding {
   primaryColor?: string;
@@ -412,7 +413,7 @@ export default function OrganizationDashboardPage() {
 
   const handleCopyLink = (alias: string) => {
     if (!alias) return;
-    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    const origin = getBaseUrl();
     const fullUrl = `${origin}/${alias}`;
     navigator.clipboard.writeText(fullUrl);
     setCopiedAlias(alias);
@@ -504,7 +505,7 @@ export default function OrganizationDashboardPage() {
     }
 
     const selectedSet = new Set(selectedEmployeeIds);
-    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://aryal.ink';
+    const origin = getBaseUrl();
     const bulkItemsPayload = members
       .filter((m) => selectedSet.has(m._id))
       .map((m) => ({

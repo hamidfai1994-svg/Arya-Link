@@ -38,6 +38,7 @@ import {
 import { WhatsAppIcon, TelegramIcon } from '@/components/icons';
 import { formatSmartDate } from '@/lib/utils/date';
 import { getTelegramLink } from '@/lib/utils/phone';
+import { getBaseUrl, getBaseDomain } from '@/lib/base-url';
 import TelegramBottomNav, { NavItem } from '@/components/navigation/TelegramBottomNav';
 import { CardOcrScannerModal, ScannedContactData } from '@/components/common/CardOcrScannerModal';
 
@@ -310,7 +311,7 @@ export default function UserTWA() {
 
   const copyCardLink = () => {
     if (!profile?.alias) return;
-    const url = `https://aryal.ink/${profile.alias}`;
+    const url = `${getBaseUrl()}/${profile.alias}`;
     if (navigator?.clipboard) {
       navigator.clipboard.writeText(url);
       setCopiedLink(true);
@@ -460,7 +461,7 @@ export default function UserTWA() {
             </div>
             {profile?.alias && (
               <span className="text-[11px] font-mono text-cyan-400 flex items-center gap-1">
-                <span>aryal.ink/{profile.alias}</span>
+                <span>{getBaseDomain()}/{profile.alias}</span>
               </span>
             )}
           </div>
@@ -566,7 +567,7 @@ export default function UserTWA() {
 
                     {profile?.alias && (
                       <a
-                        href={`https://aryal.ink/${profile.alias}`}
+                        href={`${getBaseUrl()}/${profile.alias}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="h-10 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-xs font-bold text-white flex items-center justify-center gap-1.5 shadow-md shadow-cyan-500/20 transition-all active:scale-95"
@@ -971,7 +972,7 @@ export default function UserTWA() {
                   <div className="divide-y divide-white/5 text-xs">
                     <div className="py-2.5 flex items-center justify-between">
                       <span className="text-slate-400">آی دی کارت (آدرس اینترنتی):</span>
-                      <span className="font-mono text-cyan-400 font-bold">aryal.ink/{profile?.alias || '—'}</span>
+                      <span className="font-mono text-cyan-400 font-bold">{getBaseDomain()}/{profile?.alias || '—'}</span>
                     </div>
 
                     <div className="py-2.5 flex items-center justify-between">
