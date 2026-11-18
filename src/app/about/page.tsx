@@ -20,9 +20,11 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { getLocalizedText } from '@/lib/i18n/multilingual';
+import { useSiteContent } from '@/context/SiteContentContext';
 
 export default function AboutPage() {
   const { language, dir } = useLanguage();
+  const { aboutUs } = useSiteContent();
   const [company, setCompany] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -45,28 +47,33 @@ export default function AboutPage() {
     }
   };
 
+  // Determine effective stats from CMS or company model
+  const effectiveStats = aboutUs?.stats && aboutUs.stats.length > 0
+    ? aboutUs.stats
+    : (Array.isArray(company?.stats) ? company.stats : []);
+
   return (
     <div className="min-h-screen bg-background text-foreground font-sans select-none" dir={dir}>
       {/* Hero */}
       <section className="py-16 sm:py-24 border-b border-border bg-muted/20 relative overflow-hidden">
         <div className="max-w-4xl mx-auto px-4 text-center space-y-4">
           <Badge variant="cyan" className="text-xs">
-            داستان ما و تعهد به نوآوری
+            {getLocalizedText(aboutUs?.badge, language, 'داستان ما و تعهد به نوآوری')}
           </Badge>
           <h1 className="text-3xl sm:text-5xl font-black text-foreground tracking-tight">
-            {getLocalizedText(company?.companyName, language, 'شرکت فناوری آریا لینک')}
+            {getLocalizedText(aboutUs?.title, language, getLocalizedText(company?.companyName, language, 'شرکت فناوری آریا لینک'))}
           </h1>
           <p className="text-xs sm:text-sm text-muted-foreground max-w-xl mx-auto leading-relaxed">
-            {getLocalizedText(company?.slogan, language, 'پیشگام در کارت‌های هوشمند NFC و هویت دیجیتال در افغانستان')}
+            {getLocalizedText(aboutUs?.slogan, language, getLocalizedText(company?.slogan, language, 'پیشگام در کارت‌های هوشمند NFC و هویت دیجیتال در افغانستان'))}
           </p>
         </div>
       </section>
 
       {/* Stats Row */}
-      {Array.isArray(company?.stats) && (
+      {effectiveStats.length > 0 && (
         <div className="max-w-6xl mx-auto px-4 -mt-8 relative z-20">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {company.stats.map((s: any, idx: number) => (
+            {effectiveStats.map((s: any, idx: number) => (
               <Card key={idx} className="rounded-2xl border-border bg-card/90 backdrop-blur-xl p-5 text-center shadow-lg">
                 <span className="text-2xl sm:text-3xl font-black font-sans text-cyan-500 block mb-1">
                   {getLocalizedText(s.value, language)}
@@ -88,10 +95,10 @@ export default function AboutPage() {
               داستان شکل‌گیری
             </Badge>
             <h2 className="text-2xl sm:text-3xl font-bold text-foreground">
-              چرا آریا لینک را ساختیم؟
+              {getLocalizedText(aboutUs?.storyTitle, language, 'چرا آریا لینک را ساختیم؟')}
             </h2>
-            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-              {getLocalizedText(company?.aboutStory, language)}
+            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
+              {getLocalizedText(aboutUs?.story, language, getLocalizedText(company?.aboutStory, language))}
             </p>
           </div>
 
@@ -99,20 +106,20 @@ export default function AboutPage() {
             <div>
               <h3 className="text-base font-bold text-foreground flex items-center gap-2 mb-2">
                 <Sparkles className="w-5 h-5 text-cyan-500" />
-                <span>ماموریت ما</span>
+                <span>{getLocalizedText(aboutUs?.missionTitle, language, 'ماموریت ما')}</span>
               </h3>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                {getLocalizedText(company?.mission, language)}
+                {getLocalizedText(aboutUs?.mission, language, getLocalizedText(company?.mission, language))}
               </p>
             </div>
 
             <div className="pt-4 border-t border-border/60">
               <h3 className="text-base font-bold text-foreground flex items-center gap-2 mb-2">
                 <Globe className="w-5 h-5 text-blue-500" />
-                <span>چشم‌انداز</span>
+                <span>{getLocalizedText(aboutUs?.visionTitle, language, 'چشم‌انداز')}</span>
               </h3>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                {getLocalizedText(company?.vision, language)}
+                {getLocalizedText(aboutUs?.vision, language, getLocalizedText(company?.vision, language))}
               </p>
             </div>
           </div>

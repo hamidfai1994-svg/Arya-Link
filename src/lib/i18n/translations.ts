@@ -125,7 +125,7 @@ export const translations: Record<SupportedLanguage, Record<string, string>> = {
     'admin.role.admin': 'مدیر سیستم',
 
     // Magic Wand & Common
-    'magicWand.button': 'ترجمه جادویی به پشتو و انگلیسی',
+    'magicWand.button': 'ترجمه خودکار به پشتو و انگلیسی',
     'magicWand.translating': 'در حال ترجمه...',
     'magicWand.success': 'ترجمه خودکار به پشتو و انگلیسی انجام شد!',
     'magicWand.emptyError': 'لطفاً ابتدا متن فارسی/دری را وارد نمایید.',

@@ -7,6 +7,7 @@ import { LanguageProvider } from '@/lib/i18n/LanguageContext';
 import { SupportedLanguage } from '@/lib/i18n/types';
 import { PublicShell } from '@/components/public/PublicShell';
 import { BrandingProvider } from '@/lib/branding/BrandingContext';
+import { SiteContentProvider } from '@/context/SiteContentContext';
 import { getSiteSettings } from '@/lib/settings';
 import { DEFAULT_SITE_SETTINGS } from '@/types/settings';
 import { Toaster } from '@/components/ui/sonner';
@@ -88,8 +89,10 @@ export default async function RootLayout({
                 enableSystem
                 disableTransitionOnChange
               >
-                <PublicShell>{children}</PublicShell>
-                <Toaster position="top-center" richColors />
+                <SiteContentProvider>
+                  <PublicShell>{children}</PublicShell>
+                  <Toaster position="top-center" richColors />
+                </SiteContentProvider>
               </ThemeProvider>
             </BrandingProvider>
           </LanguageProvider>

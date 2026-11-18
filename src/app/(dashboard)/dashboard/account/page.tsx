@@ -37,6 +37,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { CollapsibleSection } from '@/components/admin/CollapsibleSection';
 import {
   Dialog,
   DialogContent,
@@ -458,24 +459,13 @@ export default function AccountSettingsPage() {
       {activeTab === 'finance' ? (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           <div className="lg:col-span-8 space-y-6">
-            <Card className="p-6 rounded-3xl bg-card/80 backdrop-blur-xl border border-border shadow-sm space-y-5">
-              <div className="flex items-center justify-between pb-4 border-b border-border">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center font-bold">
-                    <Wallet className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h2 className="text-sm font-bold text-foreground">درگاه و کیف پول اختصاصی حساب‌پی (HesabPay)</h2>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">
-                      مشخصات حساب، بارکد QR اختصاصی و راهنمای واریز خود را درج نمایید تا مشتریان مینی‌سایت پس از واریز، رسید را برای شما ثبت کنند.
-                    </p>
-                  </div>
-                </div>
-                <Badge variant="secondary" className="text-[10px]">
-                  واریز آفلاین + آپلود رسید
-                </Badge>
-              </div>
-
+            <CollapsibleSection
+              title="درگاه و کیف پول اختصاصی حساب‌پی (HesabPay)"
+              subtitle="مشخصات حساب، بارکد QR اختصاصی و راهنمای واریز خود را درج نمایید تا مشتریان مینی‌سایت پس از واریز، رسید را برای شما ثبت کنند."
+              icon={Wallet}
+              badge="واریز آفلاین + آپلود رسید"
+              defaultOpen={false}
+            >
               <form onSubmit={handleSaveFinancial} className="space-y-5">
                 {/* Strictly Offline Account Info */}
                 <div className="p-4 rounded-2xl bg-muted/40 border border-border space-y-4">
@@ -613,7 +603,7 @@ export default function AccountSettingsPage() {
                   </Button>
                 </div>
               </form>
-            </Card>
+            </CollapsibleSection>
           </div>
 
           {/* Right Column: Live QR Preview */}
@@ -679,19 +669,13 @@ export default function AccountSettingsPage() {
           {/* Left / Main Forms (8 cols on lg) */}
           <div className="lg:col-span-8 space-y-6">
             {/* Section 1: Personal Info Form */}
-            <Card className="p-6 rounded-3xl bg-card/80 backdrop-blur-xl border border-border shadow-sm space-y-5">
-              <div className="flex items-center gap-2.5 border-b border-border pb-4">
-                <div className="w-8 h-8 rounded-xl bg-cyan-500/10 text-cyan-500 flex items-center justify-center">
-                  <User className="w-4 h-4" />
-                </div>
-                <div>
-                  <h2 className="text-sm font-bold text-foreground">مشخصات عمومی و هویتی حساب</h2>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">
-                    این اطلاعات به عنوان مشخصات اصلی مالک حساب کاربری در سرور ثبت می‌شود.
-                  </p>
-                </div>
-              </div>
-
+            <CollapsibleSection
+              title="مشخصات عمومی و هویتی حساب"
+              subtitle="این اطلاعات به عنوان مشخصات اصلی مالک حساب کاربری در سرور ثبت می‌شود."
+              icon={User}
+              badge="پروفایل کاربری"
+              defaultOpen={false}
+            >
               <form onSubmit={handleUpdateProfile} className="space-y-4">
                 {/* Avatar Uploader Preview */}
                 <div className="flex items-center gap-4 p-3 rounded-2xl bg-muted/30 border border-border">
@@ -817,22 +801,16 @@ export default function AccountSettingsPage() {
                   </Button>
                 </div>
               </form>
-            </Card>
+            </CollapsibleSection>
 
             {/* Section 2: Password and Security Form */}
-            <Card className="p-6 rounded-3xl bg-card/80 backdrop-blur-xl border border-border shadow-sm space-y-5">
-              <div className="flex items-center gap-2.5 border-b border-border pb-4">
-                <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
-                  <KeyRound className="w-4 h-4" />
-                </div>
-                <div>
-                  <h2 className="text-sm font-bold text-foreground">امنیت و تغییر گذرواژه ورود</h2>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">
-                    جهت حفظ امنیت حساب خود، گذرواژه‌ای امن متشکل از حروف، اعداد و نشانه‌ها انتخاب نمایید.
-                  </p>
-                </div>
-              </div>
-
+            <CollapsibleSection
+              title="امنیت و تغییر گذرواژه ورود"
+              subtitle="جهت حفظ امنیت حساب خود، گذرواژه‌ای امن متشکل از حروف، اعداد و نشانه‌ها انتخاب نمایید."
+              icon={KeyRound}
+              badge="امنیت ورود"
+              defaultOpen={false}
+            >
               <form onSubmit={handleChangePassword} className="space-y-4">
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-foreground block">گذرواژه فعلی</label>
@@ -932,7 +910,7 @@ export default function AccountSettingsPage() {
                   </Button>
                 </div>
               </form>
-            </Card>
+            </CollapsibleSection>
           </div>
 
           {/* Right Column: Account Status & Plan Overview (4 cols on lg) */}

@@ -15,6 +15,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { LandingCmsProvider } from '@/context/LandingCmsContext';
+import { SiteContentProvider, useSiteContent } from '@/context/SiteContentContext';
+import { DEFAULT_SITE_CONTENT } from '@/models/SiteContent.model';
+import { getLocalizedText } from '@/lib/i18n/multilingual';
 
 // Modern Landing Page Components
 import { HeroSection } from '@/components/landing/HeroSection';
@@ -22,6 +25,7 @@ import { StatsAndMarqueeSection } from '@/components/landing/StatsAndMarqueeSect
 import { BentoGridFeatures } from '@/components/landing/BentoGridFeatures';
 import { NfcShowcaseSection } from '@/components/landing/NfcShowcaseSection';
 import { LuxuryMaterialsShowcase } from '@/components/landing/LuxuryMaterialsShowcase';
+import { CmsSlidersSection } from '@/components/landing/CmsSlidersSection';
 import { PricingSection } from '@/components/landing/PricingSection';
 import { TestimonialsAndSocialProof } from '@/components/landing/TestimonialsAndSocialProof';
 
@@ -53,7 +57,8 @@ const headerItemVariants = {
 };
 
 export default function LandingPage() {
-  const { dir } = useLanguage();
+  const { dir, language } = useLanguage();
+  const { faq: dynamicFaqs } = useSiteContent();
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
 
   const toggleFaq = (idx: number) => {
@@ -84,32 +89,16 @@ export default function LandingPage() {
     },
   ];
 
-  const faqs = [
-    {
-      q: 'آیا مخاطبان برای مشاهده صفحه کارت من نیاز به نصب هیچ برنامه‌ای دارند؟',
-      a: 'خیر! یکی از بزرگ‌ترین مزیت‌های آریا لینک این است که مخاطب شما با هر گوشی موبایل (اندروید، آیفون یا کامپیوتر) و بدون نیاز به نصب هرگونه نرم‌افزار، تنها با لمس کارت یا اسکن کد، صفحه شما را مستقیماً در مرورگر مشاهده می‌کند.',
-    },
-    {
-      q: 'کارت فیزیکی لمسی NFC چگونه کار می‌کند؟',
-      a: 'کارت‌های NFC دارای چیپست هوشمند ایمن و بدون باتری هستند. کافی است کارت را به پشت گوشی طرف مقابل نزدیک کنید؛ در کسری از ثانیه لینک کارت دیجیتال شما روی صفحه گوشی او باز می‌شود.',
-    },
-    {
-      q: 'تسویه حساب درآمدهای فروشگاه چگونه انجام می‌شود؟',
-      a: 'پس از تایید هویت (KYC)، موجودی حاصل از فروش خدمات و محصولات شما از طریق پنل تسویه حساب، مستقیماً به ولت حساب‌پی (HesabPay) یا حساب‌های بانکی معتبر افغانستان واریز خواهد شد.',
-    },
-    {
-      q: 'نشان رسمی تیک آبی (KYC) چیست و چگونه دریافت می‌شود؟',
-      a: 'تیک آبی نشان‌دهنده اصالت هویت شماست. با ارسال تصویر تذکره الکترونیکی یا پاسپورت در پنل، کارشناسان ما مدارک را بررسی کرده و پس از تطبیق، نشان رسمی تیک آبی بر روی پروفایل و کارت شما فعال می‌شود.',
-    },
-    {
-      q: 'آیا می‌توانم لینک کارت خود را در بیو اینستاگرام و شبکه‌ها قرار دهم؟',
-      a: 'بله کاملاً! آدرس اختصاصی شما مانند aryal.ink/ali را می‌توانید در بیو اینستاگرام، تیک‌تاک، تلگرام، واتساپ یا امضای ایمیل‌های اداری خود قرار دهید تا تمامی کانال‌های شما در یک لینک در دسترس باشند.',
-    },
-  ];
+  const effectiveFaqs = dynamicFaqs && dynamicFaqs.length > 0
+    ? dynamicFaqs
+    : DEFAULT_SITE_CONTENT.faq;
+
+  const displayFaqs = effectiveFaqs.filter((f) => f.isActive !== false);
 
   return (
-    <LandingCmsProvider>
-      <div className="min-h-screen bg-background text-foreground font-sans select-none overflow-x-hidden" dir={dir}>
+    <SiteContentProvider>
+      <LandingCmsProvider>
+        <div className="min-h-screen bg-background text-foreground font-sans select-none overflow-x-hidden" dir={dir}>
         
         {/* =========================================
             1. هیرو سکشن (Link-in-Bio & 3D Interactive Phone)
@@ -135,6 +124,11 @@ export default function LandingPage() {
             6. گالری متریال کارت‌های لوکس (Luxury Materials Showcase)
         ========================================= */}
         <LuxuryMaterialsShowcase />
+
+        {/* =========================================
+            6.5. اسلایدرهای اختصاصی صفحه اصلی (CMS Sliders)
+        ========================================= */}
+        <CmsSlidersSection />
 
         {/* =========================================
             7. نحوه کارکرد (3 گام تا کارت هوشمند)
@@ -268,52 +262,57 @@ export default function LandingPage() {
               transition={{ staggerChildren: 0.1 }}
               className="space-y-3.5"
             >
-              {faqs.map((faq, idx) => (
-                <motion.div
-                  key={idx}
-                  variants={{
-                    hidden: { opacity: 0, y: 25 },
-                    visible: {
-                      opacity: 1,
-                      y: 0,
-                      transition: { duration: 0.6, ease: EASE_SNAPPY },
-                    },
-                  }}
-                  className="rounded-2xl border border-border/80 bg-card/60 dark:bg-white/[0.03] backdrop-blur-xl overflow-hidden transition-colors duration-200 hover:border-cyan-500/40"
-                >
-                  <button
-                    type="button"
-                    onClick={() => toggleFaq(idx)}
-                    className="w-full p-5 text-right flex items-center justify-between gap-4 font-bold text-sm sm:text-base text-foreground hover:bg-muted/30 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <HelpCircle className="w-5 h-5 text-cyan-500 shrink-0" />
-                      <span>{faq.q}</span>
-                    </div>
-                    <ChevronDown
-                      className={`w-4 h-4 text-cyan-400 transition-transform duration-300 shrink-0 ${
-                        activeFaq === idx ? 'rotate-180' : ''
-                      }`}
-                    />
-                  </button>
+              {displayFaqs.map((faq, idx) => {
+                const questionText = getLocalizedText(faq.question, language, (faq as any).q || '');
+                const answerText = getLocalizedText(faq.answer, language, (faq as any).a || '');
 
-                  <AnimatePresence>
-                    {activeFaq === idx && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                        className="overflow-hidden"
-                      >
-                        <div className="px-5 pb-5 pt-3 text-sm sm:text-base text-muted-foreground leading-relaxed border-t border-border/40 font-normal">
-                          {faq.a}
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </motion.div>
-              ))}
+                return (
+                  <motion.div
+                    key={faq.id || idx}
+                    variants={{
+                      hidden: { opacity: 0, y: 25 },
+                      visible: {
+                        opacity: 1,
+                        y: 0,
+                        transition: { duration: 0.6, ease: EASE_SNAPPY },
+                      },
+                    }}
+                    className="rounded-2xl border border-border/80 bg-card/60 dark:bg-white/[0.03] backdrop-blur-xl overflow-hidden transition-colors duration-200 hover:border-cyan-500/40"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => toggleFaq(idx)}
+                      className="w-full p-5 text-right flex items-center justify-between gap-4 font-bold text-sm sm:text-base text-foreground hover:bg-muted/30 transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-center gap-3">
+                        <HelpCircle className="w-5 h-5 text-cyan-500 shrink-0" />
+                        <span>{questionText}</span>
+                      </div>
+                      <ChevronDown
+                        className={`w-4 h-4 text-cyan-400 transition-transform duration-300 shrink-0 ${
+                          activeFaq === idx ? 'rotate-180' : ''
+                        }`}
+                      />
+                    </button>
+
+                    <AnimatePresence>
+                      {activeFaq === idx && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="px-5 pb-5 pt-3 text-sm sm:text-base text-muted-foreground leading-relaxed border-t border-border/40 font-normal">
+                            {answerText}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                );
+              })}
             </motion.div>
           </div>
         </section>
@@ -388,5 +387,6 @@ export default function LandingPage() {
 
       </div>
     </LandingCmsProvider>
+    </SiteContentProvider>
   );
 }

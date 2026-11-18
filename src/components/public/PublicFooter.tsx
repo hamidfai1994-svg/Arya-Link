@@ -3,11 +3,27 @@
 import React from 'react';
 import Link from 'next/link';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
-import { Sparkles, Phone, Mail, MapPin } from 'lucide-react';
+import { Sparkles, Phone, Mail, MapPin, Instagram, Send, Linkedin, Twitter, MessageCircle } from 'lucide-react';
 import { SiteLogo } from '@/components/SiteLogo';
+import { useSiteContent } from '@/context/SiteContentContext';
+import { getLocalizedText } from '@/lib/i18n/multilingual';
 
 export function PublicFooter() {
   const { t, dir, language } = useLanguage();
+  const { footer } = useSiteContent();
+
+  const defaultQuickLinks = [
+    { label: { fa: 'صفحه اصلی', en: 'Home', ps: 'اصلي پاڼه' }, url: '/' },
+    { label: { fa: 'خدمات سازمانی', en: 'Services', ps: 'خدمتونه' }, url: '/services' },
+    { label: { fa: 'بلاگ و مقالات', en: 'Blog', ps: 'بلاګ' }, url: '/blog' },
+    { label: { fa: 'درباره ما و دفاتر', en: 'About Us', ps: 'زموږ په اړه' }, url: '/about' },
+  ];
+
+  const quickLinksToRender = footer?.quickLinks && footer.quickLinks.length > 0
+    ? footer.quickLinks
+    : defaultQuickLinks;
+
+  const socialLinks = footer?.socialLinks;
 
   return (
     <footer className="border-t border-border/80 bg-card/60 backdrop-blur-md pt-16 pb-12 select-none" dir={dir}>
@@ -17,18 +33,89 @@ export function PublicFooter() {
           <div className="md:col-span-2 space-y-4">
             <SiteLogo href="/" width={40} height={40} showText={true} />
             <p className="text-xs text-muted-foreground leading-relaxed max-w-md">
-              {t('footer.desc', 'پیشرفته‌ترین سیستم هویت دیجیتال، کارت ویزیت لمسی NFC و درگاه اختصاصی لینک‌بایو در افغانستان.')}
+              {getLocalizedText(
+                footer?.desc,
+                language,
+                t('footer.desc', 'پیشرفته‌ترین سیستم هویت دیجیتال، کارت ویزیت لمسی NFC و درگاه اختصاصی لینک‌بایو در افغانستان.')
+              )}
             </p>
-            <div className="flex items-center gap-4 text-xs text-muted-foreground pt-2">
+            <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground pt-2">
               <span className="flex items-center gap-1.5">
                 <MapPin className="w-3.5 h-3.5 text-cyan-500" />
-                <span>کابل، افغانستان</span>
+                <span>{getLocalizedText(footer?.address, language, 'کابل، افغانستان')}</span>
               </span>
               <span className="flex items-center gap-1.5 font-sans" dir="ltr">
                 <Phone className="w-3.5 h-3.5 text-cyan-500" />
-                <span>+93 79 123 4567</span>
+                <span>{footer?.phone || '+93 79 123 4567'}</span>
               </span>
+              {footer?.email && (
+                <span className="flex items-center gap-1.5 font-sans" dir="ltr">
+                  <Mail className="w-3.5 h-3.5 text-cyan-500" />
+                  <span>{footer.email}</span>
+                </span>
+              )}
             </div>
+
+            {/* Social Icons */}
+            {socialLinks && (
+              <div className="flex items-center gap-3 pt-2">
+                {socialLinks.instagram && (
+                  <a
+                    href={socialLinks.instagram}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-8 h-8 rounded-full bg-muted/60 border border-border flex items-center justify-center text-muted-foreground hover:text-cyan-500 hover:border-cyan-500/40 transition-colors"
+                    aria-label="Instagram"
+                  >
+                    <Instagram className="w-4 h-4" />
+                  </a>
+                )}
+                {socialLinks.telegram && (
+                  <a
+                    href={socialLinks.telegram}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-8 h-8 rounded-full bg-muted/60 border border-border flex items-center justify-center text-muted-foreground hover:text-cyan-500 hover:border-cyan-500/40 transition-colors"
+                    aria-label="Telegram"
+                  >
+                    <Send className="w-4 h-4" />
+                  </a>
+                )}
+                {socialLinks.whatsapp && (
+                  <a
+                    href={`https://wa.me/${socialLinks.whatsapp.replace(/[^0-9]/g, '')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-8 h-8 rounded-full bg-muted/60 border border-border flex items-center justify-center text-muted-foreground hover:text-cyan-500 hover:border-cyan-500/40 transition-colors"
+                    aria-label="WhatsApp"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                  </a>
+                )}
+                {socialLinks.linkedin && (
+                  <a
+                    href={socialLinks.linkedin}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-8 h-8 rounded-full bg-muted/60 border border-border flex items-center justify-center text-muted-foreground hover:text-cyan-500 hover:border-cyan-500/40 transition-colors"
+                    aria-label="LinkedIn"
+                  >
+                    <Linkedin className="w-4 h-4" />
+                  </a>
+                )}
+                {socialLinks.twitter && (
+                  <a
+                    href={socialLinks.twitter}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-8 h-8 rounded-full bg-muted/60 border border-border flex items-center justify-center text-muted-foreground hover:text-cyan-500 hover:border-cyan-500/40 transition-colors"
+                    aria-label="Twitter / X"
+                  >
+                    <Twitter className="w-4 h-4" />
+                  </a>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Quick Links */}
@@ -37,26 +124,13 @@ export function PublicFooter() {
               {language === 'en' ? 'Quick Links' : language === 'ps' ? 'ګړندي لینکونه' : 'دسترسی سریع'}
             </h4>
             <ul className="space-y-2 text-xs text-muted-foreground">
-              <li>
-                <Link href="/" className="hover:text-cyan-500 transition-colors">
-                  {t('nav.home', 'صفحه اصلی')}
-                </Link>
-              </li>
-              <li>
-                <Link href="/services" className="hover:text-cyan-500 transition-colors">
-                  {t('nav.services', 'خدمات سازمانی')}
-                </Link>
-              </li>
-              <li>
-                <Link href="/blog" className="hover:text-cyan-500 transition-colors">
-                  {t('nav.blog', 'بلاگ و مقالات')}
-                </Link>
-              </li>
-              <li>
-                <Link href="/about" className="hover:text-cyan-500 transition-colors">
-                  {t('nav.about', 'درباره ما و دفاتر')}
-                </Link>
-              </li>
+              {quickLinksToRender.map((item, idx) => (
+                <li key={idx}>
+                  <Link href={item.url} className="hover:text-cyan-500 transition-colors">
+                    {getLocalizedText(item.label, language)}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
@@ -87,10 +161,18 @@ export function PublicFooter() {
 
         {/* Bottom Rights */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
-          <p>© {new Date().getFullYear()} Arya Link Tech. {t('footer.rights', 'تمامی حقوق محفوظ است.')}</p>
+          <p>
+            {getLocalizedText(
+              footer?.copyrightText,
+              language,
+              `© ${new Date().getFullYear()} Arya Link Tech. ${t('footer.rights', 'تمامی حقوق محفوظ است.')}`
+            )}
+          </p>
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-[11px]">سیستم آنلاین و فعال در سرورهای ابری</span>
+            <span className="text-[11px]">
+              {getLocalizedText(footer?.statusBadgeText, language, 'سیستم آنلاین و فعال در سرورهای ابری')}
+            </span>
           </div>
         </div>
       </div>

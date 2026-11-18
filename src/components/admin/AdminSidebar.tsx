@@ -21,6 +21,7 @@ import {
   CreditCard,
   Layers,
   Building2,
+  SlidersHorizontal,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SiteLogo } from '@/components/SiteLogo';
@@ -65,10 +66,10 @@ export function AdminSidebar({ onCloseMobile }: { onCloseMobile?: () => void }) 
       icon: ShoppingBag,
     },
     {
-      title: t('admin.sidebar.settings', 'تنظیمات پلتفرم'),
-      subtitle: t('admin.sidebar.settingsSub', 'تعرفه‌ها، درگاه‌های بانکی، امنیت و لجستیک'),
-      href: '/admin/settings',
-      icon: Settings,
+      title: t('admin.sidebar.systemControl', 'مرکز کنترل سیستم'),
+      subtitle: t('admin.sidebar.systemControlSub', 'محتوا، صفحات، برندینگ، سئو، زیرساخت و APIها'),
+      href: '/admin/system',
+      icon: SlidersHorizontal,
     },
     {
       title: t('admin.sidebar.trash', 'زباله‌دان سیستم'),

@@ -18,6 +18,10 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { useSiteContent } from '@/context/SiteContentContext';
+import { DEFAULT_SITE_CONTENT } from '@/models/SiteContent.model';
+import { useLanguage } from '@/lib/i18n/LanguageContext';
+import { getLocalizedText } from '@/lib/i18n/multilingual';
 
 const EASE_SNAPPY = [0, 0.7, 0.2, 1] as const;
 const SPRING_FAST = { type: 'spring', stiffness: 250, damping: 25, mass: 0.5 } as const;
@@ -112,6 +116,10 @@ function NfcCardChassis() {
 }
 
 export function NfcShowcaseSection() {
+  const { nfcConcept: rawNfc } = useSiteContent();
+  const nfcConcept = rawNfc || DEFAULT_SITE_CONTENT.nfcConcept;
+  const { language } = useLanguage();
+
   // Header Staggered Container & Items (Stage 28.3)
   const headerContainerVariants = {
     hidden: { opacity: 0 },
@@ -177,7 +185,7 @@ export function NfcShowcaseSection() {
           <motion.div variants={headerItemVariants} className="inline-block">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/25 text-cyan-600 dark:text-cyan-400 text-xs font-semibold shadow-xs">
               <Zap className="w-3.5 h-3.5 text-cyan-500 fill-cyan-500" />
-              <span>فناوری ارتباط بدون تماس (NFC)</span>
+              <span>{getLocalizedText(nfcConcept.badge, language, 'فناوری ارتباط بدون تماس (NFC)')}</span>
             </div>
           </motion.div>
 
@@ -185,7 +193,7 @@ export function NfcShowcaseSection() {
             variants={headerItemVariants}
             className="text-3xl sm:text-5xl font-black text-foreground tracking-tight leading-[1.2]"
           >
-            فقط با یک تماس{' '}
+            {getLocalizedText(nfcConcept.title, language, 'فقط با یک تماس')}{' '}
             <span className="bg-gradient-to-l from-cyan-400 via-sky-300 to-blue-500 bg-clip-text text-transparent font-sans">
               (Tap)
             </span>
@@ -195,7 +203,11 @@ export function NfcShowcaseSection() {
             variants={headerItemVariants}
             className="text-sm sm:text-base text-muted-foreground leading-relaxed max-w-2xl mx-auto"
           >
-            کارت ویزیت لوکس خود را به پشت گوشی هر شخصی نزدیک کنید؛ در کسری از ثانیه و بدون نیاز به نصب هیچ برنامه‌ای، دنیای دیجیتال شما روی موبایل او می‌درخشد.
+            {getLocalizedText(
+              nfcConcept.subtitle,
+              language,
+              'کارت ویزیت لوکس خود را به پشت گوشی هر شخصی نزدیک کنید؛ در کسری از ثانیه و بدون نیاز به نصب هیچ برنامه‌ای، دنیای دیجیتال شما روی موبایل او می‌درخشد.'
+            )}
           </motion.p>
         </motion.div>
 
@@ -351,14 +363,14 @@ export function NfcShowcaseSection() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between">
                             <span className="text-[10px] font-bold text-white truncate">
-                              آریا لینک (NFC Tap)
+                              {getLocalizedText(nfcConcept.phoneNotificationTitle, language, 'آریا لینک (NFC Tap)')}
                             </span>
                             <span className="text-[8px] text-cyan-300 bg-cyan-950/80 px-1.5 py-0.5 rounded-full border border-cyan-500/30">
                               اتصال برقرار شد
                             </span>
                           </div>
                           <p className="text-[8px] text-slate-300 truncate">
-                            دریافت پروفایل هوشمند فرهاد آریا
+                            {getLocalizedText(nfcConcept.phoneNotificationDesc, language, 'دریافت پروفایل هوشمند فرهاد آریا')}
                           </p>
                         </div>
                       </div>
@@ -403,20 +415,20 @@ export function NfcShowcaseSection() {
                         <div className="space-y-0.5">
                           <div className="flex items-center justify-center gap-1.5">
                             <h4 className="font-extrabold text-xs text-white tracking-tight">
-                              فرهاد آریا
+                              {getLocalizedText(nfcConcept.phoneProfileName, language, 'فرهاد آریا')}
                             </h4>
                             <span className="px-1.5 py-0.2 rounded-full bg-cyan-500/20 text-cyan-400 text-[8px] font-bold">
                               PRO
                             </span>
                           </div>
                           <p className="text-[10px] text-cyan-300 font-medium">
-                            مشاور ارشد کسب‌وکار و بنیان‌گذار استارتاپ
+                            {getLocalizedText(nfcConcept.phoneProfileTitle, language, 'مشاور ارشد کسب‌وکار و بنیان‌گذار استارتاپ')}
                           </p>
                         </div>
 
                         {/* Bio text (Hero 1:1) */}
                         <p className="text-[9px] text-slate-300/90 leading-relaxed mt-1 px-1 line-clamp-1">
-                          یک لینک برای اتصال تمام پروژه‌ها، مشاوره آنلاین و خدمات تخصصی من
+                          {getLocalizedText(nfcConcept.phoneProfileBio, language, 'یک لینک برای اتصال تمام پروژه‌ها، مشاوره آنلاین و خدمات تخصصی من')}
                         </p>
                       </div>
 
@@ -541,42 +553,30 @@ export function NfcShowcaseSection() {
               className="space-y-3"
             >
               <h3 className="text-2xl sm:text-3xl font-extrabold text-foreground">
-                نسل بعدی ارتباطات تجاری در جیب شما
+                {getLocalizedText(nfcConcept.title, language, 'نسل بعدی ارتباطات تجاری در جیب شما')}
               </h3>
               <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                سالانه میلیاردها کارت ویزیت کاغذی چاپ شده و بیش از 88% آن‌ها در کمتر از یک هفته دور انداخته می‌شوند. با کارت هوشمند NFC آریا لینک، یک‌بار هزینه کنید و برای همیشه یک هویت مدرن و ماندگار داشته باشید.
+                {getLocalizedText(
+                  nfcConcept.subtitle,
+                  language,
+                  'سالانه میلیاردها کارت ویزیت کاغذی چاپ شده و بیش از 88% آن‌ها در کمتر از یک هفته دور انداخته می‌شوند. با کارت هوشمند NFC آریا لینک، یک‌بار هزینه کنید و برای همیشه یک هویت مدرن و ماندگار داشته باشید.'
+                )}
               </p>
             </motion.div>
 
             {/* Benefit Checkpoints */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-right">
-              {[
-                {
-                  icon: Zap,
-                  color: 'text-cyan-500 bg-cyan-500/15 border-cyan-500/30',
-                  title: 'سازگار با آیفون و اندروید',
-                  desc: 'پشتیبانی از 100% آیفون‌ها و گوشی‌های اندرویدی مجهز به NFC بدون نیاز به تنظیم یا اپ خاص.',
-                },
-                {
-                  icon: Phone,
-                  color: 'text-blue-500 bg-blue-500/15 border-blue-500/30',
-                  title: 'ذخیره خودکار در مخاطبین',
-                  desc: 'با فشردن دکمه vCard، شماره تماس، ایمیل و شبکه‌های شما مستقیماً در دفترچه تلفن مخاطب ثبت می‌شود.',
-                },
-                {
-                  icon: CreditCard,
-                  color: 'text-amber-500 bg-amber-500/15 border-amber-500/30',
-                  title: 'متریال فلزی و چوبی لوکس',
-                  desc: 'ارائه در جنس‌های فلز مشکی مات، طلایی، استیل ضدزنگ و PVC ضدآب با بالاترین کیفیت تراشه.',
-                },
-                {
-                  icon: Sparkles,
-                  color: 'text-emerald-500 bg-emerald-500/15 border-emerald-500/30',
-                  title: 'ویرایش نامحدود و رایگان',
-                  desc: 'تغییر شغل یا شماره تماس دادید؟ در پنل ویرایش کنید؛ کارت فیزیکی بدون نیاز به چاپ مجدد آپدیت می‌شود!',
-                },
-              ].map((card, idx) => {
-                const Icon = card.icon;
+              {(nfcConcept.features && nfcConcept.features.length > 0
+                ? nfcConcept.features
+                : DEFAULT_SITE_CONTENT.nfcConcept.features
+              ).map((card, idx) => {
+                const Icon = idx === 0 ? Zap : idx === 1 ? Phone : idx === 2 ? CreditCard : Sparkles;
+                const colors = [
+                  'text-cyan-500 bg-cyan-500/15 border-cyan-500/30',
+                  'text-blue-500 bg-blue-500/15 border-blue-500/30',
+                  'text-amber-500 bg-amber-500/15 border-amber-500/30',
+                  'text-emerald-500 bg-emerald-500/15 border-emerald-500/30',
+                ];
                 return (
                   <motion.div
                     key={idx}
@@ -587,12 +587,14 @@ export function NfcShowcaseSection() {
                     viewport={{ once: false, amount: 0.2 }}
                     className="p-4 rounded-2xl bg-card/60 dark:bg-zinc-900/40 border border-border/80 backdrop-blur-md space-y-2 hover:border-cyan-500/40 transition-colors duration-200"
                   >
-                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold ${card.color}`}>
+                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold ${colors[idx % colors.length]}`}>
                       <Icon className="w-5 h-5" />
                     </div>
-                    <h4 className="text-sm font-bold text-foreground">{card.title}</h4>
+                    <h4 className="text-sm font-bold text-foreground">
+                      {getLocalizedText(card.title, language)}
+                    </h4>
                     <p className="text-[11px] text-muted-foreground leading-relaxed">
-                      {card.desc}
+                      {getLocalizedText(card.desc, language)}
                     </p>
                   </motion.div>
                 );
@@ -607,7 +609,7 @@ export function NfcShowcaseSection() {
               transition={{ duration: 0.6, delay: 0.35, ease: EASE_SNAPPY }}
               className="pt-2 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4"
             >
-              <Link href="/register" className="w-full sm:w-auto">
+              <Link href={nfcConcept.ctaLink || '/register'} className="w-full sm:w-auto">
                 <motion.div
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.96 }}
@@ -619,12 +621,14 @@ export function NfcShowcaseSection() {
                     className="w-full sm:w-auto h-14 px-8 rounded-2xl bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 hover:from-cyan-400 hover:to-blue-500 text-white font-black text-sm shadow-xl shadow-cyan-500/30 flex items-center justify-center gap-2 relative overflow-hidden group"
                   >
                     <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 pointer-events-none" />
-                    <span>سفارش کارت هوشمند NFC</span>
+                    <span>{getLocalizedText(nfcConcept.ctaText, language, 'سفارش کارت هوشمند NFC')}</span>
                     <ArrowLeft className="w-4 h-4 mr-1 group-hover:-translate-x-1 transition-transform" />
                   </Button>
                 </motion.div>
               </Link>
-              <span className="text-xs text-muted-foreground">تحویل فوری در کابل و سراسر کشور</span>
+              <span className="text-xs text-muted-foreground">
+                {getLocalizedText(nfcConcept.footnote, language, 'تحویل فوری در کابل و سراسر کشور')}
+              </span>
             </motion.div>
           </div>
 

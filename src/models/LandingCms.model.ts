@@ -8,7 +8,9 @@ export interface ILandingCmsHero {
   titlePart2: LocalizedFieldValue;
   subtitle: LocalizedFieldValue;
   primaryCta: LocalizedFieldValue;
+  primaryCtaLink?: string;
   secondaryCta: LocalizedFieldValue;
+  secondaryCtaLink?: string;
   trustBadges: LocalizedFieldValue[];
 }
 
@@ -102,7 +104,9 @@ export const INITIAL_LANDING_CMS: Omit<ILandingCmsDocument, keyof Document | 'cr
     titlePart2: 'به دنیای شما',
     subtitle: 'در شبکه‌های اجتماعی فقط جا برای یک لینک دارید! با آریا لینک، تمام راه‌های ارتباطی، کاتالوگ محصولات، فروشگاه آنلاین و شبکه‌های خود را به یک مینی‌وب‌سایت لوکس تبدیل کنید — با امکان مکمل اتصال به کارت فیزیکی NFC.',
     primaryCta: 'رایگان لینک خود را بسازید',
+    primaryCtaLink: '/register',
     secondaryCta: 'مشاهده دمو و امکانات',
+    secondaryCtaLink: '#features',
     trustBadges: [
       '100% رایگان بدون نیاز به برنامه‌نویسی',
       'دامنه و لینک اختصاصی aryal.ink',

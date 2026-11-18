@@ -18,6 +18,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { CollapsibleSection } from '@/components/admin/CollapsibleSection';
 import { toast } from 'sonner';
 
 export default function UserKYCPage() {
@@ -199,7 +200,13 @@ export default function UserKYCPage() {
 
       {/* Case 4: Form to Submit */}
       {!isVerified && status !== 'pending' && (
-        <Card className="rounded-3xl border-border bg-card/90 shadow-sm p-6 sm:p-8">
+        <CollapsibleSection
+          title="فرم ارسال اسناد و احراز هویت"
+          subtitle="مشخصات هویتی و اسناد مورد نیاز را جهت بررسی کارشناسان و دریافت نشان اصالت درج نمایید."
+          icon={FileText}
+          badge="تکمیل اسناد"
+          defaultOpen={false}
+        >
           <form onSubmit={handleSubmitKyc} className="space-y-6">
             <div className="space-y-4">
               <h2 className="text-base font-bold text-foreground flex items-center gap-2">
@@ -354,7 +361,7 @@ export default function UserKYCPage() {
               )}
             </Button>
           </form>
-        </Card>
+        </CollapsibleSection>
       )}
     </div>
   );

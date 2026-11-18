@@ -21,6 +21,37 @@ export interface ISystemSettings extends Document {
   platformMainLogo: string;
   platformFavicon: string;
   moduleAccessConfig?: IModuleAccessConfigItem[];
+  aiSettings?: {
+    groqApiKey?: string;
+    groqModelName?: string;
+    cloudflareAccountId?: string;
+    cloudflareApiToken?: string;
+    cloudflareModelName?: string;
+    isFallbackActive?: boolean;
+  };
+  cloudStorageSettings?: {
+    cloudinaryCloudName?: string;
+    cloudinaryApiKey?: string;
+    cloudinaryApiSecret?: string;
+    imageKitPublicKey?: string;
+    imageKitPrivateKey?: string;
+    imageKitUrlEndpoint?: string;
+    primaryStorage?: 'cloudinary' | 'imagekit' | 'local';
+  };
+  securitySettings?: {
+    turnstileSiteKey?: string;
+    turnstileSecretKey?: string;
+    captchaEnabled?: boolean;
+    ipRateLimitingEnabled?: boolean;
+  };
+  paymentSettings?: {
+    hesabPayMerchantId?: string;
+    hesabPayApiKey?: string;
+    hesabPayApiSecret?: string;
+    hesabPayEndpoint?: string;
+    hesabPaySandbox?: boolean;
+    hesabPayActive?: boolean;
+  };
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -54,6 +85,10 @@ const SystemSettingsSchema = new Schema(
     platformMainLogo: { type: String, default: '', trim: true },
     platformFavicon: { type: String, default: '', trim: true },
     moduleAccessConfig: { type: [ModuleAccessItemSubSchema], default: [] },
+    aiSettings: { type: Schema.Types.Mixed, default: {} },
+    cloudStorageSettings: { type: Schema.Types.Mixed, default: {} },
+    securitySettings: { type: Schema.Types.Mixed, default: {} },
+    paymentSettings: { type: Schema.Types.Mixed, default: {} },
   },
   { timestamps: true }
 );

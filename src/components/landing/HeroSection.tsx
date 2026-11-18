@@ -16,39 +16,50 @@ import { Button } from '@/components/ui/button';
 import { HeroPhoneMockup } from './HeroPhoneMockup';
 import { AuroraBackground } from './AuroraBackground';
 import { useLandingCms } from '@/context/LandingCmsContext';
+import { useSiteContent } from '@/context/SiteContentContext';
 import { INITIAL_LANDING_CMS } from '@/models/LandingCms.model';
+import { DEFAULT_SITE_CONTENT } from '@/models/SiteContent.model';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { getLocalizedText, LocalizedFieldValue } from '@/lib/i18n/multilingual';
 
 export function HeroSection() {
-  const { hero } = useLandingCms();
+  const { hero: siteHero } = useSiteContent();
+  const { hero: landingHero } = useLandingCms();
+  const hero = siteHero || landingHero || DEFAULT_SITE_CONTENT.hero;
   const { language, t, dir } = useLanguage();
 
   const resolveHeroField = (
-    val: LocalizedFieldValue,
-    defaultDari: LocalizedFieldValue,
-    i18nKey: string
-  ) => {
-    if (val && typeof val === 'object') {
-      return getLocalizedText(val, language);
+    val: any,
+    fallback: any,
+    i18nKey?: string
+  ): string => {
+    if (val !== undefined && val !== null) {
+      const resolved = getLocalizedText(val, language);
+      if (resolved && typeof resolved === 'string' && resolved.trim()) {
+        return resolved;
+      }
     }
-    const strVal = typeof val === 'string' ? val : '';
-    if (language !== 'da' && (!strVal || strVal === defaultDari)) {
-      return t(i18nKey, strVal);
+    if (fallback !== undefined && fallback !== null) {
+      const resolvedFallback = getLocalizedText(fallback, language);
+      if (resolvedFallback && typeof resolvedFallback === 'string' && resolvedFallback.trim()) {
+        return resolvedFallback;
+      }
     }
-    return strVal;
+    if (i18nKey) {
+      return t(i18nKey, '');
+    }
+    return '';
   };
 
   const resolveHeroArray = (raw: any, fallbackArr: any[]): any[] => {
-    if (Array.isArray(raw)) return raw;
-    if (raw && typeof raw === 'object') {
-      const candidate = raw[language] || raw.fa || raw.da || raw.ps || raw.en;
-      if (Array.isArray(candidate)) return candidate;
-    }
+    if (Array.isArray(raw) && raw.length > 0) return raw;
     return fallbackArr;
   };
 
-  const trustBadgesList = resolveHeroArray(hero.trustBadges, INITIAL_LANDING_CMS.hero.trustBadges);
+  const trustBadgesList = resolveHeroArray(
+    hero?.trustBadges,
+    DEFAULT_SITE_CONTENT.hero.trustBadges
+  );
 
   // Mouse position normalized (-0.5 to 0.5) for parallax tracking
   const mouseX = useMotionValue(0);
@@ -122,7 +133,7 @@ export function HeroSection() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
-          
+
           {/* ========================================================
               RIGHT COLUMN: HERO TEXTS & ACTIONS (RTL)
               With Directional Slide & Repeat Viewport Trigger
@@ -173,7 +184,7 @@ export function HeroSection() {
               variants={itemSlideBottom}
               className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2"
             >
-              <Link href="/register" className="w-full sm:w-auto">
+              <Link href={hero.primaryCtaLink || '/register'} className="w-full sm:w-auto">
                 <motion.div
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.96 }}
@@ -186,15 +197,15 @@ export function HeroSection() {
                   >
                     {/* Animated Light Sweep Sheen */}
                     <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/25 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 pointer-events-none" />
-                    
+
                     <Sparkles className="w-4 h-4 fill-white" />
-                    <span>{resolveHeroField(hero.primaryCta, INITIAL_LANDING_CMS.hero.primaryCta, 'hero.cta')}</span>
+                    <span>{resolveHeroField(hero.primaryCta, 'رایگان لینک خود را بسازید', 'hero.cta')}</span>
                     <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1.5 transition-transform" />
                   </Button>
                 </motion.div>
               </Link>
 
-              <a href="#features" className="w-full sm:w-auto">
+              <a href={hero.secondaryCtaLink || '#features'} className="w-full sm:w-auto">
                 <motion.div
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.96 }}
@@ -207,7 +218,7 @@ export function HeroSection() {
                     className="w-full sm:w-auto h-14 px-6 rounded-2xl border-border/80 bg-card/60 backdrop-blur-xl text-foreground hover:bg-muted font-bold text-sm shadow-sm flex items-center justify-center gap-2 hover:border-cyan-500/40"
                   >
                     <Smartphone className="w-4 h-4 text-cyan-400" />
-                    <span>{resolveHeroField(hero.secondaryCta, INITIAL_LANDING_CMS.hero.secondaryCta, 'hero.secondary_cta')}</span>
+                    <span>{resolveHeroField(hero.secondaryCta, 'مشاهده دمو و امکانات', 'hero.secondary_cta')}</span>
                   </Button>
                 </motion.div>
               </a>

@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import { Loader2, Wand2 } from 'lucide-react';
 import {
   BaseMultilingualFieldProps,
   MultilingualFieldShell,
@@ -12,7 +11,7 @@ export interface MultilingualInputProps extends BaseMultilingualFieldProps {}
 
 /**
  * Single-line trilingual text input supporting Dari/Persian (`da`/`fa`),
- * Pashto (`ps`), and English (`en`) with integrated Magic Wand auto-translation.
+ * Pashto (`ps`), and English (`en`) with per-field AI Refine/Suggest button.
  */
 export function MultilingualInput({
   label,
@@ -42,9 +41,7 @@ export function MultilingualInput({
         activeTab,
         dir,
         currentValue,
-        isTranslating,
         handleTextChange,
-        handleAutoTranslate,
       }) => (
         <div className="relative flex items-center">
           <input
@@ -57,30 +54,8 @@ export function MultilingualInput({
             required={required && activeTab === 'da'}
             className={`w-full rounded-xl bg-background border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-500 transition-colors ${
               compact ? 'h-9 px-3 text-xs' : 'h-10 px-3.5'
-            } ${dir === 'ltr' ? 'pr-10' : 'pl-10'} ${inputClassName}`}
+            } ${inputClassName}`}
           />
-
-          <button
-            type="button"
-            onClick={() => handleAutoTranslate(activeTab === 'da' ? undefined : activeTab)}
-            disabled={isTranslating}
-            title={
-              activeTab === 'da'
-                ? 'ترجمه خودکار این فیلد به پشتو و انگلیسی'
-                : activeTab === 'ps'
-                ? 'ترجمه خودکار از دری به پشتو'
-                : 'ترجمه خودکار از دری به انگلیسی'
-            }
-            className={`absolute ${
-              dir === 'ltr' ? 'right-2' : 'left-2'
-            } p-1.5 rounded-lg text-indigo-500 hover:bg-indigo-500/10 dark:text-cyan-400 dark:hover:bg-cyan-500/10 transition-colors disabled:opacity-50 cursor-pointer`}
-          >
-            {isTranslating ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <Wand2 className="w-3.5 h-3.5" />
-            )}
-          </button>
         </div>
       )}
     </MultilingualFieldShell>

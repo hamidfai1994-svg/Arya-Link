@@ -14,11 +14,11 @@ export type FieldLangTab = 'da' | 'ps' | 'en';
 export type MultilingualPlaceholder =
   | string
   | {
-      da?: string;
-      fa?: string;
-      ps?: string;
-      en?: string;
-    };
+    da?: string;
+    fa?: string;
+    ps?: string;
+    en?: string;
+  };
 
 export interface BaseMultilingualFieldProps {
   label?: string;
@@ -40,10 +40,10 @@ const TABS: ReadonlyArray<{
   flag: string;
   dir: 'rtl' | 'ltr';
 }> = [
-  { code: 'da', label: 'دری / فارسی', flag: '🇦🇫', dir: 'rtl' },
-  { code: 'ps', label: 'پښتو', flag: '🇦🇫', dir: 'rtl' },
-  { code: 'en', label: 'English', flag: '🇬🇧', dir: 'ltr' },
-];
+    { code: 'da', label: 'دری', flag: '', dir: 'rtl' },
+    { code: 'ps', label: 'پښتو', flag: '', dir: 'rtl' },
+    { code: 'en', label: 'English', flag: '', dir: 'ltr' },
+  ];
 
 export function resolvePlaceholder(
   placeholder: MultilingualPlaceholder | undefined,
@@ -57,6 +57,80 @@ export function resolvePlaceholder(
   if (typeof placeholder === 'string') return placeholder;
   if (lang === 'da') return placeholder.da || placeholder.fa || '';
   return placeholder[lang] || placeholder.da || placeholder.fa || '';
+}
+
+/**
+ * Reusable single-field button to refine or suggest text with AI.
+ */
+export function AiFieldRefineButton({
+  currentText,
+  fieldLabel,
+  lang = 'da',
+  onApply,
+  compact = false,
+}: {
+  currentText: string;
+  fieldLabel: string;
+  lang?: 'da' | 'ps' | 'en';
+  onApply: (refined: string) => void;
+  compact?: boolean;
+}) {
+  const [isRefining, setIsRefining] = useState(false);
+
+  const handleRefine = async () => {
+    const trimmed = (currentText || '').trim();
+    setIsRefining(true);
+    const toastId = toast.loading(
+      trimmed ? 'در حال اصلاح نگارش با هوش مصنوعی...' : 'در حال تولید متن پیشنهادی با هوش مصنوعی...'
+    );
+
+    try {
+      const res = await fetch('/api/ai/assistant', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'refine_field',
+          currentText: trimmed,
+          fieldLabel,
+          lang,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data?.success || !data?.data) {
+        toast.error(data?.message || 'خطا در ارتباط با دستیار هوش مصنوعی.', { id: toastId });
+        return;
+      }
+
+      onApply(data.data);
+      toast.success(
+        trimmed ? 'متن با هوش مصنوعی ویرایش و اصلاح شد!' : 'متن پیشنهادی هوش مصنوعی درج گردید!',
+        { id: toastId }
+      );
+    } catch {
+      toast.error('ارتباط با سرور هوش مصنوعی برقرار نشد.', { id: toastId });
+    } finally {
+      setIsRefining(false);
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleRefine}
+      disabled={isRefining}
+      title={currentText?.trim() ? 'اصلاح نگارش با هوش مصنوعی' : 'پیشنهاد متن جذاب با هوش مصنوعی'}
+      className={`inline-flex items-center gap-1.5 ${compact ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-1 text-[11px]'
+        } rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-600 dark:text-purple-300 border border-purple-500/25 font-bold transition-all disabled:opacity-50 cursor-pointer shrink-0`}
+    >
+      {isRefining ? (
+        <Loader2 className="w-3 h-3 animate-spin text-purple-500" />
+      ) : (
+        <Sparkles className="w-3 h-3 text-purple-500" />
+      )}
+      <span>اصلاح با هوش مصنوعی</span>
+    </button>
+  );
 }
 
 interface ShellProps {
@@ -81,7 +155,7 @@ interface ShellProps {
 
 /**
  * Shared trilingual field wrapper handling language tabs, `{ da, fa, ps, en }`
- * state normalization, and Magic Wand AI auto-translation via `/api/translate`.
+ * state normalization, and integrated "اصلاح با هوش مصنوعی" button for each field.
  */
 export function MultilingualFieldShell({
   label,
@@ -95,11 +169,15 @@ export function MultilingualFieldShell({
   children,
 }: ShellProps) {
   const [activeTab, setActiveTab] = useState<FieldLangTab>('da');
-  const [isTranslating, setIsTranslating] = useState(false);
+  const [isRefining, setIsRefining] = useState(false);
 
   const normalized = useMemo(() => normalizeMultilingual(value), [value]);
-
   const activeConfig = TABS.find((t) => t.code === activeTab) || TABS[0];
+
+  const currentValue =
+    activeTab === 'da'
+      ? normalized.da || normalized.fa || ''
+      : normalized[activeTab] || '';
 
   const handleTextChange = (nextText: string) => {
     const next: MultilingualText = {
@@ -114,87 +192,46 @@ export function MultilingualFieldShell({
     onChange(next);
   };
 
-  const handleAutoTranslate = async (forceTarget?: FieldLangTab) => {
-    // Pick best non-empty source text (prefer active tab if on it, else Dari, else any)
-    let sourceLang: FieldLangTab = 'da';
-    let sourceText = normalized.da || normalized.fa || '';
+  const handleRefineField = async () => {
+    const trimmed = (currentValue || '').trim();
+    setIsRefining(true);
+    const toastId = toast.loading(
+      trimmed ? 'در حال اصلاح نگارش با هوش مصنوعی...' : 'در حال تولید متن پیشنهادی با هوش مصنوعی...'
+    );
 
-    if (forceTarget && forceTarget !== 'da' && sourceText.trim()) {
-      sourceLang = 'da';
-    } else if (!sourceText.trim()) {
-      if (normalized.en?.trim()) {
-        sourceLang = 'en';
-        sourceText = normalized.en;
-      } else if (normalized.ps?.trim()) {
-        sourceLang = 'ps';
-        sourceText = normalized.ps;
-      }
-    }
-
-    if (!sourceText.trim()) {
-      toast.error('لطفاً ابتدا متن دری (یا یکی از زبان‌ها) را وارد نمایید.');
-      return;
-    }
-
-    setIsTranslating(true);
     try {
-      const res = await fetch('/api/translate', {
+      const res = await fetch('/api/ai/assistant', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          text: sourceText,
-          sourceLang,
-          targetLang: forceTarget || 'all',
+          action: 'refine_field',
+          currentText: trimmed,
+          fieldLabel: label || 'متن',
+          lang: activeTab,
         }),
       });
 
       const data = await res.json();
-      if (!res.ok || !data?.success) {
-        toast.error(data?.message || 'خطا در ترجمه هوشمند متن.');
+      if (!res.ok || !data?.success || !data?.data) {
+        toast.error(data?.message || 'خطا در ارتباط با دستیار هوش مصنوعی.', { id: toastId });
         return;
       }
 
-      const next: MultilingualText = {
-        da:
-          forceTarget === 'da'
-            ? data.da || data.fa || normalized.da
-            : normalized.da || data.da || data.fa || '',
-        fa:
-          forceTarget === 'da'
-            ? data.fa || data.da || normalized.da
-            : normalized.da || data.fa || data.da || '',
-        ps:
-          forceTarget === 'ps'
-            ? data.ps || normalized.ps
-            : forceTarget
-            ? normalized.ps
-            : data.ps || normalized.ps || '',
-        en:
-          forceTarget === 'en'
-            ? data.en || normalized.en
-            : forceTarget
-            ? normalized.en
-            : data.en || normalized.en || '',
-      };
-
-      onChange(next);
+      handleTextChange(data.data);
       toast.success(
-        forceTarget === 'ps'
-          ? 'ترجمه پشتو با موفقیت انجام شد!'
-          : forceTarget === 'en'
-          ? 'ترجمه انگلیسی با موفقیت انجام شد!'
-          : 'ترجمه هوشمند دری، پشتو و انگلیسی تکمیل شد!'
+        trimmed ? 'متن با هوش مصنوعی بازنویسی و اصلاح شد!' : 'متن پیشنهادی هوش مصنوعی درج گردید!',
+        { id: toastId }
       );
     } catch {
-      toast.error('ارتباط با سرور ترجمه برقرار نشد.');
+      toast.error('ارتباط با سرور هوش مصنوعی برقرار نشد.', { id: toastId });
     } finally {
-      setIsTranslating(false);
+      setIsRefining(false);
     }
   };
 
   return (
     <div className={`space-y-2 ${className}`}>
-      {/* Header Row: Label + Optional Action + Language Tabs + Magic Wand */}
+      {/* Header Row: Label + AI Refine Button + Language Tabs */}
       <div className="flex flex-wrap items-center justify-between gap-2">
         {!hideLabel && (label || labelAction) ? (
           <div className="flex items-center gap-2 min-w-0">
@@ -210,7 +247,29 @@ export function MultilingualFieldShell({
           <div />
         )}
 
-        <div className="flex flex-wrap items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* AI Refine / Suggestion Button for this field */}
+          <button
+            type="button"
+            onClick={handleRefineField}
+            disabled={isRefining}
+            title={
+              currentValue.trim()
+                ? 'اصلاح و بازنویسی با هوش مصنوعی'
+                : 'پیشنهاد متن جذاب با هوش مصنوعی'
+            }
+            className={`inline-flex items-center gap-1.5 ${compact ? 'px-2 py-1 text-[10px]' : 'px-2.5 py-1 text-[11px]'
+              } rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-600 dark:text-purple-300 border border-purple-500/25 font-bold transition-all disabled:opacity-50 cursor-pointer shrink-0`}
+          >
+            {isRefining ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-500" />
+            ) : (
+              <Sparkles className="w-3.5 h-3.5 text-purple-500" />
+            )}
+            <span className="hidden sm:inline">اصلاح با هوش مصنوعی</span>
+            <span className="sm:hidden">اصلاح AI</span>
+          </button>
+
           {/* Trilingual Tabs */}
           <div className="flex items-center p-0.5 rounded-xl bg-muted/80 border border-border">
             {TABS.map((tab) => {
@@ -226,83 +285,35 @@ export function MultilingualFieldShell({
                   key={tab.code}
                   type="button"
                   onClick={() => setActiveTab(tab.code)}
-                  className={`flex items-center gap-1.5 ${
-                    compact ? 'px-2 py-1 text-[10px]' : 'px-2.5 py-1 text-[11px]'
-                  } rounded-lg font-bold transition-all cursor-pointer ${
-                    isActive
+                  className={`flex items-center gap-1.5 ${compact ? 'px-2 py-1 text-[10px]' : 'px-2.5 py-1 text-[11px]'
+                    } rounded-lg font-bold transition-all cursor-pointer ${isActive
                       ? 'bg-background text-foreground shadow-sm border border-border/60'
                       : 'text-muted-foreground hover:text-foreground'
-                  }`}
+                    }`}
                 >
                   <span>{tab.flag}</span>
                   <span>{tab.label}</span>
                   <span
-                    className={`w-1.5 h-1.5 rounded-full transition-colors ${
-                      hasValue ? 'bg-emerald-500' : 'bg-muted-foreground/30'
-                    }`}
+                    className={`w-1.5 h-1.5 rounded-full transition-colors ${hasValue ? 'bg-emerald-500' : 'bg-muted-foreground/30'
+                      }`}
                   />
                 </button>
               );
             })}
           </div>
-
-          {/* Primary Magic Wand Button */}
-          <button
-            type="button"
-            onClick={() => handleAutoTranslate()}
-            disabled={isTranslating}
-            title="ترجمه خودکار همه زبان‌ها (چوب جادو)"
-            className={`inline-flex items-center gap-1.5 ${
-              compact ? 'px-2.5 py-1 text-[10px]' : 'px-2.5 py-1.5 text-[11px]'
-            } rounded-xl bg-gradient-to-r from-indigo-500/15 to-cyan-500/15 hover:from-indigo-500/25 hover:to-cyan-500/25 text-indigo-600 dark:text-cyan-300 border border-indigo-500/25 font-bold transition-all disabled:opacity-50 cursor-pointer shrink-0`}
-          >
-            {isTranslating ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <Wand2 className="w-3.5 h-3.5" />
-            )}
-            <span className="hidden sm:inline">ترجمه جادویی</span>
-          </button>
         </div>
       </div>
 
-      {/* Input / Textarea Control + Tab-Specific Magic Wand Action */}
+      {/* Input / Textarea Control */}
       {children({
         activeTab,
         dir: activeConfig.dir,
-        currentValue:
-          activeTab === 'da'
-            ? normalized.da || normalized.fa || ''
-            : normalized[activeTab] || '',
+        currentValue,
         normalized,
-        isTranslating,
+        isTranslating: isRefining,
         handleTextChange,
-        handleAutoTranslate,
+        handleAutoTranslate: async () => { },
       })}
-
-      {/* Quick Inline Magic Wand helper bar when editing Pashto or English tab */}
-      {activeTab !== 'da' && Boolean((normalized.da || normalized.fa || '').trim()) && (
-        <div className="flex items-center justify-between gap-2 px-1">
-          <span className="text-[10px] text-muted-foreground truncate max-w-[65%]">
-            متن مبدا (دری): {normalized.da || normalized.fa}
-          </span>
-          <button
-            type="button"
-            onClick={() => handleAutoTranslate(activeTab)}
-            disabled={isTranslating}
-            className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 dark:text-cyan-400 hover:underline disabled:opacity-50 cursor-pointer shrink-0"
-          >
-            {isTranslating ? (
-              <Loader2 className="w-3 h-3 animate-spin" />
-            ) : (
-              <Sparkles className="w-3 h-3" />
-            )}
-            <span>
-              {activeTab === 'ps' ? 'تولید خودکار پشتو از دری' : 'تولید خودکار انگلیسی از دری'}
-            </span>
-          </button>
-        </div>
-      )}
     </div>
   );
 }

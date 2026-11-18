@@ -84,6 +84,10 @@ export async function PUT(req: NextRequest) {
       ...(typeof body.platformFavicon === 'string' && {
         platformFavicon: body.platformFavicon.trim(),
       }),
+      ...(body.aiSettings && { aiSettings: body.aiSettings }),
+      ...(body.cloudStorageSettings && { cloudStorageSettings: body.cloudStorageSettings }),
+      ...(body.securitySettings && { securitySettings: body.securitySettings }),
+      ...(body.paymentSettings && { paymentSettings: body.paymentSettings }),
     };
 
     let settings = await SystemSettings.findOneAndUpdate(
