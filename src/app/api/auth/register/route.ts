@@ -5,6 +5,8 @@ import { User } from '@/models/User.model';
 import { Profile } from '@/models/Profile.model';
 import { SystemSettings } from '@/models/systemSettings.model';
 import { sendSupportMessage } from '@/lib/telegram';
+import { createPlatformNotification } from '@/lib/notifications';
+import { Admin } from '@/models/Admin.model';
 import { verifyRecaptcha } from '@/lib/recaptcha';
 import { getJobTemplate, generateDefaultModulesForJob } from '@/lib/constants/jobTemplates';
 
@@ -151,21 +153,53 @@ export async function POST(req: NextRequest) {
       isActive: true,
     });
 
-    // Non-blocking notification to Support Bot
+    // Non-blocking DB notifications & Telegram Support Bot dispatch
     (async () => {
       try {
+        await Promise.all([
+          createPlatformNotification({
+            userId: 'admin',
+            targetRole: 'admin',
+            title: 'ثبت‌نام جدید در پلتفرم',
+            message: `${newUser.name} (${newUser.email}) با لینک aryal.ink/${candidateAlias} ثبت‌نام نمود.`,
+            type: 'new_user',
+            link: '/admin/users',
+            metadata: { newUserId: newUser._id.toString(), alias: candidateAlias },
+          }),
+          createPlatformNotification({
+            userId: newUser._id.toString(),
+            targetRole: 'user',
+            title: 'به خانواده آریا لینک خوش آمدید!',
+            message: `کارت هوشمند شما در آدرس aryal.ink/${candidateAlias} آماده استفاده است. اکنون می‌توانید حساب تلگرام خود را نیز متصل نمایید.`,
+            type: 'system',
+            link: '/dashboard/account',
+          }),
+        ]);
+
         const settings = await SystemSettings.findOne();
-        if (
-          settings &&
-          settings.telegramBotsActive &&
-          settings.telegramSupportChatId &&
-          settings.notifyNewUsers
-        ) {
-          const msg = `🎉 <b>کاربر جدید در آریا لینک ثبت‌نام کرد</b>\n\n👤 <b>نام:</b> ${newUser.name}\n💼 <b>شغل/حوزه:</b> ${jobTitleToSave} (${jobTemplate.title})\n✉️ <b>ایمیل:</b> ${newUser.email}\n📞 <b>تلفن:</b> ${newUser.phone || 'ندارد'}\n🔗 <b>لینک اولیه:</b> aryal.ink/${candidateAlias}\n🧩 <b>ماژول‌های هوشمند:</b> ${initialModules.length} ماژول چیده‌شده`;
-          await sendSupportMessage(settings.telegramSupportChatId, msg);
+        const adminsWithTelegram = await Admin.find({
+          isActive: true,
+          telegramChatId: { $exists: true, $ne: '' },
+        })
+          .select('telegramChatId')
+          .lean();
+
+        const targetChatIds = new Set<string>();
+        if (settings?.telegramBotsActive && settings?.notifyNewUsers && settings?.telegramSupportChatId) {
+          targetChatIds.add(settings.telegramSupportChatId);
+        }
+        adminsWithTelegram.forEach((a: any) => {
+          if (a.telegramChatId) targetChatIds.add(a.telegramChatId);
+        });
+
+        if (targetChatIds.size > 0) {
+          const msg = `🎉 <b>کاربر جدید در آریا لینک ثبت‌نام نمود</b>\n\n👤 <b>نام:</b> ${newUser.name}\n💼 <b>شغل/حوزه:</b> ${jobTitleToSave} (${jobTemplate.title})\n✉️ <b>ایمیل:</b> ${newUser.email}\n📞 <b>نمبر تماس:</b> ${newUser.phone || 'درج نگردیده'}\n🔗 <b>لینک اولیه:</b> aryal.ink/${candidateAlias}\n🧩 <b>ماژول‌های چیده‌شده:</b> ${initialModules.length} ماژول`;
+          for (const chatId of Array.from(targetChatIds)) {
+            await sendSupportMessage(chatId, msg);
+          }
         }
       } catch (err) {
-        console.error('Support bot new user alert error:', err);
+        console.error('Support bot / notification new user alert error:', err);
       }
     })().catch(() => {});
 

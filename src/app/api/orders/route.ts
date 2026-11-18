@@ -10,7 +10,9 @@ import { SystemSettings } from '@/models/systemSettings.model';
 import { User } from '@/models/User.model';
 import { Profile } from '@/models/Profile.model';
 import { Organization } from '@/models/Organization.model';
-import { sendInsightsMessage } from '@/lib/telegram';
+import { Admin } from '@/models/Admin.model';
+import { sendAdminOrderAlert } from '@/lib/telegram';
+import { createPlatformNotification } from '@/lib/notifications';
 import { activateUserSubscriptionFromOrder } from '@/lib/utils/subscription';
 
 export const dynamic = 'force-dynamic';
@@ -473,21 +475,68 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 7. Non-blocking notification to Insights Telegram Bot
+    // 7. Non-blocking DB Notifications & Interactive Telegram Order Alert (with Approve/Reject Inline Buttons)
     (async () => {
       try {
+        await createPlatformNotification({
+          userId: 'admin',
+          targetRole: 'admin',
+          title: 'سفارش جدید ثبت گردید',
+          message: `سفارش #${newOrder.orderNumber} از طرف ${newOrder.customerName} (${Number(newOrder.totalPrice).toLocaleString('en-US')} ${newOrder.currency}) ثبت شد.`,
+          type: 'new_order',
+          link: '/admin/orders',
+          metadata: { orderId: newOrder._id.toString(), orderNumber: newOrder.orderNumber },
+        });
+
+        if (userId) {
+          await createPlatformNotification({
+            userId: String(userId),
+            targetRole: 'user',
+            title: 'سفارش شما ثبت گردید',
+            message: `سفارش #${newOrder.orderNumber} (${newOrder.productTitle}) با موفقیت ثبت شد و در انتظار بررسی است.`,
+            type: 'new_order',
+            link: '/dashboard/orders',
+            metadata: { orderId: newOrder._id.toString() },
+          });
+        }
+
         const settings = await SystemSettings.findOne();
+        const adminsWithTelegram = await Admin.find({
+          isActive: true,
+          telegramChatId: { $exists: true, $ne: '' },
+        })
+          .select('telegramChatId')
+          .lean();
+
+        const targetChatIds = new Set<string>();
         if (
           settings &&
           settings.telegramBotsActive &&
           settings.telegramInsightsChatId &&
           settings.notifyOrders
         ) {
-          const msg = `🛍️ <b>سفارش جدید در سیستم ثبت شد</b>\n\n📦 <b>شماره سفارش:</b> ${newOrder.orderNumber}\n👤 <b>مشتری:</b> ${newOrder.customerName}\n📞 <b>تماس:</b> ${newOrder.customerPhone || 'ندارد'}\n🏷️ <b>محصول:</b> ${newOrder.productTitle}\n💰 <b>مبلغ کل:</b> ${Number(newOrder.totalPrice).toLocaleString('en-US')} ${newOrder.currency}\n💳 <b>وضعیت پرداخت:</b> ${newOrder.paymentStatus}\n🏷️ <b>وضعیت سفارش:</b> ${newOrder.orderStatus}\n🔗 <b>کد رهگیری NFC:</b> <code>${trackingShortCode}</code>`;
-          await sendInsightsMessage(settings.telegramInsightsChatId, msg);
+          targetChatIds.add(settings.telegramInsightsChatId);
+        }
+        adminsWithTelegram.forEach((a: any) => {
+          if (a.telegramChatId) targetChatIds.add(a.telegramChatId);
+        });
+
+        for (const chatId of Array.from(targetChatIds)) {
+          await sendAdminOrderAlert(chatId, {
+            id: newOrder._id.toString(),
+            orderNumber: newOrder.orderNumber,
+            customerName: newOrder.customerName,
+            customerPhone: newOrder.customerPhone,
+            productTitle: newOrder.productTitle,
+            totalPrice: Number(newOrder.totalPrice),
+            currency: newOrder.currency,
+            paymentStatus: newOrder.paymentStatus,
+            orderStatus: newOrder.orderStatus,
+            trackingShortCode,
+          });
         }
       } catch (e) {
-        console.error('Insights bot order alert error:', e);
+        console.error('Insights bot / notification order alert error:', e);
       }
     })().catch(() => { });
 

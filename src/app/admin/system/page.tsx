@@ -64,6 +64,7 @@ import { CollapsibleSection } from '@/components/admin/CollapsibleSection';
 import { SortableList, SortableItem, DragHandle } from '@/components/admin/SortableContainer';
 import { useBranding } from '@/lib/branding/BrandingContext';
 import { SiteLogo } from '@/components/SiteLogo';
+import { TelegramConnectCard } from '@/components/common/TelegramConnectCard';
 import { toast } from 'sonner';
 import {
   DEFAULT_SITE_CONTENT,
@@ -3022,13 +3023,25 @@ export default function AdminSystemControlPage() {
 
                 {/* 4.5 TELEGRAM BOTS (Accordion Form - Default Closed) */}
                 {infraApiTab === 'telegram_bots' && (
-                  <CollapsibleSection
-                    title="ربات‌های تلگرام و وب‌هوک اعلان‌های پلتفرم"
-                    subtitle="اتصال به ربات پشتیبانی و ربات گزارشات مدیریتی جهت دریافت آنی رخدادها"
-                    icon={Send}
-                    badge="وب‌هوک تلگرام"
-                    defaultOpen={false}
-                  >
+                  <div className="space-y-6">
+                    <TelegramConnectCard
+                      mode="admin"
+                      onBoundSuccess={(chatId) =>
+                        setSystemSettings((prev) => ({
+                          ...prev,
+                          telegramInsightsChatId: chatId,
+                          telegramSupportChatId: prev.telegramSupportChatId || chatId,
+                          telegramBotsActive: true,
+                        }))
+                      }
+                    />
+                    <CollapsibleSection
+                      title="ربات‌های تلگرام و وب‌هوک اعلان‌های پلتفرم"
+                      subtitle="اتصال به ربات پشتیبانی و ربات گزارشات مدیریتی جهت دریافت آنی رخدادها"
+                      icon={Send}
+                      badge="وب‌هوک تلگرام"
+                      defaultOpen={false}
+                    >
                     <div className="space-y-4">
                       <div className="flex items-center justify-between p-4 rounded-2xl bg-muted/40 border border-border">
                         <div>
@@ -3120,6 +3133,7 @@ export default function AdminSystemControlPage() {
                       </div>
                     </div>
                   </CollapsibleSection>
+                  </div>
                 )}
               </div>
             </>

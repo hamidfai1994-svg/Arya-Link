@@ -16,3 +16,5 @@ export { default as Job, type IJobDocument } from './Job.model';
 export { default as PhysicalCard, type IPhysicalCardDocument, generatePhysicalCardCode } from './PhysicalCard.model';
 export { default as StorePaymentSettings, type IStorePaymentSettingsDocument, type IStoreBankAccount, type IStoreCryptoAddress, type IStoreHawalaInfo, type IHesabPayGatewayConfig } from './StorePaymentSettings.model';
 export { default as Organization, type IOrganizationDocument, type IOrganizationBranding } from './Organization.model';
+export { default as Admin, type IAdminDocument, type AdminRole } from './Admin.model';
+export { default as Notification, type INotificationDocument, type NotificationType, type NotificationTargetRole } from './Notification.model';

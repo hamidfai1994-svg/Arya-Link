@@ -4,7 +4,11 @@ import { authOptions } from '@/lib/auth';
 import { connectToDatabase } from '@/lib/db/mongodb';
 import { User } from '@/models/User.model';
 import { Profile } from '@/models/Profile.model';
+import { Admin } from '@/models/Admin.model';
+import { SystemSettings } from '@/models/systemSettings.model';
 import { deleteReplacedFileIfUnused } from '@/lib/storage/file-manager';
+import { createPlatformNotification } from '@/lib/notifications';
+import { sendAdminKycAlert } from '@/lib/telegram';
 
 export const dynamic = 'force-dynamic';
 
@@ -96,6 +100,51 @@ export async function POST(req: NextRequest) {
       { userId },
       { $set: { verificationStatus: 'pending' } }
     );
+
+    // Notify Admin Bell & Telegram Bot (non-blocking)
+    (async () => {
+      try {
+        const applicantName = fullName || session.user.name || 'کاربر';
+        await createPlatformNotification({
+          userId: 'admin',
+          targetRole: 'admin',
+          title: 'درخواست جدید راستی‌آزمایی (KYC)',
+          message: `${applicantName} مدارک شناسایی خود را جهت تایید هویت ارسال نمود.`,
+          type: 'kyc_update',
+          link: '/admin/kyc',
+          metadata: { userId },
+        });
+
+        const settings = await SystemSettings.findOne();
+        const adminsWithTelegram = await Admin.find({
+          isActive: true,
+          telegramChatId: { $exists: true, $ne: '' },
+        })
+          .select('telegramChatId')
+          .lean();
+
+        const targetChatIds = new Set<string>();
+        if (settings?.telegramBotsActive && settings?.telegramInsightsChatId) {
+          targetChatIds.add(settings.telegramInsightsChatId);
+        } else if (settings?.telegramBotsActive && settings?.telegramSupportChatId) {
+          targetChatIds.add(settings.telegramSupportChatId);
+        }
+        adminsWithTelegram.forEach((a: any) => {
+          if (a.telegramChatId) targetChatIds.add(a.telegramChatId);
+        });
+
+        for (const chatId of Array.from(targetChatIds)) {
+          await sendAdminKycAlert(chatId, {
+            userId: String(userId),
+            fullName: applicantName,
+            nationalId: nationalId.trim(),
+            documentType,
+          });
+        }
+      } catch (notifErr) {
+        console.warn('KYC notification dispatch warning:', notifErr);
+      }
+    })().catch(() => {});
 
     return NextResponse.json({
       success: true,

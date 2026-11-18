@@ -8,6 +8,7 @@ import { Menu, X, CreditCard, Sparkles, UserCheck } from 'lucide-react';
 import { DashboardSidebar } from './DashboardSidebar';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { NotificationBellDropdown } from '@/components/common/NotificationBellDropdown';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { SiteLogo } from '@/components/SiteLogo';
 
@@ -61,6 +62,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               </Link>
             )}
 
+            <NotificationBellDropdown mode="user" />
             <LanguageSwitcher />
             <ThemeToggle />
           </div>
@@ -86,6 +88,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           />
 
           <div className="flex items-center gap-1.5">
+            <NotificationBellDropdown mode="user" />
             <LanguageSwitcher />
             <ThemeToggle />
           </div>

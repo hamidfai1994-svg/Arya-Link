@@ -38,6 +38,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { CollapsibleSection } from '@/components/admin/CollapsibleSection';
+import { TelegramConnectCard } from '@/components/common/TelegramConnectCard';
 import {
   Dialog,
   DialogContent,
@@ -911,6 +912,9 @@ export default function AccountSettingsPage() {
                 </div>
               </form>
             </CollapsibleSection>
+
+            {/* Section 3: One-Click Telegram Account & Mini-App Binding */}
+            <TelegramConnectCard mode="user" />
           </div>
 
           {/* Right Column: Account Status & Plan Overview (4 cols on lg) */}

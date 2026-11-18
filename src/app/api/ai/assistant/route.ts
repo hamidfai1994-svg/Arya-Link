@@ -250,9 +250,8 @@ export async function POST(req: NextRequest) {
         lang === 'ps'
           ? 'پشتو (رسمی و روان)'
           : lang === 'en'
-          ? 'English (Professional and engaging)'
-          : 'دری / فارسی افغانستان (شیک و باوقار)';
-
+            ? 'English (Professional and engaging)'
+            : 'دری افغانستان (شیک و باوقار)';
       if (!currentText || currentText.trim().length === 0) {
         prompt = `شما یک کپی‌رایتر ارشد برای پلتفرم کارت هوشمند و فناوری آریا لینک (Arya Link) در افغانستان هستید.
 کاربر برای فیلد "${field}" هیچ متنی وارد نکرده است. یک متن کوتاه، جذاب، متناسب با موضوع و بسیار حرفه‌ای به زبان ${targetLang} پیشنهاد دهید و بنویسید.

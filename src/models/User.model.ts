@@ -69,6 +69,12 @@ export interface IUserDocument extends Document {
     };
     [key: string]: any;
   };
+  telegramChatId?: string;
+  telegramUserId?: string;
+  telegramUsername?: string;
+  telegramBindToken?: string;
+  telegramBindTokenExpires?: Date | null;
+  telegramConnectedAt?: Date | null;
   emailVerified?: Date;
   lastLoginAt?: Date;
   createdAt: Date;
@@ -211,6 +217,36 @@ const UserSchema = new Schema<IUserDocument>(
     financialSettings: {
       type: Schema.Types.Mixed,
       default: () => ({}),
+    },
+    telegramChatId: {
+      type: String,
+      default: '',
+      trim: true,
+      index: true,
+    },
+    telegramUserId: {
+      type: String,
+      default: '',
+      trim: true,
+      index: true,
+    },
+    telegramUsername: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    telegramBindToken: {
+      type: String,
+      default: '',
+      index: true,
+    },
+    telegramBindTokenExpires: {
+      type: Date,
+      default: null,
+    },
+    telegramConnectedAt: {
+      type: Date,
+      default: null,
     },
     emailVerified: {
       type: Date,

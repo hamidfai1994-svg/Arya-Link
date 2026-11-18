@@ -8,6 +8,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { PhoneInput } from '@/components/ui/phone-input';
 import { toast } from 'sonner';
+import { TelegramConnectCard } from '@/components/common/TelegramConnectCard';
 import {
   Settings,
   Globe,
@@ -477,6 +478,14 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
           {/* TAB 4: CRM TELEGRAM INTEGRATION */}
           {activeTab === 'crm_integration' && (
             <div className="space-y-4 animate-in fade-in duration-200">
+              {/* One-Click Telegram Bind & Mini-App Card */}
+              <TelegramConnectCard
+                mode="user"
+                onBoundSuccess={(chatId) =>
+                  updateCrmSettings({ crmTelegramChatId: chatId, crmTelegramEnable: true })
+                }
+              />
+
               {/* Information Banner */}
               <div className="p-4 bg-sky-500/10 border border-sky-500/20 rounded-2xl flex items-start gap-3">
                 <div className="w-8 h-8 rounded-xl bg-sky-500/20 text-sky-500 flex items-center justify-center shrink-0 mt-0.5">

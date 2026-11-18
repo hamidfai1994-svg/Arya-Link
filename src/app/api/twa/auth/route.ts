@@ -1,64 +1,94 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db/mongodb';
-import { validateTelegramWebAppData } from '@/lib/twa-auth';
+import { verifyAndExtractTwaUser } from '@/lib/twa-auth';
 import { SystemSettings } from '@/models/systemSettings.model';
 import { Profile } from '@/models/Profile.model';
+import { User } from '@/models/User.model';
+import { Admin } from '@/models/Admin.model';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
   try {
     const { initData, type } = await req.json();
-    if (!initData || typeof initData !== 'string') {
-      return NextResponse.json({ error: 'No user data' }, { status: 400 });
+    if (!type || (type !== 'admin' && type !== 'user')) {
+      return NextResponse.json({ error: 'Invalid type' }, { status: 400 });
     }
 
-    const urlParams = new URLSearchParams(initData);
-    const userStr = urlParams.get('user');
-    if (!userStr) {
-      return NextResponse.json({ error: 'No user data' }, { status: 400 });
+    const verified = verifyAndExtractTwaUser(initData, type);
+    if (!verified.valid || !verified.tgId) {
+      return NextResponse.json(
+        { error: verified.error || 'Invalid Hash' },
+        { status: 403 }
+      );
     }
 
-    const tgUser = JSON.parse(userStr);
-    const tgId = tgUser.id?.toString();
-    if (!tgId) {
-      return NextResponse.json({ error: 'Invalid user ID' }, { status: 400 });
-    }
-
+    const tgId = verified.tgId;
     await connectToDatabase();
 
     if (type === 'admin') {
-      const token = process.env.TELEGRAM_INSIGHTS_BOT_TOKEN;
-      if (!token || !validateTelegramWebAppData(initData, token)) {
-        return NextResponse.json({ error: 'Invalid Hash' }, { status: 403 });
-      }
+      const settings = await SystemSettings.findOne().lean();
+      const adminDoc = await Admin.findOne({
+        isActive: true,
+        $or: [{ telegramChatId: tgId }, { telegramUserId: tgId }],
+      }).lean();
 
-      const settings = await SystemSettings.findOne();
-      if (!settings || settings.telegramInsightsChatId !== tgId) {
+      const adminUser = await User.findOne({
+        role: { $in: ['admin', 'superadmin', 'financial_admin', 'content_editor'] },
+        $or: [{ telegramChatId: tgId }, { telegramUserId: tgId }],
+      }).lean();
+
+      const isAuthorized =
+        (settings &&
+          (settings.telegramInsightsChatId === tgId ||
+            settings.telegramSupportChatId === tgId)) ||
+        Boolean(adminDoc) ||
+        Boolean(adminUser);
+
+      if (!isAuthorized) {
         return NextResponse.json({ error: 'Not Admin' }, { status: 403 });
       }
 
-      return NextResponse.json({ success: true, role: 'admin' });
+      return NextResponse.json({
+        success: true,
+        role: 'admin',
+        tgId,
+      });
     }
 
-    if (type === 'user') {
-      const token = process.env.TELEGRAM_USER_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN;
-      if (!token || !validateTelegramWebAppData(initData, token)) {
-        return NextResponse.json({ error: 'Invalid Hash' }, { status: 403 });
-      }
+    // type === 'user'
+    let profile = await Profile.findOne({ crmTelegramChatId: tgId }).lean();
+    if (!profile) {
+      const boundUser = await User.findOne({
+        $or: [{ telegramChatId: tgId }, { telegramUserId: tgId }],
+      })
+        .select('_id')
+        .lean();
 
-      const profile = await Profile.findOne({ crmTelegramChatId: tgId });
-      if (!profile) {
-        return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
+      if (boundUser) {
+        profile = await Profile.findOne({
+          $or: [
+            { userId: boundUser._id },
+            { userId: boundUser._id.toString() },
+          ],
+        })
+          .sort({ createdAt: 1 })
+          .lean();
       }
-
-      return NextResponse.json({ success: true, role: 'user', profileId: profile._id });
     }
 
-    return NextResponse.json({ error: 'Invalid type' }, { status: 400 });
+    if (!profile) {
+      return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      success: true,
+      role: 'user',
+      profileId: profile._id.toString(),
+      tgId,
+    });
   } catch (error) {
     console.error('TWA Auth Route Error:', error);
     return NextResponse.json({ error: 'Server Error' }, { status: 500 });
   }
 }
-

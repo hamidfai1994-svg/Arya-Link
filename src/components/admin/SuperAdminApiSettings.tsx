@@ -25,6 +25,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
+import { TelegramConnectCard } from '@/components/common/TelegramConnectCard';
 
 interface SystemSettingsState {
   telegramSupportChatId: string;
@@ -278,6 +279,15 @@ export function SuperAdminApiSettings() {
           </div>
         </div>
       </Card>
+
+      {/* One-Click Admin Telegram Binding & Webhook Registration */}
+      <TelegramConnectCard
+        mode="admin"
+        onBoundSuccess={(chatId) => {
+          updateField('telegramInsightsChatId', chatId);
+          updateField('telegramBotsActive', true);
+        }}
+      />
 
       {/* Global Notification Switches Control Panel */}
       <Card className="p-5 sm:p-6 border-border bg-card/80 rounded-3xl space-y-4">

@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Menu, X, ShieldAlert, Bell, Search, User } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { AdminSidebar } from './AdminSidebar';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { NotificationBellDropdown } from '@/components/common/NotificationBellDropdown';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { Badge } from '@/components/ui/badge';
 import { useSession } from 'next-auth/react';
@@ -95,6 +96,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               </div>
             </div>
 
+            <NotificationBellDropdown mode="admin" />
             <LanguageSwitcher />
             <ThemeToggle />
           </div>

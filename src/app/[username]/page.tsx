@@ -13,6 +13,7 @@ import { SiteLogo } from '@/components/SiteLogo';
 import { getLocalizedText } from '@/lib/i18n/multilingual';
 import { getSiteSettings } from '@/lib/settings';
 import { getBaseUrl } from '@/lib/base-url';
+import { createProfileViewNotification } from '@/lib/notifications';
 
 export const dynamic = 'force-dynamic';
 
@@ -180,9 +181,13 @@ export default async function PublicProfilePage({ params }: PageProps) {
     redirect(targetUrl);
   }
 
-  // Increment profile views count asynchronously
+  // Increment profile views count asynchronously & create throttled bell notification
   try {
     await Profile.updateOne({ _id: profile._id }, { $inc: { viewsCount: 1 } });
+    if (profile.userId) {
+      const profileTitle = getLocalizedText(profile.displayName, 'da', cleanAlias);
+      createProfileViewNotification(profile.userId, cleanAlias, profileTitle).catch(() => { });
+    }
   } catch (e) {
     console.error('Error incrementing profile viewsCount:', e);
   }
@@ -258,23 +263,23 @@ export default async function PublicProfilePage({ params }: PageProps) {
 
   const effectiveThemeConfig = organizationBranding
     ? {
-        ...(rawThemeConfig || {}),
-        preset:
-          rawThemeConfig?.preset === 'minimal_light'
-            ? 'dark_neon'
-            : rawThemeConfig?.preset || 'dark_neon',
-        backgroundType: 'gradient',
-        bgGradientColors: [
-          '#090d16',
-          `${organizationBranding.primaryColor}38`,
-          `${organizationBranding.secondaryColor}28`,
-        ],
-        backgroundColor: `linear-gradient(135deg, #090d16 0%, ${organizationBranding.primaryColor}26 50%, #0f172a 100%)`,
-        primaryColor: organizationBranding.primaryColor,
-        accentColor: organizationBranding.secondaryColor,
-        buttonBgColor: organizationBranding.primaryColor,
-        buttonBorderColor: organizationBranding.secondaryColor,
-      }
+      ...(rawThemeConfig || {}),
+      preset:
+        rawThemeConfig?.preset === 'minimal_light'
+          ? 'dark_neon'
+          : rawThemeConfig?.preset || 'dark_neon',
+      backgroundType: 'gradient',
+      bgGradientColors: [
+        '#090d16',
+        `${organizationBranding.primaryColor}38`,
+        `${organizationBranding.secondaryColor}28`,
+      ],
+      backgroundColor: `linear-gradient(135deg, #090d16 0%, ${organizationBranding.primaryColor}26 50%, #0f172a 100%)`,
+      primaryColor: organizationBranding.primaryColor,
+      accentColor: organizationBranding.secondaryColor,
+      buttonBgColor: organizationBranding.primaryColor,
+      buttonBorderColor: organizationBranding.secondaryColor,
+    }
     : rawThemeConfig;
 
   const effectiveCoverUrl = organizationBranding?.coverImage
@@ -284,14 +289,14 @@ export default async function PublicProfilePage({ params }: PageProps) {
   // Safe serialization of owner financial settings (SECRET API KEY MUST BE EXCLUDED!)
   const sanitizedFinancialSettings = ownerFinancialSettings?.hesabPay
     ? {
-        hesabPay: {
-          isActive: ownerFinancialSettings.hesabPay.isActive !== false,
-          isApiEnabled: Boolean(ownerFinancialSettings.hesabPay.isApiEnabled),
-          merchantId: ownerFinancialSettings.hesabPay.merchantId || '',
-          accountNumber: ownerFinancialSettings.hesabPay.accountNumber || '',
-          accountName: ownerFinancialSettings.hesabPay.accountName || '',
-        },
-      }
+      hesabPay: {
+        isActive: ownerFinancialSettings.hesabPay.isActive !== false,
+        isApiEnabled: Boolean(ownerFinancialSettings.hesabPay.isApiEnabled),
+        merchantId: ownerFinancialSettings.hesabPay.merchantId || '',
+        accountNumber: ownerFinancialSettings.hesabPay.accountNumber || '',
+        accountName: ownerFinancialSettings.hesabPay.accountName || '',
+      },
+    }
     : null;
 
   // Serialize profile object to ensure safe transfer to client component

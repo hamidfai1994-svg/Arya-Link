@@ -3,7 +3,11 @@ import { connectToDatabase } from '@/lib/db/mongodb';
 import { Profile } from '@/models/Profile.model';
 import { Lead } from '@/models/Lead.model';
 import { Message } from '@/models/Message.model';
-import { sendUserMessage } from '@/lib/telegram';
+import { User } from '@/models/User.model';
+import { sendUserLeadAlert } from '@/lib/telegram';
+import { createPlatformNotification } from '@/lib/notifications';
+import { getLocalizedText } from '@/lib/i18n/multilingual';
+import mongoose from 'mongoose';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,7 +46,7 @@ export async function POST(req: NextRequest) {
     }
 
     const cleanAlias = profileAlias.toLowerCase().trim();
-    const profile = await Profile.findOne({ alias: cleanAlias }).select('_id alias displayName crmTelegramEnable crmTelegramChatId');
+    const profile = await Profile.findOne({ alias: cleanAlias }).select('_id userId alias displayName crmTelegramEnable crmTelegramChatId');
 
     if (!profile) {
       return NextResponse.json(
@@ -60,9 +64,10 @@ export async function POST(req: NextRequest) {
       status: 'new',
     });
 
+    let savedMsgId = '';
     // Secondary sync into general Message model for super admin auditing
     try {
-      await Message.create({
+      const msgDoc = await Message.create({
         name: name.trim(),
         phone: phone.trim(),
         email: typeof email === 'string' ? email.trim() : '',
@@ -70,6 +75,7 @@ export async function POST(req: NextRequest) {
         profileAlias: cleanAlias,
         isRead: false,
       });
+      savedMsgId = msgDoc._id.toString();
     } catch (msgErr) {
       console.warn('Message model sync warning:', msgErr);
     }
@@ -77,23 +83,59 @@ export async function POST(req: NextRequest) {
     // Increment profile leads count
     await Profile.updateOne({ _id: profile._id }, { $inc: { leadsCount: 1 } });
 
-    // Send Telegram Notification to Mini-site owner CRM (User bot - Non-blocking)
-    if (profile.crmTelegramEnable === true && profile.crmTelegramChatId) {
-      (async () => {
-        try {
-          const senderName = newLead.name || 'مخاطب ناشناس';
-          const contactInfo = newLead.phone || newLead.email || 'ندارد';
-          const miniSiteTitle = profile.displayName || profile.alias;
-          const messageText = `📬 <b>پیام جدید از فرم تماس مینی‌سایت شما</b>\n\n👤 <b>نام فرستنده:</b> ${senderName}\n📞 <b>اطلاعات تماس:</b> ${contactInfo}\n🌐 <b>کارت شما:</b> ${miniSiteTitle} (aryal.ink/${profile.alias})\n\n💬 <b>متن پیام:</b>\n${newLead.message}`;
+    // Send DB Notifications & Interactive Telegram Notification to Mini-site owner CRM (Non-blocking)
+    (async () => {
+      try {
+        const senderName = newLead.name || 'مخاطب ناشناس';
+        const contactInfo = newLead.phone || newLead.email || 'درج نگردیده';
+        const miniSiteTitle = getLocalizedText(profile.displayName, 'da', profile.alias);
 
-          await sendUserMessage(profile.crmTelegramChatId, messageText);
-        } catch (teleError) {
-          console.error('User telegram CRM notification failed:', teleError);
+        await Promise.all([
+          profile.userId
+            ? createPlatformNotification({
+                userId: String(profile.userId),
+                targetRole: 'user',
+                title: 'مخاطب و پیام جدید در مینی‌سایت',
+                message: `${senderName} (${contactInfo}) از طریق کارت aryal.ink/${profile.alias} پیام گذاشت.`,
+                type: 'new_lead',
+                link: '/dashboard/editor',
+                metadata: { leadId: newLead._id.toString(), alias: cleanAlias },
+              })
+            : Promise.resolve(null),
+          createPlatformNotification({
+            userId: 'admin',
+            targetRole: 'admin',
+            title: 'تیکت و درخواست جدید در کارت‌ها',
+            message: `درخواست جدید برای کارت aryal.ink/${profile.alias} توسط ${senderName}`,
+            type: 'ticket',
+            link: '/admin/reports',
+          }),
+        ]);
+
+        let targetChatId = profile.crmTelegramEnable !== false ? profile.crmTelegramChatId : '';
+        if (!targetChatId && profile.userId && mongoose.isValidObjectId(String(profile.userId))) {
+          const ownerUser = await User.findById(profile.userId).select('telegramChatId').lean();
+          if (ownerUser?.telegramChatId) {
+            targetChatId = ownerUser.telegramChatId;
+          }
         }
-      })().catch((teleErr) => {
-        console.error('Background user telegram dispatch error:', teleErr);
-      });
-    }
+
+        if (targetChatId) {
+          await sendUserLeadAlert(targetChatId, {
+            messageId: savedMsgId || newLead._id.toString(),
+            senderName,
+            contactInfo,
+            miniSiteTitle,
+            alias: profile.alias,
+            messageText: newLead.message,
+          });
+        }
+      } catch (teleError) {
+        console.error('User telegram CRM notification failed:', teleError);
+      }
+    })().catch((teleErr) => {
+      console.error('Background user telegram dispatch error:', teleErr);
+    });
 
     return NextResponse.json(
       {

@@ -7,7 +7,9 @@ import { Message } from '@/models/Message.model';
 import { Profile } from '@/models/Profile.model';
 import { Lead } from '@/models/Lead.model';
 import { User } from '@/models/User.model';
-import { sendUserMessage } from '@/lib/telegram';
+import { sendUserLeadAlert } from '@/lib/telegram';
+import { createPlatformNotification } from '@/lib/notifications';
+import { getLocalizedText } from '@/lib/i18n/multilingual';
 
 export const dynamic = 'force-dynamic';
 
@@ -117,17 +119,59 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 3. Send Telegram notification directly to mini-site owner CRM (Non-blocking)
+    // 3. Send DB Notifications & Interactive Telegram Alert to mini-site owner CRM (Non-blocking)
     if (cleanAlias) {
       (async () => {
         try {
           const profile = await Profile.findOne({ alias: cleanAlias });
-          if (profile && profile.crmTelegramEnable === true && profile.crmTelegramChatId) {
-            const senderName = savedMessage.name || 'مخاطب ناشناس';
-            const contactInfo = savedMessage.phone || savedMessage.email || 'ندارد';
-            const miniSiteTitle = profile.displayName || profile.alias;
-            const messageText = `📬 <b>پیام جدید از فرم تماس مینی‌سایت شما</b>\n\n👤 <b>نام فرستنده:</b> ${senderName}\n📞 <b>اطلاعات تماس:</b> ${contactInfo}\n🌐 <b>کارت شما:</b> ${miniSiteTitle} (aryal.ink/${profile.alias})\n\n💬 <b>متن پیام:</b>\n${savedMessage.message}`;
-            await sendUserMessage(profile.crmTelegramChatId, messageText);
+          const senderName = savedMessage.name || 'مخاطب ناشناس';
+          const contactInfo = savedMessage.phone || savedMessage.email || 'درج نگردیده';
+
+          if (profile) {
+            const miniSiteTitle = getLocalizedText(profile.displayName, 'da', profile.alias);
+
+            // Create platform bell notifications for user & admin
+            await Promise.all([
+              profile.userId
+                ? createPlatformNotification({
+                    userId: String(profile.userId),
+                    targetRole: 'user',
+                    title: 'پیام جدید در فرم تماس مینی‌سایت',
+                    message: `${senderName}: «${savedMessage.message.slice(0, 70)}»`,
+                    type: 'new_lead',
+                    link: '/dashboard/editor',
+                    metadata: { messageId: savedMessage._id.toString(), alias: cleanAlias },
+                  })
+                : Promise.resolve(null),
+              createPlatformNotification({
+                userId: 'admin',
+                targetRole: 'admin',
+                title: 'تیکت / پیام جدید در مینی‌سایت',
+                message: `پیام جدید برای کارت aryal.ink/${cleanAlias} از طرف ${senderName}`,
+                type: 'ticket',
+                link: '/admin/reports',
+              }),
+            ]);
+
+            // Resolve owner's Telegram Chat ID (either on Profile CRM or bound User account)
+            let targetChatId = profile.crmTelegramEnable !== false ? profile.crmTelegramChatId : '';
+            if (!targetChatId && profile.userId && mongoose.isValidObjectId(String(profile.userId))) {
+              const ownerUser = await User.findById(profile.userId).select('telegramChatId').lean();
+              if (ownerUser?.telegramChatId) {
+                targetChatId = ownerUser.telegramChatId;
+              }
+            }
+
+            if (targetChatId) {
+              await sendUserLeadAlert(targetChatId, {
+                messageId: savedMessage._id.toString(),
+                senderName,
+                contactInfo,
+                miniSiteTitle,
+                alias: profile.alias,
+                messageText: savedMessage.message,
+              });
+            }
           }
         } catch (teleError) {
           console.error('User telegram CRM notification failed:', teleError);
@@ -135,6 +179,15 @@ export async function POST(req: NextRequest) {
       })().catch((teleErr) => {
         console.error('Non-blocking user telegram dispatch error:', teleErr);
       });
+    } else {
+      createPlatformNotification({
+        userId: 'admin',
+        targetRole: 'admin',
+        title: 'تیکت جدید ثبت گردید',
+        message: `پیام جدید از ${savedMessage.name || 'کاربر'}: «${savedMessage.message.slice(0, 70)}»`,
+        type: 'ticket',
+        link: '/admin/reports',
+      }).catch(() => {});
     }
 
     return NextResponse.json(

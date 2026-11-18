@@ -12,7 +12,7 @@ export const LANGUAGES: Record<SupportedLanguage, LanguageMeta> = {
   da: {
     code: 'da',
     name: 'Dari / Persian',
-    nativeName: 'دری / فارسی',
+    nativeName: 'دری',
     flag: '🇦🇫',
     dir: 'rtl',
   },
