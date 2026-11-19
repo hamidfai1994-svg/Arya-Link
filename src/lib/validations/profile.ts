@@ -1,7 +1,9 @@
 import { z } from 'zod';
+import { tServer } from '@/lib/i18n/translations';
 
-export const profileUpdateSchema = z
-  .object({
+export function getProfileUpdateSchema(locale?: string | null) {
+  return z
+    .object({
     id: z.string().optional(),
     alias: z.string().optional(),
     displayName: z.string().optional(),
@@ -12,18 +14,18 @@ export const profileUpdateSchema = z
     headerLayout: z.enum(['curve', 'gradient_mask', 'minimal']).optional(),
     phone: z
       .string()
-      .max(20, 'شماره تماس نباید بیشتر از 20 کاراکتر باشد.')
+      .max(20, tServer(locale, 'validation.phone_max'))
       .refine(
         (val) => !val || /^\+?[0-9\s-]{1,20}$/.test(val.trim()),
-        'شماره تماس فقط باید شامل ارقام و علامت + در ابتدا باشد.'
+        tServer(locale, 'validation.phone_format')
       )
       .optional(),
     whatsapp: z
       .string()
-      .max(20, 'شماره واتساپ نباید بیشتر از 20 کاراکتر باشد.')
+      .max(20, tServer(locale, 'validation.whatsapp_max'))
       .refine(
         (val) => !val || /^\+?[0-9\s-]{1,20}$/.test(val.trim()),
-        'شماره واتساپ فقط باید شامل ارقام و علامت + در ابتدا باشد.'
+        tServer(locale, 'validation.whatsapp_format')
       )
       .optional(),
     email: z.string().optional(),
@@ -45,5 +47,8 @@ export const profileUpdateSchema = z
     crmTelegramEnable: z.boolean().optional(),
   })
   .passthrough();
+}
+
+export const profileUpdateSchema = getProfileUpdateSchema('da');
 
 export type ProfileUpdateInput = z.infer<typeof profileUpdateSchema>;

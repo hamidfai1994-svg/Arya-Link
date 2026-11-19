@@ -3,6 +3,12 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import {
   DEFAULT_SITE_CONTENT,
+  DEFAULT_PRICING_CONTENT,
+  DEFAULT_FEATURES_CONTENT,
+  DEFAULT_HOW_IT_WORKS_CONTENT,
+  DEFAULT_FINAL_CTA_CONTENT,
+  DEFAULT_LEGAL_CONTENT,
+  DEFAULT_CONTACT_US_CONTENT,
   ISiteContentHero,
   ISiteContentNfcConcept,
   ISiteContentSlider,
@@ -11,6 +17,12 @@ import {
   ISiteContentPartner,
   ISiteContentBlogCms,
   ISiteContentSeo,
+  ISiteContentPricing,
+  ISiteContentFeatures,
+  ISiteContentHowItWorks,
+  ISiteContentFinalCta,
+  ISiteContentLegal,
+  ISiteContentContactUs,
   ISiteContentFaq,
   ISiteContentFooter,
 } from '@/models/SiteContent.model';
@@ -24,6 +36,12 @@ interface SiteContentContextType {
   partners: ISiteContentPartner[];
   blogCms: ISiteContentBlogCms;
   seo: ISiteContentSeo;
+  pricing: ISiteContentPricing;
+  features: ISiteContentFeatures;
+  howItWorks: ISiteContentHowItWorks;
+  finalCta: ISiteContentFinalCta;
+  legal: ISiteContentLegal;
+  contactUs: ISiteContentContactUs;
   faq: ISiteContentFaq[];
   footer: ISiteContentFooter;
   isLoading: boolean;
@@ -39,6 +57,12 @@ const SiteContentContext = createContext<SiteContentContextType>({
   partners: DEFAULT_SITE_CONTENT.partners || [],
   blogCms: DEFAULT_SITE_CONTENT.blogCms || ({} as any),
   seo: DEFAULT_SITE_CONTENT.seo || ({} as any),
+  pricing: DEFAULT_PRICING_CONTENT,
+  features: DEFAULT_FEATURES_CONTENT,
+  howItWorks: DEFAULT_HOW_IT_WORKS_CONTENT,
+  finalCta: DEFAULT_FINAL_CTA_CONTENT,
+  legal: DEFAULT_LEGAL_CONTENT,
+  contactUs: DEFAULT_CONTACT_US_CONTENT,
   faq: DEFAULT_SITE_CONTENT.faq,
   footer: DEFAULT_SITE_CONTENT.footer,
   isLoading: false,
@@ -84,6 +108,12 @@ export function SiteContentProvider({
         partners: data.partners && data.partners.length > 0 ? data.partners : (DEFAULT_SITE_CONTENT.partners || []),
         blogCms: data.blogCms || DEFAULT_SITE_CONTENT.blogCms || ({} as any),
         seo: data.seo || DEFAULT_SITE_CONTENT.seo || ({} as any),
+        pricing: data.pricing || DEFAULT_PRICING_CONTENT,
+        features: data.features || DEFAULT_FEATURES_CONTENT,
+        howItWorks: data.howItWorks || DEFAULT_HOW_IT_WORKS_CONTENT,
+        finalCta: data.finalCta || DEFAULT_FINAL_CTA_CONTENT,
+        legal: data.legal || DEFAULT_LEGAL_CONTENT,
+        contactUs: data.contactUs || DEFAULT_CONTACT_US_CONTENT,
         faq: data.faq && data.faq.length > 0 ? data.faq : DEFAULT_SITE_CONTENT.faq,
         footer: data.footer || DEFAULT_SITE_CONTENT.footer,
         isLoading,

@@ -121,7 +121,7 @@ export function PublicFooter() {
           {/* Quick Links */}
           <div className="space-y-3">
             <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">
-              {language === 'en' ? 'Quick Links' : language === 'ps' ? 'ګړندي لینکونه' : 'دسترسی سریع'}
+              {t('footer.quick_links', 'دسترسی سریع')}
             </h4>
             <ul className="space-y-2 text-xs text-muted-foreground">
               {quickLinksToRender.map((item, idx) => (
@@ -131,28 +131,43 @@ export function PublicFooter() {
                   </Link>
                 </li>
               ))}
+              <li>
+                <Link href="/contact" className="hover:text-cyan-500 transition-colors">
+                  {t('nav.contact', 'تماس با ما')}
+                </Link>
+              </li>
             </ul>
           </div>
 
           {/* Legal & Account */}
           <div className="space-y-3">
             <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">
-              {language === 'en' ? 'Account & Platform' : language === 'ps' ? 'حساب او پلیټفارم' : 'حساب کاربری'}
+              {t('footer.account_platform', 'حساب کاربری و قوانین')}
             </h4>
             <ul className="space-y-2 text-xs text-muted-foreground">
               <li>
                 <Link href="/login" className="hover:text-cyan-500 transition-colors">
-                  {t('nav.login', 'ورود به حساب')}
+                  {t('nav.login', 'ورود')}
                 </Link>
               </li>
               <li>
                 <Link href="/register" className="hover:text-cyan-500 transition-colors">
-                  {t('nav.register', 'ساخت کارت رایگان')}
+                  {t('nav.register', 'ثبت‌نام رایگان')}
                 </Link>
               </li>
               <li>
                 <Link href="/#pricing" className="hover:text-cyan-500 transition-colors">
-                  {t('nav.pricing', 'تعرفه‌ها و اشتراک')}
+                  {t('nav.pricing', 'تعرفه‌ها')}
+                </Link>
+              </li>
+              <li>
+                <Link href="/terms" className="hover:text-cyan-500 transition-colors">
+                  {t('nav.terms', 'قوانین و مقررات')}
+                </Link>
+              </li>
+              <li>
+                <Link href="/privacy" className="hover:text-cyan-500 transition-colors">
+                  {t('nav.privacy', 'حریم خصوصی')}
                 </Link>
               </li>
             </ul>

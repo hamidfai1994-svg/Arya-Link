@@ -11,36 +11,42 @@ import mongoose from 'mongoose';
 
 export const dynamic = 'force-dynamic';
 
+import { getRequestLocale } from '@/lib/i18n/server-locale';
+import { tServer } from '@/lib/i18n/translations';
+import { getContactMessageSchema } from '@/lib/validations/forms';
+
 export async function POST(req: NextRequest) {
+  let locale = getRequestLocale(req);
   try {
     await connectToDatabase();
     const body = await req.json();
+    locale = getRequestLocale(req, body?.locale || body?.language);
     const { profileAlias, name, phone, email, message } = body;
 
     if (!profileAlias || typeof profileAlias !== 'string') {
       return NextResponse.json(
-        { success: false, message: 'آی دی پروفایل نامعتبر است.' },
-        { status: 400 }
-      );
-    }
-
-    if (!name || typeof name !== 'string' || !name.trim()) {
-      return NextResponse.json(
-        { success: false, message: 'لطفاً نام و نام خانوادگی خود را وارد نمایید.' },
+        { success: false, message: tServer(locale, 'api.profile.alias_required') },
         { status: 400 }
       );
     }
 
     if (!phone || typeof phone !== 'string' || !phone.trim()) {
       return NextResponse.json(
-        { success: false, message: 'لطفاً شماره تماس خود را وارد نمایید.' },
+        { success: false, message: tServer(locale, 'validation.phone_required') },
         { status: 400 }
       );
     }
 
-    if (!message || typeof message !== 'string' || !message.trim()) {
+    const parsed = getContactMessageSchema(locale).safeParse({
+      senderName: typeof name === 'string' ? name : '',
+      senderEmail: typeof email === 'string' ? email : '',
+      senderPhone: phone,
+      messageText: typeof message === 'string' ? message : '',
+    });
+
+    if (!parsed.success) {
       return NextResponse.json(
-        { success: false, message: 'لطفاً متن پیام یا درخواست خود را بنویسید.' },
+        { success: false, message: parsed.error.issues[0]?.message || tServer(locale, 'validation.required') },
         { status: 400 }
       );
     }
@@ -140,7 +146,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         success: true,
-        message: 'پیام شما با موفقیت ارسال شد و در اسرع وقت پاسخ داده خواهد شد.',
+        message: tServer(locale, 'toast.message_sent'),
         data: {
           id: newLead._id.toString(),
         },
@@ -152,7 +158,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        message: 'خطا در ثبت پیام. لطفاً مجدداً تلاش نمایید.',
+        message: tServer(locale, 'toast.message_error'),
         error: error?.message || 'Internal Server Error',
       },
       { status: 500 }

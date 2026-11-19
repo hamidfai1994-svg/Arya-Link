@@ -9,12 +9,17 @@ import { createPlatformNotification } from '@/lib/notifications';
 import { Admin } from '@/models/Admin.model';
 import { verifyRecaptcha } from '@/lib/recaptcha';
 import { getJobTemplate, generateDefaultModulesForJob } from '@/lib/constants/jobTemplates';
+import { getRequestLocale } from '@/lib/i18n/server-locale';
+import { tServer } from '@/lib/i18n/translations';
+import { getRegisterSchema } from '@/lib/validations/forms';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
+  let locale = getRequestLocale(req);
   try {
     const body = await req.json();
+    locale = getRequestLocale(req, body?.locale || body?.language);
     const { name, email, password, phone, job, templateId, jobCategory, recaptchaToken } = body;
 
     // Verify Google reCAPTCHA v3
@@ -28,43 +33,34 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          message: recaptchaResult.message || 'درخواست نامعتبر: اعتبارسنجی امنیتی تایید نشد.',
+          message: recaptchaResult.message || tServer(locale, 'validation.recaptcha_failed'),
         },
         { status: 400 }
       );
     }
 
-    // 1. Validation
-    if (!name || typeof name !== 'string' || name.trim().length < 2) {
+    // 1. Trilingual Zod Validation
+    const parsed = getRegisterSchema(locale).safeParse({
+      fullName: typeof name === 'string' ? name : '',
+      email: typeof email === 'string' ? email : '',
+      password: typeof password === 'string' ? password : '',
+    });
+    if (!parsed.success) {
       return NextResponse.json(
-        { success: false, message: 'نام و تخلص باید حداقل شامل 2 کاراکتر باشد.' },
-        { status: 400 }
-      );
-    }
-
-    if (!email || typeof email !== 'string' || !/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(email)) {
-      return NextResponse.json(
-        { success: false, message: 'فرمت آدرس ایمیل وارد شده نامعتبر است.' },
-        { status: 400 }
-      );
-    }
-
-    if (!password || typeof password !== 'string' || password.length < 6) {
-      return NextResponse.json(
-        { success: false, message: 'رمز عبور باید حداقل 6 کاراکتر باشد.' },
+        { success: false, message: parsed.error.issues[0]?.message || tServer(locale, 'validation.required') },
         { status: 400 }
       );
     }
 
     await connectToDatabase();
 
-    const cleanEmail = email.toLowerCase().trim();
+    const cleanEmail = parsed.data.email.toLowerCase().trim();
 
     // 2. Check if email already registered
     const existingUser = await User.findOne({ email: cleanEmail });
     if (existingUser) {
       return NextResponse.json(
-        { success: false, message: 'حساب کاربری با این ایمیل قبلاً ثبت‌نام شده است.' },
+        { success: false, message: tServer(locale, 'toast.register_duplicate') },
         { status: 409 }
       );
     }
@@ -206,7 +202,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         success: true,
-        message: 'ثبت‌نام با موفقیت انجام شد. اکنون وارد شوید.',
+        message: tServer(locale, 'api.auth.account_created'),
         user: {
           id: newUser._id.toString(),
           name: newUser.name,
@@ -220,7 +216,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        message: 'خطایی در ثبت‌نام رخ داد. لطفاً مجدداً تلاش فرمایید.',
+        message: tServer(locale, 'toast.network_error'),
         error: error?.message || 'Internal Server Error',
       },
       { status: 500 }

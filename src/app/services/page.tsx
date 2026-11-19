@@ -35,7 +35,7 @@ interface Service {
 }
 
 export default function ServicesPage() {
-  const { language, dir } = useLanguage();
+  const { language, dir, t } = useLanguage();
   const [services, setServices] = useState<Service[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -81,13 +81,13 @@ export default function ServicesPage() {
       <section className="py-16 sm:py-24 border-b border-border bg-muted/20 relative overflow-hidden">
         <div className="max-w-4xl mx-auto px-4 text-center space-y-4">
           <Badge variant="cyan" className="text-xs">
-            راهکارهای هوشمند تجاری و سازمانی
+            {t('pages.services.badge')}
           </Badge>
           <h1 className="text-3xl sm:text-5xl font-black text-foreground tracking-tight">
-            خدمات یکپارچه کارت هوشمند و هویت دیجیتال
+            {t('pages.services.title')}
           </h1>
           <p className="text-xs sm:text-sm text-muted-foreground max-w-xl mx-auto leading-relaxed">
-            از تولید کارت‌های فیزیکی لمسی NFC تا مدیریت پرسنل شرکت‌ها و راه‌اندازی درگاه پرداخت محلی افغانی
+            {t('pages.services.subtitle')}
           </p>
         </div>
       </section>
@@ -97,7 +97,7 @@ export default function ServicesPage() {
         {isLoading ? (
           <div className="py-24 text-center flex flex-col items-center justify-center gap-3">
             <Loader2 className="w-8 h-8 animate-spin text-cyan-500" />
-            <span className="text-xs text-muted-foreground">در حال بارگذاری لیست خدمات...</span>
+            <span className="text-xs text-muted-foreground">{t('pages.services.loading')}</span>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -138,7 +138,7 @@ export default function ServicesPage() {
                   )}
 
                   <div className="text-[11px] text-muted-foreground pt-1">
-                    <span>مخاطب هدف: </span>
+                    <span>{t('pages.services.target_audience')} </span>
                     <strong className="text-foreground">{getLocalizedText(service.targetAudience, language)}</strong>
                   </div>
                 </div>
@@ -146,7 +146,7 @@ export default function ServicesPage() {
                 <div className="pt-6 border-t border-border mt-6">
                   <Link href="/register">
                     <Button className="w-full rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold text-xs h-11 shadow-md">
-                      سفارش و شروع همکاری
+                      {t('pages.services.order_btn')}
                     </Button>
                   </Link>
                 </div>

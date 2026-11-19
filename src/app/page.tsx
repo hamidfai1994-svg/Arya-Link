@@ -16,7 +16,11 @@ import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { LandingCmsProvider } from '@/context/LandingCmsContext';
 import { SiteContentProvider, useSiteContent } from '@/context/SiteContentContext';
-import { DEFAULT_SITE_CONTENT } from '@/models/SiteContent.model';
+import {
+  DEFAULT_SITE_CONTENT,
+  DEFAULT_HOW_IT_WORKS_CONTENT,
+  DEFAULT_FINAL_CTA_CONTENT,
+} from '@/models/SiteContent.model';
 import { getLocalizedText } from '@/lib/i18n/multilingual';
 
 // Modern Landing Page Components
@@ -57,37 +61,30 @@ const headerItemVariants = {
 };
 
 export default function LandingPage() {
-  const { dir, language } = useLanguage();
-  const { faq: dynamicFaqs } = useSiteContent();
+  return (
+    <SiteContentProvider>
+      <LandingCmsProvider>
+        <LandingPageContent />
+      </LandingCmsProvider>
+    </SiteContentProvider>
+  );
+}
+
+function LandingPageContent() {
+  const { dir, language, t } = useLanguage();
+  const { faq: dynamicFaqs, howItWorks: siteHowItWorks, finalCta: siteFinalCta } = useSiteContent();
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
 
   const toggleFaq = (idx: number) => {
     setActiveFaq(activeFaq === idx ? null : idx);
   };
 
-  const steps = [
-    {
-      num: '01',
-      badge: 'گام اول',
-      color: 'from-cyan-500 to-blue-600',
-      title: 'ثبت‌نام و انتخاب نام اختصاصی',
-      desc: 'حساب کاربری خود را در کمتر از 1 دقیقه رایگان ایجاد کنید و آدرس یکتا مانند aryal.ink/ali را برای برند شخصی یا تجاری خود رزرو نمایید.',
-    },
-    {
-      num: '02',
-      badge: 'گام دوم',
-      color: 'from-blue-600 to-indigo-600',
-      title: 'شخصی‌سازی با ویرایشگر زنده',
-      desc: 'عکس پروفایل، تم‌های لوکس نئون، شبکه‌های اجتماعی، کاتالوگ‌های دانلودی و محصولات فروشگاهی را در پیش‌نمایش زنده موبایل بچینید.',
-    },
-    {
-      num: '03',
-      badge: 'گام سوم',
-      color: 'from-purple-600 to-pink-600',
-      title: 'اشتراک‌گذاری هوشمند و فروش',
-      desc: 'لینک را در بیو اینستاگرام قرار دهید یا با کارت فیزیکی هوشمند NFC در جلسات، کنفرانس‌ها و نمایشگاه‌ها تنها با یک تماس اطلاعات را انتقال دهید.',
-    },
-  ];
+  const howItWorks = siteHowItWorks || DEFAULT_HOW_IT_WORKS_CONTENT;
+  const steps =
+    howItWorks.steps && howItWorks.steps.length > 0
+      ? howItWorks.steps
+      : DEFAULT_HOW_IT_WORKS_CONTENT.steps;
+  const finalCta = siteFinalCta || DEFAULT_FINAL_CTA_CONTENT;
 
   const effectiveFaqs = dynamicFaqs && dynamicFaqs.length > 0
     ? dynamicFaqs
@@ -96,8 +93,6 @@ export default function LandingPage() {
   const displayFaqs = effectiveFaqs.filter((f) => f.isActive !== false);
 
   return (
-    <SiteContentProvider>
-      <LandingCmsProvider>
         <div className="min-h-screen bg-background text-foreground font-sans select-none overflow-x-hidden" dir={dir}>
         
         {/* =========================================
@@ -146,20 +141,20 @@ export default function LandingPage() {
             >
               <motion.div variants={headerItemVariants} className="inline-block">
                 <Badge variant="cyan" className="font-sans text-xs">
-                  ساده، مدرن و سریع
+                  {getLocalizedText(howItWorks.badge, language)}
                 </Badge>
               </motion.div>
               <motion.h2
                 variants={headerItemVariants}
                 className="text-3xl sm:text-4xl font-black text-foreground tracking-tight"
               >
-                در 3 گام ساده کارت هوشمند خود را بسازید
+                {getLocalizedText(howItWorks.title, language)}
               </motion.h2>
               <motion.p
                 variants={headerItemVariants}
                 className="text-xs sm:text-sm text-muted-foreground leading-relaxed"
               >
-                کمتر از 2 دقیقه زمان می‌برد تا کسب‌وکار یا صفحه شخصی خود را به دنیای فناوری NFC متصل کنید.
+                {getLocalizedText(howItWorks.subtitle, language)}
               </motion.p>
             </motion.div>
 
@@ -172,7 +167,7 @@ export default function LandingPage() {
             >
               {steps.map((st, idx) => (
                 <motion.div
-                  key={idx}
+                  key={st.id || idx}
                   variants={{
                     hidden: { opacity: 0, y: 40 },
                     visible: {
@@ -191,22 +186,22 @@ export default function LandingPage() {
                         {st.num}
                       </div>
                       <span className="text-[11px] font-bold text-muted-foreground px-2.5 py-1 rounded-full bg-muted/60 border border-border">
-                        {st.badge}
+                        {getLocalizedText(st.badge, language)}
                       </span>
                     </div>
 
                     <h3 className="text-base sm:text-lg font-bold text-foreground">
-                      {st.title}
+                      {getLocalizedText(st.title, language)}
                     </h3>
 
                     <p className="text-xs text-muted-foreground leading-relaxed">
-                      {st.desc}
+                      {getLocalizedText(st.desc, language)}
                     </p>
                   </div>
 
                   <div className="pt-4 border-t border-border/40 flex items-center gap-2 text-[11px] text-cyan-500 font-semibold">
                     <CheckCircle2 className="w-3.5 h-3.5" />
-                    <span>انجام بدون نیاز به دانش فنی</span>
+                    <span>{getLocalizedText(howItWorks.footerNote, language, t('how.step_footer', 'انجام بدون نیاز به دانش فنی'))}</span>
                   </div>
                 </motion.div>
               ))}
@@ -238,20 +233,20 @@ export default function LandingPage() {
             >
               <motion.div variants={headerItemVariants} className="inline-block">
                 <Badge variant="cyan" className="font-sans text-xs">
-                  پاسخ به ابهامات
+                  {t('pages.faq.badge', 'پاسخ به ابهامات')}
                 </Badge>
               </motion.div>
               <motion.h2
                 variants={headerItemVariants}
                 className="text-3xl sm:text-4xl font-black text-foreground tracking-tight"
               >
-                سوالات متداول
+                {t('pages.faq.title', 'سوالات متداول')}
               </motion.h2>
               <motion.p
                 variants={headerItemVariants}
                 className="text-xs sm:text-sm text-muted-foreground"
               >
-                پاسخ پرسش‌های پرتکرار پیرامون کارت‌های هوشمند، فروشگاه و سرویس آریا لینک
+                {t('pages.faq.subtitle', 'پاسخ پرسش‌های پرتکرار پیرامون کارت‌های هوشمند، فروشگاه و سرویس آریا لینک')}
               </motion.p>
             </motion.div>
 
@@ -333,19 +328,19 @@ export default function LandingPage() {
             >
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-cyan-500/15 text-cyan-400 text-xs font-bold">
                 <Zap className="w-3.5 h-3.5 fill-cyan-400" />
-                <span>پیوستن به نسل جدید کارت‌های هوشمند</span>
+                <span>{getLocalizedText(finalCta.badge, language)}</span>
               </div>
 
               <h2 className="text-3xl sm:text-5xl font-black text-foreground tracking-tight leading-[1.25]">
-                آماده‌اید ارتباطات کاری خود را متحول کنید؟
+                {getLocalizedText(finalCta.title, language)}
               </h2>
 
               <p className="text-xs sm:text-sm text-muted-foreground max-w-xl mx-auto leading-relaxed">
-                همین حالا به صورت رایگان ثبت‌نام کنید، مینی‌وب‌سایت اختصاصی خود را بسازید یا کارت فیزیکی لوکس NFC را با ارسال رایگان سفارش دهید.
+                {getLocalizedText(finalCta.subtitle, language)}
               </p>
 
               <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-4">
-                <Link href="/register" className="w-full sm:w-auto">
+                <Link href={finalCta.primaryCtaLink || '/register'} className="w-full sm:w-auto">
                   <motion.div
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.96 }}
@@ -358,13 +353,13 @@ export default function LandingPage() {
                     >
                       <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 pointer-events-none" />
                       <Sparkles className="w-4 h-4 fill-white" />
-                      <span>شروع رایگان و ساخت کارت</span>
-                      <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1.5 transition-transform" />
+                      <span>{getLocalizedText(finalCta.primaryCtaText, language)}</span>
+                      <ArrowLeft className="w-4 h-4 ltr:rotate-180 group-hover:-translate-x-1.5 ltr:group-hover:translate-x-1.5 transition-transform" />
                     </Button>
                   </motion.div>
                 </Link>
 
-                <Link href="/services" className="w-full sm:w-auto">
+                <Link href={finalCta.secondaryCtaLink || '/services'} className="w-full sm:w-auto">
                   <motion.div
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.96 }}
@@ -376,7 +371,7 @@ export default function LandingPage() {
                       size="lg"
                       className="w-full sm:w-auto h-14 px-7 rounded-2xl border-border bg-card/60 backdrop-blur-md text-foreground font-bold text-xs sm:text-sm hover:bg-muted"
                     >
-                      <span>سفارش سازمانی و شرکتی</span>
+                      <span>{getLocalizedText(finalCta.secondaryCtaText, language)}</span>
                     </Button>
                   </motion.div>
                 </Link>
@@ -386,7 +381,5 @@ export default function LandingPage() {
         </section>
 
       </div>
-    </LandingCmsProvider>
-    </SiteContentProvider>
   );
 }

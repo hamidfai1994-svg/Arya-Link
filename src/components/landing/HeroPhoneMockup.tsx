@@ -17,6 +17,7 @@ import {
   TrendingUp,
   Sparkles,
 } from 'lucide-react';
+import { useLanguage } from '@/lib/i18n/LanguageContext';
 
 const EASE_SNAPPY = [0, 0.7, 0.2, 1] as const;
 const SPRING_FAST = { type: 'spring', stiffness: 250, damping: 25, mass: 0.5 } as const;
@@ -54,6 +55,7 @@ export interface HeroPhoneMockupProps {
 }
 
 export function HeroPhoneMockup({ smoothX, smoothY }: HeroPhoneMockupProps) {
+  const { t } = useLanguage();
   // Fallbacks if not provided
   const fallbackX = useMotionValue(0);
   const fallbackY = useMotionValue(0);
@@ -125,15 +127,15 @@ export function HeroPhoneMockup({ smoothX, smoothY }: HeroPhoneMockupProps) {
               <span className="relative inline-flex rounded-full h-3 w-3 bg-cyan-500" />
             </span>
           </div>
-          <div className="text-right">
+          <div className="text-start">
             <div className="flex items-center gap-1">
-              <span className="text-xs font-black text-foreground">یک لینک برای همه‌چیز</span>
+              <span className="text-xs font-black text-foreground">{t('mockup.badge1_title')}</span>
               <span className="px-1.5 py-0.2 rounded-full bg-cyan-500/20 text-cyan-400 text-[9px] font-bold">
                 PRO
               </span>
             </div>
             <span className="text-[10px] text-muted-foreground block">
-              مینی‌وب‌سایت اختصاصی + NFC
+              {t('mockup.badge1_sub')}
             </span>
           </div>
         </motion.div>
@@ -158,13 +160,13 @@ export function HeroPhoneMockup({ smoothX, smoothY }: HeroPhoneMockupProps) {
           <div className="w-9 h-9 rounded-xl bg-blue-500/15 text-blue-500 flex items-center justify-center font-bold">
             <ShieldCheck className="w-5 h-5 text-blue-500" />
           </div>
-          <div className="text-right">
+          <div className="text-start">
             <div className="flex items-center gap-1">
-              <span className="text-xs font-black text-foreground">تیک آبی رسمی</span>
+              <span className="text-xs font-black text-foreground">{t('mockup.badge2_title')}</span>
               <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400 fill-cyan-400/20" />
             </div>
             <span className="text-[10px] text-muted-foreground block">
-              احراز هویت شده (KYC)
+              {t('mockup.badge2_sub')}
             </span>
           </div>
         </motion.div>
@@ -189,15 +191,15 @@ export function HeroPhoneMockup({ smoothX, smoothY }: HeroPhoneMockupProps) {
           <div className="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-500 flex items-center justify-center font-bold">
             <ShoppingBag className="w-5 h-5" />
           </div>
-          <div className="text-right">
+          <div className="text-start">
             <div className="flex items-center gap-1">
               <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                فروش مستقیم
+                {t('mockup.badge3_title')}
               </span>
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
             </div>
             <span className="text-[10px] text-muted-foreground block">
-              دریافت وجه با حساب‌پی
+              {t('mockup.badge3_sub')}
             </span>
           </div>
         </motion.div>
@@ -222,12 +224,12 @@ export function HeroPhoneMockup({ smoothX, smoothY }: HeroPhoneMockupProps) {
           <div className="w-7 h-7 rounded-lg bg-cyan-500/15 text-cyan-500 flex items-center justify-center">
             <TrendingUp className="w-4 h-4" />
           </div>
-          <div className="text-right">
+          <div className="text-start">
             <span className="text-[11px] font-bold text-foreground font-sans">
-              +2,450 کلیک
+              {t('mockup.badge4_title')}
             </span>
             <span className="text-[9px] text-emerald-500 block font-sans font-semibold">
-              84% بازدیدها
+              {t('mockup.badge4_sub')}
             </span>
           </div>
         </motion.div>
@@ -309,20 +311,20 @@ export function HeroPhoneMockup({ smoothX, smoothY }: HeroPhoneMockupProps) {
                 <div className="space-y-0.5">
                   <div className="flex items-center justify-center gap-1.5">
                     <h4 className="font-extrabold text-sm text-white tracking-tight">
-                      فرهاد آریا
+                      {t('mockup.name')}
                     </h4>
                     <span className="px-1.5 py-0.2 rounded-full bg-cyan-500/20 text-cyan-400 text-[9px] font-bold">
                       PRO
                     </span>
                   </div>
                   <p className="text-[11px] text-cyan-300 font-medium">
-                    مشاور ارشد کسب‌وکار و بنیان‌گذار استارتاپ
+                    {t('mockup.title')}
                   </p>
                 </div>
 
                 {/* Bio text */}
                 <p className="text-[10px] text-slate-300/90 leading-relaxed mt-2 px-1">
-                  یک لینک برای اتصال تمام پروژه‌ها، مشاوره آنلاین و خدمات تخصصی من
+                  {t('mockup.bio')}
                 </p>
               </div>
 
@@ -334,7 +336,7 @@ export function HeroPhoneMockup({ smoothX, smoothY }: HeroPhoneMockupProps) {
                 className="w-full py-2.5 px-3 rounded-2xl bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs shadow-md shadow-cyan-500/25 flex items-center justify-center gap-2 transition-all"
               >
                 <Phone className="w-3.5 h-3.5" />
-                <span>ذخیره مستقیم مخاطب (vCard)</span>
+                <span>{t('mockup.save_contact')}</span>
               </motion.button>
 
               {/* Module 1: Direct WhatsApp Chat */}
@@ -346,12 +348,12 @@ export function HeroPhoneMockup({ smoothX, smoothY }: HeroPhoneMockupProps) {
                   <div className="w-7 h-7 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
                     <MessageCircle className="w-4 h-4" />
                   </div>
-                  <div className="text-right">
+                  <div className="text-start">
                     <span className="font-bold text-[11px] text-white block">
-                      گفتگوی مستقیم واتساپ
+                      {t('mockup.whatsapp')}
                     </span>
                     <span className="text-[9px] text-emerald-400 block">
-                      پاسخگویی سریع کمتر از 15 دقیقه
+                      {t('mockup.whatsapp_sub')}
                     </span>
                   </div>
                 </div>
@@ -367,17 +369,17 @@ export function HeroPhoneMockup({ smoothX, smoothY }: HeroPhoneMockupProps) {
                   <div className="w-7 h-7 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center">
                     <ShoppingBag className="w-4 h-4" />
                   </div>
-                  <div className="text-right">
+                  <div className="text-start">
                     <span className="font-bold text-[11px] text-white block">
-                      رزرو نوبت مشاوره اختصاصی
+                      {t('mockup.consulting')}
                     </span>
                     <span className="text-[9px] text-cyan-300 block font-sans">
-                      500 AFN • پرداخت با حساب‌پی
+                      {t('mockup.consulting_sub')}
                     </span>
                   </div>
                 </div>
                 <span className="px-2 py-0.5 rounded-lg bg-cyan-500 text-white font-bold text-[9px]">
-                  رزرو
+                  {t('mockup.reserve_btn')}
                 </span>
               </motion.div>
 
@@ -385,15 +387,15 @@ export function HeroPhoneMockup({ smoothX, smoothY }: HeroPhoneMockupProps) {
               <div className="grid grid-cols-3 gap-2">
                 <div className="p-2 rounded-xl bg-white/5 border border-white/10 flex flex-col items-center justify-center gap-1 hover:bg-white/10 transition-colors cursor-pointer">
                   <Instagram className="w-4 h-4 text-pink-400" />
-                  <span className="text-[9px] text-slate-300">اینستاگرام</span>
+                  <span className="text-[9px] text-slate-300">{t('mockup.instagram')}</span>
                 </div>
                 <div className="p-2 rounded-xl bg-white/5 border border-white/10 flex flex-col items-center justify-center gap-1 hover:bg-white/10 transition-colors cursor-pointer">
                   <Send className="w-4 h-4 text-sky-400" />
-                  <span className="text-[9px] text-slate-300">تلگرام</span>
+                  <span className="text-[9px] text-slate-300">{t('mockup.telegram')}</span>
                 </div>
                 <div className="p-2 rounded-xl bg-white/5 border border-white/10 flex flex-col items-center justify-center gap-1 hover:bg-white/10 transition-colors cursor-pointer">
                   <Sparkles className="w-4 h-4 text-amber-400" />
-                  <span className="text-[9px] text-slate-300">کاتالوگ</span>
+                  <span className="text-[9px] text-slate-300">{t('mockup.catalog')}</span>
                 </div>
               </div>
 

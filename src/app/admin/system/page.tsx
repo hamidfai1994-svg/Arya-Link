@@ -50,6 +50,10 @@ import {
   SlidersHorizontal,
   ChevronDown,
   ChevronUp,
+  Tag as PricingTagIcon,
+  Layers as FeaturesLayersIcon,
+  Scale as LegalScaleIcon,
+  PhoneCall as ContactPhoneIcon,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -68,6 +72,12 @@ import { TelegramConnectCard } from '@/components/common/TelegramConnectCard';
 import { toast } from 'sonner';
 import {
   DEFAULT_SITE_CONTENT,
+  DEFAULT_PRICING_CONTENT,
+  DEFAULT_FEATURES_CONTENT,
+  DEFAULT_HOW_IT_WORKS_CONTENT,
+  DEFAULT_FINAL_CTA_CONTENT,
+  DEFAULT_LEGAL_CONTENT,
+  DEFAULT_CONTACT_US_CONTENT,
   ITrilingualString,
   ISiteContentHero,
   ISiteContentNfcConcept,
@@ -77,6 +87,12 @@ import {
   ISiteContentPartner,
   ISiteContentBlogCms,
   ISiteContentSeo,
+  ISiteContentPricing,
+  ISiteContentFeatures,
+  ISiteContentHowItWorks,
+  ISiteContentFinalCta,
+  ISiteContentLegal,
+  ISiteContentContactUs,
   ISiteContentFaq,
   ISiteContentFooter,
 } from '@/models/SiteContent.model';
@@ -85,8 +101,8 @@ import {
 type SystemCategory = 'landing' | 'pages' | 'branding_seo' | 'infra_api';
 
 // Sub-tabs for each category
-type LandingSubTab = 'hero' | 'sliders' | 'nfcConcept' | 'stats' | 'trustedBy';
-type PagesSubTab = 'aboutUs' | 'faq' | 'blog';
+type LandingSubTab = 'hero' | 'sliders' | 'nfcConcept' | 'stats' | 'trustedBy' | 'pricing_plans' | 'features_steps';
+type PagesSubTab = 'aboutUs' | 'faq' | 'blog' | 'legal_terms' | 'contact_info';
 type BrandingSeoSubTab = 'general_info' | 'social_networks' | 'footer_legal' | 'seo_metadata';
 type InfraApiSubTab = 'ai_keys' | 'cloud_upload' | 'security_captcha' | 'payment_gateways' | 'telegram_bots';
 
@@ -211,6 +227,12 @@ export default function AdminSystemControlPage() {
   const [partners, setPartners] = useState<ISiteContentPartner[]>(DEFAULT_SITE_CONTENT.partners || []);
   const [blogCms, setBlogCms] = useState<ISiteContentBlogCms>(DEFAULT_SITE_CONTENT.blogCms || ({} as any));
   const [seo, setSeo] = useState<ISiteContentSeo>(DEFAULT_SITE_CONTENT.seo || ({} as any));
+  const [pricing, setPricing] = useState<ISiteContentPricing>(DEFAULT_PRICING_CONTENT);
+  const [features, setFeatures] = useState<ISiteContentFeatures>(DEFAULT_FEATURES_CONTENT);
+  const [howItWorks, setHowItWorks] = useState<ISiteContentHowItWorks>(DEFAULT_HOW_IT_WORKS_CONTENT);
+  const [finalCta, setFinalCta] = useState<ISiteContentFinalCta>(DEFAULT_FINAL_CTA_CONTENT);
+  const [legal, setLegal] = useState<ISiteContentLegal>(DEFAULT_LEGAL_CONTENT);
+  const [contactUs, setContactUs] = useState<ISiteContentContactUs>(DEFAULT_CONTACT_US_CONTENT);
   const [faq, setFaq] = useState<ISiteContentFaq[]>(DEFAULT_SITE_CONTENT.faq);
   const [footer, setFooter] = useState<ISiteContentFooter>(DEFAULT_SITE_CONTENT.footer);
 
@@ -260,6 +282,12 @@ export default function AdminSystemControlPage() {
         if (Array.isArray(cmsJson.data.partners)) setPartners(cmsJson.data.partners);
         if (cmsJson.data.blogCms) setBlogCms(cmsJson.data.blogCms);
         if (cmsJson.data.seo) setSeo(cmsJson.data.seo);
+        if (cmsJson.data.pricing) setPricing(cmsJson.data.pricing);
+        if (cmsJson.data.features) setFeatures(cmsJson.data.features);
+        if (cmsJson.data.howItWorks) setHowItWorks(cmsJson.data.howItWorks);
+        if (cmsJson.data.finalCta) setFinalCta(cmsJson.data.finalCta);
+        if (cmsJson.data.legal) setLegal(cmsJson.data.legal);
+        if (cmsJson.data.contactUs) setContactUs(cmsJson.data.contactUs);
         if (Array.isArray(cmsJson.data.faq)) setFaq(cmsJson.data.faq);
         if (cmsJson.data.footer) setFooter(cmsJson.data.footer);
       }
@@ -330,6 +358,12 @@ export default function AdminSystemControlPage() {
         partners,
         blogCms,
         seo,
+        pricing,
+        features,
+        howItWorks,
+        finalCta,
+        legal,
+        contactUs,
         faq,
         footer,
       };
@@ -786,6 +820,30 @@ export default function AdminSystemControlPage() {
                 >
                   <Award className="w-3.5 h-3.5" />
                   <span>لوگوی شرکا و همکاران</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setLandingTab('pricing_plans')}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${landingTab === 'pricing_plans'
+                      ? 'bg-cyan-500 text-slate-950 font-black shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                    }`}
+                >
+                  <PricingTagIcon className="w-3.5 h-3.5" />
+                  <span>پلن‌های قیمت‌گذاری و CTA</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setLandingTab('features_steps')}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${landingTab === 'features_steps'
+                      ? 'bg-cyan-500 text-slate-950 font-black shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                    }`}
+                >
+                  <FeaturesLayersIcon className="w-3.5 h-3.5" />
+                  <span>امکانات و گام‌های شروع</span>
                 </button>
               </div>
 
@@ -1459,6 +1517,590 @@ export default function AdminSystemControlPage() {
                     </SortableList>
                   </CollapsibleSection>
                 )}
+
+                {/* 1.6 PRICING PLANS & FINAL CTA TAB */}
+                {landingTab === 'pricing_plans' && (
+                  <div className="space-y-6">
+                    <CollapsibleSection
+                      title="بخش تعرفه‌ها و پلن‌های اشتراک (Pricing Section)"
+                      subtitle="عنوان بخش، برچسب‌های ماهانه/سالانه، قیمت و امکانات پلن‌ها به سه زبان"
+                      icon={PricingTagIcon}
+                      badge={`${(pricing.plans || []).length} پلن`}
+                      defaultOpen={true}
+                      isTranslating={translatingSection === 'pricing'}
+                      onBatchTranslate={() =>
+                        handleBatchTranslate(
+                          'pricing',
+                          {
+                            badge: pricing.badge.fa,
+                            title: pricing.title.fa,
+                            subtitle: pricing.subtitle.fa,
+                            monthlyLabel: pricing.monthlyLabel.fa,
+                            annualLabel: pricing.annualLabel.fa,
+                            annualSaveBadge: pricing.annualSaveBadge.fa,
+                          },
+                          (en, ps) => {
+                            setPricing((prev) => ({
+                              ...prev,
+                              badge: { ...prev.badge, en: en.badge || prev.badge.en, ps: ps.badge || prev.badge.ps },
+                              title: { ...prev.title, en: en.title || prev.title.en, ps: ps.title || prev.title.ps },
+                              subtitle: { ...prev.subtitle, en: en.subtitle || prev.subtitle.en, ps: ps.subtitle || prev.subtitle.ps },
+                              monthlyLabel: { ...prev.monthlyLabel, en: en.monthlyLabel || prev.monthlyLabel.en, ps: ps.monthlyLabel || prev.monthlyLabel.ps },
+                              annualLabel: { ...prev.annualLabel, en: en.annualLabel || prev.annualLabel.en, ps: ps.annualLabel || prev.annualLabel.ps },
+                              annualSaveBadge: { ...prev.annualSaveBadge, en: en.annualSaveBadge || prev.annualSaveBadge.en, ps: ps.annualSaveBadge || prev.annualSaveBadge.ps },
+                            }));
+                          }
+                        )
+                      }
+                      headerActions={
+                        <Button
+                          type="button"
+                          onClick={() =>
+                            setPricing((prev) => ({
+                              ...prev,
+                              plans: [
+                                ...(prev.plans || []),
+                                {
+                                  id: `plan-${Date.now()}`,
+                                  key: `custom_${Date.now()}`,
+                                  name: { fa: 'پلن جدید', en: 'New Plan', ps: 'نوی پلان' },
+                                  tagline: { fa: 'توضیح کوتاه پلن', en: 'Short plan tagline', ps: 'د پلان لنډه تشریح' },
+                                  badge: { fa: 'پیشنهادی', en: 'Featured', ps: 'وړاندیز شوی' },
+                                  monthlyPrice: 990,
+                                  annualPrice: 790,
+                                  currency: { fa: 'افغانی', en: 'AFN', ps: 'افغانۍ' },
+                                  periodMonthlyLabel: { fa: '/ ماهانه', en: '/ mo', ps: '/ میاشتنی' },
+                                  periodAnnualLabel: { fa: '/ ماهانه (سالانه)', en: '/ mo (annual)', ps: '/ میاشتنی (کلنی)' },
+                                  ctaText: { fa: 'انتخاب پلن', en: 'Choose Plan', ps: 'پلان وټاکئ' },
+                                  ctaLink: '/register',
+                                  isPopular: false,
+                                  isActive: true,
+                                  features: [{ fa: 'ویژگی نمونه', en: 'Sample feature', ps: 'بېلګه ځانګړنه' }],
+                                },
+                              ],
+                            }))
+                          }
+                          className="bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-bold text-xs rounded-xl h-9 px-3"
+                        >
+                          <Plus className="w-3.5 h-3.5 mr-1" />
+                          افزودن پلن جدید
+                        </Button>
+                      }
+                    >
+                      <div className="space-y-5">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <MultilingualInput
+                            label="نشانگر بالای بخش تعرفه"
+                            value={pricing.badge}
+                            onChange={(val) => setPricing({ ...pricing, badge: toTrilingual(val) })}
+                          />
+                          <MultilingualInput
+                            label="تیتر اصلی بخش تعرفه"
+                            value={pricing.title}
+                            onChange={(val) => setPricing({ ...pricing, title: toTrilingual(val) })}
+                          />
+                        </div>
+                        <MultilingualTextarea
+                          label="توضیحات زیر عنوان تعرفه"
+                          value={pricing.subtitle}
+                          onChange={(val) => setPricing({ ...pricing, subtitle: toTrilingual(val) })}
+                          rows={2}
+                        />
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <MultilingualInput
+                            label="برچسب پرداخت ماهانه"
+                            value={pricing.monthlyLabel}
+                            onChange={(val) => setPricing({ ...pricing, monthlyLabel: toTrilingual(val) })}
+                            compact
+                          />
+                          <MultilingualInput
+                            label="برچسب پرداخت سالانه"
+                            value={pricing.annualLabel}
+                            onChange={(val) => setPricing({ ...pricing, annualLabel: toTrilingual(val) })}
+                            compact
+                          />
+                          <MultilingualInput
+                            label="نشان تخفیف سالانه"
+                            value={pricing.annualSaveBadge}
+                            onChange={(val) => setPricing({ ...pricing, annualSaveBadge: toTrilingual(val) })}
+                            compact
+                          />
+                        </div>
+
+                        <div className="space-y-4 pt-4 border-t border-border">
+                          {(pricing.plans || []).map((plan, pIdx) => (
+                            <div key={plan.id || pIdx} className="p-4 rounded-2xl bg-muted/30 border border-border space-y-4">
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <span className="text-xs font-black text-cyan-500">
+                                  پلن #{pIdx + 1}: {plan.name?.fa}
+                                </span>
+                                <div className="flex items-center gap-3">
+                                  <label className="flex items-center gap-1.5 text-xs font-bold cursor-pointer">
+                                    <Switch
+                                      checked={Boolean(plan.isPopular)}
+                                      onCheckedChange={(checked) => {
+                                        const next = [...pricing.plans];
+                                        next[pIdx] = { ...next[pIdx], isPopular: checked };
+                                        setPricing({ ...pricing, plans: next });
+                                      }}
+                                    />
+                                    <span>محبوب (Popular)</span>
+                                  </label>
+                                  <label className="flex items-center gap-1.5 text-xs font-bold cursor-pointer">
+                                    <Switch
+                                      checked={plan.isActive !== false}
+                                      onCheckedChange={(checked) => {
+                                        const next = [...pricing.plans];
+                                        next[pIdx] = { ...next[pIdx], isActive: checked };
+                                        setPricing({ ...pricing, plans: next });
+                                      }}
+                                    />
+                                    <span>فعال</span>
+                                  </label>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      const next = pricing.plans.filter((_, i) => i !== pIdx);
+                                      setPricing({ ...pricing, plans: next });
+                                    }}
+                                    className="text-rose-500 hover:bg-rose-500/10 h-8 w-8 p-0 rounded-lg"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              </div>
+
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <MultilingualInput
+                                  label="نام پلن"
+                                  value={plan.name}
+                                  onChange={(val) => {
+                                    const next = [...pricing.plans];
+                                    next[pIdx] = { ...next[pIdx], name: toTrilingual(val) };
+                                    setPricing({ ...pricing, plans: next });
+                                  }}
+                                  compact
+                                />
+                                <MultilingualInput
+                                  label="نشان ویژه روی کارت پلن"
+                                  value={plan.badge}
+                                  onChange={(val) => {
+                                    const next = [...pricing.plans];
+                                    next[pIdx] = { ...next[pIdx], badge: toTrilingual(val) };
+                                    setPricing({ ...pricing, plans: next });
+                                  }}
+                                  compact
+                                />
+                              </div>
+
+                              <MultilingualInput
+                                label="توضیح کوتاه پلن"
+                                value={plan.tagline}
+                                onChange={(val) => {
+                                  const next = [...pricing.plans];
+                                  next[pIdx] = { ...next[pIdx], tagline: toTrilingual(val) };
+                                  setPricing({ ...pricing, plans: next });
+                                }}
+                                compact
+                              />
+
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                <div>
+                                  <label className="text-[11px] font-bold block mb-1">قیمت ماهانه</label>
+                                  <Input
+                                    type="number"
+                                    value={plan.monthlyPrice}
+                                    onChange={(e) => {
+                                      const next = [...pricing.plans];
+                                      next[pIdx] = { ...next[pIdx], monthlyPrice: Number(e.target.value) || 0 };
+                                      setPricing({ ...pricing, plans: next });
+                                    }}
+                                    dir="ltr"
+                                    className="rounded-xl text-xs font-mono"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-[11px] font-bold block mb-1">قیمت سالانه</label>
+                                  <Input
+                                    type="number"
+                                    value={plan.annualPrice}
+                                    onChange={(e) => {
+                                      const next = [...pricing.plans];
+                                      next[pIdx] = { ...next[pIdx], annualPrice: Number(e.target.value) || 0 };
+                                      setPricing({ ...pricing, plans: next });
+                                    }}
+                                    dir="ltr"
+                                    className="rounded-xl text-xs font-mono"
+                                  />
+                                </div>
+                                <MultilingualInput
+                                  label="واحد پول"
+                                  value={plan.currency}
+                                  onChange={(val) => {
+                                    const next = [...pricing.plans];
+                                    next[pIdx] = { ...next[pIdx], currency: toTrilingual(val) };
+                                    setPricing({ ...pricing, plans: next });
+                                  }}
+                                  compact
+                                />
+                                <div>
+                                  <label className="text-[11px] font-bold block mb-1">لینک دکمه (URL)</label>
+                                  <Input
+                                    value={plan.ctaLink}
+                                    onChange={(e) => {
+                                      const next = [...pricing.plans];
+                                      next[pIdx] = { ...next[pIdx], ctaLink: e.target.value };
+                                      setPricing({ ...pricing, plans: next });
+                                    }}
+                                    dir="ltr"
+                                    className="rounded-xl text-xs font-mono"
+                                  />
+                                </div>
+                              </div>
+
+                              <MultilingualInput
+                                label="متن دکمه اقدام"
+                                value={plan.ctaText}
+                                onChange={(val) => {
+                                  const next = [...pricing.plans];
+                                  next[pIdx] = { ...next[pIdx], ctaText: toTrilingual(val) };
+                                  setPricing({ ...pricing, plans: next });
+                                }}
+                                compact
+                              />
+
+                              {/* Features inside Plan */}
+                              <div className="space-y-2 pt-2 border-t border-border/60">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs font-bold text-foreground">ویژگی‌های پلن</span>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      const next = [...pricing.plans];
+                                      next[pIdx] = {
+                                        ...next[pIdx],
+                                        features: [...(next[pIdx].features || []), { fa: 'ویژگی نو', en: 'New Feature', ps: 'نوې ځانګړنه' }],
+                                      };
+                                      setPricing({ ...pricing, plans: next });
+                                    }}
+                                    className="h-7 px-2.5 text-[11px] rounded-lg"
+                                  >
+                                    <Plus className="w-3 h-3 mr-1" />
+                                    افزودن ویژگی
+                                  </Button>
+                                </div>
+                                {(plan.features || []).map((feat, fIdx) => (
+                                  <div key={fIdx} className="flex items-start gap-2">
+                                    <div className="flex-1">
+                                      <MultilingualInput
+                                        label={`ویژگی #${fIdx + 1}`}
+                                        value={feat}
+                                        onChange={(val) => {
+                                          const next = [...pricing.plans];
+                                          const nextFeats = [...next[pIdx].features];
+                                          nextFeats[fIdx] = toTrilingual(val);
+                                          next[pIdx] = { ...next[pIdx], features: nextFeats };
+                                          setPricing({ ...pricing, plans: next });
+                                        }}
+                                        compact
+                                      />
+                                    </div>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        const next = [...pricing.plans];
+                                        next[pIdx] = {
+                                          ...next[pIdx],
+                                          features: next[pIdx].features.filter((_, i) => i !== fIdx),
+                                        };
+                                        setPricing({ ...pricing, plans: next });
+                                      }}
+                                      className="mt-6 text-rose-500 hover:bg-rose-500/10 h-8 w-8 p-0"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </Button>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </CollapsibleSection>
+
+                    <CollapsibleSection
+                      title="بنر دعوت به اقدام نهایی صفحه اصلی (Final Conversion CTA)"
+                      subtitle="متن تشویقی پایان صفحه اصلی همراه با دکمه‌های سه‌زبانه"
+                      icon={Sparkles}
+                      badge="بنر نهایی"
+                      defaultOpen={false}
+                      isTranslating={translatingSection === 'finalCta'}
+                      onBatchTranslate={() =>
+                        handleBatchTranslate(
+                          'finalCta',
+                          {
+                            badge: finalCta.badge.fa,
+                            title: finalCta.title.fa,
+                            subtitle: finalCta.subtitle.fa,
+                            primaryCtaText: finalCta.primaryCtaText.fa,
+                            secondaryCtaText: finalCta.secondaryCtaText.fa,
+                          },
+                          (en, ps) => {
+                            setFinalCta((prev) => ({
+                              ...prev,
+                              badge: { ...prev.badge, en: en.badge || prev.badge.en, ps: ps.badge || prev.badge.ps },
+                              title: { ...prev.title, en: en.title || prev.title.en, ps: ps.title || prev.title.ps },
+                              subtitle: { ...prev.subtitle, en: en.subtitle || prev.subtitle.en, ps: ps.subtitle || prev.subtitle.ps },
+                              primaryCtaText: { ...prev.primaryCtaText, en: en.primaryCtaText || prev.primaryCtaText.en, ps: ps.primaryCtaText || prev.primaryCtaText.ps },
+                              secondaryCtaText: { ...prev.secondaryCtaText, en: en.secondaryCtaText || prev.secondaryCtaText.en, ps: ps.secondaryCtaText || prev.secondaryCtaText.ps },
+                            }));
+                          }
+                        )
+                      }
+                    >
+                      <div className="space-y-4">
+                        <MultilingualInput
+                          label="نشانگر بالای بنر"
+                          value={finalCta.badge}
+                          onChange={(val) => setFinalCta({ ...finalCta, badge: toTrilingual(val) })}
+                        />
+                        <MultilingualInput
+                          label="تیتر اصلی بنر"
+                          value={finalCta.title}
+                          onChange={(val) => setFinalCta({ ...finalCta, title: toTrilingual(val) })}
+                        />
+                        <MultilingualTextarea
+                          label="توضیحات بنر"
+                          value={finalCta.subtitle}
+                          onChange={(val) => setFinalCta({ ...finalCta, subtitle: toTrilingual(val) })}
+                          rows={2}
+                        />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2 p-3 rounded-xl bg-muted/30 border border-border">
+                            <MultilingualInput
+                              label="متن دکمه اصلی"
+                              value={finalCta.primaryCtaText}
+                              onChange={(val) => setFinalCta({ ...finalCta, primaryCtaText: toTrilingual(val) })}
+                              compact
+                            />
+                            <Input
+                              value={finalCta.primaryCtaLink}
+                              onChange={(e) => setFinalCta({ ...finalCta, primaryCtaLink: e.target.value })}
+                              dir="ltr"
+                              className="rounded-xl text-xs font-mono"
+                            />
+                          </div>
+                          <div className="space-y-2 p-3 rounded-xl bg-muted/30 border border-border">
+                            <MultilingualInput
+                              label="متن دکمه فرعی"
+                              value={finalCta.secondaryCtaText}
+                              onChange={(val) => setFinalCta({ ...finalCta, secondaryCtaText: toTrilingual(val) })}
+                              compact
+                            />
+                            <Input
+                              value={finalCta.secondaryCtaLink}
+                              onChange={(e) => setFinalCta({ ...finalCta, secondaryCtaLink: e.target.value })}
+                              dir="ltr"
+                              className="rounded-xl text-xs font-mono"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </CollapsibleSection>
+                  </div>
+                )}
+
+                {/* 1.7 FEATURES BENTO & HOW IT WORKS STEPS TAB */}
+                {landingTab === 'features_steps' && (
+                  <div className="space-y-6">
+                    <CollapsibleSection
+                      title="بخش امکانات و قابلیت‌ها (Bento Grid Features)"
+                      subtitle="تیتر و ۵ کارت اصلی امکانات صفحه نخست به سه زبان"
+                      icon={FeaturesLayersIcon}
+                      badge={`${(features.items || []).length} قابلیت`}
+                      defaultOpen={true}
+                      isTranslating={translatingSection === 'features'}
+                      onBatchTranslate={() =>
+                        handleBatchTranslate(
+                          'features',
+                          {
+                            badge: features.badge.fa,
+                            title: features.title.fa,
+                            subtitle: features.subtitle.fa,
+                          },
+                          (en, ps) => {
+                            setFeatures((prev) => ({
+                              ...prev,
+                              badge: { ...prev.badge, en: en.badge || prev.badge.en, ps: ps.badge || prev.badge.ps },
+                              title: { ...prev.title, en: en.title || prev.title.en, ps: ps.title || prev.title.ps },
+                              subtitle: { ...prev.subtitle, en: en.subtitle || prev.subtitle.en, ps: ps.subtitle || prev.subtitle.ps },
+                            }));
+                          }
+                        )
+                      }
+                    >
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <MultilingualInput
+                            label="نشانگر بالای بخش امکانات"
+                            value={features.badge}
+                            onChange={(val) => setFeatures({ ...features, badge: toTrilingual(val) })}
+                          />
+                          <MultilingualInput
+                            label="تیتر اصلی امکانات"
+                            value={features.title}
+                            onChange={(val) => setFeatures({ ...features, title: toTrilingual(val) })}
+                          />
+                        </div>
+                        <MultilingualTextarea
+                          label="توضیحات بخش امکانات"
+                          value={features.subtitle}
+                          onChange={(val) => setFeatures({ ...features, subtitle: toTrilingual(val) })}
+                          rows={2}
+                        />
+                        <div className="space-y-3 pt-3 border-t border-border">
+                          {(features.items || []).map((item, idx) => (
+                            <div key={item.id || idx} className="p-4 rounded-2xl bg-muted/30 border border-border space-y-3">
+                              <span className="text-xs font-black text-cyan-500">کارت #{idx + 1} ({item.key})</span>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <MultilingualInput
+                                  label="برچسب کارت"
+                                  value={item.badge}
+                                  onChange={(val) => {
+                                    const next = [...features.items];
+                                    next[idx] = { ...next[idx], badge: toTrilingual(val) };
+                                    setFeatures({ ...features, items: next });
+                                  }}
+                                  compact
+                                />
+                                <MultilingualInput
+                                  label="عنوان قابلیت"
+                                  value={item.title}
+                                  onChange={(val) => {
+                                    const next = [...features.items];
+                                    next[idx] = { ...next[idx], title: toTrilingual(val) };
+                                    setFeatures({ ...features, items: next });
+                                  }}
+                                  compact
+                                />
+                              </div>
+                              <MultilingualTextarea
+                                label="توضیح قابلیت"
+                                value={item.desc}
+                                onChange={(val) => {
+                                  const next = [...features.items];
+                                  next[idx] = { ...next[idx], desc: toTrilingual(val) };
+                                  setFeatures({ ...features, items: next });
+                                }}
+                                rows={2}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </CollapsibleSection>
+
+                    <CollapsibleSection
+                      title="نحوه کارکرد در ۳ گام (How It Works)"
+                      subtitle="عنوان و ۳ مرحله شروع سریع در صفحه اصلی"
+                      icon={Sparkles}
+                      badge={`${(howItWorks.steps || []).length} گام`}
+                      defaultOpen={false}
+                      isTranslating={translatingSection === 'howItWorks'}
+                      onBatchTranslate={() =>
+                        handleBatchTranslate(
+                          'howItWorks',
+                          {
+                            badge: howItWorks.badge.fa,
+                            title: howItWorks.title.fa,
+                            subtitle: howItWorks.subtitle.fa,
+                            footerNote: howItWorks.footerNote.fa,
+                          },
+                          (en, ps) => {
+                            setHowItWorks((prev) => ({
+                              ...prev,
+                              badge: { ...prev.badge, en: en.badge || prev.badge.en, ps: ps.badge || prev.badge.ps },
+                              title: { ...prev.title, en: en.title || prev.title.en, ps: ps.title || prev.title.ps },
+                              subtitle: { ...prev.subtitle, en: en.subtitle || prev.subtitle.en, ps: ps.subtitle || prev.subtitle.ps },
+                              footerNote: { ...prev.footerNote, en: en.footerNote || prev.footerNote.en, ps: ps.footerNote || prev.footerNote.ps },
+                            }));
+                          }
+                        )
+                      }
+                    >
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <MultilingualInput
+                            label="نشانگر بالای بخش"
+                            value={howItWorks.badge}
+                            onChange={(val) => setHowItWorks({ ...howItWorks, badge: toTrilingual(val) })}
+                          />
+                          <MultilingualInput
+                            label="عنوان اصلی بخش"
+                            value={howItWorks.title}
+                            onChange={(val) => setHowItWorks({ ...howItWorks, title: toTrilingual(val) })}
+                          />
+                        </div>
+                        <MultilingualTextarea
+                          label="زیرعنوان بخش"
+                          value={howItWorks.subtitle}
+                          onChange={(val) => setHowItWorks({ ...howItWorks, subtitle: toTrilingual(val) })}
+                          rows={2}
+                        />
+                        <MultilingualInput
+                          label="یادداشت پایینی کارت‌ها (Footer Note)"
+                          value={howItWorks.footerNote}
+                          onChange={(val) => setHowItWorks({ ...howItWorks, footerNote: toTrilingual(val) })}
+                        />
+                        <div className="space-y-3 pt-3 border-t border-border">
+                          {(howItWorks.steps || []).map((st, idx) => (
+                            <div key={st.id || idx} className="p-4 rounded-2xl bg-muted/30 border border-border space-y-3">
+                              <span className="text-xs font-black text-cyan-500">مرحله {st.num}</span>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <MultilingualInput
+                                  label="نشان مرحله"
+                                  value={st.badge}
+                                  onChange={(val) => {
+                                    const next = [...howItWorks.steps];
+                                    next[idx] = { ...next[idx], badge: toTrilingual(val) };
+                                    setHowItWorks({ ...howItWorks, steps: next });
+                                  }}
+                                  compact
+                                />
+                                <MultilingualInput
+                                  label="عنوان مرحله"
+                                  value={st.title}
+                                  onChange={(val) => {
+                                    const next = [...howItWorks.steps];
+                                    next[idx] = { ...next[idx], title: toTrilingual(val) };
+                                    setHowItWorks({ ...howItWorks, steps: next });
+                                  }}
+                                  compact
+                                />
+                              </div>
+                              <MultilingualTextarea
+                                label="توضیح مرحله"
+                                value={st.desc}
+                                onChange={(val) => {
+                                  const next = [...howItWorks.steps];
+                                  next[idx] = { ...next[idx], desc: toTrilingual(val) };
+                                  setHowItWorks({ ...howItWorks, steps: next });
+                                }}
+                                rows={2}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </CollapsibleSection>
+                  </div>
+                )}
               </div>
             </>
           )}
@@ -1505,10 +2147,399 @@ export default function AdminSystemControlPage() {
                   <BookOpen className="w-3.5 h-3.5" />
                   <span>هدر و معرفی وبلاگ</span>
                 </button>
+
+                <button
+                  type="button"
+                  onClick={() => setPagesTab('legal_terms')}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${pagesTab === 'legal_terms'
+                      ? 'bg-cyan-500 text-slate-950 font-black shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                    }`}
+                >
+                  <LegalScaleIcon className="w-3.5 h-3.5" />
+                  <span>قوانین و حریم خصوصی</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setPagesTab('contact_info')}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${pagesTab === 'contact_info'
+                      ? 'bg-cyan-500 text-slate-950 font-black shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                    }`}
+                >
+                  <ContactPhoneIcon className="w-3.5 h-3.5" />
+                  <span>صفحه تماس با ما</span>
+                </button>
               </div>
 
               {/* Form Container with pt-4 scroll-mt-20 */}
               <div className="pt-4 scroll-mt-20 space-y-6">
+                {/* 2.4 LEGAL: TERMS OF SERVICE & PRIVACY POLICY */}
+                {pagesTab === 'legal_terms' && (
+                  <div className="space-y-6">
+                    <CollapsibleSection
+                      title="قوانین و مقررات استفاده (Terms of Service)"
+                      subtitle="عنوان، معرفی و بندهای حقوقی صفحه /terms به سه زبان"
+                      icon={LegalScaleIcon}
+                      badge={`${(legal.termsSections || []).length} بند`}
+                      defaultOpen={true}
+                      isTranslating={translatingSection === 'legalTerms'}
+                      onBatchTranslate={() =>
+                        handleBatchTranslate(
+                          'legalTerms',
+                          {
+                            termsBadge: legal.termsBadge.fa,
+                            termsTitle: legal.termsTitle.fa,
+                            termsUpdatedAt: legal.termsUpdatedAt.fa,
+                            termsIntro: legal.termsIntro.fa,
+                          },
+                          (en, ps) => {
+                            setLegal((prev) => ({
+                              ...prev,
+                              termsBadge: { ...prev.termsBadge, en: en.termsBadge || prev.termsBadge.en, ps: ps.termsBadge || prev.termsBadge.ps },
+                              termsTitle: { ...prev.termsTitle, en: en.termsTitle || prev.termsTitle.en, ps: ps.termsTitle || prev.termsTitle.ps },
+                              termsUpdatedAt: { ...prev.termsUpdatedAt, en: en.termsUpdatedAt || prev.termsUpdatedAt.en, ps: ps.termsUpdatedAt || prev.termsUpdatedAt.ps },
+                              termsIntro: { ...prev.termsIntro, en: en.termsIntro || prev.termsIntro.en, ps: ps.termsIntro || prev.termsIntro.ps },
+                            }));
+                          }
+                        )
+                      }
+                      headerActions={
+                        <Button
+                          type="button"
+                          onClick={() =>
+                            setLegal((prev) => ({
+                              ...prev,
+                              termsSections: [
+                                ...(prev.termsSections || []),
+                                {
+                                  id: `term-${Date.now()}`,
+                                  title: { fa: 'بند جدید مقررات', en: 'New Terms Clause', ps: 'د اصولو نوې ماده' },
+                                  content: { fa: 'شرح کامل این بند حقوقی...', en: 'Full legal details for this clause...', ps: 'د دې مادې بشپړ شرح...' },
+                                },
+                              ],
+                            }))
+                          }
+                          className="bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-bold text-xs rounded-xl h-9 px-3"
+                        >
+                          <Plus className="w-3.5 h-3.5 mr-1" />
+                          افزودن بند جدید
+                        </Button>
+                      }
+                    >
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <MultilingualInput
+                            label="نشانگر صفحه قوانین"
+                            value={legal.termsBadge}
+                            onChange={(val) => setLegal({ ...legal, termsBadge: toTrilingual(val) })}
+                          />
+                          <MultilingualInput
+                            label="تاریخ آخرین به‌روزرسانی"
+                            value={legal.termsUpdatedAt}
+                            onChange={(val) => setLegal({ ...legal, termsUpdatedAt: toTrilingual(val) })}
+                          />
+                        </div>
+                        <MultilingualInput
+                          label="عنوان اصلی صفحه قوانین"
+                          value={legal.termsTitle}
+                          onChange={(val) => setLegal({ ...legal, termsTitle: toTrilingual(val) })}
+                        />
+                        <MultilingualTextarea
+                          label="مقدمه قوانین و مقررات"
+                          value={legal.termsIntro}
+                          onChange={(val) => setLegal({ ...legal, termsIntro: toTrilingual(val) })}
+                          rows={2}
+                        />
+                        <div className="space-y-3 pt-3 border-t border-border">
+                          {(legal.termsSections || []).map((sec, idx) => (
+                            <div key={sec.id || idx} className="p-4 rounded-2xl bg-muted/30 border border-border space-y-3">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-black text-cyan-500">ماده #{idx + 1}</span>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() =>
+                                    setLegal({
+                                      ...legal,
+                                      termsSections: legal.termsSections.filter((_, i) => i !== idx),
+                                    })
+                                  }
+                                  className="text-rose-500 hover:bg-rose-500/10 h-8 w-8 p-0"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                              <MultilingualInput
+                                label="عنوان بند"
+                                value={sec.title}
+                                onChange={(val) => {
+                                  const next = [...legal.termsSections];
+                                  next[idx] = { ...next[idx], title: toTrilingual(val) };
+                                  setLegal({ ...legal, termsSections: next });
+                                }}
+                                compact
+                              />
+                              <MultilingualTextarea
+                                label="متن بند"
+                                value={sec.content}
+                                onChange={(val) => {
+                                  const next = [...legal.termsSections];
+                                  next[idx] = { ...next[idx], content: toTrilingual(val) };
+                                  setLegal({ ...legal, termsSections: next });
+                                }}
+                                rows={3}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </CollapsibleSection>
+
+                    <CollapsibleSection
+                      title="سیاست حفظ حریم خصوصی (Privacy Policy)"
+                      subtitle="عنوان، معرفی و بندهای حریم خصوصی صفحه /privacy به سه زبان"
+                      icon={LegalScaleIcon}
+                      badge={`${(legal.privacySections || []).length} بند`}
+                      defaultOpen={false}
+                      isTranslating={translatingSection === 'legalPrivacy'}
+                      onBatchTranslate={() =>
+                        handleBatchTranslate(
+                          'legalPrivacy',
+                          {
+                            privacyBadge: legal.privacyBadge.fa,
+                            privacyTitle: legal.privacyTitle.fa,
+                            privacyUpdatedAt: legal.privacyUpdatedAt.fa,
+                            privacyIntro: legal.privacyIntro.fa,
+                          },
+                          (en, ps) => {
+                            setLegal((prev) => ({
+                              ...prev,
+                              privacyBadge: { ...prev.privacyBadge, en: en.privacyBadge || prev.privacyBadge.en, ps: ps.privacyBadge || prev.privacyBadge.ps },
+                              privacyTitle: { ...prev.privacyTitle, en: en.privacyTitle || prev.privacyTitle.en, ps: ps.privacyTitle || prev.privacyTitle.ps },
+                              privacyUpdatedAt: { ...prev.privacyUpdatedAt, en: en.privacyUpdatedAt || prev.privacyUpdatedAt.en, ps: ps.privacyUpdatedAt || prev.privacyUpdatedAt.ps },
+                              privacyIntro: { ...prev.privacyIntro, en: en.privacyIntro || prev.privacyIntro.en, ps: ps.privacyIntro || prev.privacyIntro.ps },
+                            }));
+                          }
+                        )
+                      }
+                      headerActions={
+                        <Button
+                          type="button"
+                          onClick={() =>
+                            setLegal((prev) => ({
+                              ...prev,
+                              privacySections: [
+                                ...(prev.privacySections || []),
+                                {
+                                  id: `priv-${Date.now()}`,
+                                  title: { fa: 'بند جدید حریم خصوصی', en: 'New Privacy Clause', ps: 'د محرمیت نوې ماده' },
+                                  content: { fa: 'توضیحات این بند...', en: 'Details for this clause...', ps: 'د دې مادې تشریح...' },
+                                },
+                              ],
+                            }))
+                          }
+                          className="bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-bold text-xs rounded-xl h-9 px-3"
+                        >
+                          <Plus className="w-3.5 h-3.5 mr-1" />
+                          افزودن بند جدید
+                        </Button>
+                      }
+                    >
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <MultilingualInput
+                            label="نشانگر صفحه حریم خصوصی"
+                            value={legal.privacyBadge}
+                            onChange={(val) => setLegal({ ...legal, privacyBadge: toTrilingual(val) })}
+                          />
+                          <MultilingualInput
+                            label="تاریخ آخرین به‌روزرسانی"
+                            value={legal.privacyUpdatedAt}
+                            onChange={(val) => setLegal({ ...legal, privacyUpdatedAt: toTrilingual(val) })}
+                          />
+                        </div>
+                        <MultilingualInput
+                          label="عنوان اصلی حریم خصوصی"
+                          value={legal.privacyTitle}
+                          onChange={(val) => setLegal({ ...legal, privacyTitle: toTrilingual(val) })}
+                        />
+                        <MultilingualTextarea
+                          label="مقدمه حریم خصوصی"
+                          value={legal.privacyIntro}
+                          onChange={(val) => setLegal({ ...legal, privacyIntro: toTrilingual(val) })}
+                          rows={2}
+                        />
+                        <div className="space-y-3 pt-3 border-t border-border">
+                          {(legal.privacySections || []).map((sec, idx) => (
+                            <div key={sec.id || idx} className="p-4 rounded-2xl bg-muted/30 border border-border space-y-3">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-black text-emerald-500">ماده #{idx + 1}</span>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() =>
+                                    setLegal({
+                                      ...legal,
+                                      privacySections: legal.privacySections.filter((_, i) => i !== idx),
+                                    })
+                                  }
+                                  className="text-rose-500 hover:bg-rose-500/10 h-8 w-8 p-0"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                              <MultilingualInput
+                                label="عنوان بند"
+                                value={sec.title}
+                                onChange={(val) => {
+                                  const next = [...legal.privacySections];
+                                  next[idx] = { ...next[idx], title: toTrilingual(val) };
+                                  setLegal({ ...legal, privacySections: next });
+                                }}
+                                compact
+                              />
+                              <MultilingualTextarea
+                                label="متن بند"
+                                value={sec.content}
+                                onChange={(val) => {
+                                  const next = [...legal.privacySections];
+                                  next[idx] = { ...next[idx], content: toTrilingual(val) };
+                                  setLegal({ ...legal, privacySections: next });
+                                }}
+                                rows={3}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </CollapsibleSection>
+                  </div>
+                )}
+
+                {/* 2.5 CONTACT US INFO TAB */}
+                {pagesTab === 'contact_info' && (
+                  <CollapsibleSection
+                    title="مدیریت صفحه تماس با ما (Contact Us)"
+                    subtitle="آدرس دفتر، ساعات کاری، ایمیل، نمبر تماس، واتساپ و تلگرام رسمی پشتیبانی"
+                    icon={ContactPhoneIcon}
+                    badge="تماس با ما"
+                    defaultOpen={true}
+                    isTranslating={translatingSection === 'contactUs'}
+                    onBatchTranslate={() =>
+                      handleBatchTranslate(
+                        'contactUs',
+                        {
+                          badge: contactUs.badge.fa,
+                          title: contactUs.title.fa,
+                          subtitle: contactUs.subtitle.fa,
+                          officeTitle: contactUs.officeTitle.fa,
+                          officeAddress: contactUs.officeAddress.fa,
+                          workingHoursLabel: contactUs.workingHoursLabel.fa,
+                          workingHours: contactUs.workingHours.fa,
+                        },
+                        (en, ps) => {
+                          setContactUs((prev) => ({
+                            ...prev,
+                            badge: { ...prev.badge, en: en.badge || prev.badge.en, ps: ps.badge || prev.badge.ps },
+                            title: { ...prev.title, en: en.title || prev.title.en, ps: ps.title || prev.title.ps },
+                            subtitle: { ...prev.subtitle, en: en.subtitle || prev.subtitle.en, ps: ps.subtitle || prev.subtitle.ps },
+                            officeTitle: { ...prev.officeTitle, en: en.officeTitle || prev.officeTitle.en, ps: ps.officeTitle || prev.officeTitle.ps },
+                            officeAddress: { ...prev.officeAddress, en: en.officeAddress || prev.officeAddress.en, ps: ps.officeAddress || prev.officeAddress.ps },
+                            workingHoursLabel: { ...prev.workingHoursLabel, en: en.workingHoursLabel || prev.workingHoursLabel.en, ps: ps.workingHoursLabel || prev.workingHoursLabel.ps },
+                            workingHours: { ...prev.workingHours, en: en.workingHours || prev.workingHours.en, ps: ps.workingHours || prev.workingHours.ps },
+                          }));
+                        }
+                      )
+                    }
+                  >
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <MultilingualInput
+                          label="نشانگر بالای صفحه تماس"
+                          value={contactUs.badge}
+                          onChange={(val) => setContactUs({ ...contactUs, badge: toTrilingual(val) })}
+                        />
+                        <MultilingualInput
+                          label="تیتر اصلی تماس با ما"
+                          value={contactUs.title}
+                          onChange={(val) => setContactUs({ ...contactUs, title: toTrilingual(val) })}
+                        />
+                      </div>
+                      <MultilingualTextarea
+                        label="زیرعنوان تماس با ما"
+                        value={contactUs.subtitle}
+                        onChange={(val) => setContactUs({ ...contactUs, subtitle: toTrilingual(val) })}
+                        rows={2}
+                      />
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <MultilingualInput
+                          label="عنوان دفتر مرکزی"
+                          value={contactUs.officeTitle}
+                          onChange={(val) => setContactUs({ ...contactUs, officeTitle: toTrilingual(val) })}
+                        />
+                        <MultilingualInput
+                          label="آدرس دقیق دفتر"
+                          value={contactUs.officeAddress}
+                          onChange={(val) => setContactUs({ ...contactUs, officeAddress: toTrilingual(val) })}
+                        />
+                        <MultilingualInput
+                          label="برچسب ساعات کاری"
+                          value={contactUs.workingHoursLabel}
+                          onChange={(val) => setContactUs({ ...contactUs, workingHoursLabel: toTrilingual(val) })}
+                        />
+                        <MultilingualInput
+                          label="ساعات کاری پشتیبانی"
+                          value={contactUs.workingHours}
+                          onChange={(val) => setContactUs({ ...contactUs, workingHours: toTrilingual(val) })}
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 pt-3 border-t border-border">
+                        <div>
+                          <label className="text-xs font-bold block mb-1">ایمیل پشتیبانی</label>
+                          <Input
+                            value={contactUs.supportEmail}
+                            onChange={(e) => setContactUs({ ...contactUs, supportEmail: e.target.value })}
+                            dir="ltr"
+                            className="rounded-xl text-xs font-mono"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs font-bold block mb-1">نمبر تماس رسمی</label>
+                          <Input
+                            value={contactUs.supportPhone}
+                            onChange={(e) => setContactUs({ ...contactUs, supportPhone: e.target.value })}
+                            dir="ltr"
+                            className="rounded-xl text-xs font-mono"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs font-bold block mb-1">نمبر واتساپ</label>
+                          <Input
+                            value={contactUs.whatsappNumber}
+                            onChange={(e) => setContactUs({ ...contactUs, whatsappNumber: e.target.value })}
+                            dir="ltr"
+                            className="rounded-xl text-xs font-mono"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs font-bold block mb-1">آیدی تلگرام</label>
+                          <Input
+                            value={contactUs.telegramHandle}
+                            onChange={(e) => setContactUs({ ...contactUs, telegramHandle: e.target.value })}
+                            dir="ltr"
+                            className="rounded-xl text-xs font-mono"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </CollapsibleSection>
+                )}
+
                 {/* 2.1 ABOUT US TAB (Accordion Form - Default Closed) */}
                 {pagesTab === 'aboutUs' && (
                   <div className="space-y-6">

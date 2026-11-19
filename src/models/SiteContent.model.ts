@@ -133,6 +133,557 @@ export interface ISiteContentFooter {
   };
 }
 
+export interface ISiteContentPricingPlan {
+  id: string;
+  key: 'free' | 'pro' | 'enterprise' | string;
+  name: ITrilingualString;
+  tagline: ITrilingualString;
+  badge: ITrilingualString;
+  monthlyPrice: number;
+  annualPrice: number;
+  currency: ITrilingualString;
+  periodMonthlyLabel: ITrilingualString;
+  periodAnnualLabel: ITrilingualString;
+  ctaText: ITrilingualString;
+  ctaLink: string;
+  isPopular: boolean;
+  isActive: boolean;
+  features: ITrilingualString[];
+}
+
+export interface ISiteContentPricing {
+  badge: ITrilingualString;
+  title: ITrilingualString;
+  subtitle: ITrilingualString;
+  monthlyLabel: ITrilingualString;
+  annualLabel: ITrilingualString;
+  annualSaveBadge: ITrilingualString;
+  plans: ISiteContentPricingPlan[];
+}
+
+export interface ISiteContentFeatureItem {
+  id: string;
+  key: string;
+  badge: ITrilingualString;
+  title: ITrilingualString;
+  desc: ITrilingualString;
+}
+
+export interface ISiteContentFeatures {
+  badge: ITrilingualString;
+  title: ITrilingualString;
+  subtitle: ITrilingualString;
+  items: ISiteContentFeatureItem[];
+}
+
+export interface ISiteContentHowStep {
+  id: string;
+  num: string;
+  color: string;
+  badge: ITrilingualString;
+  title: ITrilingualString;
+  desc: ITrilingualString;
+}
+
+export interface ISiteContentHowItWorks {
+  badge: ITrilingualString;
+  title: ITrilingualString;
+  subtitle: ITrilingualString;
+  footerNote: ITrilingualString;
+  steps: ISiteContentHowStep[];
+}
+
+export interface ISiteContentFinalCta {
+  badge: ITrilingualString;
+  title: ITrilingualString;
+  subtitle: ITrilingualString;
+  primaryCtaText: ITrilingualString;
+  primaryCtaLink: string;
+  secondaryCtaText: ITrilingualString;
+  secondaryCtaLink: string;
+}
+
+export interface ISiteContentLegalSection {
+  id: string;
+  title: ITrilingualString;
+  content: ITrilingualString;
+}
+
+export interface ISiteContentLegal {
+  termsBadge: ITrilingualString;
+  termsTitle: ITrilingualString;
+  termsUpdatedAt: ITrilingualString;
+  termsIntro: ITrilingualString;
+  termsSections: ISiteContentLegalSection[];
+  privacyBadge: ITrilingualString;
+  privacyTitle: ITrilingualString;
+  privacyUpdatedAt: ITrilingualString;
+  privacyIntro: ITrilingualString;
+  privacySections: ISiteContentLegalSection[];
+}
+
+export interface ISiteContentContactUs {
+  badge: ITrilingualString;
+  title: ITrilingualString;
+  subtitle: ITrilingualString;
+  officeTitle: ITrilingualString;
+  officeAddress: ITrilingualString;
+  workingHoursLabel: ITrilingualString;
+  workingHours: ITrilingualString;
+  supportEmail: string;
+  supportPhone: string;
+  whatsappNumber: string;
+  telegramHandle: string;
+  mapEmbedUrl: string;
+}
+
+export const DEFAULT_PRICING_CONTENT: ISiteContentPricing = {
+  badge: {
+    fa: 'تعرفه‌های شفاف و منصفانه',
+    en: 'Transparent & Fair Pricing',
+    ps: 'روڼ او عادلانه بیې',
+  },
+  title: {
+    fa: 'سرمایه‌گذاری هوشمند برای برند شما',
+    en: 'Smart Investment for Your Brand',
+    ps: 'ستاسو د برانډ لپاره هوښیاره پانګونه',
+  },
+  subtitle: {
+    fa: 'رایگان آغاز کنید و همگام با رشد برندتان پلن خود را ارتقا دهید. بدون هزینه‌های پنهان.',
+    en: 'Start for free and upgrade as your brand grows. Zero hidden fees.',
+    ps: 'وړیا پیل کړئ او د خپل برانډ له ودې سره خپل پلان لوړ کړئ. پرته له پټو لګښتونو.',
+  },
+  monthlyLabel: {
+    fa: 'پرداخت ماهانه',
+    en: 'Monthly Billing',
+    ps: 'میاشتنۍ تادیه',
+  },
+  annualLabel: {
+    fa: 'پرداخت سالانه',
+    en: 'Annual Billing',
+    ps: 'کلنۍ تادیه',
+  },
+  annualSaveBadge: {
+    fa: '20٪ تخفیف',
+    en: '20% OFF',
+    ps: '20% تخفیف',
+  },
+  plans: [
+    {
+      id: 'plan-free',
+      key: 'free',
+      name: { fa: 'شروع رایگان', en: 'Starter Free', ps: 'وړیا پیل' },
+      tagline: {
+        fa: 'مناسب برای استفاده شخصی و آزمایش امکانات',
+        en: 'Great for personal use and getting started',
+        ps: 'د شخصي کارونې او پیل لپاره غوره',
+      },
+      badge: { fa: 'رایگان همیشگی', en: 'Free Forever', ps: 'تل وړیا' },
+      monthlyPrice: 0,
+      annualPrice: 0,
+      currency: { fa: 'افغانی', en: 'AFN', ps: 'افغانۍ' },
+      periodMonthlyLabel: { fa: '/ همیشه رایگان', en: '/ forever', ps: '/ تل وړیا' },
+      periodAnnualLabel: { fa: '/ همیشه رایگان', en: '/ forever', ps: '/ تل وړیا' },
+      ctaText: { fa: 'شروع رایگان', en: 'Start Free', ps: 'وړیا پیل کړئ' },
+      ctaLink: '/register',
+      isPopular: false,
+      isActive: true,
+      features: [
+        { fa: '1 کارت دیجیتال هوشمند فعال', en: '1 Active Smart Digital Card', ps: '1 فعال هوښیار ډیجیټل کارت' },
+        { fa: 'لینک‌های اجتماعی و ذخیره تماس (vCard)', en: 'Social Links & Save Contact (vCard)', ps: 'ټولنیزې شبکې او د اړیکې خوندي کول' },
+        { fa: 'آمار بازدید لحظه‌ای', en: 'Real-Time View Counter', ps: 'ژوندۍ د لیدنو شمېرنه' },
+        { fa: 'کیوآر کد اختصاصی برای کارت', en: 'Custom QR Code for Profile', ps: 'د پروفایل ځانګړی QR کوډ' },
+      ],
+    },
+    {
+      id: 'plan-pro',
+      key: 'pro',
+      name: { fa: 'حرفه‌ای (PRO)', en: 'Professional (PRO)', ps: 'مسلکی (PRO)' },
+      tagline: {
+        fa: 'بهترین انتخاب برای متخصصان، فروشندگان و مدیران',
+        en: 'Best choice for professionals, creators & merchants',
+        ps: 'د مسلکی کسانو، پلورونکو او مدیرانو لپاره غوره انتخاب',
+      },
+      badge: { fa: 'پرفروش‌ترین', en: 'Most Popular', ps: 'تر ټولو مشهور' },
+      monthlyPrice: 590,
+      annualPrice: 470,
+      currency: { fa: 'افغانی', en: 'AFN', ps: 'افغانۍ' },
+      periodMonthlyLabel: { fa: '/ ماهانه', en: '/ mo', ps: '/ میاشتنی' },
+      periodAnnualLabel: { fa: '/ ماهانه (سالانه)', en: '/ mo (annual)', ps: '/ میاشتنی (کلنی)' },
+      ctaText: { fa: 'ارتقا به نسخه حرفه‌ای', en: 'Upgrade to Pro', ps: 'PRO ته لوړول' },
+      ctaLink: '/register?plan=pro',
+      isPopular: true,
+      isActive: true,
+      features: [
+        { fa: 'ایجاد تا 10 کارت و پروفایل مجزا', en: 'Up to 10 Distinct Smart Cards', ps: 'تر 10 بېلابېل هوښیار کارتونه' },
+        { fa: 'حذف کامل لوگو و برندینگ آریا لینک', en: '100% Whitelabel (No Watermark)', ps: 'بشپړ وایټ لیبل پرته له نښې' },
+        { fa: 'فروشگاه آنلاین و دریافت سفارش با حساب‌پی', en: 'Online Store & HesabPay Checkout', ps: 'آنلاین پلورنځی او حساب‌پي تادیه' },
+        { fa: 'نشان تایید هویت آبی (Blue Tick)', en: 'Official Blue Verification Badge', ps: 'د هویت رسمي آبي نښه' },
+        { fa: 'فرم تماس CRM و ارسال فوری به تلگرام', en: 'Mini CRM & Instant Telegram Alerts', ps: 'د اړیکو CRM او سمدستي ټیلیګرام خبرتیاوې' },
+      ],
+    },
+    {
+      id: 'plan-enterprise',
+      key: 'enterprise',
+      name: { fa: 'سازمانی و شرکت‌ها (B2B)', en: 'Enterprise & Teams', ps: 'سازماني او شرکتونه' },
+      tagline: {
+        fa: 'مدیریت متمرکز تیم فروش و کارمندان همراه با کارت‌های NFC',
+        en: 'Centralized team identity & physical NFC fleet management',
+        ps: 'د ټیم او کارکوونکو مرکزي مدیریت او NFC کارتونه',
+      },
+      badge: { fa: 'ویژه سازمان‌ها', en: 'For Teams', ps: 'د شرکتونو لپاره' },
+      monthlyPrice: 2490,
+      annualPrice: 1990,
+      currency: { fa: 'افغانی', en: 'AFN', ps: 'افغانۍ' },
+      periodMonthlyLabel: { fa: '/ ماهانه', en: '/ mo', ps: '/ میاشتنی' },
+      periodAnnualLabel: { fa: '/ ماهانه (سالانه)', en: '/ mo (annual)', ps: '/ میاشتنی (کلنی)' },
+      ctaText: { fa: 'مشاوره و سفارش سازمانی', en: 'Contact for Team Setup', ps: 'د سازماني امر لپاره اړیکه' },
+      ctaLink: '/contact',
+      isPopular: false,
+      isActive: true,
+      features: [
+        { fa: 'پنل مدیریت مدیران و کارمندان بدون محدودیت', en: 'Centralized Organization Dashboard', ps: 'د شرکت مرکزي اداري ډشبورډ' },
+        { fa: 'دامنه اختصاصی برند (card.company.com)', en: 'Custom Domain Support', ps: 'د شرکت ځانګړی ډومین' },
+        { fa: 'طراحی و چاپ اختصاصی کارت‌های NFC فلزی و چوبی', en: 'Custom Branded Metal & Wood NFC Cards', ps: 'د فلزي او لرګیو NFC کارتونو ځانګړې چاپ' },
+        { fa: 'پشتیبانی اختصاصی و قرارداد رسمی شرکتی', en: 'Dedicated Account & SLA Support', ps: 'ځانګړې تخنیکي ملاتړ' },
+      ],
+    },
+  ],
+};
+
+export const DEFAULT_FEATURES_CONTENT: ISiteContentFeatures = {
+  badge: {
+    fa: 'اکوسیستم ماژولار',
+    en: 'Modular Ecosystem',
+    ps: 'ماډولر ایکوسیستم',
+  },
+  title: {
+    fa: 'فراتر از یک کارت ویزیت ساده',
+    en: 'Far Beyond a Standard Business Card',
+    ps: 'له عادي سوداګریز کارت څخه خورا پورته',
+  },
+  subtitle: {
+    fa: 'تمامی ابزارهایی که برای معرفی حرفه‌ای، جذب مشتری و فروش آنلاین نیاز دارید در یک پلتفرم یکپارچه شده‌اند.',
+    en: 'Everything you need for professional branding, lead capture, and online sales in one unified platform.',
+    ps: 'ټول هغه وسایل چې تاسو یې د مسلکي معرفي، پیرودونکو جذب او آنلاین پلور لپاره اړتیا لرئ په یو ځای کې.',
+  },
+  items: [
+    {
+      id: 'feat-1',
+      key: 'qr',
+      badge: { fa: 'پخش آنی', en: 'Instant Share', ps: 'فوري شریکول' },
+      title: { fa: 'کیوآر کد پویا و اتصال به تمام شبکه‌ها', en: 'Dynamic QR & Unified Links', ps: 'متحرک QR کوډ او ټولنیز لینکونه' },
+      desc: {
+        fa: 'لینک اختصاصی، کیوآر کد، واتساپ مستقیم و ذخیره شماره تماس در گوشی مخاطب با یک لمس.',
+        en: 'Share your custom link, dynamic QR code, direct WhatsApp, and one-tap vCard contact saving.',
+        ps: 'خپل ځانګړی لینک، متحرک QR کوډ، مستقیم واټساپ او په یوه کلیک کې د اړیکې خوندي کول شریک کړئ.',
+      },
+    },
+    {
+      id: 'feat-2',
+      key: 'analytics',
+      badge: { fa: 'تحلیل داده', en: 'Live Data', ps: 'ژوندی تحلیل' },
+      title: { fa: 'آمار زنده و ردیابی کلیک‌ها', en: 'Real-Time Views & CTR Analytics', ps: 'ژوندۍ لیدنې او کلیک احصایه' },
+      desc: {
+        fa: 'تعداد بازدیدهای روزانه پروفایل، نرخ کلیک بالای لینک‌ها و علاقه‌مندی مشتریان را دقیق رصد کنید.',
+        en: 'Track daily profile visits, link click-through rates, and top customer engagement insights.',
+        ps: 'د ورځنیو لیدنو شمېر، د لینکونو کلیک کچه او د پیرودونکو لیوالتیا دقیق وڅارئ.',
+      },
+    },
+    {
+      id: 'feat-3',
+      key: 'crm',
+      badge: { fa: 'مدیریت مشتری', en: 'Lead Capture', ps: 'پیرودونکي مدیریت' },
+      title: { fa: 'فرم CRM و اطلاع‌رسانی تلگرام', en: 'Mini CRM & Instant Telegram Bot', ps: 'CRM فورم او ټیلیګرام خبرتیا' },
+      desc: {
+        fa: 'پیام‌ها و شماره تماس مشتریان را دریافت کرده و هم‌زمان نوتیفیکیشن فوری در تلگرام بگیرید.',
+        en: 'Collect visitor leads directly and receive instant notifications straight inside Telegram.',
+        ps: 'د پیرودونکو پیغامونه او د اړیکې شمېرې ترلاسه کړئ او سمدستي په ټیلیګرام کې خبرتیا واخلئ.',
+      },
+    },
+    {
+      id: 'feat-4',
+      key: 'ecommerce',
+      badge: { fa: 'فروش مستقیم', en: 'Commerce', ps: 'مستقیم پلور' },
+      title: { fa: 'فروشگاه کوچک و پرداخت داخلی', en: 'Mini Store & Local Checkout', ps: 'کوچنی پلورنځی او سیمه‌ییزه تادیه' },
+      desc: {
+        fa: 'محصولات و خدمات مشاوره خود را به نمایش بگذارید و سفارش‌ها را با حساب‌پی یا بانکی تسویه کنید.',
+        en: 'Showcase products or consultation services and accept orders seamlessly with HesabPay or bank transfer.',
+        ps: 'خپل محصولات او مشورې نندارې ته وړاندې کړئ او د حساب‌پي یا بانکي لارې تادیات ترلاسه کړئ.',
+      },
+    },
+    {
+      id: 'feat-5',
+      key: 'kyc',
+      badge: { fa: 'اعتمادسازی', en: 'Verified Trust', ps: 'باور او تایید' },
+      title: { fa: 'راستی‌آزمایی هویت و نشان آبی', en: 'Identity Verification & Blue Tick', ps: 'د هویت تایید او آبي نښه' },
+      desc: {
+        fa: 'با تایید تذکره و مدارک، نشان آبی رسمی اعتماد را در بالای کارت ویزیت دیجیتال خود دریافت کنید.',
+        en: 'Verify your identity documents to earn the official Blue Badge on your digital profile.',
+        ps: 'د تذکرې او اسنادو په تایید سره په خپل پروفایل رسمي آبي نښه ترلاسه کړئ.',
+      },
+    },
+  ],
+};
+
+export const DEFAULT_HOW_IT_WORKS_CONTENT: ISiteContentHowItWorks = {
+  badge: {
+    fa: 'ساده، مدرن و سریع',
+    en: 'Simple, Modern & Fast',
+    ps: 'اسانه، عصري او چټک',
+  },
+  title: {
+    fa: 'در 3 گام ساده کارت هوشمند خود را بسازید',
+    en: 'Create Your Smart Card in 3 Simple Steps',
+    ps: 'په 3 اسانه ګامونو کې خپل هوښیار کارت جوړ کړئ',
+  },
+  subtitle: {
+    fa: 'کمتر از 2 دقیقه زمان می‌برد تا کسب‌وکار یا صفحه شخصی خود را به دنیای فناوری NFC متصل کنید.',
+    en: 'It takes less than 2 minutes to connect your brand or personal identity to smart NFC technology.',
+    ps: 'ستاسو د سوداګرۍ یا شخصي پاڼې د NFC نړۍ سره نښلول له 2 دقیقو څخه لږ وخت نیسي.',
+  },
+  footerNote: {
+    fa: 'انجام بدون نیاز به دانش فنی',
+    en: 'No technical skills required',
+    ps: 'تخنیکي پوهې ته اړتیا نشته',
+  },
+  steps: [
+    {
+      id: 'step-1',
+      num: '01',
+      color: 'from-cyan-500 to-blue-600',
+      badge: { fa: 'گام اول', en: 'Step 01', ps: 'لومړی ګام' },
+      title: {
+        fa: 'ثبت‌نام و انتخاب نام اختصاصی',
+        en: 'Sign Up & Claim Your Handle',
+        ps: 'نوم‌لیکنه او ځانګړی نوم انتخاب',
+      },
+      desc: {
+        fa: 'حساب کاربری خود را در کمتر از 1 دقیقه رایگان ایجاد کنید و آدرس یکتا مانند aryal.ink/ali را برای برند شخصی یا تجاری خود رزرو نمایید.',
+        en: 'Create your free account in under 60 seconds and reserve a unique URL like aryal.ink/ali for your brand.',
+        ps: 'له 1 دقیقې کم وخت کې وړیا حساب جوړ کړئ او خپل برانډ لپاره ځانګړی لینک لکه aryal.ink/ali خوندي کړئ.',
+      },
+    },
+    {
+      id: 'step-2',
+      num: '02',
+      color: 'from-blue-600 to-indigo-600',
+      badge: { fa: 'گام دوم', en: 'Step 02', ps: 'دویم ګام' },
+      title: {
+        fa: 'شخصی‌سازی با ویرایشگر زنده',
+        en: 'Customize With Live Editor',
+        ps: 'د ژوندي ایډیټر سره تنظیمول',
+      },
+      desc: {
+        fa: 'عکس پروفایل، تم‌های لوکس نئون، شبکه‌های اجتماعی، کاتالوگ‌های دانلودی و محصولات فروشگاهی را در پیش‌نمایش زنده موبایل بچینید.',
+        en: 'Arrange your avatar, luxury themes, social channels, downloadable PDFs, and store items in real-time preview.',
+        ps: 'د پروفایل عکس، عصري بڼې، ټولنیز لینکونه، کټالوګونه او محصولات په ژوندۍ بڼه ترتیب کړئ.',
+      },
+    },
+    {
+      id: 'step-3',
+      num: '03',
+      color: 'from-purple-600 to-pink-600',
+      badge: { fa: 'گام سوم', en: 'Step 03', ps: 'درېیم ګام' },
+      title: {
+        fa: 'اشتراک‌گذاری هوشمند و فروش',
+        en: 'Share Smartly & Grow Sales',
+        ps: 'هوښیار شریکول او پلور',
+      },
+      desc: {
+        fa: 'لینک را در بیو اینستاگرام قرار دهید یا با کارت فیزیکی هوشمند NFC در جلسات، کنفرانس‌ها و نمایشگاه‌ها تنها با یک تماس اطلاعات را انتقال دهید.',
+        en: 'Place your link in social bios or tap your physical NFC card at meetings and events to share everything instantly.',
+        ps: 'خپل لینک په ټولنیزو شبکو کې کېږدئ یا د NFC فزیکي کارت په مرسته په غونډو کې په یوه لمس خپل معلومات شریک کړئ.',
+      },
+    },
+  ],
+};
+
+export const DEFAULT_FINAL_CTA_CONTENT: ISiteContentFinalCta = {
+  badge: {
+    fa: 'پیوستن به نسل جدید کارت‌های هوشمند',
+    en: 'Join the Next Generation of Smart Networking',
+    ps: 'د هوښیارو کارتونو نوي نسل سره یوځای شئ',
+  },
+  title: {
+    fa: 'آماده‌اید ارتباطات کاری خود را متحول کنید؟',
+    en: 'Ready to Transform How People Connect With You?',
+    ps: 'ایا چمتو یاست چې خپلې سوداګریزې اړیکې بدلې کړئ؟',
+  },
+  subtitle: {
+    fa: 'همین حالا به صورت رایگان ثبت‌نام کنید، مینی‌وب‌سایت اختصاصی خود را بسازید یا کارت فیزیکی لوکس NFC را با ارسال رایگان سفارش دهید.',
+    en: 'Sign up free right now, build your sleek digital mini-site, or order your luxury physical NFC card with fast delivery.',
+    ps: 'همدا اوس په وړیا توګه نوم‌لیکنه وکړئ، خپل ډیجیټل پروفایل جوړ کړئ یا فزیکي NFC کارت فرمایش ورکړئ.',
+  },
+  primaryCtaText: {
+    fa: 'شروع رایگان و ساخت کارت',
+    en: 'Start Free & Build Card',
+    ps: 'وړیا پیل او کارت جوړول',
+  },
+  primaryCtaLink: '/register',
+  secondaryCtaText: {
+    fa: 'سفارش سازمانی و شرکتی',
+    en: 'Enterprise & Team Order',
+    ps: 'سازماني او شرکتي فرمایش',
+  },
+  secondaryCtaLink: '/services',
+};
+
+export const DEFAULT_LEGAL_CONTENT: ISiteContentLegal = {
+  termsBadge: {
+    fa: 'مقررات استفاده از پلتفرم',
+    en: 'Platform Terms & Conditions',
+    ps: 'د کارونې اصول او شرایط',
+  },
+  termsTitle: {
+    fa: 'قوانین و مقررات استفاده از آریا لینک',
+    en: 'Arya Link Terms of Service',
+    ps: 'د آریا لینک د خدماتو اصول او مقررات',
+  },
+  termsUpdatedAt: {
+    fa: 'آخرین به‌روزرسانی: سنبله 1404',
+    en: 'Last Updated: September 2025',
+    ps: 'وروستی تازه کول: وږی 1404',
+  },
+  termsIntro: {
+    fa: 'استفاده از وب‌سایت، ابزارهای دیجیتال، ربات‌های تلگرام و کارت‌های فیزیکی هوشمند آریا لینک به معنای پذیرش کامل قوانین و مقررات ذیل می‌باشد.',
+    en: 'By accessing or using the Arya Link platform, digital cards, Telegram ecosystem, or NFC hardware, you agree to comply with the following Terms of Service.',
+    ps: 'د آریا لینک ویب‌پاڼې، ډیجیټل وسایلو، ټیلیګرام بوټونو او هوښیارو NFC کارتونو کارول د لاندې اصولو بشپړ منل دي.',
+  },
+  termsSections: [
+    {
+      id: 'term-1',
+      title: {
+        fa: '1. ثبت حساب کاربری و مسئولیت محتوا',
+        en: '1. Account Registration & User Content',
+        ps: '1. د حساب جوړول او د منځپانګې مسؤلیت',
+      },
+      content: {
+        fa: 'کاربران متعهد هستند هنگام ثبت‌نام و راستی‌آزمایی هویت (KYC) معلومات دقیق و واقعی ارائه دهند. مسئولیت کامل لینک‌ها، تصاویر، محصولات و معلومات منتشرشده در پروفایل بر عهده صاحب حساب است.',
+        en: 'Users must provide accurate registration and KYC details. You are solely responsible for all links, media, and product listings published on your public profile.',
+        ps: 'کاروونکي مکلف دي د نوم‌لیکنې او هویت تایید پر مهال دقیق معلومات وړاندې کړي. په پروفایل کې د خپرو شویو لینکونو او انځورونو مسؤلیت د حساب پر مالک دی.',
+      },
+    },
+    {
+      id: 'term-2',
+      title: {
+        fa: '2. سفارشات کارت فیزیکی NFC و گارانتی',
+        en: '2. Physical NFC Orders & Warranty',
+        ps: '2. د فزیکي NFC کارتونو فرمایش او تضمین',
+      },
+      content: {
+        fa: 'تمامی کارت‌های هوشمند PVC، فلزی و چوبی قبل از ارسال از نظر عملکرد تراشه NFC بررسی می‌شوند. زمان چاپ و ارسال در کابل 24 تا 48 ساعت و در سایر ولایات 3 تا 5 روز کاری است.',
+        en: 'Every PVC, metal, and wood NFC card is tested before dispatch. Production and delivery take 24–48 hours inside Kabul and 3–5 business days across provinces.',
+        ps: 'ټول پي‌وي‌سي، فلزي او لرګین NFC کارتونه تر لېږلو مخکې ازمایل کېږي. په کابل کې له 24 تر 48 ساعتونو او نورو ولایتونو کې له 3 تر 5 کاري ورځو وخت نیسي.',
+      },
+    },
+    {
+      id: 'term-3',
+      title: {
+        fa: '3. اشتراک‌های حرفه‌ای و پرداخت‌ها',
+        en: '3. Pro Subscriptions & Payments',
+        ps: '3. مسلکي ګډون او تادیات',
+      },
+      content: {
+        fa: 'هزینه پلن‌های Pro و سازمانی پس از تایید رسید یا درگاه حساب‌پی فعال می‌گردد. لغو یا تغییر پلن در هر زمان از پنل کاربری قابل درخواست است.',
+        en: 'Pro and Enterprise subscriptions activate upon payment verification via HesabPay or bank transfer. Plan adjustments can be managed anytime in your dashboard.',
+        ps: 'د Pro او سازماني پلانونو فیس د حساب‌پي یا بانکي رسید له تایید وروسته فعالېږي. د پلان بدلول هر وخت له ډشبورډ څخه شونې دي.',
+      },
+    },
+  ],
+  privacyBadge: {
+    fa: 'حفاظت از داده‌های شما',
+    en: 'Data Protection & Security',
+    ps: 'ستاسو د معلوماتو خوندیتوب',
+  },
+  privacyTitle: {
+    fa: 'سیاست حفظ حریم خصوصی آریا لینک',
+    en: 'Arya Link Privacy Policy',
+    ps: 'د آریا لینک د محرمیت پالیسي',
+  },
+  privacyUpdatedAt: {
+    fa: 'آخرین به‌روزرسانی: سنبله 1404',
+    en: 'Last Updated: September 2025',
+    ps: 'وروستی تازه کول: وږی 1404',
+  },
+  privacyIntro: {
+    fa: 'حفظ امنیت معلومات شخصی، مدارک راستی‌آزمایی و داده‌های مشتریان شما بالاترین اولویت تخنیکی پلتفرم آریا لینک است.',
+    en: 'Safeguarding your personal information, KYC verification files, and lead CRM data is the top technical priority at Arya Link.',
+    ps: 'ستاسو د شخصي معلوماتو، د هویت تایید اسنادو او د پیرودونکو معلوماتو خوندیتوب زموږ لومړنی لومړیتوب دی.',
+  },
+  privacySections: [
+    {
+      id: 'priv-1',
+      title: {
+        fa: '1. جمع‌آوری و رمزنگاری معلومات',
+        en: '1. Data Collection & Encryption',
+        ps: '1. د معلوماتو راټولول او کوډګذاري',
+      },
+      content: {
+        fa: 'ما تنها معلومات ضروری برای ساخت پروفایل دیجیتال، ارسال سفارشات فیزیکی و اطلاع‌رسانی تلگرامی را ذخیره می‌کنیم. تمام گذرواژه‌ها و توکن‌های امنیتی با الگوریتم‌های معیاری رمزنگاری می‌شوند.',
+        en: 'We collect only the information required to operate your digital profile, fulfill physical NFC deliveries, and send Telegram alerts. Credentials and tokens are securely hashed/encrypted.',
+        ps: 'موږ یوازې ستاسو د پروفایل، فزیکي کارتونو لېږلو او ټیلیګرام خبرتیاوو لپاره اړین معلومات ساتو. ټول پاسورډونه او امنیتي نښانې په معیاري توګه کوډ کېږي.',
+      },
+    },
+    {
+      id: 'priv-2',
+      title: {
+        fa: '2. عدم فروش معلومات به اشخاص ثالث',
+        en: '2. Zero Third-Party Data Selling',
+        ps: '2. درېیم اړخ ته د معلوماتو نه پلورل',
+      },
+      content: {
+        fa: 'آریا لینک هرگز معلومات تماس، پیام‌های فرم CRM یا مدارک تذکره کاربران را به شرکت‌های تبلیغاتی یا اشخاص ثالث نمی‌فروشد یا واگذار نمی‌کند.',
+        en: 'Arya Link never sells, rents, or trades user contact lists, CRM lead submissions, or KYC identity documents to third parties.',
+        ps: 'آریا لینک هېڅکله د کاروونکو اړیکې، د CRM پیغامونه یا د تذکرې اسناد درېیمو اړخونو یا اعلاناتي شرکتونو ته نه پلوري.',
+      },
+    },
+  ],
+};
+
+export const DEFAULT_CONTACT_US_CONTENT: ISiteContentContactUs = {
+  badge: {
+    fa: 'پشتیبانی و ارتباط مستقیم',
+    en: 'Support & Direct Contact',
+    ps: 'ملاتړ او مستقیمه اړیکه',
+  },
+  title: {
+    fa: 'با تیم آریا لینک در تماس باشید',
+    en: 'Get in Touch With Arya Link',
+    ps: 'د آریا لینک له ټیم سره اړیکه ونیسئ',
+  },
+  subtitle: {
+    fa: 'برای مشاوره سفارشات سازمانی، همکاری نمایندگی ولایات و یا پیگیری سفارشات کارت هوشمند با ما ارتباط بگیرید.',
+    en: 'Reach out for enterprise custom orders, provincial partnership inquiries, or technical support.',
+    ps: 'د سازماني فرمایشونو، ولایتي استازولۍ یا تخنیکي ملاتړ لپاره له موږ سره اړیکه ونیسئ.',
+  },
+  officeTitle: {
+    fa: 'دفتر مرکزی کابل و مرکز چاپ NFC',
+    en: 'Kabul Headquarters & NFC Studio',
+    ps: 'د کابل مرکزي دفتر او NFC سټوډیو',
+  },
+  officeAddress: {
+    fa: 'شهرنو، سرک چهارراهی صدارت، مارکت تجارتی آریا، منزل سوم، کابل، افغانستان',
+    en: 'Shahr-e-Naw, Sadarat Square Street, Arya Commercial Center, 3rd Floor, Kabul, Afghanistan',
+    ps: 'شهرنو، د صدارت څلورلارې سړک، آریا سوداګریز مارکیټ، درېیم پوړ، کابل، افغانستان',
+  },
+  workingHoursLabel: {
+    fa: 'ساعات کاری پشتیبانی',
+    en: 'Support Hours',
+    ps: 'د کار ساعتونه',
+  },
+  workingHours: {
+    fa: 'شنبه تا پنج‌شنبه: 8:30 صبح الی 5:30 عصر',
+    en: 'Saturday – Thursday: 8:30 AM to 5:30 PM (AFT)',
+    ps: 'شنبه تر پنج‌شنبې: د سهار 8:30 څخه د ماښام 5:30 پورې',
+  },
+  supportEmail: 'support@aryal.ink',
+  supportPhone: '+93 700 123 456',
+  whatsappNumber: '+93700123456',
+  telegramHandle: '@aryalink_support',
+  mapEmbedUrl: '',
+};
+
 export interface ISiteContentDocument extends Document {
   hero: ISiteContentHero;
   nfcConcept: ISiteContentNfcConcept;
@@ -142,6 +693,12 @@ export interface ISiteContentDocument extends Document {
   partners?: ISiteContentPartner[];
   blogCms?: ISiteContentBlogCms;
   seo?: ISiteContentSeo;
+  pricing?: ISiteContentPricing;
+  features?: ISiteContentFeatures;
+  howItWorks?: ISiteContentHowItWorks;
+  finalCta?: ISiteContentFinalCta;
+  legal?: ISiteContentLegal;
+  contactUs?: ISiteContentContactUs;
   faq: ISiteContentFaq[];
   footer: ISiteContentFooter;
   updatedBy?: string;
@@ -699,6 +1256,30 @@ const SiteContentSchema = new Schema<ISiteContentDocument>(
     faq: {
       type: Schema.Types.Mixed,
       default: DEFAULT_SITE_CONTENT.faq,
+    },
+    pricing: {
+      type: Schema.Types.Mixed,
+      default: DEFAULT_PRICING_CONTENT,
+    },
+    features: {
+      type: Schema.Types.Mixed,
+      default: DEFAULT_FEATURES_CONTENT,
+    },
+    howItWorks: {
+      type: Schema.Types.Mixed,
+      default: DEFAULT_HOW_IT_WORKS_CONTENT,
+    },
+    finalCta: {
+      type: Schema.Types.Mixed,
+      default: DEFAULT_FINAL_CTA_CONTENT,
+    },
+    legal: {
+      type: Schema.Types.Mixed,
+      default: DEFAULT_LEGAL_CONTENT,
+    },
+    contactUs: {
+      type: Schema.Types.Mixed,
+      default: DEFAULT_CONTACT_US_CONTENT,
     },
     footer: {
       type: Schema.Types.Mixed,

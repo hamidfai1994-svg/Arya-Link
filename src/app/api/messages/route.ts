@@ -10,6 +10,9 @@ import { User } from '@/models/User.model';
 import { sendUserLeadAlert } from '@/lib/telegram';
 import { createPlatformNotification } from '@/lib/notifications';
 import { getLocalizedText } from '@/lib/i18n/multilingual';
+import { getRequestLocale } from '@/lib/i18n/server-locale';
+import { tServer } from '@/lib/i18n/translations';
+import { getContactMessageSchema } from '@/lib/validations/forms';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,11 +23,12 @@ function isAdmin(session: any): boolean {
 
 // GET: Admin messages list
 export async function GET(req: NextRequest) {
+  const locale = getRequestLocale(req);
   try {
     const session = await getServerSession(authOptions);
     if (!session || !isAdmin(session)) {
       return NextResponse.json(
-        { success: false, message: 'دسترسی غیرمجاز به لیست پیام‌ها.' },
+        { success: false, message: tServer(locale, 'toast.forbidden') },
         { status: 403 }
       );
     }
@@ -60,14 +64,24 @@ export async function GET(req: NextRequest) {
 
 // POST: Public submission endpoint for contact form / messages
 export async function POST(req: NextRequest) {
+  let locale = getRequestLocale(req);
   try {
     await connectToDatabase();
     const body = await req.json();
+    locale = getRequestLocale(req, body?.locale || body?.language);
     const { name, email, phone, message, profileAlias, organizationId } = body;
 
-    if (!message || typeof message !== 'string' || !message.trim()) {
+    const schema = getContactMessageSchema(locale);
+    const parsed = schema.safeParse({
+      senderName: typeof name === 'string' && name.trim() ? name.trim() : 'Visitor',
+      senderEmail: typeof email === 'string' ? email : '',
+      senderPhone: typeof phone === 'string' ? phone : '',
+      messageText: typeof message === 'string' ? message : '',
+    });
+
+    if (!parsed.success) {
       return NextResponse.json(
-        { success: false, message: 'متن پیام الزامی است.' },
+        { success: false, message: parsed.error.issues[0]?.message || tServer(locale, 'validation.message_required') },
         { status: 400 }
       );
     }
@@ -193,7 +207,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         success: true,
-        message: 'پیام شما با موفقیت ارسال شد.',
+        message: tServer(locale, 'toast.message_sent'),
         data: savedMessage,
       },
       { status: 201 }
@@ -203,7 +217,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        message: 'خطا در ثبت پیام. لطفاً مجدداً تلاش نمایید.',
+        message: tServer(locale, 'toast.message_error'),
         error: error?.message || 'Internal Server Error',
       },
       { status: 500 }
@@ -213,10 +227,11 @@ export async function POST(req: NextRequest) {
 
 // PATCH: Mark message as read/unread
 export async function PATCH(req: NextRequest) {
+  const locale = getRequestLocale(req);
   try {
     const session = await getServerSession(authOptions);
     if (!session || !isAdmin(session)) {
-      return NextResponse.json({ success: false, message: 'دسترسی غیرمجاز.' }, { status: 403 });
+      return NextResponse.json({ success: false, message: tServer(locale, 'toast.forbidden') }, { status: 403 });
     }
 
     await connectToDatabase();
@@ -224,7 +239,7 @@ export async function PATCH(req: NextRequest) {
     const { id, isRead } = body;
 
     if (!id) {
-      return NextResponse.json({ success: false, message: 'آی دی پیام الزامی است.' }, { status: 400 });
+      return NextResponse.json({ success: false, message: tServer(locale, 'validation.required') }, { status: 400 });
     }
 
     const updated = await Message.findByIdAndUpdate(
@@ -236,7 +251,7 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ success: true, data: updated });
   } catch (error: any) {
     console.error('Error updating message in /api/messages:', error);
-    return NextResponse.json({ success: false, message: 'خطا در به‌روزرسانی وضعیت پیام.' }, { status: 500 });
+    return NextResponse.json({ success: false, message: tServer(locale, 'toast.save_error') }, { status: 500 });
   }
 }
 

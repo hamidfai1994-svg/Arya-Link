@@ -37,7 +37,7 @@ interface Post {
 }
 
 export default function BlogListingPage() {
-  const { language, dir } = useLanguage();
+  const { language, dir, t } = useLanguage();
   const [posts, setPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -99,7 +99,7 @@ export default function BlogListingPage() {
           <div className="pt-4 max-w-md mx-auto relative">
             <Input
               type="text"
-              placeholder="جستجو در بین مقالات و آموزش‌ها..."
+              placeholder={t('pages.blog.search_placeholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="h-12 rounded-2xl bg-card border-border pr-10 text-xs shadow-sm"
@@ -118,13 +118,12 @@ export default function BlogListingPage() {
               key={cat}
               type="button"
               onClick={() => setSelectedCategory(cat)}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
-                selectedCategory === cat
-                  ? 'bg-cyan-500 text-white shadow-md shadow-cyan-500/20'
-                  : 'bg-card border border-border text-muted-foreground hover:text-foreground'
-              }`}
+              className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${selectedCategory === cat
+                ? 'bg-cyan-500 text-white shadow-md shadow-cyan-500/20'
+                : 'bg-card border border-border text-muted-foreground hover:text-foreground'
+                }`}
             >
-              {cat === 'all' ? 'همه مقالات' : cat}
+              {cat === 'all' ? t('pages.blog.all_categories') : cat}
             </button>
           ))}
         </div>
@@ -133,22 +132,25 @@ export default function BlogListingPage() {
         {isLoading ? (
           <div className="py-24 text-center flex flex-col items-center justify-center gap-3">
             <Loader2 className="w-8 h-8 animate-spin text-cyan-500" />
-            <span className="text-xs text-muted-foreground">در حال بارگذاری مقالات...</span>
+            <span className="text-xs text-muted-foreground">{t('pages.blog.loading')}</span>
           </div>
         ) : filteredPosts.length === 0 ? (
           <div className="py-20 text-center space-y-2">
             <BookOpen className="w-12 h-12 text-muted-foreground mx-auto" />
-            <h3 className="text-base font-bold text-foreground">مقاله‌ای یافت نشد</h3>
-            <p className="text-xs text-muted-foreground">با عبارت دیگری جستجو کنید.</p>
+            <h3 className="text-base font-bold text-foreground">{t('pages.blog.empty_title')}</h3>
+            <p className="text-xs text-muted-foreground">{t('pages.blog.empty_desc')}</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredPosts.map((post) => {
-              const dateStr = new Date(post.publishedAt).toLocaleDateString('fa-IR', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-              });
+              const dateStr = new Date(post.publishedAt).toLocaleDateString(
+                language === 'en' ? 'en-US' : 'fa-IR',
+                {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                }
+              );
 
               return (
                 <Card
@@ -178,7 +180,7 @@ export default function BlogListingPage() {
                         <span>•</span>
                         <span className="flex items-center gap-1">
                           <Clock className="w-3 h-3 text-blue-500" />
-                          <span>{post.readTimeMinutes} دقیقه مطالعه</span>
+                          <span>{post.readTimeMinutes} {t('pages.blog.read_time')}</span>
                         </span>
                       </div>
 
@@ -197,8 +199,8 @@ export default function BlogListingPage() {
                       href={`/blog/${post.slug}`}
                       className="inline-flex items-center gap-1 text-xs font-bold text-cyan-500 hover:text-cyan-400 group/link"
                     >
-                      <span>مطالعه کامل مقاله</span>
-                      <ArrowLeft className="w-3.5 h-3.5 group-hover/link:-translate-x-1 transition-transform" />
+                      <span>{t('pages.blog.read_full')}</span>
+                      <ArrowLeft className="w-3.5 h-3.5 ltr:rotate-180 group-hover/link:-translate-x-1 ltr:group-hover/link:translate-x-1 transition-transform" />
                     </Link>
                   </div>
                 </Card>

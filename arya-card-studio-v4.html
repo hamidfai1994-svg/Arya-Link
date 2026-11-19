@@ -1,0 +1,2364 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>آریا لینک | استودیوی طراحی و سفارش کارت NFC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@400;600;800&family=Vazirmatn:wght@300;400;500;700;900&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+
+<style>
+  :root {
+    --stage-bg: #080d19;
+    --stage-accent: #eeb61e;
+    --panel-border: rgba(255, 255, 255, 0.1);
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    --input-bg: rgba(255, 255, 255, 0.05);
+    --ease: cubic-bezier(0.22, 0.8, 0.24, 1);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    font-family: "Vazirmatn", "Inter", sans-serif;
+    background: var(--stage-bg);
+    color: var(--text-main);
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    transition: background-color 0.55s var(--ease);
+  }
+
+  button, input, select { font-family: inherit; }
+
+  /* هدر شناور */
+  .topbar {
+    position: fixed;
+    top: 0; inset-inline: 0;
+    z-index: 40;
+    height: 64px;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    pointer-events: none;
+  }
+  .topbar > * { pointer-events: auto; }
+
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 900;
+    font-size: 15.5px;
+    color: #fff;
+  }
+  .brand-badge {
+    width: 34px; height: 34px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    display: grid; place-items: center;
+    overflow: hidden;
+  }
+  .brand-badge img { width: 24px; height: 24px; object-fit: contain; }
+
+  .lang-switch {
+    display: inline-flex;
+    padding: 4px;
+    border-radius: 99px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    backdrop-filter: blur(12px);
+    gap: 2px;
+  }
+  .lang-switch button {
+    border: 0; background: transparent;
+    color: rgba(255, 255, 255, 0.72);
+    padding: 5px 12px; border-radius: 99px;
+    font-size: 12px; font-weight: 600; cursor: pointer;
+    transition: all 0.25s var(--ease);
+  }
+  .lang-switch button.active { background: #fff; color: #0f172a; }
+
+  /* ساختار دو ستونه استودیو */
+  .studio {
+    min-height: 100svh;
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    position: relative;
+  }
+
+  /* صحنه سه‌بعدی */
+  .stage {
+    position: sticky;
+    top: 0;
+    height: 100svh;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--stage-bg);
+    transition: background 0.5s ease;
+  }
+  #stageReveal { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
+
+  .rings {
+    position: absolute; left: 50%; top: 48%;
+    width: 1120px; height: 1120px; border-radius: 50%;
+    transform: translate(-50%, -50%); pointer-events: none; z-index: 2;
+    background: repeating-radial-gradient(circle, rgba(255,255,255,0.055) 0px, rgba(255,255,255,0.005) 36px, rgba(255,255,255,0.055) 72px);
+    mask-image: radial-gradient(circle, #000 0%, rgba(0,0,0,0.45) 35%, transparent 60%);
+    -webkit-mask-image: radial-gradient(circle, #000 0%, rgba(0,0,0,0.45) 35%, transparent 60%);
+  }
+
+  .stage-glow {
+    position: absolute; width: 480px; height: 480px; border-radius: 50%;
+    background: radial-gradient(circle, var(--stage-accent), transparent 68%);
+    opacity: 0.24; filter: blur(42px); pointer-events: none; z-index: 2;
+  }
+
+  .big-step-num {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -56%);
+    font-family: "Inter", sans-serif; font-weight: 900;
+    font-size: clamp(180px, 22vw, 310px); line-height: 1;
+    color: transparent; -webkit-text-stroke: 1.5px rgba(255, 255, 255, 0.13);
+    user-select: none; pointer-events: none; z-index: 2;
+  }
+
+  #cardCanvas { position: relative; z-index: 5; width: 100%; height: 100%; cursor: grab; touch-action: none; }
+  #cardCanvas:active { cursor: grabbing; }
+
+  .stage-hud {
+    position: absolute; bottom: 22px; left: 50%; transform: translateX(-50%);
+    z-index: 10; display: flex; align-items: center; gap: 6px;
+    padding: 5px 7px; border-radius: 99px;
+    background: rgba(10, 15, 28, 0.68);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    backdrop-filter: blur(14px); white-space: nowrap;
+  }
+  .hud-btn {
+    border: 0; background: rgba(255, 255, 255, 0.08); color: #fff;
+    padding: 7px 13px; border-radius: 99px; font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: all 0.22s var(--ease);
+  }
+  .hud-btn:hover { background: rgba(255, 255, 255, 0.18); }
+  .hud-btn.active { background: #fff; color: #0f172a; }
+  .hud-sep { width: 1px; height: 16px; background: rgba(255,255,255,0.16); margin: 0 2px; }
+  .hud-hint { font-size: 11px; color: rgba(255, 255, 255, 0.65); padding: 0 8px; }
+
+  /* پنل تنظیمات */
+  .configurator {
+    position: relative; z-index: 15;
+    padding: 74px 26px 28px;
+    display: flex; flex-direction: column; justify-content: flex-start;
+    background: rgba(8, 12, 20, 0.78);
+    backdrop-filter: blur(28px);
+    border-inline-start: 1px solid var(--panel-border);
+  }
+
+  .panel-inner {
+    width: 100%; max-width: 525px; margin: 0 auto;
+    display: flex; flex-direction: column; gap: 16px;
+  }
+
+  /* نوار ۴ مرحله‌ای */
+  .stepper {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px;
+    padding: 5px; border-radius: 15px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--panel-border);
+  }
+  .step-pill {
+    border: 0; background: transparent; color: var(--text-muted);
+    padding: 8px 5px; border-radius: 11px; font-size: 11.5px; font-weight: 600;
+    cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px;
+    transition: all 0.26s var(--ease);
+  }
+  .step-pill .num { font-family: "DM Mono", monospace; font-size: 10px; opacity: 0.65; }
+  .step-pill.active { background: #fff; color: #0f172a; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25); }
+  .step-pill.done:not(.active) { color: #38bdf8; }
+
+  .step-pane { display: none; flex-direction: column; gap: 13px; animation: paneIn 0.32s var(--ease); }
+  .step-pane.active { display: flex; }
+
+  @keyframes paneIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .step-title { font-size: 20px; font-weight: 900; line-height: 1.3; }
+  .step-sub { font-size: 12px; color: var(--text-muted); margin-top: -7px; line-height: 1.65; }
+
+  /* جعبه آپلود طرح آماده تمام‌صفحه */
+  .ready-upload-box {
+    border: 1.5px dashed rgba(56, 189, 248, 0.42);
+    background: rgba(56, 189, 248, 0.07);
+    border-radius: 14px;
+    padding: 11px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: all 0.25s ease;
+  }
+  .ready-upload-box.has-image {
+    border-style: solid;
+    border-color: rgba(52, 211, 153, 0.55);
+    background: rgba(16, 185, 129, 0.09);
+  }
+  .ready-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #e0f2fe;
+  }
+  .ready-sub {
+    font-size: 11px;
+    color: #94a3b8;
+    line-height: 1.5;
+  }
+  .ready-actions {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    flex-wrap: wrap;
+  }
+  .ready-btn {
+    flex: 1;
+    min-width: 150px;
+    height: 38px;
+    padding: 0 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(56, 189, 248, 0.4);
+    background: rgba(56, 189, 248, 0.16);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.2s;
+  }
+  .ready-btn:hover { background: rgba(56, 189, 248, 0.28); }
+  .fit-btn {
+    height: 38px;
+    padding: 0 11px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    display: none;
+  }
+  .fit-btn.show { display: inline-flex; align-items: center; }
+
+  /* غیرفعال‌سازی کنترل‌های ویرایشگر هنگام استفاده از طرح آماده */
+  .editor-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 13px;
+    transition: opacity 0.25s ease, filter 0.25s ease;
+  }
+  .editor-controls.is-disabled {
+    opacity: 0.28;
+    filter: grayscale(0.85);
+    pointer-events: none;
+    user-select: none;
+  }
+
+  /* فیلدها و ورودی‌ها */
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field label {
+    font-size: 11.5px; font-weight: 600; color: #cbd5e1;
+    display: flex; justify-content: space-between; align-items: center; gap: 6px;
+  }
+  .input-with-color { display: flex; align-items: center; gap: 6px; }
+  .input {
+    width: 100%; height: 40px; padding: 0 12px;
+    border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.12);
+    background: var(--input-bg); color: #fff; font-size: 13px; outline: none;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .input:focus { border-color: #38bdf8; background: rgba(255, 255, 255, 0.08); }
+  .input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+
+  .swatch-input {
+    width: 40px; height: 40px; flex: none;
+    border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.06);
+    padding: 4px; cursor: pointer;
+    display: grid; place-items: center;
+  }
+  .swatch-input input[type="color"] { width: 100%; height: 100%; border: 0; background: transparent; cursor: pointer; }
+
+  .prefix-wrap {
+    display: flex; align-items: center; direction: ltr;
+    border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.12);
+    background: var(--input-bg); overflow: hidden;
+  }
+  .prefix-wrap:focus-within { border-color: #38bdf8; }
+  .prefix-tag {
+    padding: 0 11px; height: 40px; display: grid; place-items: center;
+    font-family: "DM Mono", monospace; font-size: 12px; color: #38bdf8;
+    background: rgba(255, 255, 255, 0.05); border-right: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  .prefix-wrap input {
+    border: 0; background: transparent; color: #fff;
+    height: 40px; padding: 0 11px; width: 100%;
+    font-family: "DM Mono", monospace; font-size: 13px; outline: none;
+  }
+
+  /* بخش‌های دسته‌بندی‌شده */
+  .sub-box {
+    border: 1px solid var(--panel-border);
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 14px;
+    padding: 10px 12px;
+    display: flex; flex-direction: column; gap: 9px;
+  }
+  .sub-box-head {
+    font-size: 11.5px; font-weight: 700; color: #e2e8f0;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+
+  .badge-ctrl { display: flex; align-items: center; gap: 6px; }
+  .seg-mini {
+    flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px;
+    padding: 3px; border-radius: 10px; background: rgba(0, 0, 0, 0.28);
+  }
+  .seg-mini button {
+    border: 0; background: transparent; color: var(--text-muted);
+    padding: 6px 4px; border-radius: 7px; font-size: 11px; font-weight: 600; cursor: pointer;
+    transition: all 0.2s;
+  }
+  .seg-mini button.active { background: rgba(255, 255, 255, 0.15); color: #fff; }
+
+  .shape-strip { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
+  .shape-btn {
+    border: 1px solid var(--panel-border);
+    background: rgba(255, 255, 255, 0.03); color: var(--text-muted);
+    border-radius: 10px; padding: 6px 4px;
+    cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px;
+    font-size: 10px; font-weight: 600; transition: all 0.2s;
+  }
+  .shape-btn .ico { font-size: 14px; line-height: 1.1; }
+  .shape-btn.active { border-color: #38bdf8; background: rgba(56, 189, 248, 0.14); color: #fff; }
+
+  .color-chips-row { display: flex; flex-wrap: wrap; gap: 7px; }
+  .picker-pill {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 4px 9px; border-radius: 9px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--panel-border);
+    font-size: 11px; color: #e2e8f0; cursor: pointer;
+  }
+  .picker-pill input[type="color"] { width: 20px; height: 20px; border: 0; background: transparent; cursor: pointer; padding: 0; }
+  .picker-pill code { font-family: "DM Mono", monospace; font-size: 10.5px; color: #cbd5e1; }
+
+  /* کارت انتخاب جهت، طرح و جنس */
+  .orient-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .orient-btn {
+    border: 1.5px solid var(--panel-border); background: rgba(255, 255, 255, 0.03);
+    color: var(--text-main); border-radius: 14px; padding: 11px 12px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
+    font-size: 13px; font-weight: 700; transition: all 0.22s var(--ease);
+  }
+  .orient-btn.active { border-color: #38bdf8; background: rgba(56, 189, 248, 0.12); }
+  .mini-card-icon { border: 2px solid currentColor; border-radius: 4px; display: inline-block; opacity: 0.9; }
+  .mini-card-icon.v { width: 16px; height: 24px; }
+  .mini-card-icon.h { width: 25px; height: 16px; }
+
+  .tpl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .tpl-card {
+    border: 1.5px solid var(--panel-border); background: rgba(255, 255, 255, 0.03);
+    border-radius: 13px; padding: 10px 11px; cursor: pointer; text-align: start;
+    color: var(--text-main); display: flex; flex-direction: column; gap: 3px;
+    transition: all 0.2s var(--ease);
+  }
+  .tpl-card.active { border-color: #38bdf8; background: rgba(56, 189, 248, 0.12); }
+  .tpl-name { font-size: 12.5px; font-weight: 800; }
+  .tpl-desc { font-size: 10.5px; color: var(--text-muted); }
+
+  .mat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .mat-card {
+    border: 1.5px solid var(--panel-border); background: rgba(255, 255, 255, 0.03);
+    border-radius: 12px; padding: 9px 7px; cursor: pointer; color: var(--text-main);
+    display: flex; flex-direction: column; align-items: center; gap: 3px; text-align: center;
+  }
+  .mat-card.active { border-color: #38bdf8; background: rgba(56, 189, 248, 0.12); }
+  .mat-title { font-size: 11.5px; font-weight: 700; }
+  .mat-price { font-size: 10.5px; color: #38bdf8; font-family: "DM Mono", monospace; }
+
+  /* استودیوی رنگ پس‌زمینه */
+  .color-studio {
+    border: 1px solid var(--panel-border); background: rgba(255, 255, 255, 0.03);
+    border-radius: 14px; padding: 10px; display: flex; flex-direction: column; gap: 9px;
+  }
+  .cs-tabs {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
+    padding: 3px; border-radius: 9px; background: rgba(0, 0, 0, 0.28);
+  }
+  .cs-tab {
+    border: 0; background: transparent; color: var(--text-muted);
+    padding: 6px 4px; border-radius: 7px; font-size: 10.5px; font-weight: 600; cursor: pointer;
+  }
+  .cs-tab.active { background: rgba(255, 255, 255, 0.14); color: #fff; }
+
+  .swatch-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .swatch-chip {
+    height: 34px; border-radius: 9px; border: 2px solid rgba(255, 255, 255, 0.16);
+    cursor: pointer; position: relative; transition: transform 0.18s var(--ease);
+  }
+  .swatch-chip:hover { transform: scale(1.04); }
+  .swatch-chip.active { border-color: #fff; box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.65); }
+  .swatch-chip span {
+    position: absolute; inset-inline: 2px; bottom: 2px; font-size: 9px; font-weight: 700;
+    text-align: center; background: rgba(0, 0, 0, 0.48); color: #fff;
+    border-radius: 4px; padding: 1px 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+
+  .angle-row { display: flex; align-items: center; gap: 8px; font-size: 11px; color: #cbd5e1; margin-top: 6px; }
+  .angle-row input[type="range"] { flex: 1; accent-color: #38bdf8; }
+
+  /* آپلود و سوییچ */
+  .upload-row { display: flex; align-items: center; gap: 8px; }
+  .upload-btn {
+    flex: 1; height: 38px; border-radius: 10px;
+    border: 1px dashed rgba(255, 255, 255, 0.25); background: rgba(255, 255, 255, 0.03);
+    color: #e2e8f0; font-size: 12px; font-weight: 600; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .upload-btn:hover { border-color: #38bdf8; background: rgba(56, 189, 248, 0.08); }
+  .clear-logo {
+    height: 38px; padding: 0 12px; border-radius: 10px;
+    border: 1px solid rgba(244, 63, 94, 0.4); background: rgba(244, 63, 94, 0.14);
+    color: #fda4af; font-size: 11.5px; font-weight: 600; cursor: pointer; display: none;
+  }
+  .clear-logo.show { display: inline-flex; align-items: center; }
+
+  .toggle-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 8px 11px; border-radius: 10px;
+    background: rgba(255, 255, 255, 0.04); border: 1px solid var(--panel-border);
+    font-size: 12px;
+  }
+  .switch {
+    position: relative; width: 38px; height: 21px; flex: none;
+    border-radius: 99px; background: rgba(255, 255, 255, 0.16); border: 0; cursor: pointer;
+  }
+  .switch::after {
+    content: ""; position: absolute; top: 3px; left: 3px;
+    width: 15px; height: 15px; border-radius: 50%; background: #fff;
+    transition: transform 0.22s var(--ease);
+  }
+  .switch[aria-checked="true"] { background: #38bdf8; }
+  .switch[aria-checked="true"]::after { transform: translateX(17px); }
+
+  /* تعداد */
+  .qty-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .qty-card {
+    border: 1px solid var(--panel-border); background: rgba(255, 255, 255, 0.03);
+    color: #fff; border-radius: 12px; padding: 10px 6px; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+  }
+  .qty-card.active { border-color: #38bdf8; background: rgba(56, 189, 248, 0.14); }
+  .qty-num { font-size: 15px; font-weight: 800; }
+  .qty-tag { font-size: 10px; color: #38bdf8; }
+
+  /* فوتر قیمت و ناوبری */
+  .action-bar {
+    margin-top: 2px; padding-top: 13px; border-top: 1px solid var(--panel-border);
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  }
+  .price-box { display: flex; flex-direction: column; }
+  .price-label { font-size: 11px; color: var(--text-muted); }
+  .price-val { font-size: 19px; font-weight: 900; color: #fff; }
+  .nav-btns { display: flex; gap: 8px; }
+  .btn-ghost {
+    height: 42px; padding: 0 16px; border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.16); background: transparent;
+    color: #fff; font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+  .btn-primary {
+    height: 42px; padding: 0 22px; border-radius: 12px; border: 0;
+    background: #fff; color: #0f172a; font-size: 13.5px; font-weight: 800; cursor: pointer;
+  }
+  .btn-primary:hover { background: #e2e8f0; }
+
+  /* مودال تایید */
+  .modal-backdrop {
+    position: fixed; inset: 0; z-index: 100;
+    background: rgba(2, 6, 23, 0.8); backdrop-filter: blur(12px);
+    display: none; place-items: center; padding: 20px;
+  }
+  .modal-backdrop.open { display: grid; }
+  .modal-card {
+    width: 100%; max-width: 440px; background: #0f172a;
+    border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 22px;
+    padding: 24px; text-align: center; display: flex; flex-direction: column; gap: 12px;
+  }
+  .check-circle {
+    width: 52px; height: 52px; margin: 0 auto; border-radius: 50%;
+    background: rgba(16, 185, 129, 0.16); color: #34d399;
+    display: grid; place-items: center; font-size: 25px;
+  }
+  .summary-list {
+    background: rgba(255, 255, 255, 0.04); border-radius: 13px;
+    padding: 11px 13px; font-size: 12px; text-align: start;
+    display: flex; flex-direction: column; gap: 6px; color: #cbd5e1;
+  }
+  .summary-list div { display: flex; justify-content: space-between; gap: 10px; }
+  .summary-list strong { color: #fff; }
+
+  @media (max-width: 960px) {
+    .studio { grid-template-columns: 1fr; }
+    .stage {
+      position: sticky; top: 0; height: 43svh; min-height: 300px;
+      z-index: 20; border-bottom: 1px solid var(--panel-border);
+    }
+    .topbar { height: 52px; padding: 0 14px; }
+    .big-step-num { font-size: 140px; }
+    .stage-hud { bottom: 10px; padding: 4px 6px; }
+    .hud-hint { display: none; }
+    .configurator { padding: 16px 14px 34px; border-inline-start: 0; }
+  }
+</style>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-badge">
+      <img src="https://www.aryal.ink/uploads/branding/fav_1794752313588_sp92q.webp" alt="Arya Link" />
+    </div>
+    <span data-i18n="brandName">آریا لینک</span>
+  </div>
+  <div class="lang-switch" role="group">
+    <button type="button" data-lang="fa" class="active">دری</button>
+    <button type="button" data-lang="ps">پښتو</button>
+    <button type="button" data-lang="en">EN</button>
+  </div>
+</header>
+
+<main class="studio">
+  <!-- صحنه سه‌بعدی -->
+  <section class="stage" aria-label="3D Card Preview">
+    <div id="stageReveal"></div>
+    <div class="rings"></div>
+    <div class="stage-glow"></div>
+    <div id="bigNum" class="big-step-num">01</div>
+    <canvas id="cardCanvas"></canvas>
+
+    <div class="stage-hud">
+      <button type="button" id="btnFront" class="hud-btn active" data-i18n="frontSide">روی کارت</button>
+      <button type="button" id="btnBack" class="hud-btn" data-i18n="backSide">پشت کارت</button>
+      <span class="hud-sep"></span>
+      <button type="button" id="hudOrient" class="hud-btn" data-i18n="toHoriz">تغییر به افقی</button>
+      <span class="hud-hint" data-i18n="dragHint">چرخش ۳۶۰° با کشیدن</span>
+    </div>
+  </section>
+
+  <!-- پنل ۴ مرحله‌ای -->
+  <section class="configurator">
+    <div class="panel-inner">
+      <nav class="stepper">
+        <button type="button" class="step-pill active" data-step="0">
+          <span class="num">01</span><span data-i18n="st1">فرم و جنس</span>
+        </button>
+        <button type="button" class="step-pill" data-step="1">
+          <span class="num">02</span><span data-i18n="st2">روی کارت</span>
+        </button>
+        <button type="button" class="step-pill" data-step="2">
+          <span class="num">03</span><span data-i18n="st3">پشت و QR</span>
+        </button>
+        <button type="button" class="step-pill" data-step="3">
+          <span class="num">04</span><span data-i18n="st4">ثبت سفارش</span>
+        </button>
+      </nav>
+
+      <!-- مرحله ۱: جهت، الگوی طراحی و جنس کارت -->
+      <div class="step-pane active" data-pane="0">
+        <h1 class="step-title" data-i18n="p1Title">جهت، قالب طراحی و جنس کارت</h1>
+        <p class="step-sub" data-i18n="p1Sub">عمودی یا افقی بودن، الگوی چاپی و جنس کارت را انتخاب کنید. کارت به‌صورت پیوسته می‌چرخد تا هر دو طرف را ببینید.</p>
+
+        <div class="field">
+          <label data-i18n="lblOrient">جهت کارت</label>
+          <div class="orient-grid">
+            <button type="button" class="orient-btn active" data-orient="vertical">
+              <span class="mini-card-icon v"></span>
+              <span data-i18n="vert">عمودی (مدرن)</span>
+            </button>
+            <button type="button" class="orient-btn" data-orient="horizontal">
+              <span class="mini-card-icon h"></span>
+              <span data-i18n="horiz">افقی (کلاسیک)</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label data-i18n="lblTpl">الگوی طراحی (فرم ثابت با عناصر متغیر)</label>
+          <div id="tplGrid" class="tpl-grid"></div>
+        </div>
+
+        <div class="field">
+          <label data-i18n="lblMat">جنس و روکش کارت</label>
+          <div id="matGrid" class="mat-grid"></div>
+        </div>
+      </div>
+
+      <!-- مرحله ۲: روی کارت -->
+      <div class="step-pane" data-pane="1">
+        <h2 class="step-title" data-i18n="p2Title">طراحی، رنگ‌ها و عناصر روی کارت</h2>
+
+        <!-- آپلود طرح آماده تمام‌صفحه روی کارت -->
+        <div id="readyFrontBox" class="ready-upload-box">
+          <div class="ready-head">
+            <span data-i18n="readyFrontTitle">طرح آماده برای روی کارت دارید؟</span>
+            <span id="fullFrontMeta" style="font-size:10.5px;color:#34d399"></span>
+          </div>
+          <p class="ready-sub" data-i18n="readyFrontSub">با آپلود عکس طرح آماده، سایر گزینه‌های این تب غیرفعال می‌شوند و طرح شما با افکت و نورپردازی سه‌بعدی روی کارت چاپ می‌شود.</p>
+          <div class="ready-actions">
+            <label class="ready-btn">
+              <input id="inpFullFront" type="file" accept="image/*" hidden />
+              <span data-i18n="btnUploadFull">آپلود طرح آماده روی کارت</span>
+            </label>
+            <button type="button" id="fullFrontFitBtn" class="fit-btn" data-i18n="fitCover">برش کامل</button>
+            <button type="button" id="btnClearFullFront" class="clear-logo" data-i18n="btnClearFull">حذف و ویرایش</button>
+          </div>
+        </div>
+
+        <!-- کنترل‌های ویرایشگر روی کارت (هنگام آپلود طرح آماده غیرفعال می‌شوند) -->
+        <div id="frontEditorControls" class="editor-controls">
+          <div class="field">
+            <label data-i18n="lblFrontBg">رنگ و گرادیانت پس‌زمینه روی کارت</label>
+            <div id="frontColorStudio" class="color-studio"></div>
+          </div>
+
+          <div class="field">
+            <label data-i18n="lblCompany">نام نهاد / فروشگاه / برند و رنگ متن</label>
+            <div class="input-with-color">
+              <input id="inpCompany" class="input" type="text" value="آریا لینک" maxlength="28" />
+              <label class="swatch-input" title="رنگ نام برند">
+                <input id="colCompany" type="color" value="#ffffff" />
+              </label>
+            </div>
+          </div>
+
+          <div class="sub-box">
+            <div class="field">
+              <label data-i18n="lblSlogan">شعار شرکت / زیرعنوان و رنگ متن</label>
+              <div class="input-with-color">
+                <input id="inpSlogan" class="input" type="text" value="کارت ویزیت هوشمند" maxlength="32" />
+                <label class="swatch-input" title="رنگ متن شعار">
+                  <input id="colSlogan" type="color" value="#0c3d5d" />
+                </label>
+              </div>
+            </div>
+            <div class="field">
+              <label data-i18n="lblSloganBox">کادر زیر شعار شرکت</label>
+              <div class="badge-ctrl">
+                <div class="seg-mini" id="sloganBadgeSeg">
+                  <button type="button" data-val="none" data-i18n="boxNone">بدون کادر</button>
+                  <button type="button" class="active" data-val="filled" data-i18n="boxFilled">توپر</button>
+                  <button type="button" data-val="outline" data-i18n="boxOutline">توخالی</button>
+                </div>
+                <label class="swatch-input" style="width:36px;height:34px" title="رنگ کادر شعار">
+                  <input id="colSloganBadge" type="color" value="#eeb61e" />
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="sub-box">
+            <div class="sub-box-head" data-i18n="lblFrontLines">خطوط روی کارت و شکل نوک خط</div>
+            <div class="shape-strip" id="tipShapeStrip">
+              <button type="button" class="shape-btn" data-shape="slash"><span class="ico">／</span><span data-i18n="shSlash">مورب</span></button>
+              <button type="button" class="shape-btn" data-shape="square"><span class="ico">■</span><span data-i18n="shSquare">مربع</span></button>
+              <button type="button" class="shape-btn active" data-shape="diamond"><span class="ico">◆</span><span data-i18n="shDiamond">لوزی</span></button>
+              <button type="button" class="shape-btn" data-shape="triangle"><span class="ico">▲</span><span data-i18n="shTri">مثلث</span></button>
+              <button type="button" class="shape-btn" data-shape="circle"><span class="ico">●</span><span data-i18n="shCircle">دایره</span></button>
+            </div>
+            <div class="color-chips-row">
+              <label class="picker-pill">
+                <span data-i18n="lineTop">خط بالا / اول</span>
+                <input id="colFrontLine1" type="color" value="#ffffff" />
+              </label>
+              <label class="picker-pill">
+                <span data-i18n="lineBot">خط پایین / دوم</span>
+                <input id="colFrontLine2" type="color" value="#ffffff" />
+              </label>
+              <label class="picker-pill">
+                <span data-i18n="tipCol">رنگ شکل نوک</span>
+                <input id="colTipShape" type="color" value="#eeb61e" />
+              </label>
+            </div>
+          </div>
+
+          <div class="field">
+            <label data-i18n="lblLogo">لوگوی اختصاصی (در صورت خالی بودن، لوگوی سایت نمایش داده می‌شود)</label>
+            <div class="upload-row">
+              <label class="upload-btn">
+                <input id="inpLogo" type="file" accept="image/*" hidden />
+                <span data-i18n="btnUpload">آپلود لوگو برای چاپ روی کارت</span>
+              </label>
+              <button type="button" id="btnClearLogo" class="clear-logo" data-i18n="btnRemove">حذف</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- مرحله ۳: پشت کارت و کیوآر کد -->
+      <div class="step-pane" data-pane="2">
+        <h2 class="step-title" data-i18n="p3Title">پشت کارت، مشخصات و کیوآر کد</h2>
+
+        <!-- آپلود طرح آماده تمام‌صفحه پشت کارت -->
+        <div id="readyBackBox" class="ready-upload-box">
+          <div class="ready-head">
+            <span data-i18n="readyBackTitle">طرح آماده برای پشت کارت دارید؟</span>
+            <span id="fullBackMeta" style="font-size:10.5px;color:#34d399"></span>
+          </div>
+          <p class="ready-sub" data-i18n="readyBackSub">با آپلود عکس طرح آماده، سایر گزینه‌های پشت کارت غیرفعال می‌شوند و فقط عکس شما با افکت سه‌بعدی نمایش داده می‌شود.</p>
+          <div class="ready-actions">
+            <label class="ready-btn">
+              <input id="inpFullBack" type="file" accept="image/*" hidden />
+              <span data-i18n="btnUploadFullBack">آپلود طرح آماده پشت کارت</span>
+            </label>
+            <button type="button" id="fullBackFitBtn" class="fit-btn" data-i18n="fitCover">برش کامل</button>
+            <button type="button" id="btnClearFullBack" class="clear-logo" data-i18n="btnClearFull">حذف و ویرایش</button>
+          </div>
+        </div>
+
+        <!-- کنترل‌های ویرایشگر پشت کارت (هنگام آپلود طرح آماده غیرفعال می‌شوند) -->
+        <div id="backEditorControls" class="editor-controls">
+          <div class="field">
+            <label data-i18n="lblName">نام و نام خانوادگی و رنگ متن</label>
+            <div class="input-with-color">
+              <input id="inpName" class="input" type="text" value="حمید فصیحی" maxlength="30" />
+              <label class="swatch-input" title="رنگ نام">
+                <input id="colName" type="color" value="#ffffff" />
+              </label>
+            </div>
+          </div>
+
+          <div class="sub-box">
+            <div class="field">
+              <label data-i18n="lblRole">موقعیت شغلی و رنگ متن</label>
+              <div class="input-with-color">
+                <input id="inpRole" class="input" type="text" value="طراح محصول و وب" maxlength="30" />
+                <label class="swatch-input" title="رنگ موقعیت شغلی">
+                  <input id="colRole" type="color" value="#e2e8f0" />
+                </label>
+              </div>
+            </div>
+            <div class="field">
+              <label data-i18n="lblRoleBox">کادر زیر موقعیت شغلی</label>
+              <div class="badge-ctrl">
+                <div class="seg-mini" id="roleBadgeSeg">
+                  <button type="button" class="active" data-val="none" data-i18n="boxNone">بدون کادر</button>
+                  <button type="button" data-val="filled" data-i18n="boxFilled">توپر</button>
+                  <button type="button" data-val="outline" data-i18n="boxOutline">توخالی</button>
+                </div>
+                <label class="swatch-input" style="width:36px;height:34px" title="رنگ کادر موقعیت شغلی">
+                  <input id="colRoleBadge" type="color" value="#eeb61e" />
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label data-i18n="lblUser">لینک پروفایل (فقط داخل کیوآر کد ذخیره می‌شود)</label>
+            <div class="prefix-wrap">
+              <span class="prefix-tag">aryal.ink/</span>
+              <input id="inpUser" type="text" value="hamid" maxlength="24" />
+            </div>
+          </div>
+
+          <div class="toggle-row">
+            <span data-i18n="lblSyncBg">رنگ پشت کارت مثل روی کارت باشد</span>
+            <button type="button" id="togSyncBg" class="switch" role="switch" aria-checked="true"></button>
+          </div>
+          <div id="backColorWrap" style="display:none" class="field">
+            <label data-i18n="lblBackBg">رنگ و گرادیانت اختصاصی پشت کارت</label>
+            <div id="backColorStudio" class="color-studio"></div>
+          </div>
+
+          <div class="sub-box">
+            <div class="sub-box-head" data-i18n="lblBackLines">رنگ خطوط پشت کارت، آیکون NFC و QR</div>
+            <div class="color-chips-row">
+              <label class="picker-pill">
+                <span data-i18n="backLine1">خط بالایی</span>
+                <input id="colBackLine1" type="color" value="#ffffff" />
+              </label>
+              <label class="picker-pill">
+                <span data-i18n="backLine2">خط پایینی</span>
+                <input id="colBackLine2" type="color" value="#ffffff" />
+              </label>
+              <label class="picker-pill">
+                <span data-i18n="nfcCol">آیکون NFC</span>
+                <input id="colNfc" type="color" value="#ffffff" />
+              </label>
+              <label class="picker-pill">
+                <span data-i18n="qrCol">رنگ QR</span>
+                <input id="colQr" type="color" value="#ffffff" />
+              </label>
+            </div>
+            <div class="input-row">
+              <div class="toggle-row">
+                <span data-i18n="lblShowQr">نمایش QR Code</span>
+                <button type="button" id="togQr" class="switch" role="switch" aria-checked="true"></button>
+              </div>
+              <div class="toggle-row">
+                <span data-i18n="lblNfc">آیکون NFC</span>
+                <button type="button" id="togNfc" class="switch" role="switch" aria-checked="true"></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- مرحله ۴: تعداد و ارسال -->
+      <div class="step-pane" data-pane="3">
+        <h2 class="step-title" data-i18n="p4Title">تعداد و مشخصات تحویل</h2>
+        <p class="step-sub" data-i18n="p4Sub">هر کارت با طراحی اختصاصی شما چاپ، روی لینک پروفایل پروگرام و ارسال می‌شود.</p>
+
+        <div class="field">
+          <label data-i18n="lblQty">تعداد کارت</label>
+          <div class="qty-grid" id="qtyGrid">
+            <button type="button" class="qty-card active" data-qty="1" data-disc="0">
+              <span class="qty-num">۱</span><span class="qty-tag" data-i18n="qSingle">تکی</span>
+            </button>
+            <button type="button" class="qty-card" data-qty="3" data-disc="10">
+              <span class="qty-num">۳</span><span class="qty-tag">۱۰٪-</span>
+            </button>
+            <button type="button" class="qty-card" data-qty="5" data-disc="15">
+              <span class="qty-num">۵</span><span class="qty-tag">۱۵٪-</span>
+            </button>
+            <button type="button" class="qty-card" data-qty="10" data-disc="20">
+              <span class="qty-num">۱۰</span><span class="qty-tag">۲۰٪-</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="input-row">
+          <div class="field">
+            <label data-i18n="lblCity">ولایت / شهر</label>
+            <select id="inpCity" class="input">
+              <option value="هرات">هرات</option>
+              <option value="کابل">کابل</option>
+              <option value="مزار شریف">مزار شریف</option>
+              <option value="قندهار">قندهار</option>
+              <option value="جلال‌آباد">جلال‌آباد</option>
+            </select>
+          </div>
+          <div class="field">
+            <label data-i18n="lblPhone">شماره تماس / واتساپ</label>
+            <input id="inpPhone" class="input" type="tel" placeholder="079XXXXXXX" dir="ltr" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label data-i18n="lblAddr">آدرس دقیق تحویل</label>
+          <input id="inpAddr" class="input" type="text" placeholder="ناحیه، سرک، جاده یا دفتر..." />
+        </div>
+      </div>
+
+      <!-- فوتر قیمت و ناوبری -->
+      <div class="action-bar">
+        <div class="price-box">
+          <span class="price-label" data-i18n="totalLbl">مبلغ قابل پرداخت</span>
+          <span id="priceDisplay" class="price-val">650 افغانی</span>
+        </div>
+        <div class="nav-btns">
+          <button type="button" id="btnPrev" class="btn-ghost" style="display:none" data-i18n="prev">قبلی</button>
+          <button type="button" id="btnNext" class="btn-primary" data-i18n="next">مرحله بعد</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- مودال خلاصه سفارش -->
+<div id="orderModal" class="modal-backdrop">
+  <div class="modal-card">
+    <div class="check-circle">✓</div>
+    <h3 data-i18n="modTitle">طراحی و سفارش آزمایشی ثبت شد!</h3>
+    <p style="font-size:12px;color:#94a3b8" data-i18n="modSub">در نسخه اصلی، تمام تنظیمات رنگ، خطوط، کادرها یا فایل طرح آماده شما در دیتابیس ذخیره می‌شوند.</p>
+    <div id="orderSummary" class="summary-list"></div>
+    <button type="button" id="btnCloseModal" class="btn-primary" style="width:100%" data-i18n="modClose">بازگشت به استودیو</button>
+  </div>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+const SITE_LOGO_URL = 'https://www.aryal.ink/uploads/branding/fav_1794752313588_sp92q.webp';
+
+/* ===================== دیکشنری سه‌زبانه ===================== */
+const I18N = {
+  fa: {
+    dir: 'rtl', brandName: 'آریا لینک', frontSide: 'روی کارت', backSide: 'پشت کارت',
+    toHoriz: 'تغییر به افقی', toVert: 'تغییر به عمودی', dragHint: 'چرخش ۳۶۰° با کشیدن',
+    st1: 'فرم و جنس', st2: 'روی کارت', st3: 'پشت و QR', st4: 'ثبت سفارش',
+    p1Title: 'جهت، قالب طراحی و جنس کارت',
+    p1Sub: 'عمودی یا افقی بودن، الگوی چاپی و جنس کارت را انتخاب کنید. کارت به‌صورت پیوسته می‌چرخد تا هر دو طرف را ببینید.',
+    lblOrient: 'جهت کارت', vert: 'عمودی (مدرن)', horiz: 'افقی (کلاسیک)',
+    lblTpl: 'الگوی طراحی (فرم ثابت با عناصر متغیر)', lblMat: 'جنس و روکش کارت',
+    p2Title: 'طراحی، رنگ‌ها و عناصر روی کارت',
+    readyFrontTitle: 'طرح آماده برای روی کارت دارید؟',
+    readyFrontSub: 'با آپلود عکس طرح آماده، سایر گزینه‌های این تب غیرفعال می‌شوند و طرح شما با افکت و نورپردازی سه‌بعدی روی کارت چاپ می‌شود.',
+    readyBackTitle: 'طرح آماده برای پشت کارت دارید؟',
+    readyBackSub: 'با آپلود عکس طرح آماده، سایر گزینه‌های پشت کارت غیرفعال می‌شوند و فقط عکس شما با افکت سه‌بعدی نمایش داده می‌شود.',
+    btnUploadFull: 'آپلود طرح آماده روی کارت', btnUploadFullBack: 'آپلود طرح آماده پشت کارت',
+    btnClearFull: 'حذف و ویرایش', fitCover: 'پر کردن کامل', fitContain: 'نمایش کامل', uploadedBadge: 'طرح آماده فعال شد ✓',
+    lblFrontBg: 'رنگ و گرادیانت پس‌زمینه روی کارت', lblCompany: 'نام نهاد / فروشگاه / برند و رنگ متن',
+    lblSlogan: 'شعار شرکت / زیرعنوان و رنگ متن', lblSloganBox: 'کادر زیر شعار شرکت',
+    lblFrontLines: 'خطوط روی کارت و شکل نوک خط',
+    shSlash: 'مورب', shSquare: 'مربع', shDiamond: 'لوزی', shTri: 'مثلث', shCircle: 'دایره',
+    lineTop: 'خط بالا / اول', lineBot: 'خط پایین / دوم', tipCol: 'شکل نوک',
+    lblLogo: 'لوگوی اختصاصی (در صورت خالی بودن، لوگوی سایت نمایش داده می‌شود)',
+    btnUpload: 'آپلود لوگو برای چاپ روی کارت', btnRemove: 'حذف',
+    p3Title: 'پشت کارت، مشخصات و کیوآر کد',
+    lblName: 'نام و نام خانوادگی و رنگ متن', lblRole: 'موقعیت شغلی و رنگ متن',
+    lblRoleBox: 'کادر زیر موقعیت شغلی',
+    lblUser: 'لینک پروفایل (فقط داخل کیوآر کد ذخیره می‌شود)',
+    lblSyncBg: 'رنگ پشت کارت مثل روی کارت باشد', lblBackBg: 'رنگ و گرادیانت اختصاصی پشت کارت',
+    lblBackLines: 'رنگ خطوط پشت کارت، آیکون NFC و QR',
+    backLine1: 'خط بالایی', backLine2: 'خط پایینی', nfcCol: 'آیکون NFC', qrCol: 'رنگ QR',
+    lblShowQr: 'نمایش QR Code', lblNfc: 'آیکون NFC',
+    p4Title: 'تعداد و مشخصات تحویل', p4Sub: 'هر کارت با طراحی اختصاصی شما چاپ، روی لینک پروفایل پروگرام و ارسال می‌شود.',
+    lblQty: 'تعداد کارت', qSingle: 'تکی', lblCity: 'ولایت / شهر', lblPhone: 'شماره تماس / واتساپ',
+    lblAddr: 'آدرس دقیق تحویل', totalLbl: 'مبلغ قابل پرداخت', prev: 'قبلی', next: 'مرحله بعد',
+    submit: 'ثبت سفارش نهایی', modTitle: 'طراحی و سفارش آزمایشی ثبت شد!',
+    modSub: 'در نسخه اصلی، تمام تنظیمات رنگ، خطوط، کادرها یا فایل طرح آماده شما ذخیره می‌شوند.',
+    modClose: 'بازگشت به استودیو', currency: 'افغانی',
+    tabSolid: 'رنگ آماده', tabCustom: 'رنگ دلخواه', tabGrad: 'گرادیانت آماده', tabCustomGrad: 'گرادیانت دلخواه',
+    lblAngle: 'زاویه:', lblLinear: 'خطی', lblRadial: 'شعاعی',
+    boxNone: 'بدون کادر', boxFilled: 'توپر', boxOutline: 'توخالی'
+  },
+  ps: {
+    dir: 'rtl', brandName: 'آریا لینک', frontSide: 'د کارت مخ', backSide: 'د کارت شا',
+    toHoriz: 'افقي بڼه', toVert: 'عمودي بڼه', dragHint: '۳۶۰° څرخول',
+    st1: 'بڼه او جنس', st2: 'د کارت مخ', st3: 'شا او QR', st4: 'سفارش ثبتول',
+    p1Title: 'د کارت لوری، چوکاټ او جنس',
+    p1Sub: 'لومړی عمودي یا افقي بڼه، چوکاټ او د کارت جنس وټاکئ. کارت په پرله پسې ډول څرخي.',
+    lblOrient: 'د کارت لوری', vert: 'عمودي (عصري)', horiz: 'افقي (کلاسیک)',
+    lblTpl: 'چمتو شوې طرحې', lblMat: 'د کارت جنس او پوښ',
+    p2Title: 'د کارت د مخ ډیزاین او رنګونه',
+    readyFrontTitle: 'د کارت د مخ چمتو طرحه لرئ؟',
+    readyFrontSub: 'د چمتو انځور په پورته کولو سره نور انتخابونه غيرفعال کېږي او یوازې ستاسو طرحه پر درې‌بعدي کارت ښکاري.',
+    readyBackTitle: 'د کارت د شا چمتو طرحه لرئ؟',
+    readyBackSub: 'د چمتو انځور په پورته کولو سره د شا نور انتخابونه غيرفعال کېږي او یوازې ستاسو انځور ښکاري.',
+    btnUploadFull: 'د مخ چمتو طرحه پورته کړئ', btnUploadFullBack: 'د شا چمتو طرحه پورته کړئ',
+    btnClearFull: 'لرې کول او سمون', fitCover: 'بشپړ ډکول', fitContain: 'بشپړ ښودل', uploadedBadge: 'چمتو طرحه فعاله شوه ✓',
+    lblFrontBg: 'د مخ رنګ او ګراډینټ', lblCompany: 'د شرکت یا پلورنځي نوم او رنګ',
+    lblSlogan: 'شعار او د متن رنګ', lblSloganBox: 'د شعار لاندې چوکاټ',
+    lblFrontLines: 'د مخ کرښې او د څوکې بڼه',
+    shSlash: 'کږه کرښه', shSquare: 'مربع', shDiamond: 'لوزي', shTri: 'مثلث', shCircle: 'دایره',
+    lineTop: 'پورتنۍ کرښه', lineBot: 'لاندنۍ کرښه', tipCol: 'د څوکې رنګ',
+    lblLogo: 'ځانګړې لوګو (په تش حالت کې د سایټ لوګو ښکاري)',
+    btnUpload: 'لوګو پورته کړئ', btnRemove: 'لرې کول',
+    p3Title: 'د کارت شا، معلومات او QR',
+    lblName: 'نوم او تخلص او د متن رنګ', lblRole: 'دنده / مسلک او د متن رنګ',
+    lblRoleBox: 'د دندې لاندې چوکاټ',
+    lblUser: 'د پروفایل لینک (یوازې په QR کې ثبتېږي)',
+    lblSyncBg: 'د شا رنګ د مخ په شان وي', lblBackBg: 'د شا ځانګړی رنګ او ګراډینټ',
+    lblBackLines: 'د شا کرښې، NFC او QR رنګ',
+    backLine1: 'پورتنۍ کرښه', backLine2: 'لاندنۍ کرښه', nfcCol: 'د NFC رنګ', qrCol: 'د QR رنګ',
+    lblShowQr: 'د QR ښودل', lblNfc: 'د NFC نښه',
+    p4Title: 'شمېر او د سپارلو معلومات', p4Sub: 'ستاسو کارت په ځانګړي ډول چاپ او ستاسو په لینک پروګرام کېږي.',
+    lblQty: 'د کارتونو شمېر', qSingle: 'یو دانه', lblCity: 'ولایت / ښار', lblPhone: 'د اړیکې شمېره',
+    lblAddr: 'د سپارلو دقیق پته', totalLbl: 'ټولیزه بیه', prev: 'شاته', next: 'بل پړاو',
+    submit: 'سفارش بشپړول', modTitle: 'آزمایښتي سفارش ثبت شو!',
+    modSub: 'په اصلي سایټ کې ټول تنظیمات مستقیم د چاپ برخې ته استول کېږي.',
+    modClose: 'بېرته ستنېدل', currency: 'افغانۍ',
+    tabSolid: 'چمتو رنګ', tabCustom: 'خوښه رنګ', tabGrad: 'چمتو ګراډینټ', tabCustomGrad: 'خوښه ګراډینټ',
+    lblAngle: 'زاویه:', lblLinear: 'خطي', lblRadial: 'شعاعي',
+    boxNone: 'بې چوکاټه', boxFilled: 'ډک', boxOutline: 'تش چوکاټ'
+  },
+  en: {
+    dir: 'ltr', brandName: 'ARYA LINK', frontSide: 'Front', backSide: 'Back',
+    toHoriz: 'Switch Horizontal', toVert: 'Switch Vertical', dragHint: 'Drag 360°',
+    st1: 'Style & Base', st2: 'Front Side', st3: 'Back & QR', st4: 'Checkout',
+    p1Title: 'Orientation, Template & Material',
+    p1Sub: 'Pick vertical or horizontal format, template geometry, and material while the card smoothly rotates.',
+    lblOrient: 'Card Orientation', vert: 'Vertical (Modern)', horiz: 'Horizontal (Classic)',
+    lblTpl: 'Print Template (Fixed Geometry)', lblMat: 'Card Material',
+    p2Title: 'Front Design, Colors & Lines',
+    readyFrontTitle: 'Have a ready-made Front design?',
+    readyFrontSub: 'Upload your artwork to disable editor options and preview it directly on the 3D card with realistic lighting.',
+    readyBackTitle: 'Have a ready-made Back design?',
+    readyBackSub: 'Upload your back artwork to disable editor controls and render it directly on the 3D card.',
+    btnUploadFull: 'Upload Front Artwork', btnUploadFullBack: 'Upload Back Artwork',
+    btnClearFull: 'Remove & Edit', fitCover: 'Fill Cover', fitContain: 'Fit Inside', uploadedBadge: 'Artwork Active ✓',
+    lblFrontBg: 'Front Background & Gradient', lblCompany: 'Brand / Company Name & Color',
+    lblSlogan: 'Company Slogan & Color', lblSloganBox: 'Slogan Frame / Pill',
+    lblFrontLines: 'Front Lines & Tip Ornament',
+    shSlash: 'Slash', shSquare: 'Square', shDiamond: 'Diamond', shTri: 'Triangle', shCircle: 'Circle',
+    lineTop: 'Top / 1st Line', lineBot: 'Bottom / 2nd Line', tipCol: 'Tip Shape',
+    lblLogo: 'Custom Logo (Defaults to Site Logo)',
+    btnUpload: 'Upload Logo for Print', btnRemove: 'Remove',
+    p3Title: 'Back Side, Info & Scannable QR',
+    lblName: 'Full Name & Color', lblRole: 'Job Title & Color',
+    lblRoleBox: 'Job Title Frame / Pill',
+    lblUser: 'Profile URL (Encoded in QR Only)',
+    lblSyncBg: 'Match back color with front', lblBackBg: 'Custom Back Background & Gradient',
+    lblBackLines: 'Back Lines, NFC Icon & QR Color',
+    backLine1: 'Top Line', backLine2: 'Bottom Line', nfcCol: 'NFC Icon', qrCol: 'QR Color',
+    lblShowQr: 'Show QR Code', lblNfc: 'NFC Icon',
+    p4Title: 'Quantity & Delivery', p4Sub: 'Each card is custom printed, NFC-encoded to your profile, and shipped.',
+    lblQty: 'Quantity', qSingle: 'Single', lblCity: 'City / Province', lblPhone: 'Phone / WhatsApp',
+    lblAddr: 'Delivery Address', totalLbl: 'Total Amount', prev: 'Back', next: 'Next Step',
+    submit: 'Place Order', modTitle: 'Demo Order Submitted!',
+    modSub: 'In production, all colors, lines, frames or uploaded print files are saved for printing.',
+    modClose: 'Back to Studio', currency: 'AFN',
+    tabSolid: 'Solids', tabCustom: 'Custom', tabGrad: 'Gradients', tabCustomGrad: 'Custom Grad',
+    lblAngle: 'Angle:', lblLinear: 'Linear', lblRadial: 'Radial',
+    boxNone: 'None', boxFilled: 'Filled', boxOutline: 'Outline'
+  }
+};
+
+/* ===================== الگوها، جنس‌ها و پالت‌های چاپی ===================== */
+const TEMPLATES = [
+  {
+    id: 'arya-svg',
+    name: { fa: 'امضای آریا (SVG)', ps: 'د آریا لاسلیک', en: 'Arya Signature' },
+    desc: { fa: 'دو خط بالا/پایین + شکل نوک + محور QR', ps: 'پورته/لاندې کرښه + شکل + QR', en: 'Edge lines, tip shape & QR axis' }
+  },
+  {
+    id: 'axis-metal',
+    name: { fa: 'محور متالیک (SVG)', ps: 'متالیک محور', en: 'Metallic Axis' },
+    desc: { fa: 'خط مرکزی ظریف + آیکون دایره‌ای NFC', ps: 'نازکه کرښه + NFC نښه', en: 'Fine center axis & NFC emblem' }
+  },
+  {
+    id: 'minimal',
+    name: { fa: 'مینیمال مدرن', ps: 'ساده عصري', en: 'Modern Minimal' },
+    desc: { fa: 'قاب حاشیه ظریف و فضای خلوت لوکس', ps: 'ساده او پاک جوړښت', en: 'Clean frame editorial style' }
+  },
+  {
+    id: 'executive',
+    name: { fa: 'شرکتی / سازمانی', ps: 'رسمي / شرکتي', en: 'Executive Bar' },
+    desc: { fa: 'نوار کناری رنگی + خط جداکننده رسمی', ps: 'رسمي رنګه پټه', en: 'Side accent bar & rule' }
+  }
+];
+
+const MATERIALS = [
+  { id: 'pvc-matte', name: { fa: 'PVC مات ضدخش', ps: 'مات PVC', en: 'Matte PVC' }, price: 650, metalness: 0.12, roughness: 0.56, clearcoat: 0.18, brushed: false },
+  { id: 'pvc-gloss', name: { fa: 'PVC براق ساتن', ps: 'براق PVC', en: 'Gloss Satin' }, price: 750, metalness: 0.22, roughness: 0.24, clearcoat: 0.85, brushed: false },
+  { id: 'metal', name: { fa: 'فلزی برس‌خورده', ps: 'فلزي پریمیوم', en: 'Brushed Metal' }, price: 1450, metalness: 0.84, roughness: 0.26, clearcoat: 0.55, brushed: true }
+];
+
+const SOLID_PRESETS = [
+  { id: 'navy',   color: '#0c3d5d', accent: '#eeb61e', name: { fa: 'سرمه‌ای', ps: 'تور شین', en: 'Navy' } },
+  { id: 'teal',   color: '#1a89ae', accent: '#eeb61e', name: { fa: 'فیروزه‌ای', ps: 'فیروزه‌يي', en: 'Teal' } },
+  { id: 'green',  color: '#17ac63', accent: '#eeb61e', name: { fa: 'زمردی', ps: 'شنه', en: 'Emerald' } },
+  { id: 'yellow', color: '#fdd700', accent: '#c52126', name: { fa: 'زرد آفتابی', ps: 'ژیړ', en: 'Sun Yellow' } },
+  { id: 'orange', color: '#f8a71a', accent: '#0c3d5d', name: { fa: 'کهربایی', ps: 'نارنجي', en: 'Amber' } },
+  { id: 'red',    color: '#c52126', accent: '#eeb61e', name: { fa: 'یاقوتی', ps: 'سور', en: 'Crimson' } },
+  { id: 'white',  color: '#f7f9fd', accent: '#1a89ae', name: { fa: 'سفید خالص', ps: 'سپین', en: 'Pure White' } },
+  { id: 'carbon', color: '#14171f', accent: '#38bdf8', name: { fa: 'مشکی کربن', ps: 'تور کاربن', en: 'Carbon' } }
+];
+
+const GRADIENT_PRESETS = [
+  { id: 'cosmic-navy',  type: 'radial', c1: '#1d2a62', c2: '#04122d', angle: 135, accent: '#eeb61e', name: { fa: 'سرمه‌ای کیهانی', ps: 'تور شین', en: 'Cosmic Navy' } },
+  { id: 'silver-metal', type: 'linear', c1: '#828599', c2: '#fafcff', angle: 125, accent: '#0c3d5d', name: { fa: 'متالیک نقره‌ای', ps: 'سپین زر', en: 'Silver Foil' } },
+  { id: 'royal-gold',   type: 'linear', c1: '#f0cf82', c2: '#9a7026', angle: 135, accent: '#17120a', name: { fa: 'طلایی رویال', ps: 'طلایي', en: 'Royal Gold' } },
+  { id: 'ocean-arya',   type: 'linear', c1: '#1a89ae', c2: '#0c3d5d', angle: 145, accent: '#eeb61e', name: { fa: 'اقیانوس آریا', ps: 'آریا سمندر', en: 'Arya Ocean' } },
+  { id: 'obsidian',     type: 'linear', c1: '#283044', c2: '#090b10', angle: 140, accent: '#38bdf8', name: { fa: 'اوبسیدین', ps: 'تور تیاره', en: 'Obsidian' } },
+  { id: 'sunset-ruby',  type: 'linear', c1: '#c52126', c2: '#f8a71a', angle: 135, accent: '#ffffff', name: { fa: 'غروب یاقوتی', ps: 'یاقوتي', en: 'Ruby Sunset' } },
+  { id: 'emerald-deep', type: 'linear', c1: '#17ac63', c2: '#0a4f34', angle: 150, accent: '#fdd700', name: { fa: 'زمرد عمیق', ps: 'تیاره شین', en: 'Deep Emerald' } },
+  { id: 'pearl-silk',   type: 'linear', c1: '#ffffff', c2: '#dce2f0', angle: 135, accent: '#1a89ae', name: { fa: 'ابریشم مروارید', ps: 'مروارید', en: 'Pearl Silk' } }
+];
+
+/* ===================== استیت مرکزی برنامه ===================== */
+function makeDefaultBg(color = '#f8a71a') {
+  return { tab: 'solid', solidColor: color, gradType: 'linear', c1: '#1d2a62', c2: '#04122d', angle: 135 };
+}
+
+const state = {
+  lang: 'fa',
+  step: 0,
+  orientation: 'vertical',
+  template: 'arya-svg',
+  material: MATERIALS[0],
+
+  // پیش‌فرض: گرادیانت شعاعی سرمه‌ای کیهانی
+  frontBg: { tab: 'grad', solidColor: '#0c3d5d', gradType: 'radial', c1: '#1d2a62', c2: '#04122d', angle: 135 },
+  backBg: makeDefaultBg('#f8a71a'),
+  syncBackBg: true,
+
+  // طرح آماده آپلودی برای هر طرف
+  fullFrontImg: null,
+  fullFrontFit: 'cover',
+  fullBackImg: null,
+  fullBackFit: 'cover',
+
+  // متون
+  company: 'آریا لینک',
+  slogan: 'کارت ویزیت هوشمند',
+  name: 'حمید فصیحی',
+  role: 'طراح محصول و وب',
+  username: 'hamid',
+
+  // کادر زیر شعار و موقعیت شغلی
+  sloganBadgeMode: 'filled',
+  roleBadgeMode: 'none',
+
+  // پیش‌فرض نوک خطوط: لوزی
+  tipShape: 'diamond',
+
+  colors: {
+    company: '#ffffff',
+    slogan: '#0c3d5d',
+    sloganBadge: '#eeb61e',
+    frontLine1: '#ffffff',
+    frontLine2: '#ffffff',
+    tipShape: '#eeb61e',
+
+    name: '#ffffff',
+    role: '#e2e8f0',
+    roleBadge: '#eeb61e',
+    backLine1: '#ffffff',
+    backLine2: '#ffffff',
+    nfc: '#ffffff',
+    qr: '#ffffff'
+  },
+
+  siteLogoImg: null,
+  customLogoImg: null,
+  showQr: true,
+  showNfc: true,
+  qty: 1,
+  disc: 0,
+  targetSide: 0 // 0 = front, Math.PI = back
+};
+
+let dirtyFront = true;
+let dirtyBack = true;
+
+/* ===================== بارگذاری لوگوی رسمی سایت (ایمن در برابر CORS) ===================== */
+const siteLogoLoader = new Image();
+siteLogoLoader.crossOrigin = 'anonymous';
+siteLogoLoader.onload = () => {
+  try {
+    // تست سریع عدم آلودگی بوم (CORS)
+    const testCnv = document.createElement('canvas');
+    testCnv.width = 4; testCnv.height = 4;
+    const tc = testCnv.getContext('2d');
+    tc.drawImage(siteLogoLoader, 0, 0, 4, 4);
+    tc.getImageData(0, 0, 1, 1);
+    state.siteLogoImg = siteLogoLoader;
+    dirtyFront = true;
+    dirtyBack = true;
+  } catch {
+    state.siteLogoImg = null;
+  }
+};
+siteLogoLoader.onerror = () => { state.siteLogoImg = null; };
+siteLogoLoader.src = SITE_LOGO_URL;
+
+/* ===================== ابزارهای رنگ و کنتراست ===================== */
+function hexToRgb(hex) {
+  const h = (hex || '#000000').replace('#', '');
+  const n = parseInt(h.length === 3 ? h.split('').map(x => x + x).join('') : h, 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+function luminance(hex) {
+  const [r, g, b] = hexToRgb(hex).map(v => {
+    v /= 255;
+    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+function getEffectiveBg(side) {
+  return (side === 'back' && !state.syncBackBg) ? state.backBg : state.frontBg;
+}
+function isGradientMode(bg) {
+  return bg.tab === 'grad' || bg.tab === 'customGrad';
+}
+function autoContrastInk(bg) {
+  const lum = isGradientMode(bg) ? (luminance(bg.c1) + luminance(bg.c2)) / 2 : luminance(bg.solidColor);
+  return lum > 0.46 ? '#0c3d5d' : '#ffffff';
+}
+function resolveStageTint(bg) {
+  const primary = isGradientMode(bg) ? bg.c2 : bg.solidColor;
+  const [r, g, b] = hexToRgb(primary);
+  return `rgb(${Math.round(r * 0.18 + 8)}, ${Math.round(g * 0.18 + 10)}, ${Math.round(b * 0.18 + 16)})`;
+}
+
+function applySmartPaletteForSide(side, bg, accentHex) {
+  const ink = autoContrastInk(bg);
+  const onAccent = luminance(accentHex) > 0.46 ? '#0c3d5d' : '#ffffff';
+  if (side === 'front') {
+    state.colors.company = ink;
+    state.colors.frontLine1 = ink;
+    state.colors.frontLine2 = ink;
+    state.colors.tipShape = accentHex;
+    state.colors.sloganBadge = accentHex;
+    state.colors.slogan = state.sloganBadgeMode === 'filled' ? onAccent : ink;
+  }
+  if (side === 'back' || state.syncBackBg) {
+    state.colors.name = ink;
+    state.colors.roleBadge = accentHex;
+    state.colors.role = state.roleBadgeMode === 'filled' ? onAccent : ink;
+    state.colors.backLine1 = ink;
+    state.colors.backLine2 = ink;
+    state.colors.nfc = ink;
+    state.colors.qr = ink;
+  }
+  syncColorInputsFromState();
+}
+
+function syncColorInputsFromState() {
+  const map = {
+    colCompany: 'company', colSlogan: 'slogan', colSloganBadge: 'sloganBadge',
+    colFrontLine1: 'frontLine1', colFrontLine2: 'frontLine2', colTipShape: 'tipShape',
+    colName: 'name', colRole: 'role', colRoleBadge: 'roleBadge',
+    colBackLine1: 'backLine1', colBackLine2: 'backLine2', colNfc: 'nfc', colQr: 'qr'
+  };
+  Object.entries(map).forEach(([id, key]) => {
+    const el = document.getElementById(id);
+    if (el) el.value = state.colors[key];
+  });
+}
+
+/* ===================== ترسیم المان‌های گرافیکی روی بوم ===================== */
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.roundRect ? ctx.roundRect(x, y, w, h, r) : ctx.rect(x, y, w, h);
+}
+
+// ترسیم طرح آماده آپلودی روی کل وجه کارت
+function drawFullDesignImage(ctx, img, W, H, fit = 'cover') {
+  ctx.save();
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(0, 0, W, H);
+  const scale = fit === 'contain'
+    ? Math.min(W / img.width, H / img.height)
+    : Math.max(W / img.width, H / img.height);
+  const dw = img.width * scale;
+  const dh = img.height * scale;
+  ctx.drawImage(img, (W - dw) / 2, (H - dh) / 2, dw, dh);
+  ctx.restore();
+}
+
+function drawCardBackground(ctx, W, H, bg) {
+  if (isGradientMode(bg)) {
+    let grad;
+    if (bg.gradType === 'radial') {
+      grad = ctx.createRadialGradient(W * 0.5, H * 0.42, W * 0.04, W * 0.5, H * 0.5, Math.max(W, H) * 0.72);
+    } else {
+      const rad = (bg.angle - 90) * Math.PI / 180;
+      const cx = W / 2, cy = H / 2, r = Math.hypot(W, H) / 2;
+      grad = ctx.createLinearGradient(cx - Math.cos(rad) * r, cy - Math.sin(rad) * r, cx + Math.cos(rad) * r, cy + Math.sin(rad) * r);
+    }
+    grad.addColorStop(0, bg.c1);
+    grad.addColorStop(1, bg.c2);
+    ctx.fillStyle = grad;
+  } else {
+    ctx.fillStyle = bg.solidColor;
+  }
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.save();
+  if (state.material.brushed) {
+    ctx.globalAlpha = 0.08;
+    for (let y = 0; y < H; y += 3) {
+      ctx.fillStyle = y % 6 === 0 ? '#ffffff' : '#000000';
+      ctx.fillRect(0, y, W, 1);
+    }
+  } else if (state.material.id === 'pvc-matte') {
+    ctx.globalAlpha = 0.035;
+    for (let i = 0; i < 3400; i++) {
+      ctx.fillStyle = i % 2 ? '#ffffff' : '#000000';
+      ctx.fillRect((i * 887) % W, (i * 521) % H, 2, 2);
+    }
+  }
+  ctx.restore();
+
+  const sheen = ctx.createLinearGradient(0, 0, W, H);
+  sheen.addColorStop(0, 'rgba(255,255,255,0.09)');
+  sheen.addColorStop(0.45, 'rgba(255,255,255,0)');
+  sheen.addColorStop(1, 'rgba(0,0,0,0.09)');
+  ctx.fillStyle = sheen;
+  ctx.fillRect(0, 0, W, H);
+}
+
+function drawBadgedText(ctx, text, x, baselineY, fontSize, fontWeight, textColor, badgeMode, badgeColor, align = 'center', maxWidth = 620) {
+  if (!text) return;
+  ctx.save();
+  ctx.font = `${fontWeight} ${fontSize}px "Vazirmatn", "Inter", sans-serif`;
+  ctx.textAlign = align;
+  ctx.textBaseline = 'middle';
+
+  const measured = Math.min(maxWidth, ctx.measureText(text).width);
+  const padX = Math.round(fontSize * 1.15);
+  const pillW = Math.max(measured + padX * 2, fontSize * 4.5);
+  const pillH = Math.round(fontSize * 1.9);
+  const cy = baselineY;
+
+  let bx = x - pillW / 2;
+  if (align === 'left') bx = x - padX;
+  else if (align === 'right') bx = x - pillW + padX;
+  const by = cy - pillH / 2;
+
+  if (badgeMode === 'filled') {
+    ctx.fillStyle = badgeColor;
+    roundRect(ctx, bx, by, pillW, pillH, pillH / 2);
+    ctx.fill();
+  } else if (badgeMode === 'outline') {
+    ctx.strokeStyle = badgeColor;
+    ctx.lineWidth = Math.max(3, fontSize * 0.12);
+    roundRect(ctx, bx, by, pillW, pillH, pillH / 2);
+    ctx.stroke();
+  }
+
+  ctx.fillStyle = textColor;
+  ctx.fillText(text, x, cy + 2, maxWidth);
+  ctx.restore();
+}
+
+function drawTipOrnament(ctx, cx, cy, shape, color, pointDir = 'down') {
+  ctx.save();
+  ctx.fillStyle = color;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 8;
+  ctx.lineCap = 'round';
+  const r = 14;
+
+  if (shape === 'slash') {
+    ctx.beginPath();
+    if (pointDir === 'down' || pointDir === 'right') {
+      ctx.moveTo(cx + r, cy - r); ctx.lineTo(cx - r, cy + r);
+    } else {
+      ctx.moveTo(cx - r, cy - r); ctx.lineTo(cx + r, cy + r);
+    }
+    ctx.stroke();
+  } else if (shape === 'square') {
+    ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
+  } else if (shape === 'diamond') {
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - r * 1.2); ctx.lineTo(cx + r * 1.2, cy);
+    ctx.lineTo(cx, cy + r * 1.2); ctx.lineTo(cx - r * 1.2, cy);
+    ctx.closePath(); ctx.fill();
+  } else if (shape === 'circle') {
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+  } else if (shape === 'triangle') {
+    ctx.beginPath();
+    if (pointDir === 'down') {
+      ctx.moveTo(cx, cy + r * 1.15); ctx.lineTo(cx - r * 1.15, cy - r * 0.9); ctx.lineTo(cx + r * 1.15, cy - r * 0.9);
+    } else if (pointDir === 'up') {
+      ctx.moveTo(cx, cy - r * 1.15); ctx.lineTo(cx - r * 1.15, cy + r * 0.9); ctx.lineTo(cx + r * 1.15, cy + r * 0.9);
+    } else if (pointDir === 'right') {
+      ctx.moveTo(cx + r * 1.15, cy); ctx.lineTo(cx - r * 0.9, cy - r * 1.15); ctx.lineTo(cx - r * 0.9, cy + r * 1.15);
+    } else {
+      ctx.moveTo(cx - r * 1.15, cy); ctx.lineTo(cx + r * 0.9, cy - r * 1.15); ctx.lineTo(cx + r * 0.9, cy + r * 1.15);
+    }
+    ctx.closePath(); ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawCircularNfc(ctx, cx, cy, radius, color) {
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = Math.max(3, radius * 0.085);
+  ctx.beginPath(); ctx.arc(cx, cy, radius, 0, Math.PI * 2); ctx.stroke();
+
+  ctx.lineCap = 'round';
+  ctx.lineWidth = Math.max(2.6, radius * 0.075);
+  const startX = cx - radius * 0.34;
+  [0.24, 0.42, 0.60, 0.78].forEach(ratio => {
+    ctx.beginPath(); ctx.arc(startX, cy, radius * ratio, -Math.PI * 0.36, Math.PI * 0.36); ctx.stroke();
+  });
+  ctx.restore();
+}
+
+function drawFallbackVectorMark(ctx, cx, cy, size, primaryColor, accentColor) {
+  ctx.save();
+  const half = size / 2;
+  ctx.fillStyle = accentColor;
+  ctx.beginPath();
+  ctx.moveTo(cx - half, cy - half * 0.15); ctx.lineTo(cx - half, cy - half); ctx.lineTo(cx - half * 0.15, cy - half);
+  ctx.closePath(); ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(cx + half, cy + half * 0.15); ctx.lineTo(cx + half, cy + half); ctx.lineTo(cx + half * 0.15, cy + half);
+  ctx.closePath(); ctx.fill();
+
+  ctx.strokeStyle = primaryColor;
+  ctx.lineWidth = size * 0.095;
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - half * 0.6); ctx.lineTo(cx + half * 0.55, cy + half * 0.55); ctx.lineTo(cx - half * 0.55, cy + half * 0.55);
+  ctx.closePath(); ctx.stroke();
+  ctx.restore();
+}
+
+function drawImageFitted(ctx, img, cx, cy, boxSize) {
+  const ratio = Math.min(boxSize / img.width, boxSize / img.height);
+  const dw = img.width * ratio, dh = img.height * ratio;
+  ctx.drawImage(img, cx - dw / 2, cy - dh / 2, dw, dh);
+}
+
+function drawMainLogo(ctx, cx, cy, size) {
+  try {
+    if (state.customLogoImg) { drawImageFitted(ctx, state.customLogoImg, cx, cy, size); return; }
+    if (state.siteLogoImg)   { drawImageFitted(ctx, state.siteLogoImg, cx, cy, size); return; }
+  } catch {}
+  drawFallbackVectorMark(ctx, cx, cy, size, state.colors.company, state.colors.tipShape);
+}
+
+function drawAryaSignature(ctx, cx, cy, size) {
+  try {
+    if (state.siteLogoImg) { drawImageFitted(ctx, state.siteLogoImg, cx, cy, size); return; }
+  } catch {}
+  drawFallbackVectorMark(ctx, cx, cy, size, state.colors.name, state.colors.tipShape);
+}
+
+function drawRealQR(ctx, url, x, y, size, color) {
+  ctx.save();
+  ctx.fillStyle = color;
+  try {
+    if (typeof window.qrcode === 'function') {
+      const qr = window.qrcode(0, 'M');
+      qr.addData(url);
+      qr.make();
+      const count = qr.getModuleCount();
+      const cell = size / count;
+      for (let r = 0; r < count; r++) {
+        for (let c = 0; c < count; c++) {
+          if (qr.isDark(r, c)) {
+            ctx.fillRect(x + c * cell, y + r * cell, Math.ceil(cell), Math.ceil(cell));
+          }
+        }
+      }
+      ctx.restore();
+      return;
+    }
+  } catch {}
+
+  // حالت جایگزین ایمن در صورت عدم دسترسی به اینترنت
+  const N = 21, cell = size / N;
+  let h = 2166136261;
+  for (let i = 0; i < url.length; i++) { h ^= url.charCodeAt(i); h = Math.imul(h, 16777619); }
+  const rand = () => { h = (Math.imul(h, 1664525) + 1013904223) >>> 0; return h / 4294967296; };
+  const isF = (r, c) => (r < 8 && c < 8) || (r < 8 && c >= N - 8) || (r >= N - 8 && c < 8);
+  for (let r = 0; r < N; r++) {
+    for (let c = 0; c < N; c++) {
+      if (!isF(r, c) && rand() > 0.48) ctx.fillRect(x + c * cell, y + r * cell, cell + 0.5, cell + 0.5);
+    }
+  }
+  const drawF = (fr, fc) => {
+    for (let r = 0; r < 7; r++) {
+      for (let c = 0; c < 7; c++) {
+        if (r === 0 || r === 6 || c === 0 || c === 6 || (r >= 2 && r <= 4 && c >= 2 && c <= 4)) {
+          ctx.fillRect(x + (fc + c) * cell, y + (fr + r) * cell, cell + 0.5, cell + 0.5);
+        }
+      }
+    }
+  };
+  drawF(0, 0); drawF(0, N - 7); drawF(N - 7, 0);
+  ctx.restore();
+}
+
+/* ===================== بوم‌های افقی و عمودی ===================== */
+const HW = 1200, HH = 756;
+const VW = 756,  VH = 1200;
+
+const frontCanvasH = Object.assign(document.createElement('canvas'), { width: HW, height: HH });
+const backCanvasH  = Object.assign(document.createElement('canvas'), { width: HW, height: HH });
+const frontCanvasV = Object.assign(document.createElement('canvas'), { width: VW, height: VH });
+const backCanvasV  = Object.assign(document.createElement('canvas'), { width: VW, height: VH });
+
+function drawFront(ctx, W, H, isVert) {
+  // اگر کاربر طرح آماده روی کارت آپلود کرده باشد، فقط همان عکس نمایش داده می‌شود
+  if (state.fullFrontImg) {
+    drawFullDesignImage(ctx, state.fullFrontImg, W, H, state.fullFrontFit);
+    return;
+  }
+
+  const bg = getEffectiveBg('front');
+  const col = state.colors;
+  const isRtl = I18N[state.lang].dir === 'rtl';
+
+  drawCardBackground(ctx, W, H, bg);
+  ctx.direction = isRtl ? 'rtl' : 'ltr';
+
+  const compTxt = state.company.trim() || 'آریا لینک';
+  const sloganTxt = state.slogan.trim();
+
+  if (state.template === 'arya-svg') {
+    if (isVert) {
+      ctx.strokeStyle = col.frontLine1; ctx.lineWidth = 8;
+      ctx.beginPath(); ctx.moveTo(W / 2, 0); ctx.lineTo(W / 2, 152); ctx.stroke();
+
+      ctx.strokeStyle = col.frontLine2; ctx.lineWidth = 8;
+      ctx.beginPath(); ctx.moveTo(W / 2, H); ctx.lineTo(W / 2, H - 152); ctx.stroke();
+
+      drawTipOrnament(ctx, W / 2, 184, state.tipShape, col.tipShape, 'down');
+      drawTipOrnament(ctx, W / 2, H - 184, state.tipShape, col.tipShape, 'up');
+
+      drawMainLogo(ctx, W / 2, 460, 240);
+
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = col.company;
+      ctx.font = '800 46px "Vazirmatn", "Inter", sans-serif';
+      ctx.fillText(compTxt, W / 2, 665);
+
+      drawBadgedText(ctx, sloganTxt, W / 2, 755, 28, 700, col.slogan, state.sloganBadgeMode, col.sloganBadge, 'center', W - 140);
+    } else {
+      ctx.strokeStyle = col.frontLine1; ctx.lineWidth = 8;
+      ctx.beginPath(); ctx.moveTo(0, H / 2); ctx.lineTo(132, H / 2); ctx.stroke();
+
+      ctx.strokeStyle = col.frontLine2; ctx.lineWidth = 8;
+      ctx.beginPath(); ctx.moveTo(W, H / 2); ctx.lineTo(W - 132, H / 2); ctx.stroke();
+
+      drawTipOrnament(ctx, 166, H / 2, state.tipShape, col.tipShape, 'right');
+      drawTipOrnament(ctx, W - 166, H / 2, state.tipShape, col.tipShape, 'left');
+
+      drawMainLogo(ctx, W / 2, 255, 200);
+
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = col.company;
+      ctx.font = '800 48px "Vazirmatn", "Inter", sans-serif';
+      ctx.fillText(compTxt, W / 2, 445);
+
+      drawBadgedText(ctx, sloganTxt, W / 2, 530, 27, 700, col.slogan, state.sloganBadgeMode, col.sloganBadge, 'center', W - 320);
+    }
+  } else if (state.template === 'axis-metal') {
+    if (isVert) {
+      ctx.lineWidth = 3.5;
+      ctx.strokeStyle = col.frontLine1; ctx.beginPath(); ctx.moveTo(W / 2, 0); ctx.lineTo(W / 2, 275); ctx.stroke();
+      ctx.strokeStyle = col.frontLine2; ctx.beginPath(); ctx.moveTo(W / 2, 790); ctx.lineTo(W / 2, 925); ctx.stroke();
+      drawTipOrnament(ctx, W / 2, 304, state.tipShape, col.tipShape, 'down');
+      drawMainLogo(ctx, W / 2, 465, 215);
+
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = col.company; ctx.font = '800 46px "Vazirmatn", "Inter", sans-serif';
+      ctx.fillText(compTxt, W / 2, 645);
+
+      drawBadgedText(ctx, sloganTxt, W / 2, 725, 27, 600, col.slogan, state.sloganBadgeMode, col.sloganBadge, 'center', W - 140);
+      if (state.showNfc) drawCircularNfc(ctx, W / 2, 1015, 50, col.nfc);
+    } else {
+      ctx.lineWidth = 3.5;
+      ctx.strokeStyle = col.frontLine1; ctx.beginPath(); ctx.moveTo(0, H / 2); ctx.lineTo(205, H / 2); ctx.stroke();
+      ctx.strokeStyle = col.frontLine2; ctx.beginPath(); ctx.moveTo(W - 205, H / 2); ctx.lineTo(W, H / 2); ctx.stroke();
+      drawTipOrnament(ctx, 236, H / 2, state.tipShape, col.tipShape, 'right');
+      drawTipOrnament(ctx, W - 236, H / 2, state.tipShape, col.tipShape, 'left');
+      drawMainLogo(ctx, W / 2, 245, 185);
+
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = col.company; ctx.font = '800 48px "Vazirmatn", "Inter", sans-serif';
+      ctx.fillText(compTxt, W / 2, 420);
+
+      drawBadgedText(ctx, sloganTxt, W / 2, 498, 26, 600, col.slogan, state.sloganBadgeMode, col.sloganBadge, 'center', W - 360);
+      if (state.showNfc) drawCircularNfc(ctx, W / 2, 625, 42, col.nfc);
+    }
+  } else if (state.template === 'executive') {
+    if (isVert) {
+      ctx.fillStyle = col.frontLine1; ctx.fillRect(isRtl ? W - 40 : 0, 0, 40, H);
+      ctx.strokeStyle = col.frontLine2; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(140, 825); ctx.lineTo(W - 140, 825); ctx.stroke();
+      drawMainLogo(ctx, W / 2, 345, 210);
+
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = col.company; ctx.font = '900 48px "Vazirmatn", "Inter", sans-serif';
+      ctx.fillText(compTxt, W / 2, 605);
+
+      drawBadgedText(ctx, sloganTxt, W / 2, 695, 27, 600, col.slogan, state.sloganBadgeMode, col.sloganBadge, 'center', W - 160);
+      if (state.showNfc) drawCircularNfc(ctx, W / 2, 985, 46, col.nfc);
+    } else {
+      ctx.fillStyle = col.frontLine1; ctx.fillRect(isRtl ? W - 48 : 0, 0, 48, H);
+      const tx = isRtl ? W - 115 : 115;
+      ctx.strokeStyle = col.frontLine2; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(tx, 395); ctx.lineTo(isRtl ? tx - 380 : tx + 380, 395); ctx.stroke();
+      drawMainLogo(ctx, isRtl ? 235 : W - 235, H / 2, 210);
+
+      ctx.textAlign = isRtl ? 'right' : 'left'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = col.company; ctx.font = '900 54px "Vazirmatn", "Inter", sans-serif';
+      ctx.fillText(compTxt, tx, 330);
+
+      drawBadgedText(ctx, sloganTxt, tx, 475, 28, 600, col.slogan, state.sloganBadgeMode, col.sloganBadge, isRtl ? 'right' : 'left', 520);
+      if (state.showNfc) drawCircularNfc(ctx, isRtl ? W - 150 : 150, 125, 38, col.nfc);
+    }
+  } else {
+    ctx.strokeStyle = col.frontLine1; ctx.lineWidth = 3;
+    roundRect(ctx, 32, 32, W - 64, H - 64, 34); ctx.stroke();
+    ctx.strokeStyle = col.frontLine2; ctx.lineWidth = 3;
+    if (isVert) {
+      ctx.beginPath(); ctx.moveTo(W / 2 - 90, 815); ctx.lineTo(W / 2 + 90, 815); ctx.stroke();
+      if (state.showNfc) drawCircularNfc(ctx, isRtl ? 110 : W - 110, 115, 38, col.nfc);
+      drawMainLogo(ctx, W / 2, 460, 220);
+
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = col.company; ctx.font = '800 46px "Vazirmatn", "Inter", sans-serif';
+      ctx.fillText(compTxt, W / 2, 905);
+
+      drawBadgedText(ctx, sloganTxt, W / 2, 995, 27, 600, col.slogan, state.sloganBadgeMode, col.sloganBadge, 'center', W - 160);
+    } else {
+      ctx.beginPath(); ctx.moveTo(isRtl ? W - 95 : 95, 480); ctx.lineTo(isRtl ? W - 340 : 340, 480); ctx.stroke();
+      if (state.showNfc) drawCircularNfc(ctx, isRtl ? 110 : W - 110, 110, 38, col.nfc);
+      drawMainLogo(ctx, isRtl ? W - 165 : 165, 160, 130);
+
+      const tx = isRtl ? W - 95 : 95;
+      ctx.textAlign = isRtl ? 'right' : 'left'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = col.company; ctx.font = '800 52px "Vazirmatn", "Inter", sans-serif';
+      ctx.fillText(compTxt, tx, 550);
+
+      drawBadgedText(ctx, sloganTxt, tx, 632, 28, 600, col.slogan, state.sloganBadgeMode, col.sloganBadge, isRtl ? 'right' : 'left', 700);
+    }
+  }
+}
+
+function drawBack(ctx, W, H, isVert) {
+  // اگر کاربر طرح آماده پشت کارت آپلود کرده باشد، فقط همان عکس نمایش داده می‌شود
+  if (state.fullBackImg) {
+    drawFullDesignImage(ctx, state.fullBackImg, W, H, state.fullBackFit);
+    return;
+  }
+
+  const bg = getEffectiveBg('back');
+  const col = state.colors;
+  const isRtl = I18N[state.lang].dir === 'rtl';
+
+  drawCardBackground(ctx, W, H, bg);
+  ctx.direction = isRtl ? 'rtl' : 'ltr';
+
+  const nameTxt = state.name.trim() || 'حمید فصیحی';
+  const roleTxt = state.role.trim();
+  const cleanUser = (state.username.trim() || 'arya').replace(/\s+/g, '');
+  const qrPayload = `https://aryal.ink/${cleanUser}`;
+
+  if (isVert) {
+    if (state.showQr) drawRealQR(ctx, qrPayload, W / 2 - 115, 115, 230, col.qr);
+
+    ctx.strokeStyle = col.backLine1; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(W / 2, state.showQr ? 385 : 180); ctx.lineTo(W / 2, 675); ctx.stroke();
+
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = col.name; ctx.font = '800 54px "Vazirmatn", "Inter", sans-serif';
+    ctx.fillText(nameTxt, W / 2, 745);
+
+    drawBadgedText(ctx, roleTxt, W / 2, 832, 30, 600, col.role, state.roleBadgeMode, col.roleBadge, 'center', W - 140);
+
+    ctx.strokeStyle = col.backLine2; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(W / 2, 895); ctx.lineTo(W / 2, 955); ctx.stroke();
+
+    if (state.showNfc) drawCircularNfc(ctx, W / 2, 1035, 48, col.nfc);
+    drawAryaSignature(ctx, 84, H - 76, 56);
+  } else {
+    if (state.showQr) drawRealQR(ctx, qrPayload, 110, H / 2 - 135, 270, col.qr);
+
+    ctx.strokeStyle = col.backLine1; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(450, 125); ctx.lineTo(450, H - 125); ctx.stroke();
+
+    const tx = isRtl ? W - 100 : 520;
+    ctx.textAlign = isRtl ? 'right' : 'left'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = col.name; ctx.font = '800 54px "Vazirmatn", "Inter", sans-serif';
+    ctx.fillText(nameTxt, tx, 270);
+
+    drawBadgedText(ctx, roleTxt, tx, 365, 30, 600, col.role, state.roleBadgeMode, col.roleBadge, isRtl ? 'right' : 'left', 560);
+
+    ctx.strokeStyle = col.backLine2; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(tx, 445); ctx.lineTo(isRtl ? tx - 260 : tx + 260, 445); ctx.stroke();
+
+    if (state.showNfc) drawCircularNfc(ctx, isRtl ? W - 145 : 565, 555, 44, col.nfc);
+    drawAryaSignature(ctx, isRtl ? 84 : W - 84, H - 74, 54);
+  }
+}
+
+/* ===================== موتور سه‌بعدی Three.js (ضخامت نصف و سفید خالص) ===================== */
+const canvas = document.getElementById('cardCanvas');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.04;
+renderer.setClearColor(0x000000, 0);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 100);
+camera.position.set(0, 0, 8.6);
+
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+pmrem.dispose();
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.48));
+const keyLight = new THREE.DirectionalLight(0xffffff, 1.3);
+keyLight.position.set(3.2, 4.5, 5.2);
+scene.add(keyLight);
+
+const rimLight = new THREE.DirectionalLight(0x7dd3fc, 0.8);
+rimLight.position.set(-4.5, -2.5, -3.5);
+scene.add(rimLight);
+
+// ضخامت کارت نصف‌شده با لبه‌ی سفید خالص
+const CARD_D = 0.024;
+
+function makeRoundedShape(w, h, r) {
+  const s = new THREE.Shape();
+  const x = -w / 2, y = -h / 2;
+  s.moveTo(x + r, y); s.lineTo(x + w - r, y); s.quadraticCurveTo(x + w, y, x + w, y + r);
+  s.lineTo(x + w, y + h - r); s.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  s.lineTo(x + r, y + h); s.quadraticCurveTo(x, y + h, x, y + h - r);
+  s.lineTo(x, y + r); s.quadraticCurveTo(x, y, x + r, y);
+  return s;
+}
+
+function makeNormalizedFaceGeo(shape, w, h) {
+  const geo = new THREE.ShapeGeometry(shape, 28);
+  const pos = geo.attributes.position;
+  const uvs = new Float32Array(pos.count * 2);
+  for (let i = 0; i < pos.count; i++) {
+    uvs[i * 2] = (pos.getX(i) + w / 2) / w;
+    uvs[i * 2 + 1] = (pos.getY(i) + h / 2) / h;
+  }
+  geo.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+  return geo;
+}
+
+function buildOrientationGeos(w, h) {
+  const shape = makeRoundedShape(w, h, 0.14);
+  const edgeGeo = new THREE.ExtrudeGeometry(shape, {
+    depth: CARD_D,
+    bevelEnabled: true,
+    bevelThickness: 0.0045,
+    bevelSize: 0.0045,
+    bevelSegments: 3,
+    curveSegments: 28
+  });
+  edgeGeo.translate(0, 0, -CARD_D / 2);
+  return { edgeGeo, faceGeo: makeNormalizedFaceGeo(shape, w, h) };
+}
+
+const geosH = buildOrientationGeos(3.55, 2.24);
+const geosV = buildOrientationGeos(2.24, 3.55);
+
+function makeTex(cnv) {
+  const t = new THREE.CanvasTexture(cnv);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 8;
+  return t;
+}
+const texFH = makeTex(frontCanvasH), texBH = makeTex(backCanvasH);
+const texFV = makeTex(frontCanvasV), texBV = makeTex(backCanvasV);
+
+// لبه سفید خالص و ثابت
+const edgeMat  = new THREE.MeshPhysicalMaterial({ color: '#ffffff', metalness: 0.08, roughness: 0.32, clearcoat: 0.35 });
+const frontMat = new THREE.MeshPhysicalMaterial({ map: texFV, metalness: 0.12, roughness: 0.56, clearcoat: 0.18 });
+const backMat  = new THREE.MeshPhysicalMaterial({ map: texBV, metalness: 0.12, roughness: 0.56, clearcoat: 0.18 });
+
+const cardGroup = new THREE.Group();
+const bodyMesh  = new THREE.Mesh(geosV.edgeGeo, edgeMat);
+const frontMesh = new THREE.Mesh(geosV.faceGeo, frontMat);
+frontMesh.position.z = CARD_D / 2 + 0.0055;
+const backMesh  = new THREE.Mesh(geosV.faceGeo, backMat);
+backMesh.position.z = -(CARD_D / 2 + 0.0055);
+backMesh.rotation.y = Math.PI;
+cardGroup.add(bodyMesh, frontMesh, backMesh);
+scene.add(cardGroup);
+
+const shCanvas = Object.assign(document.createElement('canvas'), { width: 256, height: 256 });
+const sCtx = shCanvas.getContext('2d');
+const sg = sCtx.createRadialGradient(128, 128, 10, 128, 128, 124);
+sg.addColorStop(0, 'rgba(0,0,0,0.52)'); sg.addColorStop(0.5, 'rgba(0,0,0,0.2)'); sg.addColorStop(1, 'rgba(0,0,0,0)');
+sCtx.fillStyle = sg; sCtx.fillRect(0, 0, 256, 256);
+const shadowMesh = new THREE.Mesh(
+  new THREE.PlaneGeometry(3.8, 1.15),
+  new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(shCanvas), transparent: true, opacity: 0.65, depthWrite: false })
+);
+shadowMesh.position.set(0, -2.18, -0.5);
+scene.add(shadowMesh);
+
+let targetCamZ = 8.4;
+function updateCameraTarget() {
+  const w = canvas.parentElement.clientWidth;
+  if (state.orientation === 'vertical') {
+    targetCamZ = w < 520 ? 9.8 : 8.4;
+    shadowMesh.position.y = -2.18;
+  } else {
+    targetCamZ = w < 520 ? 9.3 : 7.5;
+    shadowMesh.position.y = -1.62;
+  }
+}
+
+function applyOrientation(orient) {
+  state.orientation = orient;
+  const isV = orient === 'vertical';
+  const g = isV ? geosV : geosH;
+  bodyMesh.geometry = g.edgeGeo; frontMesh.geometry = g.faceGeo; backMesh.geometry = g.faceGeo;
+  frontMat.map = isV ? texFV : texFH; backMat.map = isV ? texBV : texBH;
+  frontMat.needsUpdate = true; backMat.needsUpdate = true;
+  document.querySelectorAll('.orient-btn').forEach(b => b.classList.toggle('active', b.dataset.orient === orient));
+  document.getElementById('hudOrient').textContent = isV ? I18N[state.lang].toHoriz : I18N[state.lang].toVert;
+  updateCameraTarget();
+  dirtyFront = true; dirtyBack = true;
+}
+
+function applyMaterial(mat) {
+  state.material = mat;
+  [frontMat, backMat].forEach(m => {
+    m.metalness = mat.metalness; m.roughness = mat.roughness; m.clearcoat = mat.clearcoat; m.needsUpdate = true;
+  });
+  dirtyFront = true; dirtyBack = true;
+}
+
+let revealAnim = null;
+function syncStageTheme(animateBg = true) {
+  const activeSide = state.targetSide === 0 ? 'front' : 'back';
+  const bg = getEffectiveBg(activeSide);
+  const tint = resolveStageTint(bg);
+  document.documentElement.style.setProperty('--stage-accent', state.colors.tipShape);
+
+  if (!animateBg) { document.documentElement.style.setProperty('--stage-bg', tint); return; }
+  const el = document.getElementById('stageReveal');
+  if (revealAnim) cancelAnimationFrame(revealAnim);
+  el.style.background = tint;
+  const start = performance.now();
+  function tick(now) {
+    const t = Math.min(1, (now - start) / 480);
+    const pct = (1 - Math.pow(1 - t, 3)) * 130;
+    const mask = `radial-gradient(circle at 50% 48%, #000 ${Math.max(0, pct - 24)}%, transparent ${pct}%)`;
+    el.style.maskImage = mask; el.style.webkitMaskImage = mask;
+    if (t < 1) revealAnim = requestAnimationFrame(tick);
+    else {
+      document.documentElement.style.setProperty('--stage-bg', tint);
+      el.style.background = 'transparent'; el.style.maskImage = ''; el.style.webkitMaskImage = '';
+    }
+  }
+  revealAnim = requestAnimationFrame(tick);
+}
+
+/* ===================== منطق چرخش پیوسته (تب ۱ و ۴) و نوسان ملایم (تب ۲ و ۳) ===================== */
+let curRotY = 0, curRotX = 0.05;
+let spinAngle = 0;         // زاویه چرخش پیوسته برای تب ۱ و ۴
+let goalLockY = 0;         // زاویه هدف کوتاه‌ترین مسیر برای تب ۲ و ۳
+let dragOffsetY = 0, dragOffsetX = 0;
+let isDragging = false, lastX = 0, lastY = 0, lastDragDir = 0;
+let prevTime = 0, swayStart = 0;
+
+function isContinuousSpinStep() {
+  return state.step === 3;
+}
+
+function shortestAngleTarget(current, desiredMod2Pi) {
+  const twoPi = Math.PI * 2;
+  const diff = (((desiredMod2Pi - current) % twoPi) + twoPi + Math.PI) % twoPi - Math.PI;
+  return current + diff;
+}
+
+canvas.addEventListener('pointerdown', e => {
+  isDragging = true; lastX = e.clientX; lastY = e.clientY; lastDragDir = 0;
+  canvas.setPointerCapture(e.pointerId);
+});
+canvas.addEventListener('pointermove', e => {
+  if (!isDragging) return;
+  const dx = e.clientX - lastX;
+  const dy = e.clientY - lastY;
+  lastX = e.clientX; lastY = e.clientY;
+  if (Math.abs(dx) > 1) lastDragDir = Math.sign(dx);
+  if (isContinuousSpinStep()) {
+    spinAngle += dx * 0.011;
+  } else {
+    dragOffsetY += dx * 0.011;
+  }
+  dragOffsetX = Math.max(-0.55, Math.min(0.55, dragOffsetX + dy * 0.008));
+});
+const stopDrag = () => {
+  if (!isDragging) return;
+  isDragging = false;
+  if (state.step === 0) {
+    const totalY = goalLockY + dragOffsetY;
+    // قفل هوشمند روی جلو یا پشت کارت در جهت چرخش کاربر (جلوگیری از توقف روی لبه)
+    const snappedSteps = Math.round((totalY + lastDragDir * 0.5) / Math.PI);
+    goalLockY = snappedSteps * Math.PI;
+    dragOffsetY = 0;
+
+    const isBack = Math.abs(snappedSteps % 2) === 1;
+    state.targetSide = isBack ? Math.PI : 0;
+    document.getElementById('btnFront').classList.toggle('active', !isBack);
+    document.getElementById('btnBack').classList.toggle('active', isBack);
+    syncStageTheme(true);
+  }
+};
+canvas.addEventListener('pointerup', stopDrag);
+canvas.addEventListener('pointercancel', stopDrag);
+
+function resizeStage() {
+  const stage = canvas.parentElement;
+  const w = stage.clientWidth, h = stage.clientHeight;
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  updateCameraTarget();
+  camera.updateProjectionMatrix();
+}
+window.addEventListener('resize', resizeStage);
+resizeStage();
+
+function animate(t) {
+  requestAnimationFrame(animate);
+  const dt = prevTime ? Math.min(50, t - prevTime) : 16;
+  prevTime = t;
+
+  const isV = state.orientation === 'vertical';
+  if (dirtyFront) {
+    if (isV) { drawFront(frontCanvasV.getContext('2d'), VW, VH, true); texFV.needsUpdate = true; }
+    else     { drawFront(frontCanvasH.getContext('2d'), HW, HH, false); texFH.needsUpdate = true; }
+    dirtyFront = false;
+  }
+  if (dirtyBack) {
+    if (isV) { drawBack(backCanvasV.getContext('2d'), VW, VH, true); texBV.needsUpdate = true; }
+    else     { drawBack(backCanvasH.getContext('2d'), HW, HH, false); texBH.needsUpdate = true; }
+    dirtyBack = false;
+  }
+
+  let targetY, targetX;
+  if (isContinuousSpinStep()) {
+    // تب اول و آخر: چرخش آرام و پیوسته ۳۶۰ درجه
+    if (!isDragging) {
+      spinAngle += dt * 0.0006;
+      dragOffsetX *= 0.94;
+    }
+    targetY = spinAngle;
+    targetX = 0.06 + Math.cos(t * 0.001) * 0.03 + dragOffsetX;
+  } else {
+    // تب اول: توقف در زاویه دلخواه + نوسان ملایم | تب‌های ویرایش: بازگشت به وجه فعال + نوسان ملایم
+    if (isDragging) {
+      swayStart = t;
+    } else {
+      if (state.step !== 0) dragOffsetY *= 0.93;
+      dragOffsetX *= 0.93;
+    }
+    const gentleSway = isDragging ? 0 : Math.sin((t - swayStart) * 0.0012) * 0.28;
+    targetY = goalLockY + gentleSway + dragOffsetY;
+    targetX = 0.04 + Math.cos(t * 0.001) * 0.025 + dragOffsetX;
+  }
+
+  curRotY += (targetY - curRotY) * 0.1;
+  curRotX += (targetX - curRotX) * 0.1;
+  camera.position.z += (targetCamZ - camera.position.z) * 0.1;
+
+  cardGroup.rotation.y = curRotY;
+  cardGroup.rotation.x = curRotX;
+  cardGroup.position.y = Math.sin(t * 0.0018) * 0.065;
+  shadowMesh.scale.set((isV ? 0.72 : 1.05) * Math.max(0.32, Math.abs(Math.cos(curRotY))), 1, 1);
+
+  renderer.render(scene, camera);
+}
+
+/* ===================== استودیوی انتخاب رنگ و گرادیانت پس‌زمینه ===================== */
+function renderColorStudio(containerId, sideKey) {
+  const root = document.getElementById(containerId);
+  if (!root) return;
+  const bg = sideKey === 'front' ? state.frontBg : state.backBg;
+  const d = I18N[state.lang];
+
+  const markDirty = (animateStage = true) => {
+    dirtyFront = true; dirtyBack = true;
+    if (animateStage) syncStageTheme(true);
+  };
+
+  root.innerHTML = `
+    <div class="cs-tabs">
+      <button type="button" class="cs-tab ${bg.tab === 'solid' ? 'active' : ''}" data-t="solid">${d.tabSolid}</button>
+      <button type="button" class="cs-tab ${bg.tab === 'custom' ? 'active' : ''}" data-t="custom">${d.tabCustom}</button>
+      <button type="button" class="cs-tab ${bg.tab === 'grad' ? 'active' : ''}" data-t="grad">${d.tabGrad}</button>
+      <button type="button" class="cs-tab ${bg.tab === 'customGrad' ? 'active' : ''}" data-t="customGrad">${d.tabCustomGrad}</button>
+    </div>
+    <div class="cs-body"></div>
+  `;
+
+  const body = root.querySelector('.cs-body');
+  if (bg.tab === 'solid') {
+    body.innerHTML = `<div class="swatch-grid">${SOLID_PRESETS.map(p => `
+      <button type="button" class="swatch-chip ${bg.solidColor.toLowerCase() === p.color.toLowerCase() ? 'active' : ''}"
+        data-col="${p.color}" data-acc="${p.accent}" style="background:${p.color}">
+        <span>${p.name[state.lang]}</span>
+      </button>`).join('')}</div>`;
+    body.querySelectorAll('.swatch-chip').forEach(btn => btn.onclick = () => {
+      bg.solidColor = btn.dataset.col;
+      applySmartPaletteForSide(sideKey, bg, btn.dataset.acc);
+      renderColorStudio(containerId, sideKey);
+      markDirty(true);
+    });
+  } else if (bg.tab === 'custom') {
+    body.innerHTML = `<label class="picker-pill"><input type="color" class="solid-inp" value="${bg.solidColor}" /><code>${bg.solidColor.toUpperCase()}</code></label>`;
+    const inp = body.querySelector('.solid-inp');
+    inp.oninput = e => {
+      bg.solidColor = e.target.value;
+      body.querySelector('code').textContent = bg.solidColor.toUpperCase();
+      markDirty(false);
+    };
+    inp.onchange = () => syncStageTheme(true);
+  } else if (bg.tab === 'grad') {
+    body.innerHTML = `<div class="swatch-grid">${GRADIENT_PRESETS.map(g => {
+      const css = g.type === 'radial' ? `radial-gradient(circle,${g.c1},${g.c2})` : `linear-gradient(${g.angle}deg,${g.c1},${g.c2})`;
+      const isAct = bg.c1.toLowerCase() === g.c1.toLowerCase() && bg.c2.toLowerCase() === g.c2.toLowerCase();
+      return `<button type="button" class="swatch-chip ${isAct ? 'active' : ''}" data-gid="${g.id}" style="background:${css}"><span>${g.name[state.lang]}</span></button>`;
+    }).join('')}</div>`;
+    body.querySelectorAll('.swatch-chip').forEach(btn => btn.onclick = () => {
+      const g = GRADIENT_PRESETS.find(x => x.id === btn.dataset.gid);
+      bg.gradType = g.type; bg.c1 = g.c1; bg.c2 = g.c2; bg.angle = g.angle;
+      applySmartPaletteForSide(sideKey, bg, g.accent);
+      renderColorStudio(containerId, sideKey);
+      markDirty(true);
+    });
+  } else {
+    body.innerHTML = `
+      <div class="color-chips-row">
+        <label class="picker-pill"><input type="color" class="g1-inp" value="${bg.c1}" /><code>${bg.c1.toUpperCase()}</code></label>
+        <label class="picker-pill"><input type="color" class="g2-inp" value="${bg.c2}" /><code>${bg.c2.toUpperCase()}</code></label>
+        <button type="button" class="hud-btn gtype-btn" style="padding:5px 11px;font-size:11px">${bg.gradType === 'radial' ? d.lblRadial : d.lblLinear}</button>
+      </div>
+      <div class="angle-row" style="display:${bg.gradType === 'radial' ? 'none' : 'flex'}">
+        <span>${d.lblAngle}</span>
+        <input type="range" class="gang-inp" min="0" max="360" value="${bg.angle}" />
+        <code style="font-family:'DM Mono',monospace">${bg.angle}°</code>
+      </div>`;
+    body.querySelector('.g1-inp').oninput = e => { bg.c1 = e.target.value; e.target.nextElementSibling.textContent = bg.c1.toUpperCase(); markDirty(false); };
+    body.querySelector('.g2-inp').oninput = e => { bg.c2 = e.target.value; e.target.nextElementSibling.textContent = bg.c2.toUpperCase(); markDirty(false); };
+    body.querySelector('.gtype-btn').onclick = () => { bg.gradType = bg.gradType === 'linear' ? 'radial' : 'linear'; renderColorStudio(containerId, sideKey); markDirty(false); };
+    const ang = body.querySelector('.gang-inp');
+    if (ang) ang.oninput = e => { bg.angle = Number(e.target.value); e.target.nextElementSibling.textContent = bg.angle + '°'; markDirty(false); };
+  }
+
+  root.querySelectorAll('.cs-tab').forEach(btn => btn.onclick = () => {
+    bg.tab = btn.dataset.t;
+    renderColorStudio(containerId, sideKey);
+    markDirty(true);
+  });
+}
+
+/* ===================== مدیریت رابط کاربری و رویدادها ===================== */
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+
+function buildStep1Lists() {
+  const tg = $('#tplGrid'); tg.innerHTML = '';
+  TEMPLATES.forEach(tpl => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'tpl-card' + (tpl.id === state.template ? ' active' : '');
+    b.innerHTML = `<span class="tpl-name">${tpl.name[state.lang]}</span><span class="tpl-desc">${tpl.desc[state.lang]}</span>`;
+    b.onclick = () => {
+      state.template = tpl.id;
+      $$('.tpl-card').forEach(c => c.classList.remove('active')); b.classList.add('active');
+      dirtyFront = true; dirtyBack = true;
+    };
+    tg.appendChild(b);
+  });
+
+  const mg = $('#matGrid'); mg.innerHTML = '';
+  MATERIALS.forEach(mat => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'mat-card' + (mat.id === state.material.id ? ' active' : '');
+    b.innerHTML = `<span class="mat-title">${mat.name[state.lang]}</span><span class="mat-price">${mat.price.toLocaleString()}</span>`;
+    b.onclick = () => {
+      $$('.mat-card').forEach(c => c.classList.remove('active')); b.classList.add('active');
+      applyMaterial(mat); updatePrice();
+    };
+    mg.appendChild(b);
+  });
+}
+
+function setCardSide(side) {
+  const desired = side === 'back' ? Math.PI : 0;
+  state.targetSide = desired;
+  dragOffsetY = 0;
+
+  if (isContinuousSpinStep()) {
+    spinAngle = shortestAngleTarget(curRotY, desired);
+  } else {
+    goalLockY = shortestAngleTarget(curRotY, desired);
+  }
+
+  $('#btnFront').classList.toggle('active', side === 'front');
+  $('#btnBack').classList.toggle('active', side === 'back');
+  syncStageTheme(true);
+}
+
+function goStep(idx) {
+  const wasSpinning = isContinuousSpinStep();
+  state.step = Math.max(0, Math.min(3, idx));
+  const nowSpinning = isContinuousSpinStep();
+
+  $('#bigNum').textContent = '0' + (state.step + 1);
+  $$('.step-pill').forEach((p, i) => {
+    p.classList.toggle('active', i === state.step);
+    p.classList.toggle('done', i < state.step);
+  });
+  $$('.step-pane').forEach((pane, i) => pane.classList.toggle('active', i === state.step));
+
+  $('#btnPrev').style.display = state.step === 0 ? 'none' : 'inline-flex';
+  $('#btnNext').textContent = state.step === 3 ? I18N[state.lang].submit : I18N[state.lang].next;
+
+  if (nowSpinning && !wasSpinning) {
+    // ادامه چرخش پیوسته دقیقاً از زاویه فعلی بدون پرش
+    spinAngle = curRotY;
+    dragOffsetY = 0;
+  } else if (state.step === 0 || state.step === 1) {
+    setCardSide('front');
+  } else if (state.step === 2) {
+    setCardSide('back');
+  }
+}
+
+function updatePrice() {
+  const total = Math.round(state.material.price * state.qty * (1 - state.disc / 100));
+  $('#priceDisplay').textContent = `${total.toLocaleString()} ${I18N[state.lang].currency}`;
+  return total;
+}
+
+function updateReadyDesignUI() {
+  const d = I18N[state.lang];
+
+  const hasF = Boolean(state.fullFrontImg);
+  $('#readyFrontBox').classList.toggle('has-image', hasF);
+  $('#frontEditorControls').classList.toggle('is-disabled', hasF);
+  $('#frontEditorControls').inert = hasF;
+  $('#btnClearFullFront').classList.toggle('show', hasF);
+  $('#fullFrontFitBtn').classList.toggle('show', hasF);
+  $('#fullFrontFitBtn').textContent = state.fullFrontFit === 'cover' ? d.fitCover : d.fitContain;
+  $('#fullFrontMeta').textContent = hasF ? d.uploadedBadge : '';
+
+  const hasB = Boolean(state.fullBackImg);
+  $('#readyBackBox').classList.toggle('has-image', hasB);
+  $('#backEditorControls').classList.toggle('is-disabled', hasB);
+  $('#backEditorControls').inert = hasB;
+  $('#btnClearFullBack').classList.toggle('show', hasB);
+  $('#fullBackFitBtn').classList.toggle('show', hasB);
+  $('#fullBackFitBtn').textContent = state.fullBackFit === 'cover' ? d.fitCover : d.fitContain;
+  $('#fullBackMeta').textContent = hasB ? d.uploadedBadge : '';
+}
+
+function applyLanguage(lang) {
+  state.lang = lang;
+  const d = I18N[lang];
+  document.documentElement.lang = lang;
+  document.documentElement.dir = d.dir;
+  $$('[data-i18n]').forEach(el => { if (d[el.dataset.i18n]) el.textContent = d[el.dataset.i18n]; });
+  $$('.lang-switch button').forEach(b => b.classList.toggle('active', b.dataset.lang === lang));
+  $('#hudOrient').textContent = state.orientation === 'vertical' ? d.toHoriz : d.toVert;
+
+  buildStep1Lists();
+  renderColorStudio('frontColorStudio', 'front');
+  renderColorStudio('backColorStudio', 'back');
+  updateReadyDesignUI();
+  goStep(state.step);
+  updatePrice();
+  dirtyFront = true; dirtyBack = true;
+}
+
+/* ===================== اتصال همه رویدادها ===================== */
+$$('.orient-btn').forEach(b => b.addEventListener('click', () => applyOrientation(b.dataset.orient)));
+$('#hudOrient').addEventListener('click', () => applyOrientation(state.orientation === 'vertical' ? 'horizontal' : 'vertical'));
+
+// آپلود طرح آماده تمام‌صفحه روی کارت
+$('#inpFullFront').addEventListener('change', e => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const img = new Image();
+    img.onload = () => {
+      state.fullFrontImg = img;
+      updateReadyDesignUI();
+      dirtyFront = true;
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+});
+$('#btnClearFullFront').addEventListener('click', () => {
+  state.fullFrontImg = null;
+  $('#inpFullFront').value = '';
+  updateReadyDesignUI();
+  dirtyFront = true;
+});
+$('#fullFrontFitBtn').addEventListener('click', () => {
+  state.fullFrontFit = state.fullFrontFit === 'cover' ? 'contain' : 'cover';
+  updateReadyDesignUI();
+  dirtyFront = true;
+});
+
+// آپلود طرح آماده تمام‌صفحه پشت کارت
+$('#inpFullBack').addEventListener('change', e => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const img = new Image();
+    img.onload = () => {
+      state.fullBackImg = img;
+      updateReadyDesignUI();
+      dirtyBack = true;
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+});
+$('#btnClearFullBack').addEventListener('click', () => {
+  state.fullBackImg = null;
+  $('#inpFullBack').value = '';
+  updateReadyDesignUI();
+  dirtyBack = true;
+});
+$('#fullBackFitBtn').addEventListener('click', () => {
+  state.fullBackFit = state.fullBackFit === 'cover' ? 'contain' : 'cover';
+  updateReadyDesignUI();
+  dirtyBack = true;
+});
+
+// ورودی‌های متن
+$('#inpCompany').addEventListener('input', e => { state.company = e.target.value; dirtyFront = true; });
+$('#inpSlogan').addEventListener('input', e => { state.slogan = e.target.value; dirtyFront = true; });
+$('#inpName').addEventListener('input', e => { state.name = e.target.value; dirtyBack = true; });
+$('#inpRole').addEventListener('input', e => { state.role = e.target.value; dirtyBack = true; });
+$('#inpUser').addEventListener('input', e => { state.username = e.target.value; dirtyBack = true; });
+
+// انتخابگرهای رنگ مستقل
+function bindColor(id, key, affectsFront, affectsBack) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener('input', e => {
+    state.colors[key] = e.target.value;
+    if (affectsFront) dirtyFront = true;
+    if (affectsBack) dirtyBack = true;
+  });
+}
+bindColor('colCompany',     'company',     true,  false);
+bindColor('colSlogan',      'slogan',      true,  false);
+bindColor('colSloganBadge', 'sloganBadge', true,  false);
+bindColor('colFrontLine1',  'frontLine1',  true,  false);
+bindColor('colFrontLine2',  'frontLine2',  true,  false);
+bindColor('colTipShape',    'tipShape',    true,  false);
+bindColor('colName',        'name',        false, true);
+bindColor('colRole',        'role',        false, true);
+bindColor('colRoleBadge',   'roleBadge',   false, true);
+bindColor('colBackLine1',   'backLine1',   false, true);
+bindColor('colBackLine2',   'backLine2',   false, true);
+bindColor('colNfc',         'nfc',         true,  true);
+bindColor('colQr',          'qr',          false, true);
+
+// کادر شعار و موقعیت شغلی
+$$('#sloganBadgeSeg button').forEach(btn => btn.addEventListener('click', () => {
+  state.sloganBadgeMode = btn.dataset.val;
+  $$('#sloganBadgeSeg button').forEach(b => b.classList.toggle('active', b === btn));
+  dirtyFront = true;
+}));
+$$('#roleBadgeSeg button').forEach(btn => btn.addEventListener('click', () => {
+  state.roleBadgeMode = btn.dataset.val;
+  $$('#roleBadgeSeg button').forEach(b => b.classList.toggle('active', b === btn));
+  dirtyBack = true;
+}));
+
+// شکل نوک خطوط
+$$('#tipShapeStrip button').forEach(btn => btn.addEventListener('click', () => {
+  state.tipShape = btn.dataset.shape;
+  $$('#tipShapeStrip button').forEach(b => b.classList.toggle('active', b === btn));
+  dirtyFront = true;
+}));
+
+// آپلود لوگو (در حالت ویرایشگر)
+$('#inpLogo').addEventListener('change', e => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const img = new Image();
+    img.onload = () => { state.customLogoImg = img; dirtyFront = true; $('#btnClearLogo').classList.add('show'); };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+});
+$('#btnClearLogo').addEventListener('click', () => {
+  state.customLogoImg = null; $('#inpLogo').value = ''; $('#btnClearLogo').classList.remove('show'); dirtyFront = true;
+});
+
+$('#togSyncBg').addEventListener('click', e => {
+  state.syncBackBg = !state.syncBackBg;
+  e.currentTarget.setAttribute('aria-checked', String(state.syncBackBg));
+  $('#backColorWrap').style.display = state.syncBackBg ? 'none' : 'flex';
+  dirtyBack = true;
+  syncStageTheme(true);
+});
+
+$('#togQr').addEventListener('click', e => {
+  state.showQr = !state.showQr;
+  e.currentTarget.setAttribute('aria-checked', String(state.showQr));
+  dirtyBack = true;
+});
+
+$('#togNfc').addEventListener('click', e => {
+  state.showNfc = !state.showNfc;
+  e.currentTarget.setAttribute('aria-checked', String(state.showNfc));
+  dirtyFront = true; dirtyBack = true;
+});
+
+$$('#qtyGrid button').forEach(btn => btn.addEventListener('click', () => {
+  state.qty = Number(btn.dataset.qty); state.disc = Number(btn.dataset.disc);
+  $$('#qtyGrid button').forEach(b => b.classList.toggle('active', b === btn));
+  updatePrice();
+}));
+
+$$('.step-pill').forEach(p => p.addEventListener('click', () => goStep(Number(p.dataset.step))));
+$$('.lang-switch button').forEach(b => b.addEventListener('click', () => applyLanguage(b.dataset.lang)));
+$('#btnFront').addEventListener('click', () => setCardSide('front'));
+$('#btnBack').addEventListener('click', () => setCardSide('back'));
+$('#btnPrev').addEventListener('click', () => goStep(state.step - 1));
+
+$('#btnNext').addEventListener('click', () => {
+  if (state.step < 3) goStep(state.step + 1);
+  else {
+    const total = updatePrice();
+    const tplName = TEMPLATES.find(t => t.id === state.template).name[state.lang];
+    const orientTxt = state.orientation === 'vertical' ? I18N[state.lang].vert : I18N[state.lang].horiz;
+    const frontTxt = state.fullFrontImg ? 'طرح آماده آپلودی' : `${state.company} (${tplName})`;
+    const backTxt  = state.fullBackImg  ? 'طرح آماده آپلودی' : `${state.name} • QR: aryal.ink/${state.username || 'arya'}`;
+    $('#orderSummary').innerHTML = `
+      <div><span>جهت و جنس:</span><strong>${orientTxt} • ${state.material.name[state.lang]}</strong></div>
+      <div><span>روی کارت:</span><strong>${frontTxt}</strong></div>
+      <div><span>پشت کارت:</span><strong>${backTxt}</strong></div>
+      <div><span>تعداد و شهر:</span><strong>${state.qty} عدد • ${$('#inpCity').value}</strong></div>
+      <div><span>مبلغ نهایی:</span><strong>${total.toLocaleString()} ${I18N[state.lang].currency}</strong></div>
+    `;
+    $('#orderModal').classList.add('open');
+  }
+});
+$('#btnCloseModal').addEventListener('click', () => $('#orderModal').classList.remove('open'));
+
+document.fonts.ready.then(() => {
+  buildStep1Lists();
+  renderColorStudio('frontColorStudio', 'front');
+  renderColorStudio('backColorStudio', 'back');
+  syncColorInputsFromState();
+  updateReadyDesignUI();
+  applyOrientation('vertical');
+  applyMaterial(state.material);
+  syncStageTheme(false);
+  updatePrice();
+  requestAnimationFrame(animate);
+});
+</script>
+</body>
+</html>

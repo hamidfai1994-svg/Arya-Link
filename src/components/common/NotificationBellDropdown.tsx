@@ -42,7 +42,7 @@ interface NotificationBellDropdownProps {
 
 export function NotificationBellDropdown({ mode }: NotificationBellDropdownProps) {
   const router = useRouter();
-  const { dir } = useLanguage();
+  const { dir, t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -165,8 +165,8 @@ export function NotificationBellDropdown({ mode }: NotificationBellDropdownProps
           if (!isOpen) fetchNotifications(true);
         }}
         className="relative p-2 rounded-xl border border-border bg-muted/50 hover:bg-muted text-foreground transition-colors cursor-pointer"
-        aria-label="اعلانات و رخدادها"
-        title="اعلانات سیستم"
+        aria-label={t('notifications.title', 'اعلانات و رخدادهای اخیر')}
+        title={t('notifications.title', 'اعلانات و رخدادهای اخیر')}
       >
         <Bell className="w-4 h-4" />
         {unreadCount > 0 && (
@@ -184,16 +184,16 @@ export function NotificationBellDropdown({ mode }: NotificationBellDropdownProps
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 6, scale: 0.97 }}
             transition={{ duration: 0.16, ease: 'easeOut' }}
-            className="absolute left-0 mt-2 w-80 sm:w-96 rounded-2xl border border-border bg-card/95 backdrop-blur-xl shadow-2xl z-50 overflow-hidden"
+            className="absolute left-0 rtl:left-0 ltr:right-0 ltr:left-auto mt-2 w-80 sm:w-96 rounded-2xl border border-border bg-card/95 backdrop-blur-xl shadow-2xl z-50 overflow-hidden"
           >
             {/* Header */}
             <div className="p-3.5 border-b border-border bg-muted/40 flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <Bell className="w-4 h-4 text-cyan-500" />
-                <span className="text-xs font-bold text-foreground">اعلانات و رخدادهای اخیر</span>
+                <span className="text-xs font-bold text-foreground">{t('notifications.title')}</span>
                 {unreadCount > 0 && (
                   <span className="px-1.5 py-0.5 rounded-full bg-rose-500/15 text-rose-500 border border-rose-500/30 text-[10px] font-bold font-sans">
-                    {unreadCount} نخوانده
+                    {unreadCount} {t('notifications.unread_suffix')}
                   </span>
                 )}
               </div>
@@ -205,17 +205,17 @@ export function NotificationBellDropdown({ mode }: NotificationBellDropdownProps
                     onClick={handleMarkAllRead}
                     disabled={isMarkingAll}
                     className="px-2 py-1 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 text-[10px] font-bold flex items-center gap-1 transition-colors cursor-pointer"
-                    title="علامت‌گذاری همه به عنوان خوانده‌شده"
+                    title={t('notifications.mark_all')}
                   >
                     <CheckCheck className="w-3 h-3" />
-                    <span>خواندن همه</span>
+                    <span>{t('notifications.mark_all')}</span>
                   </button>
                 )}
                 <button
                   type="button"
                   onClick={handleClearRead}
                   className="p-1.5 rounded-lg text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer"
-                  title="پاک‌سازی اعلانات خوانده‌شده"
+                  title={t('notifications.clear_read')}
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
@@ -227,14 +227,14 @@ export function NotificationBellDropdown({ mode }: NotificationBellDropdownProps
               {isLoading && notifications.length === 0 ? (
                 <div className="py-10 text-center space-y-2 text-muted-foreground">
                   <RefreshCw className="w-5 h-5 mx-auto animate-spin text-cyan-500" />
-                  <p className="text-xs">در حال بارگذاری اعلانات...</p>
+                  <p className="text-xs">{t('notifications.loading')}</p>
                 </div>
               ) : notifications.length === 0 ? (
                 <div className="py-10 text-center space-y-2 text-muted-foreground px-4">
                   <Bell className="w-7 h-7 mx-auto opacity-30" />
-                  <p className="text-xs font-semibold">هیچ اعلان جدیدی موجود نیست</p>
+                  <p className="text-xs font-semibold">{t('notifications.empty_title')}</p>
                   <p className="text-[11px] opacity-75">
-                    رخدادهای مهم حساب کاربری و پیام‌ها در این قسمت نمایان می‌شوند.
+                    {t('notifications.empty_desc')}
                   </p>
                 </div>
               ) : (

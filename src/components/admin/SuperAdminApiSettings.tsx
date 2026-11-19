@@ -26,6 +26,7 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { TelegramConnectCard } from '@/components/common/TelegramConnectCard';
+import { useLanguage } from '@/lib/i18n/LanguageContext';
 
 interface SystemSettingsState {
   telegramSupportChatId: string;
@@ -50,6 +51,7 @@ const defaultSettings: SystemSettingsState = {
 };
 
 export function SuperAdminApiSettings() {
+  const { dir, t } = useLanguage();
   const [settings, setSettings] = useState<SystemSettingsState>(defaultSettings);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -85,7 +87,7 @@ export function SuperAdminApiSettings() {
       }
     } catch (err) {
       console.error('Error loading system settings:', err);
-      toast.error('خطا در دریافت تنظیمات اعلان‌های سیستم.');
+      toast.error(t('apiSettings.load_error'));
     } finally {
       setIsLoading(false);
     }
@@ -93,7 +95,7 @@ export function SuperAdminApiSettings() {
 
   const handleSave = async () => {
     setIsSaving(true);
-    const toastId = toast.loading('در حال ذخیره‌سازی تنظیمات...');
+    const toastId = toast.loading(t('common.saving'));
     try {
       const res = await fetch('/api/admin/settings/system', {
         method: 'PUT',
@@ -104,15 +106,15 @@ export function SuperAdminApiSettings() {
       const json = await res.json();
       if (json.success) {
         setIsDirty(false);
-        toast.success(json.message || 'تنظیمات کلان API و تلگرام با موفقیت ذخیره شد.', {
+        toast.success(json.message || t('apiSettings.save_ok'), {
           id: toastId,
         });
       } else {
-        toast.error(json.message || 'خطا در ذخیره‌سازی تنظیمات.', { id: toastId });
+        toast.error(json.message || t('toast.save_error'), { id: toastId });
       }
     } catch (err) {
       console.error('Save error:', err);
-      toast.error('خطای ارتباط با سرور در هنگام ذخیره تنظیمات.', { id: toastId });
+      toast.error(t('toast.network_error'), { id: toastId });
     } finally {
       setIsSaving(false);
     }
@@ -125,7 +127,7 @@ export function SuperAdminApiSettings() {
 
   const handleCleanupStorage = async () => {
     setIsCleaningStorage(true);
-    const toastId = toast.loading('در حال بررسی و پاکسازی فایل‌های بلااستفاده هاست...');
+    const toastId = toast.loading(t('apiSettings.storage_cleaning'));
     try {
       const res = await fetch('/api/admin/cleanup-uploads', { method: 'POST' });
       const data = await res.json();
@@ -135,16 +137,15 @@ export function SuperAdminApiSettings() {
           deletedCount: data.deletedCount ?? 0,
           keptCount: data.keptCount ?? 0,
         });
-        toast.success(`${data.freedMB} مگابایت فضای هاست آزاد شد`, {
+        toast.success(`${data.freedMB} MB freed (${data.deletedCount} files)`, {
           id: toastId,
-          description: `${data.deletedCount} فایل یتیم حذف گردید.`,
         });
       } else {
-        toast.error(data.message || 'خطا در پاکسازی فایل‌های اضافی.', { id: toastId });
+        toast.error(data.message || t('apiSettings.storage_error'), { id: toastId });
       }
     } catch (err) {
       console.error('Storage cleanup error:', err);
-      toast.error('خطای ارتباط با سرور در هنگام پاکسازی هاست.', { id: toastId });
+      toast.error(t('toast.network_error'), { id: toastId });
     } finally {
       setIsCleaningStorage(false);
     }
@@ -154,13 +155,13 @@ export function SuperAdminApiSettings() {
     return (
       <Card className="p-8 border-border bg-card/60 backdrop-blur-sm flex flex-col items-center justify-center gap-3 text-muted-foreground min-h-[300px]">
         <RefreshCw className="w-6 h-6 animate-spin text-cyan-500" />
-        <span className="text-xs font-medium">در حال بارگذاری تنظیمات API و اعلان‌ها...</span>
+        <span className="text-xs font-medium">{t('apiSettings.loading')}</span>
       </Card>
     );
   }
 
   return (
-    <div className="space-y-6 select-none font-sans" dir="rtl">
+    <div className="space-y-6 select-none font-sans" dir={dir}>
       {/* Header Banner */}
       <Card className="p-5 border-cyan-500/20 bg-gradient-to-r from-cyan-950/20 via-slate-900/40 to-slate-950/60 rounded-3xl relative overflow-hidden">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -171,14 +172,14 @@ export function SuperAdminApiSettings() {
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-base font-bold text-foreground">
-                  مدیریت API و اعلان‌های کلان سیستم
+                  {t('apiSettings.title')}
                 </h2>
                 <Badge variant="cyan" className="text-[10px] font-bold">
-                  سیستمی و امنیتی
+                  {t('apiSettings.badge')}
                 </Badge>
               </div>
               <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                تنظیم ارتباط دوگانه ربات‌های تلگرام (پشتیبانی و آمار/فروش) و رخدادهای سیستمی کل پلتفرم آریا لینک
+                {t('apiSettings.subtitle')}
               </p>
             </div>
           </div>
@@ -194,12 +195,12 @@ export function SuperAdminApiSettings() {
             {isSaving ? (
               <>
                 <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                <span>در حال ذخیره...</span>
+                <span>{t('common.saving')}</span>
               </>
             ) : (
               <>
                 <Save className="w-3.5 h-3.5" />
-                <span>ذخیره تغییرات API</span>
+                <span>{t('apiSettings.save_btn')}</span>
               </>
             )}
           </Button>
@@ -215,17 +216,17 @@ export function SuperAdminApiSettings() {
             </div>
             <div>
               <span className="text-sm font-bold text-foreground block">
-                اتصال و وضعیت ربات‌های تلگرام
+                {t('apiSettings.bots_section')}
               </span>
               <span className="text-xs text-muted-foreground">
-                فعال‌سازی سراسری ارسال رخدادها به تلگرام مدیران
+                {t('apiSettings.bots_section_sub')}
               </span>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
             <span className="text-xs font-semibold text-muted-foreground hidden sm:inline">
-              {settings.telegramBotsActive ? 'فعال و متصل' : 'غیرفعال'}
+              {settings.telegramBotsActive ? t('apiSettings.active_status') : t('apiSettings.inactive_status')}
             </span>
             <Switch
               checked={settings.telegramBotsActive}
@@ -241,17 +242,17 @@ export function SuperAdminApiSettings() {
             <div className="flex items-center gap-2">
               <MessageSquare className="w-4 h-4 text-emerald-500" />
               <label className="text-xs font-bold text-foreground block">
-                آی دی ربات پشتیبانی و تیکت‌ها
+                {t('apiSettings.support_chat_label')}
               </label>
             </div>
             <p className="text-[11px] text-muted-foreground leading-normal">
-              آی دی چت یا کانال تلگرام برای دریافت تیکت‌های پشتیبانی و ارتباطات کاربران
+              {t('apiSettings.support_chat_desc')}
             </p>
             <Input
               type="text"
               value={settings.telegramSupportChatId}
               onChange={(e) => updateField('telegramSupportChatId', e.target.value)}
-              placeholder="-100123456789 یا @ChannelId"
+              placeholder="-100123456789 / @ChannelId"
               dir="ltr"
               className="font-mono text-xs text-left bg-card rounded-xl border-border"
             />
@@ -262,17 +263,17 @@ export function SuperAdminApiSettings() {
             <div className="flex items-center gap-2">
               <ShoppingCart className="w-4 h-4 text-sky-500" />
               <label className="text-xs font-bold text-foreground block">
-                آی دی ربات آمار و سفارشات (Insights & Orders Chat ID)
+                {t('apiSettings.insights_chat_label')}
               </label>
             </div>
             <p className="text-[11px] text-muted-foreground leading-normal">
-              آی دی چت یا کانال تلگرام جهت تفکیک اعلان‌های خرید کارت و آمار رشد پلتفرم
+              {t('apiSettings.insights_chat_desc')}
             </p>
             <Input
               type="text"
               value={settings.telegramInsightsChatId}
               onChange={(e) => updateField('telegramInsightsChatId', e.target.value)}
-              placeholder="-100987654321 یا @ChannelId"
+              placeholder="-100987654321 / @ChannelId"
               dir="ltr"
               className="font-mono text-xs text-left bg-card rounded-xl border-border"
             />
@@ -293,10 +294,10 @@ export function SuperAdminApiSettings() {
       <Card className="p-5 sm:p-6 border-border bg-card/80 rounded-3xl space-y-4">
         <div className="border-b border-border/70 pb-3">
           <span className="text-sm font-bold text-foreground block">
-            رویدادهای خودکار اعلان
+            {t('apiSettings.events_section')}
           </span>
           <span className="text-xs text-muted-foreground">
-            مشخص کنید کدام رخدادهای حیاتی پلتفرم بلافاصله اعلان فوری ایجاد کنند
+            {t('apiSettings.events_section_sub')}
           </span>
         </div>
 
@@ -308,10 +309,10 @@ export function SuperAdminApiSettings() {
             </div>
             <div>
               <span className="text-xs font-bold text-foreground block">
-                اعلان ثبت‌نام کاربر جدید
+                {t('apiSettings.event_new_user')}
               </span>
               <span className="text-[11px] text-muted-foreground block mt-0.5">
-                ارسال پیام خوش‌آمد و مشخصات ثبت‌نام هنگام ایجاد حساب جدید در سیستم
+                {t('apiSettings.event_new_user_desc')}
               </span>
             </div>
           </div>
@@ -331,10 +332,10 @@ export function SuperAdminApiSettings() {
             </div>
             <div>
               <span className="text-xs font-bold text-foreground block">
-                اعلان ثبت سفارشات خرید و کارت NFC
+                {t('apiSettings.event_orders')}
               </span>
               <span className="text-[11px] text-muted-foreground block mt-0.5">
-                هشدار فوری هنگام ثبت سفارش کارت فیزیکی یا خرید اشتراک همراه با فاکتور
+                {t('apiSettings.event_orders_desc')}
               </span>
             </div>
           </div>
@@ -354,10 +355,10 @@ export function SuperAdminApiSettings() {
             </div>
             <div>
               <span className="text-xs font-bold text-foreground block">
-                اعلان تیکت‌ها و پیام‌های پشتیبانی
+                {t('apiSettings.event_tickets')}
               </span>
               <span className="text-[11px] text-muted-foreground block mt-0.5">
-                ارسال فوری درخواست‌های پشتیبانی کاربران به ربات پشتیبانی تلگرام
+                {t('apiSettings.event_tickets_desc')}
               </span>
             </div>
           </div>
@@ -377,10 +378,10 @@ export function SuperAdminApiSettings() {
             </div>
             <div>
               <span className="text-xs font-bold text-foreground block">
-                هشدارهای امنیتی و سیستمی پلتفرم
+                {t('apiSettings.event_alerts')}
               </span>
               <span className="text-[11px] text-muted-foreground block mt-0.5">
-                اطلاع‌رسانی خطاهای سیستمی، حملات احتمالی و هشدارهای سرور
+                {t('apiSettings.event_alerts_desc')}
               </span>
             </div>
           </div>
@@ -401,14 +402,14 @@ export function SuperAdminApiSettings() {
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-foreground">
-                  پوش‌نوتیفیکیشن اپلیکیشن موبایل
+                  {t('apiSettings.push_title')}
                 </span>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25">
-                  اپلیکیشن (به زودی)
+                  {t('apiSettings.push_soon')}
                 </span>
               </div>
               <span className="text-[11px] text-muted-foreground block mt-0.5">
-                ارسال اعلان‌های سیستمی بر روی اپلیکیشن اختصاصی موبایل در نسخه‌های آتی
+                {t('apiSettings.push_desc')}
               </span>
             </div>
           </div>
@@ -429,10 +430,10 @@ export function SuperAdminApiSettings() {
             </div>
             <div>
               <h3 className="text-sm font-bold text-foreground">
-                نگهداری و پاکسازی فضای ذخیره‌سازی هاست
+                {t('apiSettings.storage_title')}
               </h3>
               <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                اسکن کامل تمام کالکشن‌های دیتابیس و حذف فیزیکی فایل‌های یتیم و بلااستفاده از پوشه آپلودها برای جلوگیری از پر شدن هاست
+                {t('apiSettings.storage_desc')}
               </p>
             </div>
           </div>
@@ -446,12 +447,12 @@ export function SuperAdminApiSettings() {
             {isCleaningStorage ? (
               <>
                 <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                <span>در حال پاکسازی...</span>
+                <span>{t('apiSettings.storage_cleaning')}</span>
               </>
             ) : (
               <>
                 <Trash2 className="w-3.5 h-3.5" />
-                <span>پاکسازی فایل‌های اضافی (آزادسازی هاست)</span>
+                <span>{t('apiSettings.storage_btn')}</span>
               </>
             )}
           </Button>
@@ -461,9 +462,7 @@ export function SuperAdminApiSettings() {
           <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 flex items-center gap-2.5 text-xs text-emerald-600 dark:text-emerald-400 font-semibold">
             <CheckCircle2 className="w-4 h-4 shrink-0" />
             <span>
-              {lastCleanupResult.freedMB} مگابایت فضای هاست آزاد شد —{' '}
-              {lastCleanupResult.deletedCount} فایل اضافی حذف و{' '}
-              {lastCleanupResult.keptCount} فایل معتبر حفظ گردید.
+              {lastCleanupResult.freedMB} MB freed — {lastCleanupResult.deletedCount} deleted / {lastCleanupResult.keptCount} kept
             </span>
           </div>
         )}

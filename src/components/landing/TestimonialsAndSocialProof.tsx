@@ -82,7 +82,7 @@ function AnimatedCounter({
 
 export function TestimonialsAndSocialProof() {
   const { testimonials } = useLandingCms();
-  const { language, dir } = useLanguage();
+  const { language, dir, t } = useLanguage();
 
   return (
     <section id="social-proof" dir={dir} className="py-20 sm:py-28 border-t border-border/80 relative overflow-hidden font-sans">
@@ -215,7 +215,7 @@ export function TestimonialsAndSocialProof() {
               <AnimatedCounter target={12400} suffix="+" />
             </div>
             <span className="text-xs text-slate-600 dark:text-slate-300 font-semibold mt-1 block">
-              کارت ویزیت هوشمند فعال
+              {t('testimonials.counter1')}
             </span>
           </div>
 
@@ -224,7 +224,7 @@ export function TestimonialsAndSocialProof() {
               <AnimatedCounter target={34} />
             </div>
             <span className="text-xs text-slate-600 dark:text-slate-300 font-semibold mt-1 block">
-              ولایت تحت پوشش ارسال پستی
+              {t('testimonials.counter2')}
             </span>
           </div>
 
@@ -233,7 +233,7 @@ export function TestimonialsAndSocialProof() {
               <AnimatedCounter target={99.8} decimals={1} suffix="%" />
             </div>
             <span className="text-xs text-slate-600 dark:text-slate-300 font-semibold mt-1 block">
-              رضایت و تایید کیفیت مشتریان
+              {t('testimonials.counter3')}
             </span>
           </div>
 
@@ -242,7 +242,7 @@ export function TestimonialsAndSocialProof() {
               <AnimatedCounter target={0.1} decimals={1} suffix="s" />
             </div>
             <span className="text-xs text-slate-600 dark:text-slate-300 font-semibold mt-1 block">
-              سرعت انتقال با چیپست NTAG216
+              {t('testimonials.counter4')}
             </span>
           </div>
         </div>

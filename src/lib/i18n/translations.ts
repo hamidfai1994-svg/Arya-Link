@@ -1,6 +1,9 @@
 import { SupportedLanguage } from './types';
+import faJson from '@/locales/fa.json';
+import enJson from '@/locales/en.json';
+import psJson from '@/locales/ps.json';
 
-export const translations: Record<SupportedLanguage, Record<string, string>> = {
+const baseTranslations: Record<SupportedLanguage, Record<string, string>> = {
   da: {
     // Nav
     'nav.home': 'صفحه اصلی',
@@ -397,3 +400,44 @@ export const translations: Record<SupportedLanguage, Record<string, string>> = {
     'common.cancel': 'Cancel',
   },
 };
+
+export const translations: Record<SupportedLanguage, Record<string, string>> = {
+  da: {
+    ...baseTranslations.da,
+    ...(faJson as Record<string, string>),
+  },
+  ps: {
+    ...baseTranslations.ps,
+    ...(psJson as Record<string, string>),
+  },
+  en: {
+    ...baseTranslations.en,
+    ...(enJson as Record<string, string>),
+  },
+};
+
+export function normalizeLanguageCode(lang?: string | null): SupportedLanguage {
+  if (!lang || typeof lang !== 'string') return 'da';
+  const cleaned = lang.trim().toLowerCase();
+  if (cleaned === 'en' || cleaned.startsWith('en-') || cleaned.startsWith('en_')) return 'en';
+  if (cleaned === 'ps' || cleaned.startsWith('ps-') || cleaned.startsWith('ps_')) return 'ps';
+  return 'da';
+}
+
+export function getDictionary(locale?: string | null): Record<string, string> {
+  const normalized = normalizeLanguageCode(locale);
+  return translations[normalized] || translations.da;
+}
+
+export function tServer(
+  locale: string | null | undefined,
+  key: string,
+  fallback?: string
+): string {
+  const normalized = normalizeLanguageCode(locale);
+  const dict = translations[normalized] || translations.da;
+  if (dict[key]) return dict[key];
+  if (translations.da[key]) return translations.da[key];
+  if (translations.en[key]) return translations.en[key];
+  return fallback || key;
+}

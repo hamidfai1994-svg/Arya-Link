@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getSiteContent, updateSiteContent } from '@/lib/cms-site-content';
+import { getRequestLocale } from '@/lib/i18n/server-locale';
+import { tServer } from '@/lib/i18n/translations';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,7 +12,8 @@ function isContentAdmin(session: any): boolean {
   return ['admin', 'superadmin', 'content_editor'].includes(role);
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const locale = getRequestLocale(req);
   try {
     const data = await getSiteContent();
     return NextResponse.json({
@@ -20,36 +23,38 @@ export async function GET() {
   } catch (error: any) {
     console.error('Error fetching site content:', error);
     return NextResponse.json(
-      { success: false, message: 'خطا در بارگذاری محتوای سایت.' },
+      { success: false, message: tServer(locale, 'toast.network_error') },
       { status: 500 }
     );
   }
 }
 
 export async function PUT(req: NextRequest) {
+  let locale = getRequestLocale(req);
   try {
     const session = await getServerSession(authOptions);
     if (!session || !isContentAdmin(session)) {
       return NextResponse.json(
-        { success: false, message: 'دسترسی غیرمجاز به ویرایش محتوای سایت.' },
+        { success: false, message: tServer(locale, 'toast.forbidden') },
         { status: 403 }
       );
     }
 
     const body = await req.json();
+    locale = getRequestLocale(req, body?.locale || body?.language);
     const updatedBy = session.user.name || session.user.email || 'Admin';
 
     const result = await updateSiteContent(body, updatedBy);
 
     return NextResponse.json({
       success: true,
-      message: 'محتوای سیستم با موفقیت به‌روزرسانی و در پایگاه داده ذخیره شد.',
+      message: tServer(locale, 'toast.save_success'),
       data: result,
     });
   } catch (error: any) {
     console.error('Error updating site content:', error);
     return NextResponse.json(
-      { success: false, message: error.message || 'خطا در ذخیره‌سازی محتوا.' },
+      { success: false, message: error.message || tServer(locale, 'toast.save_error') },
       { status: 500 }
     );
   }

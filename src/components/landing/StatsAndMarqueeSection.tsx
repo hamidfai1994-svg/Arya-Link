@@ -174,7 +174,7 @@ const PARTNERS = [
 ];
 
 export function StatsAndMarqueeSection() {
-  const { dir } = useLanguage();
+  const { dir, t } = useLanguage();
   const isRtl = dir === 'rtl';
 
   // Exact 2x duplication for 100% seamless mathematical loop without gaps
@@ -270,7 +270,7 @@ export function StatsAndMarqueeSection() {
               }}
               className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-card/80 border border-border/80 shadow-xs"
             >
-              <span className="font-bold text-foreground">مورد اعتماد صدها فرد و کسب‌وکار پیشرو</span>
+              <span className="font-bold text-foreground">{t('stats.trusted_heading', 'مورد اعتماد صدها فرد و کسب‌وکار پیشرو')}</span>
             </motion.div>
 
             <div className="hidden sm:inline-block text-border">•</div>
@@ -288,7 +288,7 @@ export function StatsAndMarqueeSection() {
                 ))}
               </div>
               <span className="font-bold text-foreground font-sans">4.9 / 5</span>
-              <span className="text-[11px] text-muted-foreground font-sans">(بیش از 1,200 کاربر راضی)</span>
+              <span className="text-[11px] text-muted-foreground font-sans">({t('stats.rating_text', 'بیش از 1,200 کاربر راضی')})</span>
             </motion.div>
           </div>
         </motion.div>

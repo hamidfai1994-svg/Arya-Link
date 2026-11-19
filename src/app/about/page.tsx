@@ -23,7 +23,7 @@ import { getLocalizedText } from '@/lib/i18n/multilingual';
 import { useSiteContent } from '@/context/SiteContentContext';
 
 export default function AboutPage() {
-  const { language, dir } = useLanguage();
+  const { language, dir, t } = useLanguage();
   const { aboutUs } = useSiteContent();
   const [company, setCompany] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -92,7 +92,7 @@ export default function AboutPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
           <div className="space-y-4">
             <Badge variant="outline" className="text-xs">
-              داستان شکل‌گیری
+              {t('pages.about.story_badge')}
             </Badge>
             <h2 className="text-2xl sm:text-3xl font-bold text-foreground">
               {getLocalizedText(aboutUs?.storyTitle, language, 'چرا آریا لینک را ساختیم؟')}
@@ -129,13 +129,13 @@ export default function AboutPage() {
         <div className="space-y-8 pt-8 border-t border-border">
           <div className="text-center max-w-xl mx-auto space-y-2">
             <Badge variant="cyan" className="text-xs">
-              پوشش سراسری
+              {t('pages.about.coverage_badge')}
             </Badge>
             <h2 className="text-2xl sm:text-3xl font-bold text-foreground">
-              دفتر مرکزی و نمایندگی‌های فعال در افغانستان
+              {t('pages.about.branches_title')}
             </h2>
             <p className="text-xs text-muted-foreground">
-              تحویل فوری کارت‌های فیزیکی هوشمند و ارائه خدمات پشتیبانی حضوری
+              {t('pages.about.branches_sub')}
             </p>
           </div>
 
@@ -149,7 +149,7 @@ export default function AboutPage() {
                   </div>
                   {branch.isMainBranch && (
                     <Badge variant="cyan" className="text-[10px]">
-                      دفتر مرکزی
+                      {t('pages.about.main_branch')}
                     </Badge>
                   )}
                 </div>
@@ -165,7 +165,7 @@ export default function AboutPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Users className="w-4 h-4 text-blue-500 shrink-0" />
-                    <span>مدیر شعبه: <strong>{getLocalizedText(branch.manager, language)}</strong></span>
+                    <span>{t('pages.about.branch_manager')} <strong>{getLocalizedText(branch.manager, language)}</strong></span>
                   </div>
                 </div>
               </Card>

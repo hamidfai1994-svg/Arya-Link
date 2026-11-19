@@ -105,14 +105,14 @@ export function AdminSidebar({ onCloseMobile }: { onCloseMobile?: () => void }) 
   const getRoleLabel = (role: string) => {
     switch (role) {
       case 'superadmin':
-        return 'مدیر ارشد پلتفرم';
+        return t('admin.role.superadmin');
       case 'financial_admin':
-        return 'مدیر مالی';
+        return t('admin.role.financial');
       case 'content_editor':
-        return 'مدیر محتوا';
+        return t('admin.role.editor');
       case 'admin':
       default:
-        return 'مدیر سیستم';
+        return t('admin.role.admin');
     }
   };
 

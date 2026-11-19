@@ -19,6 +19,9 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
+import { useSiteContent } from '@/context/SiteContentContext';
+import { getLocalizedText } from '@/lib/i18n/multilingual';
+import { DEFAULT_FEATURES_CONTENT } from '@/models/SiteContent.model';
 
 const EASE_SNAPPY = [0, 0.7, 0.2, 1] as const;
 const SPRING_FAST = { type: 'spring', stiffness: 250, damping: 25, mass: 0.5 } as const;
@@ -99,11 +102,25 @@ const innerItemVariants = {
 };
 
 export function BentoGridFeatures() {
-  const { dir } = useLanguage();
-  const isRtl = dir === 'rtl';
+  const { dir, language, t } = useLanguage();
+  const { features: siteFeatures } = useSiteContent();
+
+  const featuresData = siteFeatures || DEFAULT_FEATURES_CONTENT;
+  const items = featuresData.items && featuresData.items.length >= 5
+    ? featuresData.items
+    : DEFAULT_FEATURES_CONTENT.items;
+
+  const findFeat = (key: string, fallbackIndex: number) =>
+    items.find((it) => it.key === key) || items[fallbackIndex] || DEFAULT_FEATURES_CONTENT.items[fallbackIndex];
+
+  const commerceFeat = findFeat('ecommerce', 3);
+  const kycFeat = findFeat('kyc', 4);
+  const qrFeat = findFeat('qr', 0);
+  const crmFeat = findFeat('crm', 2);
+  const analyticsFeat = findFeat('analytics', 1);
 
   return (
-    <section id="features" className="py-20 sm:py-28 relative overflow-hidden select-none">
+    <section id="features" dir={dir} className="py-20 sm:py-28 relative overflow-hidden select-none">
       {/* Background Ambient Glow */}
       <div className="absolute top-1/3 right-1/4 w-[500px] h-[500px] bg-cyan-500/10 rounded-full blur-[150px] pointer-events-none -z-10" />
       <div className="absolute bottom-10 left-10 w-[450px] h-[450px] bg-purple-600/10 rounded-full blur-[150px] pointer-events-none -z-10" />
@@ -123,7 +140,7 @@ export function BentoGridFeatures() {
           <motion.div variants={headerItemVariants} className="inline-block">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/25 text-cyan-600 dark:text-cyan-400 text-xs font-semibold shadow-xs">
               <Sparkles className="w-3.5 h-3.5 text-cyan-500" />
-              <span>امکانات نسل آینده (Bento Grid)</span>
+              <span>{getLocalizedText(featuresData.badge, language, t('features.badge'))}</span>
             </div>
           </motion.div>
 
@@ -131,17 +148,14 @@ export function BentoGridFeatures() {
             variants={headerItemVariants}
             className="text-3xl sm:text-5xl font-black text-foreground tracking-tight leading-[1.2]"
           >
-            همه چیز برای درخشش هویت حرفه‌ای شما در{' '}
-            <span className="bg-gradient-to-l from-cyan-400 via-blue-500 to-indigo-500 bg-clip-text text-transparent">
-              یک پلتفرم یکپارچه
-            </span>
+            {getLocalizedText(featuresData.title, language, t('features.title'))}
           </motion.h2>
 
           <motion.p
             variants={headerItemVariants}
             className="text-sm sm:text-base text-muted-foreground leading-relaxed max-w-2xl mx-auto"
           >
-            ساختار انعطاف‌پذیر آریا لینک به شما اجازه می‌دهد تا بدون نیاز به دانش برنامه‌نویسی، یک مرکز فرماندهی شخصی و تجاری لوکس برای خود بسازید.
+            {getLocalizedText(featuresData.subtitle, language)}
           </motion.p>
         </motion.div>
 
@@ -181,14 +195,16 @@ export function BentoGridFeatures() {
               </motion.div>
 
               <motion.div variants={innerItemVariants} className="space-y-2">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <h3 className="text-xl sm:text-2xl font-bold text-foreground">
-                    فروشگاه آنلاین و پرداخت مستقیم
+                    {getLocalizedText(commerceFeat.title, language)}
                   </h3>
-                  <Badge variant="cyan" className="text-[10px]">حساب‌پی & حواله</Badge>
+                  <Badge variant="cyan" className="text-[10px]">
+                    {getLocalizedText(commerceFeat.badge, language, t('bento.card1_badge'))}
+                  </Badge>
                 </div>
                 <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                  محصولات فیزیکی یا خدمات مشاوره‌ای خود را مستقیماً در صفحه لینک‌بایو بفروشید. مبالغ بدون کارمزد اضافه، مستقیماً به ولت حساب‌پی یا حساب بانکی شما واریز می‌شود.
+                  {getLocalizedText(commerceFeat.desc, language)}
                 </p>
               </motion.div>
 
@@ -200,8 +216,8 @@ export function BentoGridFeatures() {
                     <div className="w-14 h-14 rounded-xl bg-gradient-to-tr from-slate-800 to-slate-900 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0 shadow-md">
                       <Zap className="w-6 h-6 fill-cyan-400 text-cyan-400" />
                     </div>
-                    <div className="text-right">
-                      <span className="text-xs font-bold text-foreground block">کارت پی وی سی NFC آریا لینک</span>
+                    <div className="text-start">
+                      <span className="text-xs font-bold text-foreground block">{t('bento.card1_demo_title')}</span>
                       <div className="flex items-center gap-2 mt-0.5">
                         <span className="text-xs font-black font-sans text-cyan-500">1,200 AFN</span>
                         <span className="text-[10px] text-muted-foreground line-through font-sans">1,600</span>
@@ -221,11 +237,11 @@ export function BentoGridFeatures() {
                     >
                       <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-700 pointer-events-none" />
                       <ShoppingBag className="w-3.5 h-3.5" />
-                      <span>خرید آنی با حساب‌پی</span>
+                      <span>{t('bento.card1_demo_btn')}</span>
                     </motion.button>
                     <div className="flex items-center gap-1 text-[10px] text-emerald-500 font-medium">
                       <Check className="w-3 h-3" />
-                      <span>تاییدیه و فاکتور فوری پیامکی</span>
+                      <span>{t('bento.card1_demo_invoice')}</span>
                     </div>
                   </div>
                 </div>
@@ -237,9 +253,9 @@ export function BentoGridFeatures() {
               variants={innerItemVariants}
               className="pt-6 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground relative z-10 border-t border-border/40 mt-6"
             >
-              <span className="px-2.5 py-1 rounded-full bg-card/80 border border-border">بدون کارمزد درگاه</span>
-              <span className="px-2.5 py-1 rounded-full bg-card/80 border border-border">تسویه خودکار بانکی</span>
-              <span className="px-2.5 py-1 rounded-full bg-card/80 border border-border">مدیریت موجودی انبار</span>
+              <span className="px-2.5 py-1 rounded-full bg-card/80 border border-border">{t('bento.card1_pill1')}</span>
+              <span className="px-2.5 py-1 rounded-full bg-card/80 border border-border">{t('bento.card1_pill2')}</span>
+              <span className="px-2.5 py-1 rounded-full bg-card/80 border border-border">{t('bento.card1_pill3')}</span>
             </motion.div>
           </motion.div>
 
@@ -270,11 +286,11 @@ export function BentoGridFeatures() {
               <motion.div variants={innerItemVariants} className="space-y-2">
                 <div className="flex items-center gap-2">
                   <h3 className="text-xl sm:text-2xl font-bold text-foreground">
-                    احراز هویت امن و تیک آبی (KYC)
+                    {getLocalizedText(kycFeat.title, language)}
                   </h3>
                 </div>
                 <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                  با آپلود تذکره الکترونیکی یا پاسپورت، نشان رسمی اصالت هویت را دریافت کنید تا مشتریان با اعتماد صددرصدی با شما ارتباط برقرار کنند.
+                  {getLocalizedText(kycFeat.desc, language)}
                 </p>
               </motion.div>
 
@@ -292,19 +308,19 @@ export function BentoGridFeatures() {
                         <CheckCircle2 className="w-3 h-3 fill-white text-cyan-600" />
                       </div>
                     </div>
-                    <div className="text-right">
+                    <div className="text-start">
                       <div className="flex items-center gap-1">
-                        <span className="text-xs font-bold text-foreground">پروفایل تایید شده رسمی</span>
+                        <span className="text-xs font-bold text-foreground">{t('bento.card2_verified_title')}</span>
                         <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400 fill-cyan-400/20" />
                       </div>
                       <span className="text-[10px] text-emerald-500 font-semibold block">
-                        تطبیق تذکره و چهره موفق
+                        {t('bento.card2_verified_sub')}
                       </span>
                     </div>
                   </div>
 
                   <span className="px-2.5 py-1 rounded-xl bg-blue-500/15 text-blue-400 font-bold text-[10px] border border-blue-500/30">
-                    سطح 3 (حرفه‌ای)
+                    {t('bento.card2_level')}
                   </span>
                 </div>
               </motion.div>
@@ -315,7 +331,7 @@ export function BentoGridFeatures() {
               className="pt-4 flex items-center gap-2 text-[11px] text-muted-foreground relative z-10 border-t border-border/40 mt-6"
             >
               <Check className="w-3.5 h-3.5 text-emerald-500" />
-              <span>جلوگیری از جعل نام و برندسازی رسمی</span>
+              <span>{t('bento.card2_footer')}</span>
             </motion.div>
           </motion.div>
 
@@ -345,10 +361,10 @@ export function BentoGridFeatures() {
 
               <motion.div variants={innerItemVariants} className="space-y-1.5">
                 <h3 className="text-lg sm:text-xl font-bold text-foreground">
-                  کد QR داینامیک با لوگوی اختصاصی
+                  {getLocalizedText(qrFeat.title, language)}
                 </h3>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  کد QR اختصاصی با لوگوی شخصی شما که هرگز منقضی نمی‌شود و با تغییر اطلاعات، محتوای آن آپدیت می‌ماند.
+                  {getLocalizedText(qrFeat.desc, language)}
                 </p>
               </motion.div>
 
@@ -373,7 +389,7 @@ export function BentoGridFeatures() {
               variants={innerItemVariants}
               className="pt-4 flex items-center justify-between text-[11px] text-muted-foreground relative z-10 border-t border-border/40 mt-5"
             >
-              <span>دانلود با کیفیت وکتور:</span>
+              <span>{t('bento.card3_footer')}</span>
               <div className="flex items-center gap-1.5 font-sans font-bold text-[10px]">
                 <span className="px-2 py-0.5 rounded-md bg-muted border border-border">SVG</span>
                 <span className="px-2 py-0.5 rounded-md bg-muted border border-border">PNG HD</span>
@@ -407,10 +423,10 @@ export function BentoGridFeatures() {
 
               <motion.div variants={innerItemVariants} className="space-y-1.5">
                 <h3 className="text-lg sm:text-xl font-bold text-foreground">
-                  ده‌ها ماژول و کانال ارتباطی
+                  {getLocalizedText(crmFeat.title, language)}
                 </h3>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  واتساپ فوری، اینستاگرام، تلگرام، کاتالوگ PDF دانلودی، نقشه مسیریابی و فرم جمع‌آوری لید در یک پنل.
+                  {getLocalizedText(crmFeat.desc, language)}
                 </p>
               </motion.div>
 
@@ -419,7 +435,7 @@ export function BentoGridFeatures() {
                 <div className="p-2.5 rounded-xl bg-muted/40 dark:bg-zinc-950/60 border border-emerald-500/30 flex items-center justify-between text-xs">
                   <div className="flex items-center gap-2">
                     <MessageCircle className="w-4 h-4 text-emerald-400" />
-                    <span className="font-bold text-foreground">گفتگوی مستقیم واتساپ</span>
+                    <span className="font-bold text-foreground">{t('bento.card4_whatsapp')}</span>
                   </div>
                   <span className="text-[10px] font-sans text-emerald-400 font-bold">+540 Clicks</span>
                 </div>
@@ -427,7 +443,7 @@ export function BentoGridFeatures() {
                 <div className="p-2.5 rounded-xl bg-muted/40 dark:bg-zinc-950/60 border border-pink-500/30 flex items-center justify-between text-xs">
                   <div className="flex items-center gap-2">
                     <Instagram className="w-4 h-4 text-pink-400" />
-                    <span className="font-bold text-foreground">پیج اینستاگرام کاری</span>
+                    <span className="font-bold text-foreground">{t('bento.card4_instagram')}</span>
                   </div>
                   <span className="text-[10px] font-sans text-pink-400 font-bold">+1,280 Clicks</span>
                 </div>
@@ -435,7 +451,7 @@ export function BentoGridFeatures() {
                 <div className="p-2.5 rounded-xl bg-muted/40 dark:bg-zinc-950/60 border border-sky-500/30 flex items-center justify-between text-xs">
                   <div className="flex items-center gap-2">
                     <Send className="w-4 h-4 text-sky-400" />
-                    <span className="font-bold text-foreground">کانال رسمی تلگرام</span>
+                    <span className="font-bold text-foreground">{t('bento.card4_telegram')}</span>
                   </div>
                   <span className="text-[10px] font-sans text-sky-400 font-bold">+310 Clicks</span>
                 </div>
@@ -447,7 +463,7 @@ export function BentoGridFeatures() {
               className="pt-4 flex items-center gap-2 text-[11px] text-muted-foreground relative z-10 border-t border-border/40 mt-5"
             >
               <Check className="w-3.5 h-3.5 text-purple-400" />
-              <span>قابلیت جابه‌جایی و Drag & Drop آسان</span>
+              <span>{t('bento.card4_footer')}</span>
             </motion.div>
           </motion.div>
 
@@ -477,10 +493,10 @@ export function BentoGridFeatures() {
 
               <motion.div variants={innerItemVariants} className="space-y-1.5">
                 <h3 className="text-lg sm:text-xl font-bold text-foreground">
-                  آمار و تحلیل بلادرنگ (Analytics)
+                  {getLocalizedText(analyticsFeat.title, language)}
                 </h3>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  رصد هوشمند بازدیدها، نرخ کلیک، نوع سیستم‌عامل مخاطبان و محبوب‌ترین لینک‌های صفحه با نمودارهای زنده.
+                  {getLocalizedText(analyticsFeat.desc, language)}
                 </p>
               </motion.div>
 
@@ -491,7 +507,7 @@ export function BentoGridFeatures() {
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="text-[10px] text-muted-foreground block">بازدید 7 روز اخیر</span>
+                    <span className="text-[10px] text-muted-foreground block">{t('bento.card5_7days')}</span>
                     <span className="text-base font-black font-sans text-foreground">+4,850</span>
                   </div>
                   <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-500 text-[10px] font-bold">
@@ -512,7 +528,9 @@ export function BentoGridFeatures() {
                           }`}
                       />
                       <span className="text-[8px] text-muted-foreground font-sans">
-                        {['ش', 'ی', 'د', 'س', 'چ', 'پ', 'ج'][i]}
+                        {language === 'en'
+                          ? ['S', 'S', 'M', 'T', 'W', 'T', 'F'][i]
+                          : ['ش', 'ی', 'د', 'س', 'چ', 'پ', 'ج'][i]}
                       </span>
                     </div>
                   ))}
@@ -524,7 +542,7 @@ export function BentoGridFeatures() {
               variants={innerItemVariants}
               className="pt-4 flex items-center justify-between text-[11px] text-muted-foreground relative z-10 border-t border-border/40 mt-5"
             >
-              <span>نرخ تبدیل (CTR):</span>
+              <span>{t('bento.card5_ctr')}</span>
               <span className="font-bold text-emerald-500 font-sans text-xs">84.8%</span>
             </motion.div>
           </motion.div>

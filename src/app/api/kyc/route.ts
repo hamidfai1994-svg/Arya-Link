@@ -9,15 +9,19 @@ import { SystemSettings } from '@/models/systemSettings.model';
 import { deleteReplacedFileIfUnused } from '@/lib/storage/file-manager';
 import { createPlatformNotification } from '@/lib/notifications';
 import { sendAdminKycAlert } from '@/lib/telegram';
+import { getRequestLocale } from '@/lib/i18n/server-locale';
+import { tServer } from '@/lib/i18n/translations';
+import { getKycValidationSchema } from '@/lib/validations/forms';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const locale = getRequestLocale(req);
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json(
-        { success: false, message: 'لطفاً ابتدا وارد شوید.' },
+        { success: false, message: tServer(locale, 'toast.unauthorized') },
         { status: 401 }
       );
     }
@@ -48,11 +52,12 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  let locale = getRequestLocale(req);
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json(
-        { success: false, message: 'لطفاً ابتدا وارد شوید.' },
+        { success: false, message: tServer(locale, 'toast.unauthorized') },
         { status: 401 }
       );
     }
@@ -60,13 +65,20 @@ export async function POST(req: NextRequest) {
     await connectToDatabase();
     const userId = session.user.id;
     const body = await req.json();
+    locale = getRequestLocale(req, body?.locale || body?.language);
     const { nationalId, documentType, selfieUrl, documentUrl, fullName } = body;
 
-    if (!nationalId || !documentType || !selfieUrl || !documentUrl) {
+    const kycParsed = getKycValidationSchema(locale).safeParse({
+      nationalIdNumber: typeof nationalId === 'string' ? nationalId : '',
+      selfieImageUrl: typeof selfieUrl === 'string' ? selfieUrl : '',
+      idDocumentUrl: typeof documentUrl === 'string' ? documentUrl : '',
+    });
+
+    if (!kycParsed.success || !documentType) {
       return NextResponse.json(
         {
           success: false,
-          message: 'لطفاً تمام موارد خواسته شده (شماره مدرک، عکس سلفی، و تصویر مدرک شناسایی) را وارد کنید.',
+          message: kycParsed.error?.issues[0]?.message || tServer(locale, 'validation.kyc_fields_required'),
         },
         { status: 400 }
       );
@@ -148,14 +160,14 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'مدارک احراز هویت با موفقیت ثبت شد و در صف بررسی ادمین قرار گرفت.',
+      message: tServer(locale, 'toast.kyc_submitted'),
       verificationStatus: 'pending',
       kycData: updatedUser?.kycData,
     });
   } catch (error: any) {
     console.error('Error submitting KYC:', error);
     return NextResponse.json(
-      { success: false, message: 'خطا در ثبت مدارک احراز هویت.' },
+      { success: false, message: tServer(locale, 'toast.save_error') },
       { status: 500 }
     );
   }

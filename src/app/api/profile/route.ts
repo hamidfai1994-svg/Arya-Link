@@ -7,7 +7,9 @@ import { User } from '@/models/User.model';
 import { Organization } from '@/models/Organization.model';
 import { buildUserIsolationQuery, isValidUserSession } from '@/lib/db/data-isolation';
 import { syncAndCheckUserSubscription } from '@/lib/utils/subscription';
-import { profileUpdateSchema } from '@/lib/validations/profile';
+import { getProfileUpdateSchema } from '@/lib/validations/profile';
+import { getRequestLocale } from '@/lib/i18n/server-locale';
+import { tServer } from '@/lib/i18n/translations';
 import { getJobTemplate, generateDefaultModulesForJob } from '@/lib/constants/jobTemplates';
 import mongoose from 'mongoose';
 import { revalidatePath } from 'next/cache';
@@ -17,11 +19,12 @@ export const dynamic = 'force-dynamic';
 
 // GET: Retrieve user's active profile (strictly isolated to authenticated user)
 export async function GET(req: NextRequest) {
+  const locale = getRequestLocale(req);
   try {
     const session = await getServerSession(authOptions);
     if (!isValidUserSession(session?.user)) {
       return NextResponse.json(
-        { success: false, message: 'لطفاً ابتدا وارد حساب کاربری خود شوید.' },
+        { success: false, message: tServer(locale, 'toast.unauthorized') },
         { status: 401 }
       );
     }
@@ -207,7 +210,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        message: 'خطا در دریافت اطلاعات پروفایل از پایگاه داده.',
+        message: tServer(locale, 'api.profile.load_error'),
         error: error?.message || 'Internal Server Error',
       },
       { status: 500 }
@@ -217,11 +220,12 @@ export async function GET(req: NextRequest) {
 
 // POST: Update existing profile or create a new profile for the authenticated user
 export async function POST(req: NextRequest) {
+  let locale = getRequestLocale(req);
   try {
     const session = await getServerSession(authOptions);
     if (!isValidUserSession(session?.user)) {
       return NextResponse.json(
-        { success: false, message: 'لطفاً ابتدا وارد حساب کاربری خود شوید.' },
+        { success: false, message: tServer(locale, 'toast.unauthorized') },
         { status: 401 }
       );
     }
@@ -231,6 +235,16 @@ export async function POST(req: NextRequest) {
     await connectToDatabase();
 
     const body = await req.json();
+    locale = getRequestLocale(req, body?.locale || body?.language);
+
+    const parsedValidation = getProfileUpdateSchema(locale).safeParse(body);
+    if (!parsedValidation.success) {
+      const firstErr = parsedValidation.error.issues[0]?.message || tServer(locale, 'validation.required');
+      return NextResponse.json(
+        { success: false, message: firstErr },
+        { status: 400 }
+      );
+    }
     const {
       id,
       alias,
@@ -268,14 +282,14 @@ export async function POST(req: NextRequest) {
     // 1. Validation
     if (!displayName || typeof displayName !== 'string' || !displayName.trim()) {
       return NextResponse.json(
-        { success: false, message: 'نام نمایشی پروفایل الزامی است.' },
+        { success: false, message: tServer(locale, 'api.profile.display_name_required') },
         { status: 400 }
       );
     }
 
     if (!alias || typeof alias !== 'string' || !alias.trim()) {
       return NextResponse.json(
-        { success: false, message: 'آی دی اختصاصی آدرس (Alias) الزامی است.' },
+        { success: false, message: tServer(locale, 'api.profile.alias_required') },
         { status: 400 }
       );
     }
@@ -283,7 +297,7 @@ export async function POST(req: NextRequest) {
     const cleanAlias = alias.toLowerCase().replace(/[^a-z0-9_-]/g, '').trim();
     if (!cleanAlias) {
       return NextResponse.json(
-        { success: false, message: 'آی دی آدرس باید فقط شامل حروف انگلیسی، اعداد، خط تیره یا زیرخط باشد.' },
+        { success: false, message: tServer(locale, 'api.profile.alias_invalid') },
         { status: 400 }
       );
     }
@@ -300,7 +314,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          message: 'این نام کاربری (لینک پروفایل) قبلاً ثبت شده است. لطفاً نام دیگری انتخاب نمایید.',
+          message: tServer(locale, 'api.profile.alias_taken'),
         },
         { status: 409 }
       );
@@ -592,7 +606,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'تغییرات پروفایل با موفقیت در پایگاه داده ذخیره و منتشر شد.',
+      message: tServer(locale, 'api.profile.saved'),
       data: {
         ...(savedProfile || {}),
         id: returnId,
@@ -603,7 +617,7 @@ export async function POST(req: NextRequest) {
     const detailedMessage =
       error?.message ||
       (typeof error === 'string' ? error : JSON.stringify(error)) ||
-      'خطا در ذخیره‌سازی اطلاعات پروفایل در دیتابیس.';
+      tServer(locale, 'api.profile.save_error');
     return NextResponse.json(
       {
         success: false,

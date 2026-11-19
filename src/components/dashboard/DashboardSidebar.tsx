@@ -185,7 +185,7 @@ export function DashboardSidebar({ onCloseMobile }: { onCloseMobile?: () => void
             href="/admin/dashboard"
             onClick={onCloseMobile}
             className="flex-1 flex items-center justify-center gap-1.5 h-9 px-2.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/25 text-amber-600 dark:text-amber-400 text-xs font-bold transition-all truncate"
-            title="ورود به پنل مدیریت کل"
+            title={t('nav.admin', 'پنل مدیریت کل')}
           >
             <ShieldAlert className="w-3.5 h-3.5 shrink-0 text-amber-500" />
             <span className="truncate">{t('dashboard.sidebar.adminSwitch', 'پنل مدیریت')}</span>

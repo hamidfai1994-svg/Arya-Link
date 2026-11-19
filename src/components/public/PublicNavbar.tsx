@@ -211,7 +211,7 @@ export function PublicNavbar() {
                   >
                     <div className="flex items-center gap-2.5">
                       <QrCode className="w-4 h-4 text-cyan-500 shrink-0" />
-                      <span>کیوآر کد ساز</span>
+                      <span>{t('nav.qr', 'کیوآر کد ساز پیشرفته')}</span>
                     </div>
                     <ChevronLeft className="w-3.5 h-3.5 rtl:block ltr:hidden text-muted-foreground group-hover/qr:text-cyan-500 group-hover/qr:-translate-x-0.5 transition-transform" />
                     <ChevronRight className="w-3.5 h-3.5 ltr:block rtl:hidden text-muted-foreground group-hover/qr:text-cyan-500 group-hover/qr:translate-x-0.5 transition-transform" />
@@ -225,7 +225,7 @@ export function PublicNavbar() {
                       className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-foreground/90 hover:text-cyan-500 hover:bg-cyan-500/10 transition-colors"
                     >
                       <QrCode className="w-3.5 h-3.5 text-cyan-500" />
-                      <span>ساخت QR</span>
+                      <span>{t('nav.make_qr', 'ساخت QR')}</span>
                     </Link>
                     <Link
                       href="/tools/qr-maker?tab=scan"
@@ -233,7 +233,7 @@ export function PublicNavbar() {
                       className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-foreground/90 hover:text-cyan-500 hover:bg-cyan-500/10 transition-colors"
                     >
                       <Camera className="w-3.5 h-3.5 text-cyan-500" />
-                      <span>اسکن QR</span>
+                      <span>{t('nav.scan_qr', 'اسکن QR')}</span>
                     </Link>
                   </div>
                 </div>
@@ -247,7 +247,7 @@ export function PublicNavbar() {
                   >
                     <div className="flex items-center gap-2.5">
                       <Barcode className="w-4 h-4 text-emerald-500 shrink-0" />
-                      <span>بارکد ساز</span>
+                      <span>{t('nav.barcode', 'بارکد ساز جامع')}</span>
                     </div>
                     <ChevronLeft className="w-3.5 h-3.5 rtl:block ltr:hidden text-muted-foreground group-hover/barcode:text-emerald-500 group-hover/barcode:-translate-x-0.5 transition-transform" />
                     <ChevronRight className="w-3.5 h-3.5 ltr:block rtl:hidden text-muted-foreground group-hover/barcode:text-emerald-500 group-hover/barcode:translate-x-0.5 transition-transform" />
@@ -261,7 +261,7 @@ export function PublicNavbar() {
                       className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-foreground/90 hover:text-emerald-500 hover:bg-emerald-500/10 transition-colors"
                     >
                       <Barcode className="w-3.5 h-3.5 text-emerald-500" />
-                      <span>ساخت بارکد</span>
+                      <span>{t('nav.make_barcode', 'ساخت بارکد')}</span>
                     </Link>
                     <Link
                       href="/tools/barcode-maker?tab=scan"
@@ -269,7 +269,7 @@ export function PublicNavbar() {
                       className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-foreground/90 hover:text-emerald-500 hover:bg-emerald-500/10 transition-colors"
                     >
                       <Scan className="w-3.5 h-3.5 text-emerald-500" />
-                      <span>اسکن بارکد</span>
+                      <span>{t('nav.scan_barcode', 'اسکن بارکد')}</span>
                     </Link>
                   </div>
                 </div>
@@ -282,7 +282,7 @@ export function PublicNavbar() {
                 >
                   <div className="flex items-center gap-2.5">
                     <Mail className="w-4 h-4 text-amber-500 shrink-0" />
-                    <span>امضای ایمیل</span>
+                    <span>{t('nav.signature', 'سازنده امضای ایمیل')}</span>
                   </div>
                 </Link>
 
@@ -295,7 +295,7 @@ export function PublicNavbar() {
                   >
                     <div className="flex items-center gap-2.5">
                       <History className="w-4 h-4 text-cyan-500 group-hover/hist:rotate-12 transition-transform shrink-0" />
-                      <span>تاریخچه ابزارها</span>
+                      <span>{t('nav.tools_history', 'تاریخچه ابزارها')}</span>
                     </div>
                     <ArrowLeft className="w-3.5 h-3.5 rtl:block ltr:hidden group-hover/hist:-translate-x-0.5 transition-transform" />
                     <ArrowRight className="w-3.5 h-3.5 ltr:block rtl:hidden group-hover/hist:translate-x-0.5 transition-transform" />
@@ -406,7 +406,7 @@ export function PublicNavbar() {
                   className="flex items-center gap-2 p-2 rounded-xl bg-muted/40 hover:bg-cyan-500/10 text-xs font-semibold text-foreground transition-colors"
                 >
                   <QrCode className="w-4 h-4 text-cyan-500 shrink-0" />
-                  <span>ساخت QR کد</span>
+                  <span>{t('nav.make_qr', 'ساخت QR')}</span>
                 </Link>
                 <Link
                   href="/tools/qr-maker?tab=scan"
@@ -414,7 +414,7 @@ export function PublicNavbar() {
                   className="flex items-center gap-2 p-2 rounded-xl bg-muted/40 hover:bg-cyan-500/10 text-xs font-semibold text-foreground transition-colors"
                 >
                   <Camera className="w-4 h-4 text-cyan-500 shrink-0" />
-                  <span>اسکنر QR کد</span>
+                  <span>{t('nav.scan_qr', 'اسکن QR')}</span>
                 </Link>
                 <Link
                   href="/tools/barcode-maker"
@@ -422,7 +422,7 @@ export function PublicNavbar() {
                   className="flex items-center gap-2 p-2 rounded-xl bg-muted/40 hover:bg-emerald-500/10 text-xs font-semibold text-foreground transition-colors"
                 >
                   <Barcode className="w-4 h-4 text-emerald-500 shrink-0" />
-                  <span>ساخت بارکد</span>
+                  <span>{t('nav.make_barcode', 'ساخت بارکد')}</span>
                 </Link>
                 <Link
                   href="/tools/barcode-maker?tab=scan"
@@ -430,7 +430,7 @@ export function PublicNavbar() {
                   className="flex items-center gap-2 p-2 rounded-xl bg-muted/40 hover:bg-emerald-500/10 text-xs font-semibold text-foreground transition-colors"
                 >
                   <Scan className="w-4 h-4 text-emerald-500 shrink-0" />
-                  <span>اسکنر بارکد</span>
+                  <span>{t('nav.scan_barcode', 'اسکن بارکد')}</span>
                 </Link>
               </div>
 
@@ -441,7 +441,7 @@ export function PublicNavbar() {
               >
                 <span className="flex items-center gap-2">
                   <Mail className="w-4 h-4 text-amber-500 shrink-0" />
-                  <span>ساخت امضای ایمیل</span>
+                  <span>{t('nav.signature', 'سازنده امضای ایمیل')}</span>
                 </span>
                 <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-amber-500/15 text-amber-500 font-mono">
                   NEW
@@ -455,7 +455,7 @@ export function PublicNavbar() {
               >
                 <span className="flex items-center gap-2">
                   <History className="w-4 h-4 text-cyan-500 shrink-0" />
-                  <span>تاریخچه ابزارهای من</span>
+                  <span>{t('nav.tools_history', 'تاریخچه ابزارها')}</span>
                 </span>
                 <ArrowRight className="w-3.5 h-3.5 text-cyan-500 rtl:rotate-180" />
               </Link>

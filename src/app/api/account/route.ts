@@ -9,6 +9,8 @@ import { syncAndCheckUserSubscription } from '@/lib/utils/subscription';
 import { deleteReplacedFileIfUnused } from '@/lib/storage/file-manager';
 import bcrypt from 'bcryptjs';
 import { sendVerificationEmail, normalizeEmailLocale } from '@/lib/mail';
+import { getRequestLocale } from '@/lib/i18n/server-locale';
+import { tServer } from '@/lib/i18n/translations';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,12 +32,13 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 // GET: Retrieve authenticated user account details
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const locale = getRequestLocale(req);
   try {
     const session = await getServerSession(authOptions);
     if (!isValidUserSession(session?.user)) {
       return NextResponse.json(
-        { success: false, message: 'لطفاً ابتدا وارد حساب کاربری خود شوید.' },
+        { success: false, message: tServer(locale, 'toast.unauthorized') },
         { status: 401 }
       );
     }
@@ -73,7 +76,7 @@ export async function GET() {
   } catch (err: any) {
     console.error('Error fetching account details:', err);
     return NextResponse.json(
-      { success: false, message: 'خطای سرور در دریافت مشخصات حساب کاربری.' },
+      { success: false, message: tServer(locale, 'toast.network_error') },
       { status: 500 }
     );
   }
@@ -81,16 +84,18 @@ export async function GET() {
 
 // PATCH: Update account profile info, verify email with OTP, or change password
 export async function PATCH(req: NextRequest) {
+  let locale = getRequestLocale(req);
   try {
     const session = await getServerSession(authOptions);
     if (!isValidUserSession(session?.user)) {
       return NextResponse.json(
-        { success: false, message: 'عدم دسترسی. لطفاً وارد سیستم شوید.' },
+        { success: false, message: tServer(locale, 'toast.unauthorized') },
         { status: 401 }
       );
     }
 
     const body = await req.json();
+    locale = getRequestLocale(req, body?.locale || body?.language);
     const { action, newEmail, otpCode, name, phone, avatar, currentPassword, newPassword } = body;
 
     await connectToDatabase();
@@ -109,7 +114,7 @@ export async function PATCH(req: NextRequest) {
     if (action === 'send_email_otp') {
       if (!newEmail || typeof newEmail !== 'string') {
         return NextResponse.json(
-          { success: false, message: 'لطفاً یک آدرس ایمیل معتبر وارد نمایید.' },
+          { success: false, message: tServer(locale, 'validation.email_invalid') },
           { status: 400 }
         );
       }
@@ -119,14 +124,14 @@ export async function PATCH(req: NextRequest) {
 
       if (!emailRegex.test(targetEmail)) {
         return NextResponse.json(
-          { success: false, message: 'فرمت آدرس ایمیل وارد شده نادرست است.' },
+          { success: false, message: tServer(locale, 'validation.email_invalid') },
           { status: 400 }
         );
       }
 
       if (targetEmail === user.email.toLowerCase()) {
         return NextResponse.json(
-          { success: false, message: 'این آدرس در حال حاضر ایمیل فعال حساب کاربری شما است.' },
+          { success: false, message: tServer(locale, 'toast.register_duplicate') },
           { status: 400 }
         );
       }
@@ -139,7 +144,7 @@ export async function PATCH(req: NextRequest) {
 
       if (existingUser) {
         return NextResponse.json(
-          { success: false, message: 'این آدرس ایمیل قبلاً توسط کاربر دیگری ثبت شده است.' },
+          { success: false, message: tServer(locale, 'toast.register_duplicate') },
           { status: 400 }
         );
       }
@@ -155,7 +160,7 @@ export async function PATCH(req: NextRequest) {
       });
 
       // Send real localized verification email via Hostinger SMTP
-      const rawLocale = body.locale || req.headers.get('accept-language') || req.cookies.get('NEXT_LOCALE')?.value || 'fa';
+      const rawLocale = body.locale || locale || req.headers.get('accept-language') || req.cookies.get('NEXT_LOCALE')?.value || 'fa';
       const userLocale = normalizeEmailLocale(rawLocale);
       try {
         await sendVerificationEmail(targetEmail, generatedOtp, userLocale);
@@ -278,7 +283,7 @@ export async function PATCH(req: NextRequest) {
     if (newPassword) {
       if (typeof newPassword !== 'string' || newPassword.length < 6) {
         return NextResponse.json(
-          { success: false, message: 'گذرواژه جدید باید حداقل 6 نویسه باشد.' },
+          { success: false, message: tServer(locale, 'validation.password_min') },
           { status: 400 }
         );
       }
@@ -287,7 +292,7 @@ export async function PATCH(req: NextRequest) {
       if (user.password) {
         if (!currentPassword) {
           return NextResponse.json(
-            { success: false, message: 'لطفاً گذرواژه فعلی خود را وارد نمایید.' },
+            { success: false, message: tServer(locale, 'validation.required') },
             { status: 400 }
           );
         }
@@ -295,7 +300,7 @@ export async function PATCH(req: NextRequest) {
         const isMatch = await bcrypt.compare(currentPassword, user.password);
         if (!isMatch) {
           return NextResponse.json(
-            { success: false, message: 'گذرواژه فعلی وارد شده نادرست است.' },
+            { success: false, message: tServer(locale, 'toast.forbidden') },
             { status: 400 }
           );
         }
@@ -313,7 +318,7 @@ export async function PATCH(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'مشخصات حساب کاربری با موفقیت به‌روزرسانی شد.',
+      message: tServer(locale, 'api.account.profile_updated'),
       user: {
         id: user._id.toString(),
         name: user.name,
@@ -330,7 +335,7 @@ export async function PATCH(req: NextRequest) {
   } catch (err: any) {
     console.error('Error updating account info:', err);
     return NextResponse.json(
-      { success: false, message: 'خطای سرور در به‌روزرسانی مشخصات حساب.' },
+      { success: false, message: tServer(locale, 'toast.save_error') },
       { status: 500 }
     );
   }

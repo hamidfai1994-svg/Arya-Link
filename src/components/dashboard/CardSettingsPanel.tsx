@@ -24,7 +24,7 @@ import { useEditorStore } from '@/store/editor-store';
 import { useActiveCard } from '@/context/ActiveCardContext';
 
 export function CardSettingsPanel({ cardId }: { cardId?: string }) {
-  const { language } = useLanguage();
+  const { language, dir, t } = useLanguage();
   const { activeCard } = useActiveCard();
   const { profile, updateProSettings, toggleDirectMode, updateBasicInfo, saveProfileData } = useEditorStore();
 
@@ -40,16 +40,16 @@ export function CardSettingsPanel({ cardId }: { cardId?: string }) {
   // Sync with current profile in editor store
   useEffect(() => {
     if (profile) {
-      const safeName = getLocalizedText(profile.displayName, language, 'کارت هوشمند');
-      const safeBio = getLocalizedText(profile.bio, language, 'صفحه ارتباطی هوشمند و کارت ویزیت NFC');
-      setSeoTitle(profile.seoTitle || `${safeName} | آریا لینک`);
+      const safeName = getLocalizedText(profile.displayName, language, 'Arya Link');
+      const safeBio = getLocalizedText(profile.bio, language, t('cardSettings.google_preview_default_desc'));
+      setSeoTitle(profile.seoTitle || `${safeName} | Arya Link`);
       setSeoDescription(profile.seoDescription || safeBio);
       setAlias(profile.alias || '');
       setHideBranding(Boolean(profile.hideBranding));
       setDirectMode(Boolean(profile.directModeEnabled));
       setDirectUrl(profile.directModeUrl || '');
     }
-  }, [profile, language]);
+  }, [profile, language, t]);
 
   const handleSaveSettings = async () => {
     setIsSaving(true);
@@ -68,13 +68,13 @@ export function CardSettingsPanel({ cardId }: { cardId?: string }) {
 
       const res = await saveProfileData();
       if (res.success) {
-        toast.success('تنظیمات، سئو و وایت‌لیبل این لینک با موفقیت ذخیره شد.');
+        toast.success(t('cardSettings.save_toast_ok'));
       } else {
-        toast.error(res.message || 'خطا در ذخیره‌سازی تنظیمات.');
+        toast.error(res.message || t('toast.save_error'));
       }
     } catch (err) {
       console.error('Error saving settings:', err);
-      toast.error('خطا در ذخیره‌سازی تنظیمات.');
+      toast.error(t('toast.save_error'));
     } finally {
       setIsSaving(false);
     }
@@ -88,7 +88,7 @@ export function CardSettingsPanel({ cardId }: { cardId?: string }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: 'easeOut' }}
       className="space-y-8 select-none"
-      dir="rtl"
+      dir={dir}
     >
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-200/80 dark:border-white/10">
@@ -99,10 +99,10 @@ export function CardSettingsPanel({ cardId }: { cardId?: string }) {
             </div>
             <div>
               <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-                تنظیمات، سئو و وایت‌لیبل
+                {t('cardSettings.title')}
               </h1>
               <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-                مدیریت نحوه نمایش کارت در موتورهای جستجو، آی دی دامنه اختصاصی و برندینگ شخصی
+                {t('cardSettings.subtitle')}
               </p>
             </div>
           </div>
@@ -116,12 +116,12 @@ export function CardSettingsPanel({ cardId }: { cardId?: string }) {
           {isSaving ? (
             <>
               <RefreshCw className="w-4 h-4 animate-spin" />
-              <span>در حال ذخیره...</span>
+              <span>{t('common.saving')}</span>
             </>
           ) : (
             <>
               <Save className="w-4 h-4" />
-              <span>ذخیره تغییرات</span>
+              <span>{t('common.save')}</span>
             </>
           )}
         </Button>
@@ -140,14 +140,14 @@ export function CardSettingsPanel({ cardId }: { cardId?: string }) {
           <div>
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold text-foreground">
-                تنظیمات سئو و دامنه مختص لینک: {getLocalizedText(profile?.displayName || activeCard?.displayName, language, 'کارت هوشمند')}
+                {t('cardSettings.banner_prefix')} {getLocalizedText(profile?.displayName || activeCard?.displayName, language, 'Arya Link')}
               </span>
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 font-sans font-bold" dir="ltr">
                 aryal.ink/{profile?.alias || activeCard?.alias || 'card'}
               </span>
             </div>
             <p className="text-[11px] text-muted-foreground mt-0.5">
-              عنوان سئو، توضیحات متا و تنظیمات وایت‌لیبل مستقیماً بر روی همین لینک اعمال می‌گردند.
+              {t('cardSettings.banner_desc')}
             </p>
           </div>
         </div>
@@ -159,7 +159,7 @@ export function CardSettingsPanel({ cardId }: { cardId?: string }) {
             rel="noreferrer"
             className="flex items-center gap-1.5 text-[11px] font-bold text-cyan-600 dark:text-cyan-400 bg-cyan-500/10 hover:bg-cyan-500/20 px-3 py-1.5 rounded-xl border border-cyan-500/20 transition-colors"
           >
-            <span>مشاهده نسخه زنده</span>
+            <span>{t('cardSettings.view_live')}</span>
             <ExternalLink className="w-3.5 h-3.5" />
           </a>
         )}
@@ -173,43 +173,43 @@ export function CardSettingsPanel({ cardId }: { cardId?: string }) {
             <div className="flex items-center gap-2 border-b border-slate-100 dark:border-white/10 pb-3">
               <Search className="w-4 h-4 text-cyan-500" />
               <h2 className="text-sm font-extrabold text-slate-900 dark:text-white">
-                سئو و بهینه‌سازی موتورهای جستجو
+                {t('cardSettings.seo_section')}
               </h2>
             </div>
 
             <div className="space-y-4">
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                  عنوان صفحه در گوگل
+                  {t('cardSettings.google_title_label')}
                 </label>
                 <Input
                   type="text"
-                  placeholder="مثال: انجینیر احمد فیاض | مدیر ارشد فناوری"
+                  placeholder={t('cardSettings.google_title_ph')}
                   value={seoTitle}
                   onChange={(e) => setSeoTitle(e.target.value)}
                   maxLength={70}
                   className="h-11 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-white/10 text-xs"
                 />
                 <div className="flex justify-between text-[10px] text-slate-400">
-                  <span>تعداد کاراکتر پیشنهادی بین 40 تا 60 کاراکتر است.</span>
+                  <span>{t('cardSettings.google_title_hint')}</span>
                   <span className="font-sans">{seoTitle.length} / 70</span>
                 </div>
               </div>
 
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                  توضیحات متا در گوگل و شبکه‌های اجتماعی
+                  {t('cardSettings.meta_desc_label')}
                 </label>
                 <textarea
                   rows={3}
-                  placeholder="خلاصه‌ای جذاب درباره تخصص، شرکت و راه‌های ارتباطی خود بنویسید..."
+                  placeholder={t('cardSettings.meta_desc_ph')}
                   value={seoDescription}
                   onChange={(e) => setSeoDescription(e.target.value)}
                   maxLength={160}
                   className="w-full p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-white/10 text-xs text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-cyan-500 resize-none"
                 />
                 <div className="flex justify-between text-[10px] text-slate-400">
-                  <span>حداکثر 160 کاراکتر جهت نمایش بهینه در گوگل.</span>
+                  <span>{t('cardSettings.meta_desc_hint')}</span>
                   <span className="font-sans">{seoDescription.length} / 160</span>
                 </div>
               </div>
@@ -222,11 +222,11 @@ export function CardSettingsPanel({ cardId }: { cardId?: string }) {
               <div className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-cyan-500" />
                 <h2 className="text-sm font-extrabold text-slate-900 dark:text-white">
-                  وایت‌لیبل و حذف برندینگ
+                  {t('cardSettings.whitelabel_section')}
                 </h2>
               </div>
               <Badge variant="cyan" className="text-[10px] font-sans uppercase">
-                ویژه Pro
+                {t('cardSettings.pro_only')}
               </Badge>
             </div>
 
@@ -234,10 +234,10 @@ export function CardSettingsPanel({ cardId }: { cardId?: string }) {
               <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-white/10">
                 <div className="space-y-0.5">
                   <span className="text-xs font-bold text-slate-900 dark:text-white block">
-                    حذف نشان تجاری «Powered by Arya Link»
+                    {t('cardSettings.hide_branding_title')}
                   </span>
                   <span className="text-[11px] text-slate-500 dark:text-slate-400 block">
-                    لوگو و واترمارک آریا لینک را از پایین کارت هوشمند شما به طور کامل حذف می‌کند.
+                    {t('cardSettings.hide_branding_desc')}
                   </span>
                 </div>
                 <Switch
@@ -253,14 +253,14 @@ export function CardSettingsPanel({ cardId }: { cardId?: string }) {
             <div className="flex items-center gap-2 border-b border-slate-100 dark:border-white/10 pb-3">
               <Globe className="w-4 h-4 text-cyan-500" />
               <h2 className="text-sm font-extrabold text-slate-900 dark:text-white">
-                شناسه آدرس و دامنه اختصاصی
+                {t('cardSettings.domain_section')}
               </h2>
             </div>
 
             <div className="space-y-4">
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                  شناسه عمومی کارت شما
+                  {t('cardSettings.public_alias_label')}
                 </label>
                 <div className="flex items-center rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-white/10 overflow-hidden" dir="ltr">
                   <span className="px-3.5 text-xs text-slate-400 font-sans border-r border-slate-200 dark:border-white/10 select-none">
@@ -277,21 +277,21 @@ export function CardSettingsPanel({ cardId }: { cardId?: string }) {
 
               <div className="space-y-1.5 pt-2">
                 <label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center justify-between">
-                  <span>اتصال دامنه اختصاصی</span>
+                  <span>{t('cardSettings.custom_domain_label')}</span>
                   <Badge variant="outline" className="text-[10px] font-sans">
-                    سازمانی
+                    {t('cardSettings.enterprise_badge')}
                   </Badge>
                 </label>
                 <Input
                   type="text"
-                  placeholder="مثال: card.mycompany.af"
+                  placeholder={t('cardSettings.custom_domain_ph')}
                   value={customDomain}
                   onChange={(e) => setCustomDomain(e.target.value)}
                   className="h-11 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-white/10 text-xs font-sans"
                   dir="ltr"
                 />
                 <div className="p-3 rounded-xl bg-cyan-500/10 text-[11px] text-cyan-700 dark:text-cyan-300 border border-cyan-500/20">
-                  برای فعال‌سازی دامنه، رکورد <code className="font-sans font-bold">CNAME</code> دامنه خود را روی <code className="font-sans font-bold">cname.aryalink.af</code> تنظیم کنید.
+                  {t('cardSettings.cname_hint')}
                 </div>
               </div>
             </div>
@@ -303,7 +303,7 @@ export function CardSettingsPanel({ cardId }: { cardId?: string }) {
               <div className="flex items-center gap-2">
                 <Zap className="w-4 h-4 text-cyan-500" />
                 <h2 className="text-sm font-extrabold text-slate-900 dark:text-white">
-                  حالت هدایت مستقیم
+                  {t('cardSettings.direct_mode_section')}
                 </h2>
               </div>
               <Switch
@@ -313,13 +313,13 @@ export function CardSettingsPanel({ cardId }: { cardId?: string }) {
             </div>
 
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              با فعال بودن این قابلیت، با اسکن کارت NFC یا باز کردن لینک، کاربر به جای مشاهده پروفایل به صورت خودکار به لینک مقصد (مثلاً واتساپ یا وب‌سایت) هدایت خواهد شد.
+              {t('cardSettings.direct_mode_desc')}
             </p>
 
             {directMode && (
               <div className="space-y-1.5 pt-2">
                 <label className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                  آدرس اینترنتی مقصد مستقیم
+                  {t('cardSettings.direct_url_label')}
                 </label>
                 <Input
                   type="url"
@@ -339,11 +339,11 @@ export function CardSettingsPanel({ cardId }: { cardId?: string }) {
           <div className="p-6 rounded-3xl bg-white/80 dark:bg-slate-900/75 border border-slate-200/80 dark:border-white/10 shadow-sm backdrop-blur-xl space-y-4">
             <h3 className="text-xs font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
               <Eye className="w-4 h-4 text-cyan-500" />
-              <span>پیش‌نمایش در نتایج جستجوی گوگل</span>
+              <span>{t('cardSettings.google_preview_title')}</span>
             </h3>
 
             {/* Google Result Card Mockup */}
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-white/10 space-y-1.5 text-right font-sans" dir="rtl">
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-white/10 space-y-1.5 text-start font-sans" dir={dir}>
               <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400 font-sans" dir="ltr">
                 <span className="w-4 h-4 rounded-full bg-cyan-500/20 text-cyan-500 text-[10px] font-bold flex items-center justify-center">
                   A
@@ -352,16 +352,16 @@ export function CardSettingsPanel({ cardId }: { cardId?: string }) {
               </div>
 
               <h4 className="text-sm font-bold text-blue-600 dark:text-cyan-400 hover:underline cursor-pointer truncate">
-                {seoTitle || 'عنوان کارت هوشمند شما در آریا لینک'}
+                {seoTitle || t('cardSettings.google_preview_default_title')}
               </h4>
 
               <p className="text-xs text-slate-600 dark:text-slate-300 line-clamp-2 leading-relaxed">
-                {seoDescription || 'توضیحات کوتاه درباره زمینه کاری، خدمات و اطلاعات تماس شما برای نمایش در موتورهای جستجو.'}
+                {seoDescription || t('cardSettings.google_preview_default_desc')}
               </p>
             </div>
 
             <p className="text-[11px] text-slate-400">
-              این پیش‌نمایش نحوه ظاهر شدن کارت هوشمند شما را هنگامی که اشخاص نام شما را در گوگل جستجو می‌کنند شبیه‌سازی می‌کند.
+              {t('cardSettings.google_preview_hint')}
             </p>
           </div>
 
@@ -369,22 +369,22 @@ export function CardSettingsPanel({ cardId }: { cardId?: string }) {
           <div className="p-6 rounded-3xl bg-white/80 dark:bg-slate-900/75 border border-slate-200/80 dark:border-white/10 shadow-sm backdrop-blur-xl space-y-4">
             <h3 className="text-xs font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-cyan-500" />
-              <span>پیش‌نمایش اشتراک‌گذاری در واتساپ و تلگرام</span>
+              <span>{t('cardSettings.social_preview_title')}</span>
             </h3>
 
             <div className="rounded-2xl overflow-hidden border border-slate-200/80 dark:border-white/10 bg-slate-50 dark:bg-slate-800/60">
               <div className="h-28 bg-gradient-to-r from-cyan-500 to-blue-600 flex items-center justify-center text-white font-black font-sans text-xl">
-                {profile?.displayName || 'Arya Link Card'}
+                {getLocalizedText(profile?.displayName, language, 'Arya Link Card')}
               </div>
               <div className="p-4 space-y-1">
                 <span className="text-[10px] text-slate-400 font-sans block uppercase tracking-wider">
                   {currentHost}
                 </span>
                 <span className="text-xs font-bold text-slate-900 dark:text-white block truncate">
-                  {seoTitle || 'کارت هوشمند دیجیتال'}
+                  {seoTitle || t('cardSettings.social_preview_default_title')}
                 </span>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                  {seoDescription || 'برای مشاهده راه‌های ارتباطی کلیک کنید.'}
+                  {seoDescription || t('cardSettings.social_preview_default_desc')}
                 </p>
               </div>
             </div>

@@ -3,6 +3,12 @@ import {
   SiteContent,
   ISiteContentDocument,
   DEFAULT_SITE_CONTENT,
+  DEFAULT_PRICING_CONTENT,
+  DEFAULT_FEATURES_CONTENT,
+  DEFAULT_HOW_IT_WORKS_CONTENT,
+  DEFAULT_FINAL_CTA_CONTENT,
+  DEFAULT_LEGAL_CONTENT,
+  DEFAULT_CONTACT_US_CONTENT,
 } from '@/models/SiteContent.model';
 
 export { DEFAULT_SITE_CONTENT, type ISiteContentDocument } from '@/models/SiteContent.model';
@@ -68,6 +74,12 @@ export async function getSiteContent(): Promise<typeof DEFAULT_SITE_CONTENT & { 
       partners: doc?.partners && doc.partners.length > 0 ? doc.partners : DEFAULT_SITE_CONTENT.partners,
       blogCms: doc?.blogCms || DEFAULT_SITE_CONTENT.blogCms,
       seo: doc?.seo || DEFAULT_SITE_CONTENT.seo,
+      pricing: doc?.pricing || DEFAULT_PRICING_CONTENT,
+      features: doc?.features || DEFAULT_FEATURES_CONTENT,
+      howItWorks: doc?.howItWorks || DEFAULT_HOW_IT_WORKS_CONTENT,
+      finalCta: doc?.finalCta || DEFAULT_FINAL_CTA_CONTENT,
+      legal: doc?.legal || DEFAULT_LEGAL_CONTENT,
+      contactUs: doc?.contactUs || DEFAULT_CONTACT_US_CONTENT,
       faq: doc?.faq && doc.faq.length > 0 ? doc.faq : DEFAULT_SITE_CONTENT.faq,
       footer: doc?.footer || DEFAULT_SITE_CONTENT.footer,
       updatedAt: doc?.updatedAt || new Date(),
@@ -76,6 +88,12 @@ export async function getSiteContent(): Promise<typeof DEFAULT_SITE_CONTENT & { 
     console.error('Failed to get SiteContent from database, safely falling back to defaults:', error);
     return {
       ...DEFAULT_SITE_CONTENT,
+      pricing: DEFAULT_PRICING_CONTENT,
+      features: DEFAULT_FEATURES_CONTENT,
+      howItWorks: DEFAULT_HOW_IT_WORKS_CONTENT,
+      finalCta: DEFAULT_FINAL_CTA_CONTENT,
+      legal: DEFAULT_LEGAL_CONTENT,
+      contactUs: DEFAULT_CONTACT_US_CONTENT,
       updatedAt: new Date(),
     };
   }
@@ -85,7 +103,7 @@ export async function getSiteContent(): Promise<typeof DEFAULT_SITE_CONTENT & { 
  * Updates sections of the SiteContent configuration.
  */
 export async function updateSiteContent(
-  data: Partial<typeof DEFAULT_SITE_CONTENT>,
+  data: Partial<ISiteContentDocument>,
   updatedBy?: string
 ) {
   await connectToDatabase();
@@ -95,6 +113,12 @@ export async function updateSiteContent(
   if (!doc) {
     doc = await SiteContent.create({
       ...DEFAULT_SITE_CONTENT,
+      pricing: DEFAULT_PRICING_CONTENT,
+      features: DEFAULT_FEATURES_CONTENT,
+      howItWorks: DEFAULT_HOW_IT_WORKS_CONTENT,
+      finalCta: DEFAULT_FINAL_CTA_CONTENT,
+      legal: DEFAULT_LEGAL_CONTENT,
+      contactUs: DEFAULT_CONTACT_US_CONTENT,
       ...data,
       updatedBy,
     });
@@ -107,6 +131,12 @@ export async function updateSiteContent(
     if (data.partners) doc.partners = data.partners;
     if (data.blogCms) doc.blogCms = { ...doc.blogCms, ...data.blogCms };
     if (data.seo) doc.seo = { ...doc.seo, ...data.seo };
+    if (data.pricing) doc.pricing = { ...DEFAULT_PRICING_CONTENT, ...doc.pricing, ...data.pricing };
+    if (data.features) doc.features = { ...DEFAULT_FEATURES_CONTENT, ...doc.features, ...data.features };
+    if (data.howItWorks) doc.howItWorks = { ...DEFAULT_HOW_IT_WORKS_CONTENT, ...doc.howItWorks, ...data.howItWorks };
+    if (data.finalCta) doc.finalCta = { ...DEFAULT_FINAL_CTA_CONTENT, ...doc.finalCta, ...data.finalCta };
+    if (data.legal) doc.legal = { ...DEFAULT_LEGAL_CONTENT, ...doc.legal, ...data.legal };
+    if (data.contactUs) doc.contactUs = { ...DEFAULT_CONTACT_US_CONTENT, ...doc.contactUs, ...data.contactUs };
     if (data.faq) doc.faq = data.faq;
     if (data.footer) doc.footer = { ...doc.footer, ...data.footer };
     if (updatedBy) doc.updatedBy = updatedBy;
@@ -119,6 +149,12 @@ export async function updateSiteContent(
     doc.markModified('partners');
     doc.markModified('blogCms');
     doc.markModified('seo');
+    doc.markModified('pricing');
+    doc.markModified('features');
+    doc.markModified('howItWorks');
+    doc.markModified('finalCta');
+    doc.markModified('legal');
+    doc.markModified('contactUs');
     doc.markModified('faq');
     doc.markModified('footer');
 

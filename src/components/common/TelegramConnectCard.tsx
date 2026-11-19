@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import { useLanguage } from '@/lib/i18n/LanguageContext';
 
 interface TelegramConnectCardProps {
   mode: 'user' | 'admin';
@@ -27,6 +28,7 @@ interface TelegramConnectCardProps {
 }
 
 export function TelegramConnectCard({ mode, onBoundSuccess }: TelegramConnectCardProps) {
+  const { t, dir, language } = useLanguage();
   const [isLoading, setIsLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isManualSaving, setIsManualSaving] = useState(false);
@@ -91,6 +93,7 @@ export function TelegramConnectCard({ mode, onBoundSuccess }: TelegramConnectCar
         body: JSON.stringify({
           action: 'generate_token',
           targetBot: mode,
+          locale: language,
         }),
       });
       const data = await res.json();
@@ -101,12 +104,12 @@ export function TelegramConnectCard({ mode, onBoundSuccess }: TelegramConnectCar
           startCommand: data.startCommand,
           botUsername: data.botUsername,
         });
-        toast.success('لینک اتصال اختصاصی تلگرام ساخته شد. با کلیک بالای دکمه وارد ربات شوید.');
+        toast.success(t('toast.telegram_token_ready'));
       } else {
-        toast.error(data.message || 'خطا در ساخت توکن اتصال.');
+        toast.error(data.message || t('toast.save_error'));
       }
     } catch {
-      toast.error('خطای ارتباط با سرور.');
+      toast.error(t('toast.network_error'));
     } finally {
       setIsGenerating(false);
     }
@@ -114,7 +117,7 @@ export function TelegramConnectCard({ mode, onBoundSuccess }: TelegramConnectCar
 
   const handleManualBind = async () => {
     if (!manualChatId.trim()) {
-      toast.error('لطفاً نمبر چت (Chat ID) تلگرام خود را درج نمایید.');
+      toast.error(t('validation.chat_id_required'));
       return;
     }
     setIsManualSaving(true);
@@ -126,19 +129,20 @@ export function TelegramConnectCard({ mode, onBoundSuccess }: TelegramConnectCar
           action: 'manual_bind',
           chatId: manualChatId.trim(),
           targetBot: mode,
+          locale: language,
         }),
       });
       const data = await res.json();
       if (data.success) {
         setIsConnected(true);
         setTelegramChatId(data.telegramChatId);
-        toast.success(data.message || 'حساب تلگرام با موفقیت متصل گردید.');
+        toast.success(data.message || t('toast.telegram_bound'));
         if (onBoundSuccess) onBoundSuccess(data.telegramChatId);
       } else {
-        toast.error(data.message || 'خطا در اتصال مستقیم تلگرام.');
+        toast.error(data.message || t('toast.save_error'));
       }
     } catch {
-      toast.error('خطای سرور در اتصال تلگرام.');
+      toast.error(t('toast.network_error'));
     } finally {
       setIsManualSaving(false);
     }
@@ -146,23 +150,23 @@ export function TelegramConnectCard({ mode, onBoundSuccess }: TelegramConnectCar
 
   const handleSetWebhooks = async () => {
     setIsSettingWebhooks(true);
-    const toastId = toast.loading('در حال ثبت خودکار وب‌هوک‌های ربات ادمین و کاربر...');
+    const toastId = toast.loading(t('common.loading'));
     try {
       const res = await fetch('/api/telegram/connect', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'set_webhooks' }),
+        body: JSON.stringify({ action: 'set_webhooks', locale: language }),
       });
       const data = await res.json();
       if (data.success) {
-        toast.success(data.message || 'وب‌هوک‌ها با موفقیت ثبت گردیدند.', { id: toastId });
+        toast.success(data.message || t('toast.save_success'), { id: toastId });
       } else {
-        toast.warning(data.message || 'ثبت وب‌هوک کامل نشد. لطفاً دامنه HTTPS را بررسی نمایید.', {
+        toast.warning(data.message || t('toast.save_error'), {
           id: toastId,
         });
       }
     } catch {
-      toast.error('خطا در اتصال به API تلگرام.', { id: toastId });
+      toast.error(t('toast.network_error'), { id: toastId });
     } finally {
       setIsSettingWebhooks(false);
     }
@@ -178,7 +182,7 @@ export function TelegramConnectCard({ mode, onBoundSuccess }: TelegramConnectCar
         setTelegramChatId('');
         setTelegramUsername('');
         setGeneratedBind(null);
-        toast.success('اتصال تلگرام لغو گردید.');
+        toast.success(t('toast.telegram_disconnected'));
       }
     } finally {
       setIsDisconnecting(false);
@@ -189,12 +193,12 @@ export function TelegramConnectCard({ mode, onBoundSuccess }: TelegramConnectCar
     if (!generatedBind?.startCommand) return;
     navigator.clipboard?.writeText(generatedBind.startCommand);
     setCopiedCmd(true);
-    toast.success('دستور استارت کپی گردید!');
+    toast.success(t('toast.command_copied'));
     setTimeout(() => setCopiedCmd(false), 2000);
   };
 
   return (
-    <Card className="p-5 sm:p-6 rounded-3xl border border-sky-500/25 bg-gradient-to-br from-sky-500/[0.06] via-card to-cyan-500/[0.04] shadow-sm space-y-5" dir="rtl">
+    <Card className="p-5 sm:p-6 rounded-3xl border border-sky-500/25 bg-gradient-to-br from-sky-500/[0.06] via-card to-cyan-500/[0.04] shadow-sm space-y-5" dir={dir}>
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/70 pb-4">
         <div className="flex items-start gap-3">
@@ -205,26 +209,26 @@ export function TelegramConnectCard({ mode, onBoundSuccess }: TelegramConnectCar
             <div className="flex items-center gap-2 flex-wrap">
               <h3 className="text-sm font-extrabold text-foreground">
                 {mode === 'admin'
-                  ? 'اتصال حساب مدیریت به ربات و مینی‌اپ تلگرام'
-                  : 'اتصال حساب کاربری به تلگرام و مینی‌اپ'}
+                  ? t('telegram.admin_title')
+                  : t('telegram.user_title')}
               </h3>
               {isLoading ? (
-                <Badge variant="outline" className="text-[10px]">در حال بررسی...</Badge>
+                <Badge variant="outline" className="text-[10px]">{t('telegram.checking')}</Badge>
               ) : isConnected ? (
                 <Badge className="bg-emerald-500/15 text-emerald-500 border border-emerald-500/30 text-[10px] font-bold">
-                  <CheckCircle2 className="w-3 h-3 ml-1" />
-                  متصل به تلگرام
+                  <CheckCircle2 className="w-3 h-3 me-1" />
+                  {t('telegram.connected')}
                 </Badge>
               ) : (
                 <Badge variant="outline" className="text-amber-500 border-amber-500/30 bg-amber-500/10 text-[10px] font-bold">
-                  متصل نشده
+                  {t('telegram.not_connected')}
                 </Badge>
               )}
             </div>
             <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
               {mode === 'admin'
-                ? 'با اتصال یک‌کلیکی، سفارشات جدید را همراه با دکمه‌های تایید/رد در تلگرام دریافت نموده و به مینی‌اپ مدیریت دسترسی داشته باشید.'
-                : 'تمام پیام‌های فرم تماس مینی‌سایت خود را فوری در تلگرام دریافت کنید و کارت هوشمندتان را مستقیماً در مینی‌اپ مدیریت نمایید.'}
+                ? t('telegram.admin_desc')
+                : t('telegram.user_desc')}
             </p>
           </div>
         </div>
@@ -240,7 +244,7 @@ export function TelegramConnectCard({ mode, onBoundSuccess }: TelegramConnectCar
           ) : (
             <Link2 className="w-4 h-4" />
           )}
-          <span>اتصال به تلگرام</span>
+          <span>{t('telegram.connect_btn')}</span>
         </Button>
       </div>
 
@@ -251,7 +255,7 @@ export function TelegramConnectCard({ mode, onBoundSuccess }: TelegramConnectCar
             <Bot className="w-4 h-4 text-emerald-500 shrink-0" />
             <div>
               <span className="font-bold text-foreground block">
-                همگام‌سازی فعال است {telegramUsername ? `(${telegramUsername})` : ''}
+                {t('telegram.sync_active')} {telegramUsername ? `(${telegramUsername})` : ''}
               </span>
               <span className="text-[11px] font-mono text-muted-foreground">
                 Chat ID: {telegramChatId}
@@ -267,7 +271,7 @@ export function TelegramConnectCard({ mode, onBoundSuccess }: TelegramConnectCar
               className="px-3 py-1.5 rounded-xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-500 text-[11px] font-bold flex items-center gap-1 hover:bg-cyan-500/25 transition-colors"
             >
               <Sparkles className="w-3.5 h-3.5" />
-              <span>پیش‌نمایش مینی‌اپ</span>
+              <span>{t('telegram.preview_miniapp')}</span>
             </a>
 
             <button
@@ -277,7 +281,7 @@ export function TelegramConnectCard({ mode, onBoundSuccess }: TelegramConnectCar
               className="px-2.5 py-1.5 rounded-xl bg-rose-500/10 border border-rose-500/25 text-rose-500 text-[11px] font-bold flex items-center gap-1 hover:bg-rose-500/20 cursor-pointer"
             >
               <Unlink className="w-3 h-3" />
-              <span>قطع اتصال</span>
+              <span>{t('telegram.disconnect')}</span>
             </button>
           </div>
         </div>
@@ -289,11 +293,10 @@ export function TelegramConnectCard({ mode, onBoundSuccess }: TelegramConnectCar
           <div className="sm:col-span-8 space-y-3">
             <div className="space-y-1">
               <span className="text-xs font-bold text-sky-500 block">
-                لینک اختصاصی اتصال آماده شد!
+                {t('telegram.link_ready')}
               </span>
-              <p className="text-[11px] text-muted-foreground leading-relaxed">
-                روی دکمه ذیل کلیک نمایید و در تلگرام دکمه <b>Start</b> را بزنید تا اکانت سایت شما فوراً به ربات{' '}
-                <code className="font-mono text-foreground" dir="ltr">@{generatedBind.botUsername}</code> وصل شود:
+              <p className="text-[11px] text-muted-foreground leading-relaxed" dir="ltr">
+                @{generatedBind.botUsername}
               </p>
             </div>
 
@@ -305,7 +308,7 @@ export function TelegramConnectCard({ mode, onBoundSuccess }: TelegramConnectCar
                 className="h-9 px-4 rounded-xl bg-sky-500 hover:bg-sky-400 text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-sm transition-colors"
               >
                 <Send className="w-3.5 h-3.5" />
-                <span>استارت ربات در تلگرام</span>
+                <span>{t('telegram.start_bot_btn')}</span>
                 <ExternalLink className="w-3 h-3" />
               </a>
 
@@ -325,14 +328,14 @@ export function TelegramConnectCard({ mode, onBoundSuccess }: TelegramConnectCar
                 className="h-9 px-3 rounded-xl border border-border bg-card hover:bg-muted text-xs font-semibold inline-flex items-center gap-1 cursor-pointer"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
-                <span>بررسی اتصال</span>
+                <span>{t('telegram.check_status')}</span>
               </button>
             </div>
           </div>
 
           <div className="sm:col-span-4 flex flex-col items-center justify-center p-2.5 bg-white rounded-2xl border border-border mx-auto">
             <QRCodeSVG value={generatedBind.deepLink} size={108} level="M" />
-            <span className="text-[10px] text-slate-600 font-semibold mt-1">اسکن با دوربین گوشی</span>
+            <span className="text-[10px] text-slate-600 font-semibold mt-1">{t('telegram.scan_qr')}</span>
           </div>
         </div>
       )}
@@ -341,14 +344,14 @@ export function TelegramConnectCard({ mode, onBoundSuccess }: TelegramConnectCar
       <div className="pt-2 border-t border-border/60 grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
         <div className={mode === 'admin' ? 'md:col-span-7 space-y-1' : 'md:col-span-12 space-y-1'}>
           <label className="text-[11px] font-bold text-muted-foreground block">
-            یا ثبت دستی نمبر چت (Telegram Chat ID)
+            {t('telegram.manual_label')}
           </label>
           <div className="flex items-center gap-2">
             <Input
               type="text"
               value={manualChatId}
               onChange={(e) => setManualChatId(e.target.value)}
-              placeholder="مثال: 123456789"
+              placeholder="123456789"
               dir="ltr"
               className="h-9 rounded-xl font-mono text-xs text-left"
             />
@@ -359,7 +362,7 @@ export function TelegramConnectCard({ mode, onBoundSuccess }: TelegramConnectCar
               disabled={isManualSaving}
               className="h-9 px-4 rounded-xl text-xs font-bold shrink-0 cursor-pointer"
             >
-              {isManualSaving ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : 'ثبت مستقیم'}
+              {isManualSaving ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : t('telegram.manual_btn')}
             </Button>
           </div>
         </div>
@@ -378,7 +381,7 @@ export function TelegramConnectCard({ mode, onBoundSuccess }: TelegramConnectCar
               ) : (
                 <Webhook className="w-3.5 h-3.5" />
               )}
-              <span>ثبت خودکار وب‌هوک ربات‌ها</span>
+              <span>{t('telegram.set_webhooks')}</span>
             </Button>
           </div>
         )}

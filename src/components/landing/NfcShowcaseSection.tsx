@@ -118,7 +118,7 @@ function NfcCardChassis() {
 export function NfcShowcaseSection() {
   const { nfcConcept: rawNfc } = useSiteContent();
   const nfcConcept = rawNfc || DEFAULT_SITE_CONTENT.nfcConcept;
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
 
   // Header Staggered Container & Items (Stage 28.3)
   const headerContainerVariants = {
@@ -325,10 +325,10 @@ export function NfcShowcaseSection() {
 
                       <div className="space-y-1">
                         <p className="text-xs font-bold text-white tracking-wide">
-                          آماده اتصال هوشمند
+                          {t('nfc.standby_title', 'آماده اتصال هوشمند')}
                         </p>
                         <p className="text-[10px] text-slate-400 font-medium">
-                          کارت NFC را نزدیک کنید...
+                          {t('nfc.standby_sub', 'کارت NFC را نزدیک کنید...')}
                         </p>
                       </div>
 
@@ -366,7 +366,7 @@ export function NfcShowcaseSection() {
                               {getLocalizedText(nfcConcept.phoneNotificationTitle, language, 'آریا لینک (NFC Tap)')}
                             </span>
                             <span className="text-[8px] text-cyan-300 bg-cyan-950/80 px-1.5 py-0.5 rounded-full border border-cyan-500/30">
-                              اتصال برقرار شد
+                              {t('nfc.connected_badge', 'اتصال برقرار شد')}
                             </span>
                           </div>
                           <p className="text-[8px] text-slate-300 truncate">
@@ -438,7 +438,7 @@ export function NfcShowcaseSection() {
                         className="w-full py-1.5 px-3 rounded-xl bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 text-white font-bold text-[10px] shadow-md shadow-cyan-500/25 flex items-center justify-center gap-1.5"
                       >
                         <Phone className="w-3 h-3" />
-                        <span>ذخیره مستقیم مخاطب (vCard)</span>
+                        <span>{t('mockup.save_contact', 'ذخیره مستقیم مخاطب (vCard)')}</span>
                       </button>
 
                       {/* Module 1: Direct WhatsApp Chat (Hero 1:1) */}
@@ -447,12 +447,12 @@ export function NfcShowcaseSection() {
                           <div className="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
                             <MessageCircle className="w-3 h-3" />
                           </div>
-                          <div className="text-right">
+                          <div className="text-start">
                             <span className="font-bold text-[10px] text-white block">
-                              گفتگوی مستقیم واتساپ
+                              {t('mockup.whatsapp', 'گفتگوی مستقیم واتساپ')}
                             </span>
                             <span className="text-[8px] text-emerald-400 block">
-                              پاسخگویی سریع کمتر از 15 دقیقه
+                              {t('mockup.whatsapp_sub', 'پاسخگویی سریع کمتر از 15 دقیقه')}
                             </span>
                           </div>
                         </div>
@@ -465,17 +465,17 @@ export function NfcShowcaseSection() {
                           <div className="w-6 h-6 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center">
                             <ShoppingBag className="w-3 h-3" />
                           </div>
-                          <div className="text-right">
+                          <div className="text-start">
                             <span className="font-bold text-[10px] text-white block">
-                              رزرو نوبت مشاوره اختصاصی
+                              {t('mockup.consulting', 'رزرو نوبت مشاوره اختصاصی')}
                             </span>
                             <span className="text-[8px] text-cyan-300 block font-sans">
-                              500 AFN • پرداخت با حساب‌پی
+                              {t('mockup.consulting_sub', '500 AFN • پرداخت با حساب‌پی')}
                             </span>
                           </div>
                         </div>
                         <span className="px-2 py-0.5 rounded-md bg-cyan-500 text-white font-bold text-[8px]">
-                          رزرو
+                          {t('mockup.reserve_btn', 'رزرو')}
                         </span>
                       </div>
 
@@ -483,15 +483,15 @@ export function NfcShowcaseSection() {
                       <div className="grid grid-cols-3 gap-1.5">
                         <div className="p-1.5 rounded-lg bg-white/5 border border-white/10 flex flex-col items-center justify-center gap-0.5">
                           <Instagram className="w-3.5 h-3.5 text-pink-400" />
-                          <span className="text-[8px] text-slate-300">اینستاگرام</span>
+                          <span className="text-[8px] text-slate-300">{t('mockup.instagram', 'اینستاگرام')}</span>
                         </div>
                         <div className="p-1.5 rounded-lg bg-white/5 border border-white/10 flex flex-col items-center justify-center gap-0.5">
                           <Send className="w-3.5 h-3.5 text-sky-400" />
-                          <span className="text-[8px] text-slate-300">تلگرام</span>
+                          <span className="text-[8px] text-slate-300">{t('mockup.telegram', 'تلگرام')}</span>
                         </div>
                         <div className="p-1.5 rounded-lg bg-white/5 border border-white/10 flex flex-col items-center justify-center gap-0.5">
                           <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                          <span className="text-[8px] text-slate-300">کاتالوگ</span>
+                          <span className="text-[8px] text-slate-300">{t('mockup.catalog', 'کاتالوگ')}</span>
                         </div>
                       </div>
 
