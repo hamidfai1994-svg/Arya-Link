@@ -338,7 +338,7 @@
   "cardSettings.public_alias_label": "د کارټ عمومي پته (Alias)",
   "cardSettings.custom_domain_label": "د ځانګړي ډومین نښلول",
   "cardSettings.enterprise_badge": "سازماني",
-  "cardSettings.custom_domain_ph": "مثال: card.mycompany.af",
+  "cardSettings.custom_domain_ph": "مثال: card.mycompany.com",
   "cardSettings.cname_hint": "د فعالولو لپاره د خپل ډومین CNAME ریکارډ پر cname.aryalink.af تنظیم کړئ.",
   "cardSettings.direct_mode_section": "د مستقیم لېږد حالت",
   "cardSettings.direct_mode_desc": "د دې فعالولو سره، د کارټ سکن کولو وروسته لیدونکی مستقیم بل لینک ته لېږدول کېږي.",
@@ -625,5 +625,7 @@
   "admin.nfcMaterials.qtyDiscountsTitle": "د شمېر د تخفیفونو پړاوونه",
   "admin.nfcMaterials.qtyDiscountsSub": "د تادیې په پړاو کې د کارټونو د شمېر له مخې اتوماتیک تخفیف فیصدي",
   "admin.nfcMaterials.tierMinQty": "لږ تر لږه کارټونه",
-  "admin.nfcMaterials.tierDiscountPct": "تخفیف فیصدي (%)"
+  "admin.nfcMaterials.tierDiscountPct": "تخفیف فیصدي (%)",
+  "orderStudio.flipToBack": "د کارټ شا ته اړول",
+  "orderStudio.flipToFront": "د کارټ مخ ته اړول"
 }

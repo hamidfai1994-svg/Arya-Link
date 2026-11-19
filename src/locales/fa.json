@@ -338,8 +338,8 @@
   "cardSettings.public_alias_label": "شناسه عمومی کارت شما",
   "cardSettings.custom_domain_label": "اتصال دامنه اختصاصی",
   "cardSettings.enterprise_badge": "سازمانی",
-  "cardSettings.custom_domain_ph": "مثال: card.mycompany.af",
-  "cardSettings.cname_hint": "برای فعال‌سازی دامنه، رکورد CNAME دامنه خود را روی cname.aryalink.af تنظیم نمایید.",
+  "cardSettings.custom_domain_ph": "مثال: card.mycompany.com",
+  "cardSettings.cname_hint": "برای فعال‌سازی دامنه، رکورد CNAME دامنه خود را روی cname.aryal.ink تنظیم نمایید.",
   "cardSettings.direct_mode_section": "حالت هدایت مستقیم",
   "cardSettings.direct_mode_desc": "با فعال بودن این قابلیت، با اسکن کارت NFC یا باز کردن لینک، بازدیدکننده به صورت خودکار به لینک مقصد هدایت می‌گردد.",
   "cardSettings.direct_url_label": "آدرس اینترنتی مقصد مستقیم",
@@ -625,5 +625,7 @@
   "admin.nfcMaterials.qtyDiscountsTitle": "پلکان تخفیف‌های تعدادی",
   "admin.nfcMaterials.qtyDiscountsSub": "درصد تخفیف خودکار براساس تعداد کارت‌های انتخاب‌شده در مرحله تسویه حساب",
   "admin.nfcMaterials.tierMinQty": "حداقل تعداد کارت",
-  "admin.nfcMaterials.tierDiscountPct": "درصد تخفیف (%)"
+  "admin.nfcMaterials.tierDiscountPct": "درصد تخفیف (%)",
+  "orderStudio.flipToBack": "چرخاندن به پشت کارت",
+  "orderStudio.flipToFront": "چرخاندن به روی کارت"
 }

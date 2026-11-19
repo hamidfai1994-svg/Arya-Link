@@ -338,7 +338,7 @@
   "cardSettings.public_alias_label": "Public Link Identifier (Alias)",
   "cardSettings.custom_domain_label": "Custom Domain Connection",
   "cardSettings.enterprise_badge": "Enterprise",
-  "cardSettings.custom_domain_ph": "e.g., card.mycompany.af",
+  "cardSettings.custom_domain_ph": "e.g., card.mycompany.com",
   "cardSettings.cname_hint": "Point your domain's CNAME DNS record to cname.aryalink.af to activate.",
   "cardSettings.direct_mode_section": "Direct Redirect Mode",
   "cardSettings.direct_mode_desc": "When enabled, scanning your NFC card or link forwards visitors straight to your destination URL.",
@@ -625,5 +625,7 @@
   "admin.nfcMaterials.qtyDiscountsTitle": "Quantity Discount Tiers",
   "admin.nfcMaterials.qtyDiscountsSub": "Automatic discount percentages applied based on card quantity at checkout",
   "admin.nfcMaterials.tierMinQty": "Minimum Qty",
-  "admin.nfcMaterials.tierDiscountPct": "Discount (%)"
+  "admin.nfcMaterials.tierDiscountPct": "Discount (%)",
+  "orderStudio.flipToBack": "Flip to Back Side",
+  "orderStudio.flipToFront": "Flip to Front Side"
 }

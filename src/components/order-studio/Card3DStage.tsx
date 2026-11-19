@@ -3,6 +3,11 @@
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+import {
+  FlipHorizontal2,
+  RectangleHorizontal,
+  RectangleVertical,
+} from 'lucide-react';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import {
   CARD_D,
@@ -31,6 +36,13 @@ export interface Card3DStageProps {
   onSideChange: (side: CardSide, fromDrag?: boolean) => void;
   onToggleOrientation: () => void;
   onStageThemeVars?: (vars: { bg: string; accent: string }) => void;
+}
+
+const MIN_ZOOM_SCALE = 0.55;
+const MAX_ZOOM_SCALE = 1.45;
+
+function clampZoom(value: number): number {
+  return Math.max(MIN_ZOOM_SCALE, Math.min(MAX_ZOOM_SCALE, value));
 }
 
 function makeRoundedShape(w: number, h: number, r: number): THREE.Shape {
@@ -100,6 +112,9 @@ export default function Card3DStage({
   const revealRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
+  // Interactive zoom multiplier (0.55 = closest zoom in, 1 = default, 1.45 = zoomed out)
+  const zoomScaleRef = useRef<number>(1);
+
   // Latest prop refs for zero-recreation RAF loop
   const designRef = useRef(design);
   const materialRef = useRef(material);
@@ -162,7 +177,7 @@ export default function Card3DStage({
     const tick = (now: number) => {
       const progress = Math.min(1, (now - start) / 480);
       const pct = (1 - Math.pow(1 - progress, 3)) * 130;
-      const mask = `radial-gradient(circle at 50% 48%, #000 ${Math.max(0, pct - 24)}%, transparent ${pct}%)`;
+      const mask = `radial-gradient(circle at 50% 50%, #000 ${Math.max(0, pct - 24)}%, transparent ${pct}%)`;
       revealEl.style.maskImage = mask;
       (revealEl.style as CSSStyleDeclaration & { webkitMaskImage?: string }).webkitMaskImage = mask;
       if (progress < 1) {
@@ -301,19 +316,30 @@ export default function Card3DStage({
       depthWrite: false,
     });
     const shadowMesh = new THREE.Mesh(shadowGeo, shadowMat);
-    shadowMesh.position.set(0, initIsV ? -2.18 : -1.62, -0.5);
+    shadowMesh.position.set(0, initIsV ? -2.08 : -1.52, -0.5);
     scene.add(shadowMesh);
 
-    let targetCamZ = 8.4;
+    let baseCamZ = 8.4;
     const updateCameraTarget = () => {
-      const w = stage.clientWidth || 600;
-      if (designRef.current.orientation === 'vertical') {
-        targetCamZ = w < 520 ? 9.8 : 8.4;
-        shadowMesh.position.y = -2.18;
-      } else {
-        targetCamZ = w < 520 ? 9.3 : 7.5;
-        shadowMesh.position.y = -1.62;
-      }
+      const w = Math.max(1, stage.clientWidth || 600);
+      const h = Math.max(1, stage.clientHeight || 400);
+      const aspect = Math.max(0.5, w / h);
+      const isV = designRef.current.orientation === 'vertical';
+      const isMobile = w < 640;
+
+      const cardW = isV ? 2.24 : 3.55;
+      const cardH = isV ? 3.55 : 2.24;
+      const tanHalfV = Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2);
+
+      // Keep balanced top/bottom breathing room AND clear separation from the floating side controls even at 360px
+      const maxFillH = isMobile ? 0.72 : 0.72;
+      const maxFillW = isMobile ? 0.6 : 0.74;
+      const neededZForH = cardH / (2 * tanHalfV * maxFillH);
+      const neededZForW = cardW / (2 * tanHalfV * aspect * maxFillW);
+
+      const defaultZ = isV ? (w < 520 ? 8.6 : 8.4) : (w < 520 ? 9.4 : 7.5);
+      baseCamZ = Math.max(defaultZ, neededZForH, neededZForW);
+      shadowMesh.position.y = isV ? -2.08 : -1.52;
     };
 
     const resizeStage = () => {
@@ -326,15 +352,27 @@ export default function Card3DStage({
       camera.updateProjectionMatrix();
     };
 
-    // Rotation & drag state machine (exact match to arya-card-studio-v4.html)
+    // Multi-pointer, pinch-to-zoom, wheel zoom, and single-finger rotation state machine
     let curRotX = 0.05;
     let dragOffsetX = 0;
     let isDragging = false;
     let lastX = 0;
     let lastY = 0;
+    let downX = 0;
+    let downY = 0;
+    let movedDuringPointer = false;
     let lastDragDir = 0;
     let prevTime = 0;
     let swayStart = 0;
+
+    const activePointers = new Map<number, { x: number; y: number }>();
+    let prevPinchDist: number | null = null;
+    let wasPinching = false;
+
+    // Mobile double-tap zoom reset tracking
+    let lastTapTime = 0;
+    let lastTapX = 0;
+    let lastTapY = 0;
 
     const engineState = {
       dirtyFront: true,
@@ -398,25 +436,75 @@ export default function Card3DStage({
 
     const isContinuousSpinStep = () => stepRef.current === 3;
 
+    const getTwoPointerDistance = () => {
+      const pts = Array.from(activePointers.values());
+      if (pts.length < 2) return null;
+      return Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+    };
+
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      zoomScaleRef.current = clampZoom(zoomScaleRef.current + e.deltaY * 0.001);
+    };
+
+    const onDoubleClick = () => {
+      zoomScaleRef.current = 1;
+    };
+
     const onPointerDown = (e: PointerEvent) => {
-      isDragging = true;
-      lastX = e.clientX;
-      lastY = e.clientY;
-      lastDragDir = 0;
+      activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
       try {
         canvas.setPointerCapture(e.pointerId);
       } catch {
         // Ignore capture failure on synthetic events
       }
+
+      if (activePointers.size === 1) {
+        isDragging = true;
+        wasPinching = false;
+        prevPinchDist = null;
+        lastX = e.clientX;
+        lastY = e.clientY;
+        downX = e.clientX;
+        downY = e.clientY;
+        movedDuringPointer = false;
+        lastDragDir = 0;
+      } else if (activePointers.size >= 2) {
+        // Suspend single-finger rotation while pinching with 2 fingers
+        isDragging = false;
+        wasPinching = true;
+        movedDuringPointer = true;
+        prevPinchDist = getTwoPointerDistance();
+      }
     };
 
     const onPointerMove = (e: PointerEvent) => {
+      if (!activePointers.has(e.pointerId)) return;
+      activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+      // 2-Finger Pinch-to-Zoom
+      if (activePointers.size >= 2) {
+        const dist = getTwoPointerDistance();
+        if (dist !== null && prevPinchDist !== null && prevPinchDist > 4 && dist > 4) {
+          const ratio = prevPinchDist / dist;
+          zoomScaleRef.current = clampZoom(zoomScaleRef.current * ratio);
+        }
+        prevPinchDist = dist;
+        return;
+      }
+
+      // 1-Finger Drag Rotation
       if (!isDragging) return;
       const dx = e.clientX - lastX;
       const dy = e.clientY - lastY;
       lastX = e.clientX;
       lastY = e.clientY;
+
+      if (Math.hypot(e.clientX - downX, e.clientY - downY) > 10) {
+        movedDuringPointer = true;
+      }
       if (Math.abs(dx) > 1) lastDragDir = Math.sign(dx);
+
       if (isContinuousSpinStep()) {
         engineState.spinAngle += dx * 0.011;
       } else {
@@ -425,26 +513,72 @@ export default function Card3DStage({
       dragOffsetX = Math.max(-0.55, Math.min(0.55, dragOffsetX + dy * 0.008));
     };
 
-    const onStopDrag = () => {
-      if (!isDragging) return;
-      isDragging = false;
-      if (stepRef.current === 0) {
-        const totalY = engineState.goalLockY + engineState.dragOffsetY;
-        // Smart snap to front or back along user's drag direction (prevents stopping on thin edge)
-        const snappedSteps = Math.round((totalY + lastDragDir * 0.5) / Math.PI);
-        engineState.goalLockY = snappedSteps * Math.PI;
-        engineState.dragOffsetY = 0;
-        const isBack = Math.abs(snappedSteps % 2) === 1;
-        const nextSide: CardSide = isBack ? 'back' : 'front';
-        onSideChangeRef.current(nextSide, true);
-        runStageThemeSync(true, nextSide);
+    const onPointerEnd = (e: PointerEvent) => {
+      activePointers.delete(e.pointerId);
+      try {
+        if (canvas.hasPointerCapture(e.pointerId)) {
+          canvas.releasePointerCapture(e.pointerId);
+        }
+      } catch {
+        // Ignore release errors
+      }
+
+      // Transition from 2 fingers -> 1 finger: re-sync coordinates & reset pinch to prevent jumps
+      if (activePointers.size === 1) {
+        const remaining = Array.from(activePointers.values())[0];
+        lastX = remaining.x;
+        lastY = remaining.y;
+        lastDragDir = 0;
+        prevPinchDist = null;
+        isDragging = true;
+        return;
+      }
+
+      if (activePointers.size >= 2) {
+        prevPinchDist = getTwoPointerDistance();
+        return;
+      }
+
+      // All fingers lifted (0 active pointers)
+      prevPinchDist = null;
+
+      // Mobile / Touch Double-Tap resets zoom cleanly back to 1
+      if (e.type === 'pointerup' && !wasPinching && !movedDuringPointer && e.pointerType !== 'mouse') {
+        const now = performance.now();
+        if (now - lastTapTime < 320 && Math.hypot(e.clientX - lastTapX, e.clientY - lastTapY) < 36) {
+          zoomScaleRef.current = 1;
+          lastTapTime = 0;
+        } else {
+          lastTapTime = now;
+          lastTapX = e.clientX;
+          lastTapY = e.clientY;
+        }
+      }
+
+      if (isDragging || wasPinching) {
+        isDragging = false;
+        if (stepRef.current === 0) {
+          const totalY = engineState.goalLockY + engineState.dragOffsetY;
+          const dirBias = !wasPinching && movedDuringPointer ? lastDragDir * 0.5 : 0;
+          // Smart snap to front or back along user's drag direction (prevents stopping on thin edge)
+          const snappedSteps = Math.round((totalY + dirBias) / Math.PI);
+          engineState.goalLockY = snappedSteps * Math.PI;
+          engineState.dragOffsetY = 0;
+          const isBack = Math.abs(snappedSteps % 2) === 1;
+          const nextSide: CardSide = isBack ? 'back' : 'front';
+          onSideChangeRef.current(nextSide, true);
+          runStageThemeSync(true, nextSide);
+        }
+        wasPinching = false;
       }
     };
 
+    canvas.addEventListener('wheel', onWheel, { passive: false });
+    canvas.addEventListener('dblclick', onDoubleClick);
     canvas.addEventListener('pointerdown', onPointerDown);
     canvas.addEventListener('pointermove', onPointerMove);
-    canvas.addEventListener('pointerup', onStopDrag);
-    canvas.addEventListener('pointercancel', onStopDrag);
+    canvas.addEventListener('pointerup', onPointerEnd);
+    canvas.addEventListener('pointercancel', onPointerEnd);
 
     const resizeObserver = new ResizeObserver(resizeStage);
     resizeObserver.observe(stage);
@@ -507,7 +641,7 @@ export default function Card3DStage({
 
       if (isContinuousSpinStep()) {
         // Step 4 (Checkout): smooth continuous 360° rotation
-        if (!isDragging) {
+        if (!isDragging && activePointers.size === 0) {
           engineState.spinAngle += dt * 0.0006;
           dragOffsetX *= 0.94;
         }
@@ -515,24 +649,30 @@ export default function Card3DStage({
         targetX = 0.06 + Math.cos(t * 0.001) * 0.03 + dragOffsetX;
       } else {
         // Step 1: smart snap + gentle sway | Steps 2 & 3: return to active side + gentle sway
-        if (isDragging) {
+        if (isDragging || activePointers.size >= 2) {
           swayStart = t;
         } else {
           if (stepRef.current !== 0) engineState.dragOffsetY *= 0.93;
           dragOffsetX *= 0.93;
         }
-        const gentleSway = isDragging ? 0 : Math.sin((t - swayStart) * 0.0012) * 0.28;
+        const gentleSway =
+          isDragging || activePointers.size >= 2
+            ? 0
+            : Math.sin((t - swayStart) * 0.0012) * 0.28;
         targetY = engineState.goalLockY + gentleSway + engineState.dragOffsetY;
         targetX = 0.04 + Math.cos(t * 0.001) * 0.025 + dragOffsetX;
       }
 
       engineState.curRotY += (targetY - engineState.curRotY) * 0.1;
       curRotX += (targetX - curRotX) * 0.1;
-      camera.position.z += (targetCamZ - camera.position.z) * 0.1;
+
+      // Smoothly interpolate camera Z with interactive zoom scale (compatible with orientation switches)
+      const desiredCamZ = baseCamZ * zoomScaleRef.current;
+      camera.position.z += (desiredCamZ - camera.position.z) * 0.12;
 
       cardGroup.rotation.y = engineState.curRotY;
       cardGroup.rotation.x = curRotX;
-      cardGroup.position.y = Math.sin(t * 0.0018) * 0.065;
+      cardGroup.position.y = Math.sin(t * 0.0018) * 0.055;
       shadowMesh.scale.set(
         (isV ? 0.72 : 1.05) * Math.max(0.32, Math.abs(Math.cos(engineState.curRotY))),
         1,
@@ -554,10 +694,13 @@ export default function Card3DStage({
 
       resizeObserver.disconnect();
       window.removeEventListener('resize', resizeStage);
+      canvas.removeEventListener('wheel', onWheel);
+      canvas.removeEventListener('dblclick', onDoubleClick);
       canvas.removeEventListener('pointerdown', onPointerDown);
       canvas.removeEventListener('pointermove', onPointerMove);
-      canvas.removeEventListener('pointerup', onStopDrag);
-      canvas.removeEventListener('pointercancel', onStopDrag);
+      canvas.removeEventListener('pointerup', onPointerEnd);
+      canvas.removeEventListener('pointercancel', onPointerEnd);
+      activePointers.clear();
 
       geosH.edgeGeo.dispose();
       geosH.faceGeo.dispose();
@@ -604,7 +747,7 @@ export default function Card3DStage({
     engineRef.current?.triggerStepTransition(step);
   }, [step]);
 
-  // Explicit HUD Front/Back flip trigger
+  // Explicit side flip trigger
   useEffect(() => {
     if (sideFlipNonce === 0) return;
     engineRef.current?.flipToSide(activeSide);
@@ -619,11 +762,21 @@ export default function Card3DStage({
 
   const stepDisplay = `0${step + 1}`;
   const isVertical = design.orientation === 'vertical';
+  const isBackActive = activeSide === 'back';
+
+  const flipTooltip = isBackActive
+    ? t('orderStudio.flipToFront', 'چرخاندن به روی کارت')
+    : t('orderStudio.flipToBack', 'چرخاندن به پشت کارت');
+
+  const orientTooltip = isVertical
+    ? t('orderStudio.toHoriz', 'تغییر به افقی')
+    : t('orderStudio.toVert', 'تغییر به عمودی');
 
   return (
     <section
       ref={stageRef}
       className="stage"
+      dir={dir}
       aria-label={t('orderStudio.stageAria', 'پیش‌نمایش سه‌بعدی کارت هوشمند NFC')}
     >
       <div ref={revealRef} className="stage-reveal" aria-hidden="true" />
@@ -633,36 +786,55 @@ export default function Card3DStage({
         {stepDisplay}
       </div>
 
-      <canvas ref={canvasRef} className="card-canvas" />
+      <canvas ref={canvasRef} className="card-canvas touch-none" />
 
-      <div className="stage-hud" role="toolbar" aria-label={t('orderStudio.stageControls', 'کنترل پیش‌نمایش کارت')}>
+      {/* Floating vertical 2-button icon-only toolbar positioned logically at inline-end (left in RTL, right in LTR) */}
+      <div
+        className="absolute top-1/2 -translate-y-1/2 end-3 sm:end-5 z-20 flex flex-col gap-2 p-1.5 rounded-full bg-slate-950/60 backdrop-blur-md border border-white/15 shadow-xl"
+        role="toolbar"
+        aria-orientation="vertical"
+        aria-label={t('orderStudio.stageControls', 'کنترل پیش‌نمایش کارت')}
+      >
+        {/* Button 1: Flip Front / Back */}
         <button
           type="button"
-          className={`hud-btn ${activeSide === 'front' ? 'active' : ''}`}
-          aria-pressed={activeSide === 'front'}
-          onClick={() => onSideChange('front', false)}
+          onClick={() => onSideChange(isBackActive ? 'front' : 'back', false)}
+          aria-label={flipTooltip}
+          aria-pressed={isBackActive}
+          title={flipTooltip}
+          className={`w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center rounded-full transition-all duration-200 cursor-pointer ${
+            isBackActive
+              ? 'bg-sky-400/25 text-sky-300 ring-1 ring-sky-400/60 shadow-md shadow-sky-500/20'
+              : 'bg-white/10 text-white hover:bg-white/20'
+          }`}
         >
-          {t('orderStudio.frontSide', 'روی کارت')}
+          <FlipHorizontal2
+            className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform duration-300 ${
+              isBackActive ? 'scale-x-[-1]' : ''
+            }`}
+            aria-hidden="true"
+          />
         </button>
+
+        {/* Button 2: Toggle Vertical / Horizontal Orientation */}
         <button
           type="button"
-          className={`hud-btn ${activeSide === 'back' ? 'active' : ''}`}
-          aria-pressed={activeSide === 'back'}
-          onClick={() => onSideChange('back', false)}
-        >
-          {t('orderStudio.backSide', 'پشت کارت')}
-        </button>
-        <span className="hud-sep" aria-hidden="true" />
-        <button
-          type="button"
-          className="hud-btn"
           onClick={onToggleOrientation}
+          aria-label={orientTooltip}
+          aria-pressed={!isVertical}
+          title={orientTooltip}
+          className={`w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center rounded-full transition-all duration-200 cursor-pointer ${
+            !isVertical
+              ? 'bg-white/20 text-sky-200 ring-1 ring-white/30'
+              : 'bg-white/10 text-white hover:bg-white/20'
+          }`}
         >
-          {isVertical
-            ? t('orderStudio.toHoriz', 'تغییر به افقی')
-            : t('orderStudio.toVert', 'تغییر به عمودی')}
+          {isVertical ? (
+            <RectangleHorizontal className="w-4 h-4 sm:w-5 sm:h-5" aria-hidden="true" />
+          ) : (
+            <RectangleVertical className="w-4 h-4 sm:w-5 sm:h-5" aria-hidden="true" />
+          )}
         </button>
-        <span className="hud-hint">{t('orderStudio.dragHint', 'چرخش 360° با کشیدن')}</span>
       </div>
     </section>
   );
