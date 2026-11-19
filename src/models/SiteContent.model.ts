@@ -1151,7 +1151,7 @@ export const DEFAULT_SITE_CONTENT: Omit<ISiteContentDocument, keyof Document | '
       id: 'team-2',
       name: { fa: 'ثریا رسولی', en: 'Soraya Rasooli', ps: 'ثریا رسولي' },
       role: { fa: 'مدیر ارشد محصول و طراحی (CPO)', en: 'Head of Product Design', ps: 'د ډیزاین او کاروونکي تجربې مشره' },
-      bio: { fa: 'متخصص خلق تجارب مدرن بصری و سامانه‌های هویتی لوکس', en: 'Specialist in modern UX & luxury digital identities', ps: 'د لوکس ډیجیټل هویت او عصري کاروونکي تجربې متخصصه' },
+      bio: { fa: 'متخصص خلق تجارب مدرن بصری و سیستم‌های هویتی لوکس', en: 'Specialist in modern UX & luxury digital identities', ps: 'د لوکس ډیجیټل هویت او عصري کاروونکي تجربې متخصصه' },
       avatarUrl: '',
       order: 2,
     },
@@ -1206,7 +1206,7 @@ export const DEFAULT_SITE_CONTENT: Omit<ISiteContentDocument, keyof Document | '
       ps: 'آریا لینک | سمارټ NFC ویزټ کارتونه او د بیولینک ځانګړی پلتفارم',
     },
     metaDescription: {
-      fa: 'پیشرفته‌ترین سامانه هویت دیجیتال، کارت ویزیت لمسی NFC و درگاه مینی‌وب‌سایت اختصاصی در افغانستان.',
+      fa: 'پیشرفته‌ترین سیستم هویت دیجیتال، کارت ویزیت لمسی NFC و درگاه مینی‌وب‌سایت اختصاصی در افغانستان.',
       en: 'The premier digital identity platform, touch NFC business card, and custom mini-website in Afghanistan.',
       ps: 'په افغانستان کې د ډیجیټل هویت، لمسي NFC کارت او مینی وېبپاڼې ترټولو مخکښ پلتفارم.',
     },
