@@ -21,6 +21,7 @@ export async function POST(req: NextRequest) {
     const file = formData.get('file') as File | null;
     const folder = (formData.get('folder') as string) || 'general';
     const previousUrl = (formData.get('previousUrl') as string | null) || '';
+    const preserveOriginal = (formData.get('preserveOriginal') as string | null) === 'true';
 
     if (!file) {
       return NextResponse.json(
@@ -54,9 +55,10 @@ export async function POST(req: NextRequest) {
     const bytes = await file.arrayBuffer();
     const rawBuffer = Buffer.from(bytes);
 
-    const processed = isImage
-      ? await optimizeImageBuffer(rawBuffer, file.type, ext)
-      : { buffer: rawBuffer, ext, mimeType: file.type || 'application/pdf' };
+    const processed =
+      isImage && !preserveOriginal
+        ? await optimizeImageBuffer(rawBuffer, file.type, ext)
+        : { buffer: rawBuffer, ext, mimeType: file.type || (isImage ? 'image/png' : 'application/pdf') };
 
     const uniqueFileName = `${cleanBase}_${Date.now()}_${Math.random().toString(36).substring(2, 7)}${processed.ext}`;
 

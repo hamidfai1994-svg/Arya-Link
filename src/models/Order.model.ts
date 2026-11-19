@@ -48,6 +48,66 @@ export interface IOrderCardSpecs {
   customArtworkBack?: string;
 }
 
+export interface IOrderCardBgConfig {
+  tab: 'solid' | 'custom' | 'grad' | 'customGrad';
+  solidColor: string;
+  gradType: 'linear' | 'radial';
+  c1: string;
+  c2: string;
+  angle: number;
+}
+
+export interface IOrderCardDesign {
+  orientation: 'vertical' | 'horizontal';
+  template: 'arya-svg' | 'axis-metal' | 'minimal' | 'executive' | string;
+  materialId: 'pvc-matte' | 'pvc-gloss' | 'metal' | string;
+  materialName: string;
+  frontBg: IOrderCardBgConfig;
+  backBg: IOrderCardBgConfig;
+  syncBackBg: boolean;
+  company: string;
+  slogan: string;
+  name: string;
+  role: string;
+  username: string;
+  qrUrl: string;
+  sloganBadgeMode: 'none' | 'filled' | 'outline';
+  roleBadgeMode: 'none' | 'filled' | 'outline';
+  tipShape: 'slash' | 'square' | 'diamond' | 'triangle' | 'circle';
+  colors: {
+    company: string;
+    slogan: string;
+    sloganBadge: string;
+    frontLine1: string;
+    frontLine2: string;
+    tipShape: string;
+    name: string;
+    role: string;
+    roleBadge: string;
+    backLine1: string;
+    backLine2: string;
+    nfc: string;
+    qr: string;
+  };
+  showQr: boolean;
+  showNfc: boolean;
+  linkedProfileId?: string | null;
+  linkedProfileAlias?: string | null;
+  linkedLinkId?: string | null;
+  linkedLinkTitle?: string | null;
+  hasFullFrontArtwork: boolean;
+  fullFrontFit: 'cover' | 'contain';
+  hasFullBackArtwork: boolean;
+  fullBackFit: 'cover' | 'contain';
+  frontPrintImageUrl?: string;
+  backPrintImageUrl?: string;
+  customLogoUrl?: string;
+  customFrontArtworkUrl?: string;
+  customBackArtworkUrl?: string;
+  discountPercent?: number;
+  cardLanguage?: 'da' | 'ps' | 'en' | string;
+}
+
 export interface IOrderDocument extends Document {
   userId?: mongoose.Types.ObjectId | string;
   sellerUserId?: mongoose.Types.ObjectId | string;
@@ -106,6 +166,7 @@ export interface IOrderDocument extends Document {
     transactionRef?: string;
   };
   cardSpecs?: IOrderCardSpecs;
+  cardDesign?: IOrderCardDesign | null;
   notes?: string;
   isDeleted?: boolean;
   deletedAt?: Date;
@@ -283,6 +344,10 @@ const OrderSchema = new Schema<IOrderDocument>(
       cardUrl: { type: String, default: '' },
       customArtworkFront: { type: String, default: '' },
       customArtworkBack: { type: String, default: '' },
+    },
+    cardDesign: {
+      type: Schema.Types.Mixed,
+      default: null,
     },
     notes: { type: String, default: '' },
     isDeleted: { type: Boolean, default: false, index: true },

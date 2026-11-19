@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { connectToDatabase } from '@/lib/db/mongodb';
 import { Profile } from '@/models/Profile.model';
 import { User } from '@/models/User.model';
+import { Organization } from '@/models/Organization.model';
 import { PhysicalCard } from '@/models/PhysicalCard.model';
 import { buildUserIsolationQuery, isValidUserSession } from '@/lib/db/data-isolation';
 import { getJobTemplate, generateDefaultModulesForJob } from '@/lib/constants/jobTemplates';
@@ -101,35 +102,79 @@ export async function GET() {
       profiles = [newPersonalProfile.toObject()];
     }
 
-    const formattedList = profiles.map((p: any) => ({
-      id: p._id.toString(),
-      alias: p.alias,
-      displayName: getLocalizedText(p.displayName, 'da', 'کاربر آریا لینک'),
-      headline: getLocalizedText(p.headline, 'da', ''),
-      translations: p.translations || {},
-      avatarUrl: p.avatarUrl || '',
-      roleType: p.roleType || p.profileType || 'personal',
-      orgId: p.orgId ? String(p.orgId) : (dbUser?.organizationId ? String(dbUser.organizationId) : null),
-      isCorporate: Boolean(
-        p.orgId ||
-        p.roleType === 'corporate' ||
-        p.roleType === 'business' ||
-        p.profileType === 'business' ||
-        p.profileType === 'corporate' ||
-        dbUser?.organizationId ||
-        dbUser?.orgRole === 'owner' ||
-        dbUser?.orgRole === 'member' ||
-        dbUser?.accountType === 'corporate'
-      ),
-      isActive: p.isActive !== false,
-      isVerified: !!p.isVerified,
-      verificationStatus: p.verificationStatus || 'unverified',
-      viewsCount: p.viewsCount || 0,
-      leadsCount: p.leadsCount || 0,
-      linksCount: Array.isArray(p.links) ? p.links.length : 0,
-      createdAt: p.createdAt,
-      updatedAt: p.updatedAt,
-    }));
+    // Resolve organization names for any corporate profiles
+    const orgIdSet = new Set<string>();
+    if (dbUser?.organizationId && mongoose.isValidObjectId(dbUser.organizationId)) {
+      orgIdSet.add(String(dbUser.organizationId));
+    }
+    profiles.forEach((p: any) => {
+      if (p.orgId && mongoose.isValidObjectId(p.orgId)) {
+        orgIdSet.add(String(p.orgId));
+      }
+    });
+    const orgNameMap = new Map<string, string>();
+    if (orgIdSet.size > 0) {
+      try {
+        const orgs = await Organization.find({ _id: { $in: Array.from(orgIdSet) } })
+          .select('name')
+          .lean();
+        orgs.forEach((o: any) => {
+          if (o?._id && o?.name) orgNameMap.set(String(o._id), String(o.name));
+        });
+      } catch (e) {
+        console.warn('Non-critical: failed resolving organization names in profile list:', e);
+      }
+    }
+
+    const formattedList = profiles.map((p: any) => {
+      const resolvedOrgId = p.orgId ? String(p.orgId) : (dbUser?.organizationId ? String(dbUser.organizationId) : null);
+      const activeLinks = Array.isArray(p.links)
+        ? p.links
+            .filter((l: any) => l && l.isActive !== false && typeof l.url === 'string' && l.url.trim().length > 0)
+            .slice(0, 20)
+            .map((l: any) => ({
+              id: String(l.id || ''),
+              title: getLocalizedText(l.title, 'da', ''),
+              titleRaw: l.title || null,
+              url: String(l.url || '').trim(),
+              moduleType: String(l.moduleType || 'standard_link'),
+            }))
+        : [];
+
+      return {
+        id: p._id.toString(),
+        alias: p.alias,
+        displayName: getLocalizedText(p.displayName, 'da', 'کاربر آریا لینک'),
+        headline: getLocalizedText(p.headline, 'da', ''),
+        bio: getLocalizedText(p.bio, 'da', ''),
+        occupation: p.occupation || '',
+        companyName: resolvedOrgId ? orgNameMap.get(resolvedOrgId) || '' : '',
+        translations: p.translations || {},
+        avatarUrl: p.avatarUrl || '',
+        roleType: p.roleType || p.profileType || 'personal',
+        orgId: resolvedOrgId,
+        isCorporate: Boolean(
+          p.orgId ||
+          p.roleType === 'corporate' ||
+          p.roleType === 'business' ||
+          p.profileType === 'business' ||
+          p.profileType === 'corporate' ||
+          dbUser?.organizationId ||
+          dbUser?.orgRole === 'owner' ||
+          dbUser?.orgRole === 'member' ||
+          dbUser?.accountType === 'corporate'
+        ),
+        isActive: p.isActive !== false,
+        isVerified: !!p.isVerified,
+        verificationStatus: p.verificationStatus || 'unverified',
+        viewsCount: p.viewsCount || 0,
+        leadsCount: p.leadsCount || 0,
+        linksCount: Array.isArray(p.links) ? p.links.length : 0,
+        links: activeLinks,
+        createdAt: p.createdAt,
+        updatedAt: p.updatedAt,
+      };
+    });
 
     // Query user's physical NFC cards to calculate total NFC taps/scans
     let totalNfcScans = 0;

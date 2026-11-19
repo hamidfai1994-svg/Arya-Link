@@ -1,0 +1,1114 @@
+/* Scoped 3D NFC Card Studio styles preserving exact visual aesthetic of arya-card-studio-v4 */
+.arya-nfc-studio {
+  --stage-bg: #080d19;
+  --stage-accent: #eeb61e;
+  --panel-border: rgba(255, 255, 255, 0.1);
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --input-bg: rgba(255, 255, 255, 0.05);
+  --ease: cubic-bezier(0.22, 0.8, 0.24, 1);
+  --studio-nav-offset: 80px;
+
+  min-height: calc(100svh - var(--studio-nav-offset));
+  display: grid;
+  grid-template-columns: 1.08fr 0.92fr;
+  position: relative;
+  background: var(--stage-bg);
+  color: var(--text-main);
+  transition: background-color 0.55s var(--ease);
+  scroll-padding-top: calc(var(--studio-nav-offset) + 16px);
+}
+
+.arya-nfc-studio *,
+.arya-nfc-studio *::before,
+.arya-nfc-studio *::after {
+  box-sizing: border-box;
+}
+
+.arya-nfc-studio :is(button, input, select, textarea, a):focus-visible {
+  outline: 2px solid #38bdf8;
+  outline-offset: 2px;
+}
+
+/* 3D Stage */
+.arya-nfc-studio .stage {
+  position: sticky;
+  top: var(--studio-nav-offset);
+  height: calc(100svh - var(--studio-nav-offset));
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--stage-bg);
+  transition: background 0.5s ease;
+}
+
+.arya-nfc-studio .stage-reveal {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.arya-nfc-studio .rings {
+  position: absolute;
+  left: 50%;
+  top: 48%;
+  width: 1120px;
+  height: 1120px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 2;
+  background: repeating-radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.055) 0px,
+    rgba(255, 255, 255, 0.005) 36px,
+    rgba(255, 255, 255, 0.055) 72px
+  );
+  mask-image: radial-gradient(circle, #000 0%, rgba(0, 0, 0, 0.45) 35%, transparent 60%);
+  -webkit-mask-image: radial-gradient(circle, #000 0%, rgba(0, 0, 0, 0.45) 35%, transparent 60%);
+}
+
+.arya-nfc-studio .stage-glow {
+  position: absolute;
+  width: 480px;
+  height: 480px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--stage-accent), transparent 68%);
+  opacity: 0.24;
+  filter: blur(42px);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.arya-nfc-studio .big-step-num {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -56%);
+  font-family: var(--font-outfit), "Inter", sans-serif;
+  font-weight: 900;
+  font-size: clamp(170px, 21vw, 300px);
+  line-height: 1;
+  color: transparent;
+  -webkit-text-stroke: 1.5px rgba(255, 255, 255, 0.13);
+  user-select: none;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.arya-nfc-studio .card-canvas {
+  position: relative;
+  z-index: 5;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  touch-action: none;
+  display: block;
+}
+
+.arya-nfc-studio .card-canvas:active {
+  cursor: grabbing;
+}
+
+.arya-nfc-studio .stage-hud {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 7px;
+  border-radius: 99px;
+  background: rgba(10, 15, 28, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(14px);
+  white-space: nowrap;
+  max-width: calc(100% - 20px);
+}
+
+.arya-nfc-studio .hud-btn {
+  border: 0;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  padding: 7px 13px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.22s var(--ease);
+}
+
+.arya-nfc-studio .hud-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.arya-nfc-studio .hud-btn.active {
+  background: #fff;
+  color: #0f172a;
+}
+
+.arya-nfc-studio .hud-sep {
+  width: 1px;
+  height: 16px;
+  background: rgba(255, 255, 255, 0.16);
+  margin: 0 2px;
+  flex-shrink: 0;
+}
+
+.arya-nfc-studio .hud-hint {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.65);
+  padding: 0 8px;
+}
+
+/* Configurator Panel */
+.arya-nfc-studio .configurator {
+  position: relative;
+  z-index: 15;
+  padding: 24px 26px 36px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  background: rgba(8, 12, 20, 0.82);
+  backdrop-filter: blur(28px);
+  border-inline-start: 1px solid var(--panel-border);
+  min-inline-size: 0;
+}
+
+.arya-nfc-studio .panel-inner {
+  width: 100%;
+  max-width: 550px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-inline-size: 0;
+}
+
+/* 4-Step Stepper */
+.arya-nfc-studio .stepper {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 5px;
+  padding: 5px;
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--panel-border);
+}
+
+.arya-nfc-studio .step-pill {
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  padding: 8px 5px;
+  border-radius: 11px;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  transition: all 0.26s var(--ease);
+}
+
+.arya-nfc-studio .step-pill .num {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 10px;
+  opacity: 0.65;
+}
+
+.arya-nfc-studio .step-pill.active {
+  background: #fff;
+  color: #0f172a;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+}
+
+.arya-nfc-studio .step-pill.done:not(.active) {
+  color: #38bdf8;
+}
+
+.arya-nfc-studio .step-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  animation: aryaPaneIn 0.32s var(--ease);
+}
+
+@keyframes aryaPaneIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.arya-nfc-studio .step-title {
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1.35;
+  text-wrap: balance;
+  color: #fff;
+}
+
+.arya-nfc-studio .step-sub {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: -6px;
+  line-height: 1.65;
+  text-wrap: pretty;
+}
+
+/* Ready-Made Artwork Upload Box */
+.arya-nfc-studio .ready-upload-box {
+  border: 1.5px dashed rgba(56, 189, 248, 0.42);
+  background: rgba(56, 189, 248, 0.07);
+  border-radius: 14px;
+  padding: 11px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: all 0.25s ease;
+}
+
+.arya-nfc-studio .ready-upload-box.has-image {
+  border-style: solid;
+  border-color: rgba(52, 211, 153, 0.55);
+  background: rgba(16, 185, 129, 0.09);
+}
+
+.arya-nfc-studio .ready-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #e0f2fe;
+}
+
+.arya-nfc-studio .ready-sub {
+  font-size: 11px;
+  color: #94a3b8;
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+
+.arya-nfc-studio .ready-actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.arya-nfc-studio .ready-btn {
+  flex: 1;
+  min-width: 150px;
+  min-block-size: 38px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  background: rgba(56, 189, 248, 0.16);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+
+.arya-nfc-studio .ready-btn:hover {
+  background: rgba(56, 189, 248, 0.28);
+}
+
+.arya-nfc-studio .fit-btn {
+  min-block-size: 38px;
+  padding: 6px 11px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+}
+
+.arya-nfc-studio .editor-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  transition: opacity 0.25s ease, filter 0.25s ease;
+}
+
+.arya-nfc-studio .editor-controls.is-disabled {
+  opacity: 0.28;
+  filter: grayscale(0.85);
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Inputs & Fields */
+.arya-nfc-studio .field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-inline-size: 0;
+}
+
+.arya-nfc-studio .field > label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #cbd5e1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+}
+
+.arya-nfc-studio .input-with-color {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.arya-nfc-studio .studio-input,
+.arya-nfc-studio .studio-select,
+.arya-nfc-studio .studio-textarea {
+  width: 100%;
+  min-block-size: 40px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: var(--input-bg);
+  color: #fff;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.arya-nfc-studio .studio-select option {
+  background: #0f172a;
+  color: #f8fafc;
+}
+
+.arya-nfc-studio .studio-textarea {
+  min-block-size: 74px;
+  resize: vertical;
+  line-height: 1.55;
+}
+
+.arya-nfc-studio .studio-input:focus,
+.arya-nfc-studio .studio-select:focus,
+.arya-nfc-studio .studio-textarea:focus {
+  border-color: #38bdf8;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.arya-nfc-studio .studio-input:user-invalid,
+.arya-nfc-studio .studio-textarea:user-invalid {
+  border-color: rgba(244, 63, 94, 0.7);
+}
+
+.arya-nfc-studio .input-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+}
+
+.arya-nfc-studio .swatch-input {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.06);
+  padding: 4px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.arya-nfc-studio .swatch-input input[type="color"] {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.arya-nfc-studio .prefix-wrap {
+  display: flex;
+  align-items: center;
+  direction: ltr;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: var(--input-bg);
+  overflow: hidden;
+}
+
+.arya-nfc-studio .prefix-wrap:focus-within {
+  border-color: #38bdf8;
+}
+
+.arya-nfc-studio .prefix-tag {
+  padding: 0 11px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  color: #38bdf8;
+  background: rgba(255, 255, 255, 0.05);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
+}
+
+.arya-nfc-studio .prefix-wrap input {
+  border: 0;
+  background: transparent;
+  color: #fff;
+  height: 40px;
+  padding: 0 11px;
+  width: 100%;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 13px;
+  outline: none;
+}
+
+/* Sub-boxes & Segment controls */
+.arya-nfc-studio .sub-box {
+  border: 1px solid var(--panel-border);
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 14px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.arya-nfc-studio .sub-box-head {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.arya-nfc-studio .badge-ctrl {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.arya-nfc-studio .seg-mini {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  padding: 3px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.arya-nfc-studio .seg-mini button {
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  padding: 6px 4px;
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.arya-nfc-studio .seg-mini button.active {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+
+.arya-nfc-studio .shape-strip {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 5px;
+}
+
+.arya-nfc-studio .shape-btn {
+  border: 1px solid var(--panel-border);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-muted);
+  border-radius: 10px;
+  padding: 6px 4px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-size: 10px;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.arya-nfc-studio .shape-btn .ico {
+  font-size: 14px;
+  line-height: 1.1;
+}
+
+.arya-nfc-studio .shape-btn.active {
+  border-color: #38bdf8;
+  background: rgba(56, 189, 248, 0.14);
+  color: #fff;
+}
+
+.arya-nfc-studio .color-chips-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.arya-nfc-studio .picker-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 9px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--panel-border);
+  font-size: 11px;
+  color: #e2e8f0;
+  cursor: pointer;
+}
+
+.arya-nfc-studio .picker-pill input[type="color"] {
+  width: 20px;
+  height: 20px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+}
+
+.arya-nfc-studio .picker-pill code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 10.5px;
+  color: #cbd5e1;
+}
+
+/* Orientation, Template, Material grids */
+.arya-nfc-studio .orient-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+}
+
+.arya-nfc-studio .orient-btn {
+  border: 1.5px solid var(--panel-border);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-main);
+  border-radius: 14px;
+  padding: 11px 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  transition: all 0.22s var(--ease);
+}
+
+.arya-nfc-studio .orient-btn.active {
+  border-color: #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+}
+
+.arya-nfc-studio .mini-card-icon {
+  border: 2px solid currentColor;
+  border-radius: 4px;
+  display: inline-block;
+  opacity: 0.9;
+  flex-shrink: 0;
+}
+
+.arya-nfc-studio .mini-card-icon.v {
+  width: 16px;
+  height: 24px;
+}
+
+.arya-nfc-studio .mini-card-icon.h {
+  width: 25px;
+  height: 16px;
+}
+
+.arya-nfc-studio .tpl-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.arya-nfc-studio .tpl-card {
+  border: 1.5px solid var(--panel-border);
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 13px;
+  padding: 10px 11px;
+  cursor: pointer;
+  text-align: start;
+  color: var(--text-main);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  transition: all 0.2s var(--ease);
+}
+
+.arya-nfc-studio .tpl-card.active {
+  border-color: #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+}
+
+.arya-nfc-studio .tpl-name {
+  font-size: 12.5px;
+  font-weight: 800;
+}
+
+.arya-nfc-studio .tpl-desc {
+  font-size: 10.5px;
+  color: var(--text-muted);
+}
+
+.arya-nfc-studio .mat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.arya-nfc-studio .mat-card {
+  border: 1.5px solid var(--panel-border);
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  padding: 10px 7px;
+  cursor: pointer;
+  color: var(--text-main);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  text-align: center;
+  transition: all 0.2s var(--ease);
+}
+
+.arya-nfc-studio .mat-card.active {
+  border-color: #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+}
+
+.arya-nfc-studio .mat-card.is-unavailable,
+.arya-nfc-studio .mat-card:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  border-color: rgba(244, 63, 94, 0.25);
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.arya-nfc-studio .mat-title {
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.arya-nfc-studio .mat-price {
+  font-size: 10.5px;
+  color: #38bdf8;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.arya-nfc-studio .mat-sub-badge {
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 99px;
+}
+
+.arya-nfc-studio .mat-sub-badge.print {
+  color: #94a3b8;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.arya-nfc-studio .mat-sub-badge.oos {
+  color: #fda4af;
+  background: rgba(244, 63, 94, 0.16);
+  border: 1px solid rgba(244, 63, 94, 0.35);
+}
+
+/* Color Studio */
+.arya-nfc-studio .color-studio {
+  border: 1px solid var(--panel-border);
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 14px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.arya-nfc-studio .cs-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  padding: 3px;
+  border-radius: 9px;
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.arya-nfc-studio .cs-tab {
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  padding: 6px 4px;
+  border-radius: 7px;
+  font-size: 10.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.arya-nfc-studio .cs-tab.active {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+
+.arya-nfc-studio .swatch-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.arya-nfc-studio .swatch-chip {
+  height: 36px;
+  border-radius: 9px;
+  border: 2px solid rgba(255, 255, 255, 0.16);
+  cursor: pointer;
+  position: relative;
+  transition: transform 0.18s var(--ease);
+}
+
+.arya-nfc-studio .swatch-chip:hover {
+  transform: scale(1.04);
+}
+
+.arya-nfc-studio .swatch-chip.active {
+  border-color: #fff;
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.65);
+}
+
+.arya-nfc-studio .swatch-chip span {
+  position: absolute;
+  inset-inline: 2px;
+  bottom: 2px;
+  font-size: 9px;
+  font-weight: 700;
+  text-align: center;
+  background: rgba(0, 0, 0, 0.52);
+  color: #fff;
+  border-radius: 4px;
+  padding: 1px 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.arya-nfc-studio .angle-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: #cbd5e1;
+  margin-top: 6px;
+}
+
+.arya-nfc-studio .angle-row input[type="range"] {
+  flex: 1;
+  accent-color: #38bdf8;
+}
+
+/* Upload & Switch */
+.arya-nfc-studio .upload-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.arya-nfc-studio .upload-btn {
+  flex: 1;
+  min-block-size: 38px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  border: 1px dashed rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.03);
+  color: #e2e8f0;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.arya-nfc-studio .upload-btn:hover {
+  border-color: #38bdf8;
+  background: rgba(56, 189, 248, 0.08);
+}
+
+.arya-nfc-studio .clear-logo {
+  min-block-size: 38px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(244, 63, 94, 0.4);
+  background: rgba(244, 63, 94, 0.14);
+  color: #fda4af;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.arya-nfc-studio .toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 11px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--panel-border);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.arya-nfc-studio .studio-switch {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  flex: none;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.18);
+  border: 0;
+  cursor: pointer;
+  transition: background 0.22s var(--ease);
+}
+
+.arya-nfc-studio .studio-switch::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.22s var(--ease);
+}
+
+.arya-nfc-studio .studio-switch[aria-checked="true"] {
+  background: #38bdf8;
+}
+
+.arya-nfc-studio .studio-switch[aria-checked="true"]::after {
+  transform: translateX(18px);
+}
+
+/* Quantity Cards */
+.arya-nfc-studio .qty-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.arya-nfc-studio .qty-card {
+  border: 1px solid var(--panel-border);
+  background: rgba(255, 255, 255, 0.03);
+  color: #fff;
+  border-radius: 12px;
+  padding: 10px 6px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  transition: all 0.2s var(--ease);
+}
+
+.arya-nfc-studio .qty-card.active {
+  border-color: #38bdf8;
+  background: rgba(56, 189, 248, 0.14);
+}
+
+.arya-nfc-studio .qty-num {
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.arya-nfc-studio .qty-tag {
+  font-size: 10px;
+  color: #38bdf8;
+}
+
+/* Action Bar */
+.arya-nfc-studio .action-bar {
+  margin-top: 2px;
+  padding-top: 13px;
+  border-top: 1px solid var(--panel-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.arya-nfc-studio .price-box {
+  display: flex;
+  flex-direction: column;
+}
+
+.arya-nfc-studio .price-label {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.arya-nfc-studio .price-val {
+  font-size: 18px;
+  font-weight: 900;
+  color: #fff;
+}
+
+.arya-nfc-studio .nav-btns {
+  display: flex;
+  gap: 8px;
+}
+
+.arya-nfc-studio .btn-ghost {
+  min-block-size: 42px;
+  padding: 0 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: transparent;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.arya-nfc-studio .btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.arya-nfc-studio .btn-primary {
+  min-block-size: 42px;
+  padding: 0 22px;
+  border-radius: 12px;
+  border: 0;
+  background: #fff;
+  color: #0f172a;
+  font-size: 13.5px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.arya-nfc-studio .btn-primary:hover {
+  background: #e2e8f0;
+}
+
+.arya-nfc-studio .btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Visually hidden helper for accessible file inputs */
+.arya-nfc-studio .visually-hidden-input {
+  position: absolute;
+  clip-path: inset(50%);
+  overflow: hidden;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  white-space: nowrap;
+}
+
+/* Touch screen sizing (WCAG 2.5.5) & iOS zoom prevention */
+@media (pointer: coarse) {
+  .arya-nfc-studio .studio-input,
+  .arya-nfc-studio .studio-select,
+  .arya-nfc-studio .studio-textarea {
+    font-size: max(1rem, 1em);
+    min-block-size: 44px;
+  }
+
+  .arya-nfc-studio .hud-btn,
+  .arya-nfc-studio .btn-ghost,
+  .arya-nfc-studio .btn-primary,
+  .arya-nfc-studio .ready-btn {
+    min-block-size: 44px;
+  }
+}
+
+/* Mobile & Tablet Responsive Layout */
+@media (max-width: 960px) {
+  .arya-nfc-studio {
+    grid-template-columns: 1fr;
+  }
+
+  .arya-nfc-studio .stage {
+    position: sticky;
+    top: var(--studio-nav-offset);
+    height: 41svh;
+    min-height: 270px;
+    max-height: 390px;
+    z-index: 20;
+    border-bottom: 1px solid var(--panel-border);
+  }
+
+  .arya-nfc-studio .big-step-num {
+    font-size: 130px;
+  }
+
+  .arya-nfc-studio .stage-hud {
+    bottom: 10px;
+    padding: 4px 6px;
+  }
+
+  .arya-nfc-studio .hud-hint {
+    display: none;
+  }
+
+  .arya-nfc-studio .configurator {
+    padding: 16px 14px 36px;
+    border-inline-start: 0;
+  }
+
+  .arya-nfc-studio .input-row {
+    grid-template-columns: 1fr;
+  }
+}

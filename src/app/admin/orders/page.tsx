@@ -121,7 +121,38 @@ interface AdminOrder {
     logoUrl?: string;
     finishAccent?: string;
     cardUrl?: string;
+    customArtworkFront?: string;
+    customArtworkBack?: string;
   };
+  cardDesign?: {
+    orientation?: 'vertical' | 'horizontal';
+    template?: string;
+    materialId?: string;
+    materialName?: string;
+    company?: string;
+    slogan?: string;
+    name?: string;
+    role?: string;
+    username?: string;
+    qrUrl?: string;
+    tipShape?: string;
+    sloganBadgeMode?: string;
+    roleBadgeMode?: string;
+    showQr?: boolean;
+    showNfc?: boolean;
+    linkedProfileId?: string | null;
+    linkedProfileAlias?: string | null;
+    linkedLinkTitle?: string | null;
+    hasFullFrontArtwork?: boolean;
+    hasFullBackArtwork?: boolean;
+    frontPrintImageUrl?: string;
+    backPrintImageUrl?: string;
+    customLogoUrl?: string;
+    customFrontArtworkUrl?: string;
+    customBackArtworkUrl?: string;
+    discountPercent?: number;
+    colors?: Record<string, string>;
+  } | null;
   notes?: string;
   createdAt: string;
   updatedAt?: string;
@@ -685,7 +716,15 @@ export default function AdminOrdersPage() {
                               </span>
                             )
                           ) : (
-                            order.cardSpecs?.material || 'NFC Smart Card'
+                            <>
+                              <span>{order.cardSpecs?.material || order.cardDesign?.materialName || 'NFC Smart Card'}</span>
+                              {order.cardDesign?.frontPrintImageUrl && (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 text-[9px] font-bold">
+                                  <Printer className="w-2.5 h-2.5" />
+                                  <span>فایل چاپ 3D</span>
+                                </span>
+                              )}
+                            </>
                           )}
                         </div>
                       </td>
@@ -978,6 +1017,184 @@ export default function AdminOrdersPage() {
                   )}
                   <p className="text-slate-200 leading-relaxed">{selectedOrder.notes || '—'}</p>
                 </div>
+
+                {/* 3D Studio Print-Ready Card Assets & Specifications */}
+                {(selectedOrder.cardDesign ||
+                  selectedOrder.cardSpecs?.customArtworkFront ||
+                  selectedOrder.cardSpecs?.customArtworkBack) && (
+                  <div className="p-3.5 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="font-bold text-cyan-300 flex items-center gap-1.5 text-xs">
+                        <Printer className="w-4 h-4 shrink-0" />
+                        <span>فایل‌های آماده چاپ استودیوی سه‌بعدی (Print-Ready Assets)</span>
+                      </div>
+                      {selectedOrder.cardDesign?.orientation && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-900 border border-cyan-500/30 text-cyan-200 font-bold">
+                          {selectedOrder.cardDesign.orientation === 'vertical'
+                            ? 'عمودی (756×1200)'
+                            : 'افقی (1200×756)'}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Front & Back High-Res Print Previews + Download Buttons */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {(selectedOrder.cardDesign?.frontPrintImageUrl ||
+                        selectedOrder.cardSpecs?.customArtworkFront) && (
+                        <div className="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-2">
+                          <div className="text-[11px] font-bold text-slate-300 flex items-center justify-between">
+                            <span>روی کارت (Front PNG)</span>
+                            {selectedOrder.cardDesign?.hasFullFrontArtwork && (
+                              <span className="text-[9px] text-emerald-400">طرح آماده</span>
+                            )}
+                          </div>
+                          <img
+                            src={
+                              selectedOrder.cardDesign?.frontPrintImageUrl ||
+                              selectedOrder.cardSpecs?.customArtworkFront
+                            }
+                            alt="طرح چاپ روی کارت"
+                            className="w-full h-44 object-contain rounded-lg bg-black/50 border border-slate-800"
+                          />
+                          <a
+                            href={
+                              selectedOrder.cardDesign?.frontPrintImageUrl ||
+                              selectedOrder.cardSpecs?.customArtworkFront
+                            }
+                            target="_blank"
+                            rel="noreferrer"
+                            download={`card-front-${selectedOrder.orderNumber}.png`}
+                            className="w-full py-1.5 px-3 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-[11px] flex items-center justify-center gap-1.5 transition-colors"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                            <span>دانلود فایل چاپ روی کارت</span>
+                          </a>
+                        </div>
+                      )}
+
+                      {(selectedOrder.cardDesign?.backPrintImageUrl ||
+                        selectedOrder.cardSpecs?.customArtworkBack) && (
+                        <div className="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-2">
+                          <div className="text-[11px] font-bold text-slate-300 flex items-center justify-between">
+                            <span>پشت کارت (Back PNG)</span>
+                            {selectedOrder.cardDesign?.hasFullBackArtwork && (
+                              <span className="text-[9px] text-emerald-400">طرح آماده</span>
+                            )}
+                          </div>
+                          <img
+                            src={
+                              selectedOrder.cardDesign?.backPrintImageUrl ||
+                              selectedOrder.cardSpecs?.customArtworkBack
+                            }
+                            alt="طرح چاپ پشت کارت"
+                            className="w-full h-44 object-contain rounded-lg bg-black/50 border border-slate-800"
+                          />
+                          <a
+                            href={
+                              selectedOrder.cardDesign?.backPrintImageUrl ||
+                              selectedOrder.cardSpecs?.customArtworkBack
+                            }
+                            target="_blank"
+                            rel="noreferrer"
+                            download={`card-back-${selectedOrder.orderNumber}.png`}
+                            className="w-full py-1.5 px-3 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-[11px] flex items-center justify-center gap-1.5 transition-colors"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                            <span>دانلود فایل چاپ پشت کارت</span>
+                          </a>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Studio Technical Specs + Raw Uploaded Logo / Artwork Links */}
+                    {selectedOrder.cardDesign && (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-2 border-t border-cyan-500/20 text-[11px]">
+                        <div>
+                          <span className="text-slate-400 block text-[10px]">قالب و جنس:</span>
+                          <span className="text-white font-semibold">
+                            {selectedOrder.cardDesign.template} • {selectedOrder.cardDesign.materialName}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 block text-[10px]">برند / شعار روی کارت:</span>
+                          <span className="text-white">
+                            {selectedOrder.cardDesign.company || '—'}
+                            {selectedOrder.cardDesign.slogan ? ` (${selectedOrder.cardDesign.slogan})` : ''}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 block text-[10px]">نام / سمت پشت کارت:</span>
+                          <span className="text-white">
+                            {selectedOrder.cardDesign.name || '—'}
+                            {selectedOrder.cardDesign.role ? ` — ${selectedOrder.cardDesign.role}` : ''}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 block text-[10px]">لینک QR / NFC:</span>
+                          <span className="text-cyan-300 font-mono text-[10px] break-all" dir="ltr">
+                            {selectedOrder.cardDesign.qrUrl || '—'}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 block text-[10px]">تنظیمات چاپ:</span>
+                          <span className="text-slate-200">
+                            QR: {selectedOrder.cardDesign.showQr ? 'بله' : 'خیر'} • NFC:{' '}
+                            {selectedOrder.cardDesign.showNfc ? 'بله' : 'خیر'}
+                          </span>
+                        </div>
+                        {selectedOrder.cardDesign.linkedProfileAlias && (
+                          <div>
+                            <span className="text-slate-400 block text-[10px]">پروفایل متصل‌شده:</span>
+                            <span className="text-emerald-300 font-mono" dir="ltr">
+                              /{selectedOrder.cardDesign.linkedProfileAlias}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Optional Raw Uploaded Logo / Original Artwork Links */}
+                    {(selectedOrder.cardDesign?.customLogoUrl ||
+                      selectedOrder.cardDesign?.customFrontArtworkUrl ||
+                      selectedOrder.cardDesign?.customBackArtworkUrl) && (
+                      <div className="flex flex-wrap gap-2 pt-2 border-t border-cyan-500/20">
+                        {selectedOrder.cardDesign?.customLogoUrl && (
+                          <a
+                            href={selectedOrder.cardDesign.customLogoUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 text-[10px] font-semibold inline-flex items-center gap-1"
+                          >
+                            <FileImage className="w-3 h-3 text-cyan-400" />
+                            <span>دانلود لوگوی اصلی کاربر</span>
+                          </a>
+                        )}
+                        {selectedOrder.cardDesign?.customFrontArtworkUrl && (
+                          <a
+                            href={selectedOrder.cardDesign.customFrontArtworkUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 text-[10px] font-semibold inline-flex items-center gap-1"
+                          >
+                            <FileImage className="w-3 h-3 text-emerald-400" />
+                            <span>دانلود فایل خام روی کارت</span>
+                          </a>
+                        )}
+                        {selectedOrder.cardDesign?.customBackArtworkUrl && (
+                          <a
+                            href={selectedOrder.cardDesign.customBackArtworkUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 text-[10px] font-semibold inline-flex items-center gap-1"
+                          >
+                            <FileImage className="w-3 h-3 text-emerald-400" />
+                            <span>دانلود فایل خام پشت کارت</span>
+                          </a>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* B2B Bulk NFC Cards Print Shop Details & CSV Export */}
                 {selectedOrder.orderType === 'bulk_nfc_cards' && (

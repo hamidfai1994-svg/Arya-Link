@@ -65,6 +65,13 @@ import { MultilingualInput } from '@/components/admin/MultilingualInput';
 import { MultilingualTextarea } from '@/components/admin/MultilingualTextarea';
 import { AiFieldRefineButton } from '@/components/admin/MultilingualFieldShell';
 import { CollapsibleSection } from '@/components/admin/CollapsibleSection';
+import { NfcMaterialsSettingsAccordion } from '@/components/admin/NfcMaterialsSettingsAccordion';
+import {
+  DEFAULT_NFC_CARD_MATERIALS,
+  DEFAULT_NFC_QTY_DISCOUNTS,
+  INfcCardMaterialConfig,
+  INfcQtyDiscountTier,
+} from '@/models/systemSettings.model';
 import { SortableList, SortableItem, DragHandle } from '@/components/admin/SortableContainer';
 import { useBranding } from '@/lib/branding/BrandingContext';
 import { SiteLogo } from '@/components/SiteLogo';
@@ -104,7 +111,7 @@ type SystemCategory = 'landing' | 'pages' | 'branding_seo' | 'infra_api';
 type LandingSubTab = 'hero' | 'sliders' | 'nfcConcept' | 'stats' | 'trustedBy' | 'pricing_plans' | 'features_steps';
 type PagesSubTab = 'aboutUs' | 'faq' | 'blog' | 'legal_terms' | 'contact_info';
 type BrandingSeoSubTab = 'general_info' | 'social_networks' | 'footer_legal' | 'seo_metadata';
-type InfraApiSubTab = 'ai_keys' | 'cloud_upload' | 'security_captcha' | 'payment_gateways' | 'telegram_bots';
+type InfraApiSubTab = 'ai_keys' | 'cloud_upload' | 'security_captcha' | 'payment_gateways' | 'telegram_bots' | 'nfc_materials';
 
 interface ISystemSettingsState {
   telegramSupportChatId: string;
@@ -116,6 +123,8 @@ interface ISystemSettingsState {
   notifySystemAlerts: boolean;
   platformMainLogo: string;
   platformFavicon: string;
+  nfcCardMaterials: INfcCardMaterialConfig[];
+  nfcQtyDiscounts: INfcQtyDiscountTier[];
   aiSettings: {
     groqApiKey: string;
     groqModelName: string;
@@ -159,6 +168,8 @@ const DEFAULT_SYSTEM_SETTINGS: ISystemSettingsState = {
   notifySystemAlerts: false,
   platformMainLogo: '',
   platformFavicon: '',
+  nfcCardMaterials: DEFAULT_NFC_CARD_MATERIALS,
+  nfcQtyDiscounts: DEFAULT_NFC_QTY_DISCOUNTS,
   aiSettings: {
     groqApiKey: '',
     groqModelName: 'llama-3.3-70b-versatile',
@@ -304,6 +315,14 @@ export default function AdminSystemControlPage() {
           notifySystemAlerts: systemJson.data.notifySystemAlerts ?? false,
           platformMainLogo: systemJson.data.platformMainLogo || '',
           platformFavicon: systemJson.data.platformFavicon || '',
+          nfcCardMaterials:
+            Array.isArray(systemJson.data.nfcCardMaterials) && systemJson.data.nfcCardMaterials.length > 0
+              ? systemJson.data.nfcCardMaterials
+              : DEFAULT_NFC_CARD_MATERIALS,
+          nfcQtyDiscounts:
+            Array.isArray(systemJson.data.nfcQtyDiscounts) && systemJson.data.nfcQtyDiscounts.length > 0
+              ? systemJson.data.nfcQtyDiscounts
+              : DEFAULT_NFC_QTY_DISCOUNTS,
           aiSettings: {
             groqApiKey: systemJson.data.aiSettings?.groqApiKey || '',
             groqModelName: systemJson.data.aiSettings?.groqModelName || 'llama-3.3-70b-versatile',
@@ -605,9 +624,9 @@ export default function AdminSystemControlPage() {
     {
       id: 'infra_api' as SystemCategory,
       title: 'زیرساخت و APIها',
-      subtitle: 'هوش مصنوعی، فضای ابری، کپچا و درگاه پرداخت',
+      subtitle: 'هوش مصنوعی، فضای ابری، متریال کارت NFC و درگاه پرداخت',
       icon: SlidersHorizontal,
-      badge: '۵ فرم کشویی',
+      badge: '۶ فرم کشویی',
     },
   ];
 
@@ -3494,6 +3513,18 @@ export default function AdminSystemControlPage() {
                   <Send className="w-3.5 h-3.5" />
                   <span>ربات‌های تلگرام و وب‌هوک</span>
                 </button>
+
+                <button
+                  type="button"
+                  onClick={() => setInfraApiTab('nfc_materials')}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${infraApiTab === 'nfc_materials'
+                      ? 'bg-cyan-500 text-slate-950 font-black shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                    }`}
+                >
+                  <Layers className="w-3.5 h-3.5" />
+                  <span>متریال‌ها و قیمت کارت NFC</span>
+                </button>
               </div>
 
               {/* Form Container with pt-4 scroll-mt-20 */}
@@ -4165,6 +4196,20 @@ export default function AdminSystemControlPage() {
                     </div>
                   </CollapsibleSection>
                   </div>
+                )}
+
+                {/* 4.6 NFC CARD MATERIALS & PRINT PRICING (Accordion Form - Default Closed) */}
+                {infraApiTab === 'nfc_materials' && (
+                  <NfcMaterialsSettingsAccordion
+                    materials={systemSettings.nfcCardMaterials}
+                    qtyDiscounts={systemSettings.nfcQtyDiscounts}
+                    onChangeMaterials={(nextMaterials) =>
+                      setSystemSettings((prev) => ({ ...prev, nfcCardMaterials: nextMaterials }))
+                    }
+                    onChangeQtyDiscounts={(nextDiscounts) =>
+                      setSystemSettings((prev) => ({ ...prev, nfcQtyDiscounts: nextDiscounts }))
+                    }
+                  />
                 )}
               </div>
             </>

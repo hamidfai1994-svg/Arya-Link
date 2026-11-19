@@ -171,7 +171,9 @@ export async function GET(req: NextRequest) {
           paymentMode: o.paymentMode || (o.paymentMethod === 'wallet' ? 'api' : 'manual'),
           paymentProviderDetails: o.paymentProviderDetails || null,
           trackingNumber: o.trackingNumber || '',
+          profileId: o.profileId ? String(o.profileId) : null,
           cardSpecs: o.cardSpecs || null,
+          cardDesign: o.cardDesign || null,
           trackingShortCode: o.trackingShortCode || c?.shortCode || '',
           provisionedBy: o.provisionedBy?.toString() || c?.provisionedBy?.toString() || '',
           provisionedAt: o.provisionedAt || c?.provisionedAt || null,
@@ -402,10 +404,11 @@ export async function POST(req: NextRequest) {
           : 'سفارش کارت هوشمند NFC';
 
     // 5. Create Order record
+    const resolvedProfileId = body.profileId || body.cardDesign?.linkedProfileId || null;
     const newOrder = await Order.create({
       userId,
       sellerUserId,
-      profileId: body.profileId || null,
+      profileId: resolvedProfileId,
       orderNumber,
       customerName,
       customerEmail,
@@ -440,6 +443,7 @@ export async function POST(req: NextRequest) {
       trackingNumber: body.trackingNumber || '',
       trackingShortCode,
       cardSpecs: body.cardSpecs || {},
+      cardDesign: body.cardDesign || null,
       notes: body.notes || '',
     });
 
@@ -460,7 +464,7 @@ export async function POST(req: NextRequest) {
           shortCode: trackingShortCode,
           ownerId: userId || undefined,
           orderId: newOrder._id,
-          profileId: body.profileId || undefined,
+          profileId: resolvedProfileId || undefined,
           scansCount: 0,
           status: 'pending_write',
         });
