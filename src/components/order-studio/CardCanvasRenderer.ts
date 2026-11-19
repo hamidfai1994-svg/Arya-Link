@@ -785,7 +785,7 @@ export function drawCardBack(
   drawCardBackground(ctx, W, H, bg, material);
   ctx.direction = isRtl ? 'rtl' : 'ltr';
 
-  const nameTxt = state.name.trim() || 'حمید فصیحی';
+  const nameTxt = state.name.trim() || 'فرهاد آریا';
   const roleTxt = state.role.trim();
   const qrPayload = resolveQrTargetUrl(state);
 

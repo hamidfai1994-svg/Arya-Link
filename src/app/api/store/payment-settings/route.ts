@@ -29,7 +29,7 @@ export async function GET() {
       providerCompany: w.providerCompany,
       accountNumber: w.accountNumber || (w.id === 'hesabpay' ? settings.hesabPay?.accountNumber || '0729736813' : ''),
       accountHolder: w.accountHolder,
-      accountName: w.accountName || (w.id === 'hesabpay' ? settings.hesabPay?.accountName || 'HAMID FASIHI' : w.accountHolder),
+      accountName: w.accountName || (w.id === 'hesabpay' ? settings.hesabPay?.accountName || 'Farhad Arya' : w.accountHolder),
       isApiEnabled: w.isApiEnabled !== undefined ? Boolean(w.isApiEnabled) : (w.id === 'hesabpay' ? (settings.hesabPay?.isApiEnabled ?? true) : false),
       instructions: w.instructions,
       qrCodeImage: w.qrCodeImage || w.qrCodeUrl || (w.id === 'hesabpay' ? settings.hesabPay?.qrCodeImage || settings.hesabPay?.qrCodeUrl || '' : ''),
@@ -38,9 +38,9 @@ export async function GET() {
       isActive: w.isActive ?? true,
       hesabPayConfig: w.hesabPayConfig
         ? {
-            isSandbox: w.hesabPayConfig.isSandbox ?? true,
-            merchantId: w.hesabPayConfig.merchantId || settings.hesabPay?.merchantId || 'ARYALINK_MERCHANT_01',
-          }
+          isSandbox: w.hesabPayConfig.isSandbox ?? true,
+          merchantId: w.hesabPayConfig.merchantId || settings.hesabPay?.merchantId || 'ARYALINK_MERCHANT_01',
+        }
         : undefined,
     }));
 
@@ -105,7 +105,7 @@ export async function GET() {
         isApiEnabled: settings.hesabPay?.isApiEnabled !== false,
         isSandbox: settings.hesabPay?.isSandbox ?? true,
         merchantId: settings.hesabPay?.merchantId || 'ARYALINK_MERCHANT_01',
-        accountName: settings.hesabPay?.accountName || 'HAMID FASIHI',
+        accountName: settings.hesabPay?.accountName || 'Farhad Arya',
         accountNumber: settings.hesabPay?.accountNumber || '0729736813',
         qrCodeImage: settings.hesabPay?.qrCodeImage || settings.hesabPay?.qrCodeUrl || '',
       },

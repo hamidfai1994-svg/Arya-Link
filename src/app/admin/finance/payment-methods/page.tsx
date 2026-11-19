@@ -1306,7 +1306,7 @@ export default function AdminPaymentMethodsPage() {
                                   onChange={(e) => updateWallet(wallet.id, { accountName: e.target.value.toUpperCase() })}
                                   className="h-9 rounded-xl font-mono text-xs text-start uppercase"
                                   dir="ltr"
-                                  placeholder="HAMID FASIHI"
+                                  placeholder="Farhad Arya"
                                 />
                                 <span className="text-[9px] text-muted-foreground block">
                                   جهت ساخت دقیق Payload بارکد
@@ -1321,7 +1321,7 @@ export default function AdminPaymentMethodsPage() {
                                   value={wallet.accountHolder || ''}
                                   onChange={(e) => updateWallet(wallet.id, { accountHolder: e.target.value })}
                                   className="h-9 rounded-xl text-xs text-right"
-                                  placeholder="حمید فصیحی"
+                                  placeholder="فرهاد آریا"
                                 />
                               </div>
                             </div>
@@ -1336,7 +1336,7 @@ export default function AdminPaymentMethodsPage() {
                             {/* Real-time Dynamic HesabPay QR Code Preview */}
                             {(() => {
                               const cleanP = (wallet.accountNumber || '0729736813').replace(/^0+/, '');
-                              const cleanN = (wallet.accountName || wallet.accountHolder || 'HAMID FASIHI').toUpperCase();
+                              const cleanN = (wallet.accountName || wallet.accountHolder || 'Farhad Arya').toUpperCase();
                               const previewQr = `1:01*2:p*3:93.${cleanP}*4:general*5:${cleanN}*6:971*7:1307100`;
                               const customQr = wallet.qrCodeImage || wallet.qrCodeUrl;
 

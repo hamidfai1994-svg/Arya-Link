@@ -533,7 +533,7 @@ export function CheckoutPaymentPanel({
             const rawName =
               hesabPayWallet?.accountName ||
               storeSettings?.hesabPay?.accountName ||
-              'HAMID FASIHI';
+              'Farhad Arya';
             const formattedPhone = rawPhone.replace(/^0+/, '');
             const formattedName = rawName.toUpperCase();
             const qrPayload = `1:01*2:p*3:93.${formattedPhone}*4:general*5:${formattedName}*6:971*7:1307100`;
@@ -546,8 +546,8 @@ export function CheckoutPaymentPanel({
                     aria-pressed={orderHesabPayMode === 'direct'}
                     onClick={() => onHesabPayModeChange('direct')}
                     className={`p-2.5 rounded-xl border text-start transition-all flex items-start gap-2 cursor-pointer ${orderHesabPayMode === 'direct'
-                        ? 'bg-emerald-500/20 border-emerald-500 text-white'
-                        : 'bg-black/20 border-white/10 hover:border-white/25 text-slate-400'
+                      ? 'bg-emerald-500/20 border-emerald-500 text-white'
+                      : 'bg-black/20 border-white/10 hover:border-white/25 text-slate-400'
                       }`}
                   >
                     <Smartphone className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" aria-hidden="true" />
@@ -566,8 +566,8 @@ export function CheckoutPaymentPanel({
                     aria-pressed={orderHesabPayMode === 'agent'}
                     onClick={() => onHesabPayModeChange('agent')}
                     className={`p-2.5 rounded-xl border text-start transition-all flex items-start gap-2 cursor-pointer ${orderHesabPayMode === 'agent'
-                        ? 'bg-emerald-500/20 border-emerald-500 text-white'
-                        : 'bg-black/20 border-white/10 hover:border-white/25 text-slate-400'
+                      ? 'bg-emerald-500/20 border-emerald-500 text-white'
+                      : 'bg-black/20 border-white/10 hover:border-white/25 text-slate-400'
                       }`}
                   >
                     <Store className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" aria-hidden="true" />

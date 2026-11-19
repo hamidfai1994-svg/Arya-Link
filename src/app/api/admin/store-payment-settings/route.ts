@@ -84,7 +84,7 @@ export async function PUT(req: NextRequest) {
         settings.hesabPay = {
           ...settings.hesabPay,
           ...(hp.hesabPayConfig || {}),
-          accountName: hp.accountName || hp.accountHolder || settings.hesabPay?.accountName || 'HAMID FASIHI',
+          accountName: hp.accountName || hp.accountHolder || settings.hesabPay?.accountName || 'Farhad Arya',
           accountNumber: hp.accountNumber || settings.hesabPay?.accountNumber || '0729736813',
           merchantId: hp.merchantId || hp.hesabPayConfig?.merchantId || settings.hesabPay?.merchantId || 'ARYALINK_MERCHANT_01',
           apiKey: hp.apiKey || hp.hesabPayConfig?.apiKey || settings.hesabPay?.apiKey || '',

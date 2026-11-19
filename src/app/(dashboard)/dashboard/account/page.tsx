@@ -437,8 +437,8 @@ export default function AccountSettingsPage() {
           type="button"
           onClick={() => setActiveTab('profile')}
           className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${activeTab === 'profile'
-              ? 'bg-cyan-500 text-white shadow-md shadow-cyan-500/20'
-              : 'bg-muted/50 text-muted-foreground hover:text-foreground'
+            ? 'bg-cyan-500 text-white shadow-md shadow-cyan-500/20'
+            : 'bg-muted/50 text-muted-foreground hover:text-foreground'
             }`}
         >
           <User className="w-4 h-4" />
@@ -448,8 +448,8 @@ export default function AccountSettingsPage() {
           type="button"
           onClick={() => setActiveTab('finance')}
           className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${activeTab === 'finance'
-              ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20'
-              : 'bg-muted/50 text-muted-foreground hover:text-foreground'
+            ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20'
+            : 'bg-muted/50 text-muted-foreground hover:text-foreground'
             }`}
         >
           <Wallet className="w-4 h-4" />
@@ -506,7 +506,7 @@ export default function AccountSettingsPage() {
                         onChange={(e) =>
                           setHesabPayConfig((prev) => ({ ...prev, accountName: e.target.value }))
                         }
-                        placeholder="مثلاً: احمد ولی رسولی یا HAMID FASIHI"
+                        placeholder="مثلاً: احمد ولی رسولی یا Farhad Arya"
                         className="h-10 rounded-xl text-xs"
                         required
                       />

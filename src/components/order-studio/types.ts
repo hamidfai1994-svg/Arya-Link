@@ -394,7 +394,7 @@ export function createInitialCardDesignState(): CardDesignState {
     fullBackFit: 'cover',
     company: 'آریا لینک',
     slogan: 'کارت ویزیت هوشمند',
-    name: 'حمید فصیحی',
+    name: 'فرهاد آریا',
     role: 'طراح محصول و وب',
     username: 'hamid',
     customQrUrl: '',

@@ -108,7 +108,7 @@ function UpgradePageContent() {
     isApiEnabled: true,
     isSandbox: true,
     merchantId: 'ARYALINK_MERCHANT_01',
-    accountName: 'HAMID FASIHI',
+    accountName: 'Farhad Arya',
     accountNumber: '0729736813',
     qrCodeImage: '',
     instructions: '',
@@ -147,7 +147,7 @@ function UpgradePageContent() {
           }
         }
       })
-      .catch(() => {});
+      .catch(() => { });
 
     // Load Super Admin StorePaymentSettings for platform HesabPay QR & API
     fetch('/api/store/payment-settings')
@@ -163,7 +163,7 @@ function UpgradePageContent() {
             isApiEnabled: hp?.isApiEnabled !== false,
             isSandbox: hp?.isSandbox ?? true,
             merchantId: hp?.merchantId || hpWallet?.hesabPayConfig?.merchantId || 'ARYALINK_MERCHANT_01',
-            accountName: hp?.accountName || hpWallet?.accountName || 'HAMID FASIHI',
+            accountName: hp?.accountName || hpWallet?.accountName || 'Farhad Arya',
             accountNumber: hp?.accountNumber || hpWallet?.accountNumber || '0729736813',
             qrCodeImage: hp?.qrCodeImage || hpWallet?.qrCodeImage || hpWallet?.qrCodeUrl || '',
             instructions: hpWallet?.instructions || '',
@@ -173,14 +173,14 @@ function UpgradePageContent() {
           }
         }
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   // When redirected back from HesabPay callback with success, sync subscription & session immediately
   useEffect(() => {
     if (paymentSuccess) {
       refreshSubscription();
-      updateSession().catch(() => {});
+      updateSession().catch(() => { });
       if (isCorporateSuccess) {
         toast.success(
           callbackOrgName
@@ -393,13 +393,11 @@ function UpgradePageContent() {
             receiptUrl: receiptImageUrl,
             transactionRef: trackingNumber.trim(),
           },
-          notes: `${
-            isCorporateCheckout
+          notes: `${isCorporateCheckout
               ? `پرداخت پکیج سازمانی «${companyNameInput.trim()}» (${effectiveLicenses} لایسنس)`
               : 'پرداخت اشتراک سالانه Pro'
-          } با فیش واریزی (${effectiveCustomerName})${
-            trackingNumber.trim() ? ` - کد پیگیری: ${trackingNumber.trim()}` : ''
-          }`,
+            } با فیش واریزی (${effectiveCustomerName})${trackingNumber.trim() ? ` - کد پیگیری: ${trackingNumber.trim()}` : ''
+            }`,
         }),
       });
       const orderData = await orderRes.json();
@@ -883,18 +881,16 @@ function UpgradePageContent() {
                     type="button"
                     disabled={!storeHesabPay.isApiEnabled}
                     onClick={() => setHesabPayMode('direct')}
-                    className={`p-3 rounded-xl border text-right transition-all flex items-start gap-2.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
-                      hesabPayMode === 'direct'
+                    className={`p-3 rounded-xl border text-right transition-all flex items-start gap-2.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${hesabPayMode === 'direct'
                         ? 'bg-emerald-500/20 border-emerald-500 text-white shadow-md shadow-emerald-500/10'
                         : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'
-                    }`}
+                      }`}
                   >
                     <div
-                      className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
-                        hesabPayMode === 'direct'
+                      className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${hesabPayMode === 'direct'
                           ? 'bg-emerald-500 text-slate-950 font-bold'
                           : 'bg-white/10 text-slate-400'
-                      }`}
+                        }`}
                     >
                       <Smartphone className="w-4 h-4" />
                     </div>
@@ -909,18 +905,16 @@ function UpgradePageContent() {
                   <button
                     type="button"
                     onClick={() => setHesabPayMode('agent')}
-                    className={`p-3 rounded-xl border text-right transition-all flex items-start gap-2.5 cursor-pointer ${
-                      hesabPayMode === 'agent'
+                    className={`p-3 rounded-xl border text-right transition-all flex items-start gap-2.5 cursor-pointer ${hesabPayMode === 'agent'
                         ? 'bg-cyan-500/20 border-cyan-500 text-white shadow-md shadow-cyan-500/10'
                         : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'
-                    }`}
+                      }`}
                   >
                     <div
-                      className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
-                        hesabPayMode === 'agent'
+                      className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${hesabPayMode === 'agent'
                           ? 'bg-cyan-500 text-slate-950 font-bold'
                           : 'bg-white/10 text-slate-400'
-                      }`}
+                        }`}
                     >
                       <Store className="w-4 h-4" />
                     </div>
